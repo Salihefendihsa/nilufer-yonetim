@@ -1,0 +1,268 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  OWNER
+  MANAGER
+  TEAM_LEAD
+  STAFF
+  CUSTOMER
+}
+
+enum JobStatus {
+  PENDING
+  SCHEDULED
+  COMPLETED
+  CANCELLED
+}
+
+enum AdvanceStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+model User {
+  id           String   @id @default(uuid())
+  email        String   @unique
+  passwordHash String
+  role         Role     @default(CUSTOMER)
+  fullName     String
+  phone        String?
+  createdAt    DateTime @default(now())
+
+  customer Customer?
+  staff    Staff?
+
+  conversationsAsA Conversation[] @relation("ConversationParticipantA")
+  conversationsAsB Conversation[] @relation("ConversationParticipantB")
+  messages         Message[]
+  notifications    Notification[]
+  auditLogsAsActor  AuditLog[] @relation("AuditLogActor")
+  auditLogsAsTarget AuditLog[] @relation("AuditLogTarget")
+
+  @@index([role])
+}
+
+model Customer {
+  id        String   @id @default(uuid())
+  userId    String?  @unique
+  fullName  String
+  phone     String
+  email     String?
+  address   String?
+  district  String?
+  createdAt DateTime @default(now())
+
+  user      User?      @relation(fields: [userId], references: [id])
+  jobs      Job[]
+  contracts Contract[]
+  payments  Payment[]
+
+  @@index([district])
+  @@index([phone])
+}
+
+model Staff {
+  id           String   @id @default(uuid())
+  userId       String   @unique
+  position     String
+  salaryBase   Decimal  @db.Decimal(10, 2)
+  supervisorId String?
+  createdAt    DateTime @default(now())
+
+  user            User             @relation(fields: [userId], references: [id])
+  supervisor      Staff?           @relation("Supervision", fields: [supervisorId], references: [id])
+  teamMembers     Staff[]          @relation("Supervision")
+  jobs            Job[]            @relation("AssignedStaff")
+  jobReports      JobReport[]
+  advanceRequests AdvanceRequest[]
+  permissions     Permission[]
+
+  @@index([position])
+  @@index([supervisorId])
+}
+
+model Permission {
+  id        String   @id @default(uuid())
+  staffId   String
+  key       String
+  value     Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  staff Staff @relation(fields: [staffId], references: [id])
+
+  @@unique([staffId, key])
+  @@index([staffId])
+}
+
+model AdvanceRequest {
+  id        String        @id @default(uuid())
+  staffId   String
+  amount    Decimal       @db.Decimal(10, 2)
+  reason    String
+  status    AdvanceStatus @default(PENDING)
+  createdAt DateTime      @default(now())
+
+  staff Staff @relation(fields: [staffId], references: [id])
+
+  @@index([staffId])
+  @@index([status])
+}
+
+model Job {
+  id               String    @id @default(uuid())
+  customerId       String
+  assignedStaffId  String?
+  serviceType      String
+  status           JobStatus @default(PENDING)
+  scheduledAt      DateTime?
+  completedAt      DateTime?
+  notes            String?
+  price            Decimal?  @db.Decimal(10, 2)
+  rating           Int?
+  ratingComment    String?
+  createdAt        DateTime  @default(now())
+
+  customer       Customer    @relation(fields: [customerId], references: [id])
+  assignedStaff  Staff?      @relation("AssignedStaff", fields: [assignedStaffId], references: [id])
+  jobReports     JobReport[]
+
+  @@index([customerId])
+  @@index([assignedStaffId])
+  @@index([status])
+  @@index([scheduledAt])
+}
+
+model JobReport {
+  id            String   @id @default(uuid())
+  jobId         String
+  staffId       String
+  productsUsed  String
+  dosage        String
+  notes         String?
+  signatureUrl  String?
+  pdfUrl        String?
+  createdAt     DateTime @default(now())
+
+  job   Job   @relation(fields: [jobId], references: [id])
+  staff Staff @relation(fields: [staffId], references: [id])
+
+  @@index([jobId])
+  @@index([staffId])
+}
+
+model Contract {
+  id             String   @id @default(uuid())
+  customerId     String
+  startDate      DateTime
+  endDate        DateTime
+  durationMonths Int
+  status         String
+  pdfUrl         String?
+  createdAt      DateTime @default(now())
+
+  customer Customer @relation(fields: [customerId], references: [id])
+
+  @@index([customerId])
+  @@index([status])
+}
+
+model Payment {
+  id          String   @id @default(uuid())
+  customerId  String
+  amount      Decimal  @db.Decimal(10, 2)
+  paymentType String
+  receiptUrl  String?
+  createdAt   DateTime @default(now())
+
+  customer Customer @relation(fields: [customerId], references: [id])
+
+  @@index([customerId])
+  @@index([paymentType])
+}
+
+model Conversation {
+  id              String   @id @default(uuid())
+  participantAId  String
+  participantBId  String
+  createdAt       DateTime @default(now())
+
+  participantA User      @relation("ConversationParticipantA", fields: [participantAId], references: [id])
+  participantB User      @relation("ConversationParticipantB", fields: [participantBId], references: [id])
+  messages     Message[]
+
+  @@unique([participantAId, participantBId])
+  @@index([participantAId])
+  @@index([participantBId])
+}
+
+model Message {
+  id             String    @id @default(uuid())
+  conversationId String
+  senderId       String
+  content        String
+  readAt         DateTime?
+  createdAt      DateTime  @default(now())
+
+  conversation Conversation @relation(fields: [conversationId], references: [id])
+  sender       User         @relation(fields: [senderId], references: [id])
+
+  @@index([conversationId])
+  @@index([senderId])
+}
+
+model QuoteRequest {
+  id          String   @id @default(uuid())
+  fullName    String
+  phone       String
+  email       String?
+  propertyType String
+  serviceType String
+  address     String?
+  district    String?
+  status      String   @default("NEW")
+  createdAt   DateTime @default(now())
+
+  @@index([status])
+  @@index([district])
+}
+
+model Notification {
+  id        String    @id @default(uuid())
+  userId    String
+  title     String
+  body      String?
+  readAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+  @@index([readAt])
+}
+
+model AuditLog {
+  id           String   @id @default(uuid())
+  actorUserId  String
+  action       String
+  targetUserId String
+  targetType   String?
+  targetId     String?
+  detail       String?
+  createdAt    DateTime @default(now())
+
+  actor  User @relation("AuditLogActor", fields: [actorUserId], references: [id])
+  target User @relation("AuditLogTarget", fields: [targetUserId], references: [id])
+
+  @@index([actorUserId])
+  @@index([targetUserId])
+  @@index([action])
+  @@index([createdAt])
+}

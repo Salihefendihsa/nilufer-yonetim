@@ -1,0 +1,28 @@
+# Dependencies
+node_modules/
+
+# Environment variables
+.env
+!.env.example
+backend/.env
+web/.env.local
+
+# Build output
+backend/dist/
+web/.next/
+web/out/
+
+# Logs
+*.log
+backend.log
+web.log
+npm-debug.log*
+
+# OS/editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# TypeScript build info
+*.tsbuildinfo

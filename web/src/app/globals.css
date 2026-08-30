@@ -1,0 +1,20 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --background: #1c1e1b;
+  --foreground: #ededea;
+}
+
+body {
+  color: var(--foreground);
+  background: var(--background);
+  font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+}
+
+@layer components {
+  .input {
+    @apply rounded-2xl border border-white/10 bg-surface-base px-4 py-3 text-sm text-text-primary outline-none transition placeholder:text-text-faint focus:border-primary-green focus:ring-2 focus:ring-primary-green/30;
+  }
+}
