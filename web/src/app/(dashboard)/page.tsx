@@ -27,15 +27,16 @@ import {
   BarChart3,
   MapPin,
 } from "lucide-react";
-import { api, ApiError } from "@/lib/api";
+import { api, ApiError, resolveUploadUrl } from "@/lib/api";
 import { useAuth } from "@/lib/AuthProvider";
 import { StatCard } from "@/components/StatCard";
 import { StatusBadge } from "@/components/StatusBadge";
 import { EmptyState } from "@/components/EmptyState";
 import { StarRating } from "@/components/StarRating";
 import { ActivityFeed } from "@/components/ActivityFeed";
+import { PhotoLightbox } from "@/components/PhotoLightbox";
 import { currencyFormatter, formatDateTime, todayIsoDate, toIsoDate } from "@/lib/format";
-import type { Job, JobReport, Staff, Paginated, Customer, ActivityEvent, SystemHealth } from "@/lib/types";
+import type { Job, JobReport, JobPhoto, Staff, Paginated, Customer, ActivityEvent, SystemHealth } from "@/lib/types";
 import { QuoteRequestModal } from "./QuoteRequestModal";
 import { JobReportModal } from "./JobReportModal";
 import { AdvanceRequestModal } from "./AdvanceRequestModal";
@@ -69,6 +70,8 @@ interface CommandCenterData {
   pendingAdvances: number;
   expiringContracts: number;
   cancelledJobs: number;
+  lowStockCount: number;
+  expiringCertifications: number;
   avgCompletionHours: number | null;
   weekCounts: { label: string; count: number }[];
   districtCounts: { district: string; count: number }[];
@@ -116,6 +119,8 @@ function OwnerDashboard() {
     pendingAdvances: 0,
     expiringContracts: 0,
     cancelledJobs: 0,
+    lowStockCount: 0,
+    expiringCertifications: 0,
     avgCompletionHours: null,
     weekCounts: [],
     districtCounts: [],
@@ -127,7 +132,7 @@ function OwnerDashboard() {
 
   const loadKpis = useCallback(async () => {
     try {
-      const [summary, paymentsSummary, customersRes, quotesRes, advancesRes, expiringRes, cancelledRes, health] = await Promise.all([
+      const [summary, paymentsSummary, customersRes, quotesRes, advancesRes, expiringRes, cancelledRes, lowStockRes, expiringCertsRes, health] = await Promise.all([
         api.get<DashboardSummary>("/dashboard/summary"),
         api.get<{ netProfitThisMonth?: number }>("/payments/summary"),
         api.get<Paginated<Customer>>("/customers?limit=200"),
@@ -135,6 +140,8 @@ function OwnerDashboard() {
         api.get<Paginated<unknown>>("/advances?status=PENDING&limit=1"),
         api.get<{ data: unknown[] }>("/contracts/expiring"),
         api.get<Paginated<unknown>>("/jobs?status=CANCELLED&limit=1"),
+        api.get<{ data: unknown[] }>("/products/low-stock"),
+        api.get<{ data: unknown[] }>("/staff/certifications/expiring"),
         api.get<SystemHealth>("/system/health"),
       ]);
 
@@ -157,6 +164,8 @@ function OwnerDashboard() {
         pendingAdvances: advancesRes.pagination.total,
         expiringContracts: expiringRes.data.length,
         cancelledJobs: cancelledRes.pagination.total,
+        lowStockCount: lowStockRes.data.length,
+        expiringCertifications: expiringCertsRes.data.length,
         districtCounts,
         health,
       }));
@@ -341,9 +350,17 @@ function OwnerDashboard() {
               <span className="text-text-secondary">🟨 Bekleyen onay</span>
               <span className="font-mono font-semibold text-amber-300">{pendingApprovalsCount}</span>
             </li>
+            <li className="flex items-center justify-between rounded-2xl bg-amber-400/10 px-4 py-3">
+              <span className="text-text-secondary">🟨 Kritik seviyede ürün</span>
+              <span className="font-mono font-semibold text-amber-300">{data.lowStockCount}</span>
+            </li>
             <li className="flex items-center justify-between rounded-2xl bg-orange-400/10 px-4 py-3">
               <span className="text-text-secondary">🟧 30 gün içi bitecek sözleşme</span>
               <span className="font-mono font-semibold text-orange-300">{data.expiringContracts}</span>
+            </li>
+            <li className="flex items-center justify-between rounded-2xl bg-amber-400/10 px-4 py-3">
+              <span className="text-text-secondary">🟨 Sertifika süresi doluyor</span>
+              <span className="font-mono font-semibold text-amber-300">{data.expiringCertifications}</span>
             </li>
             <li className="flex items-center justify-between rounded-2xl bg-primary-redLight/10 px-4 py-3">
               <span className="text-text-secondary">🟥 İptal edilen iş</span>
@@ -620,15 +637,27 @@ function StaffDashboard() {
                     <StatusBadge status={job.status} />
                   </div>
                 </div>
-                <button
-                  type="button"
-                  disabled={isDone}
-                  onClick={() => setReportJobId(job.id)}
-                  className="flex items-center gap-2 rounded-2xl bg-primary-green px-5 py-3 text-sm font-semibold text-white transition hover:opacity-90 disabled:opacity-40"
-                >
-                  <CheckCircle2 size={18} strokeWidth={1.75} />
-                  {isDone ? "Tamamlandı" : "Tamamla"}
-                </button>
+                <div className="flex items-center gap-3">
+                  {job.calendarLink && (
+                    <a
+                      href={job.calendarLink}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-2 rounded-2xl bg-white/5 px-4 py-3 text-sm font-medium text-text-secondary transition hover:bg-white/10"
+                    >
+                      📅 Takvime Ekle
+                    </a>
+                  )}
+                  <button
+                    type="button"
+                    disabled={isDone}
+                    onClick={() => setReportJobId(job.id)}
+                    className="flex items-center gap-2 rounded-2xl bg-primary-green px-5 py-3 text-sm font-semibold text-white transition hover:opacity-90 disabled:opacity-40"
+                  >
+                    <CheckCircle2 size={18} strokeWidth={1.75} />
+                    {isDone ? "Tamamlandı" : "Tamamla"}
+                  </button>
+                </div>
               </div>
             );
           })}
@@ -660,6 +689,8 @@ function CustomerDashboard() {
   const [sent, setSent] = useState(false);
   const [expandedJobId, setExpandedJobId] = useState<string | null>(null);
   const [reports, setReports] = useState<Record<string, JobReport | "loading" | "none">>({});
+  const [photos, setPhotos] = useState<Record<string, JobPhoto[]>>({});
+  const [lightboxSrc, setLightboxSrc] = useState<string | null>(null);
 
   async function toggleReport(jobId: string) {
     if (expandedJobId === jobId) {
@@ -675,6 +706,13 @@ function CustomerDashboard() {
       setReports((prev) => ({ ...prev, [jobId]: report }));
     } catch {
       setReports((prev) => ({ ...prev, [jobId]: "none" }));
+    }
+
+    try {
+      const res = await api.get<{ data: JobPhoto[] }>(`/jobs/${jobId}/photos`);
+      setPhotos((prev) => ({ ...prev, [jobId]: res.data }));
+    } catch {
+      setPhotos((prev) => ({ ...prev, [jobId]: [] }));
     }
   }
 
@@ -816,10 +854,40 @@ function CustomerDashboard() {
                         <div className="flex flex-col gap-2 text-sm">
                           <div className="flex items-center gap-2 text-text-secondary">
                             <Beaker size={15} strokeWidth={1.75} className="text-text-faint" />
-                            <span className="font-medium">{report.productsUsed}</span>
+                            {report.productsUsed && <span className="font-medium">{report.productsUsed}</span>}
                             <span className="text-text-faint">· {report.dosage}</span>
                           </div>
                           {report.notes && <p className="text-text-secondary">{report.notes}</p>}
+                          {report.signatureUrl && (
+                            <div className="mt-2">
+                              <p className="mb-1 text-xs text-text-faint">Müşteri İmzası</p>
+                              {/* eslint-disable-next-line @next/next/no-img-element */}
+                              <img
+                                src={resolveUploadUrl(report.signatureUrl)}
+                                alt="İmza"
+                                className="h-16 rounded-lg bg-white/90 object-contain px-2"
+                              />
+                            </div>
+                          )}
+                          {photos[job.id] && photos[job.id].length > 0 && (
+                            <div className="mt-2 flex gap-2">
+                              {photos[job.id].slice(0, 2).map((photo) => (
+                                <button
+                                  key={photo.id}
+                                  type="button"
+                                  onClick={() => setLightboxSrc(resolveUploadUrl(photo.url))}
+                                  className="overflow-hidden rounded-xl border border-white/10 transition hover:opacity-80"
+                                >
+                                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                                  <img
+                                    src={resolveUploadUrl(photo.url)}
+                                    alt={photo.type === "BEFORE" ? "Öncesi" : "Sonrası"}
+                                    className="h-16 w-16 object-cover"
+                                  />
+                                </button>
+                              ))}
+                            </div>
+                          )}
                         </div>
                       )}
                     </div>
@@ -837,6 +905,8 @@ function CustomerDashboard() {
         onSent={() => setSent(true)}
         user={user}
       />
+
+      <PhotoLightbox src={lightboxSrc} onClose={() => setLightboxSrc(null)} />
     </div>
   );
 }

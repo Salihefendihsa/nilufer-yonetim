@@ -6,7 +6,7 @@ export async function listUsers(req: Request, res: Response) {
   const roleQuery = typeof req.query.role === "string" ? req.query.role : undefined;
 
   if (roleQuery && !Object.values(Role).includes(roleQuery as Role)) {
-    return res.status(400).json({ error: "Invalid role filter" });
+    return res.status(400).json({ error: "Geçersiz rol filtresi" });
   }
 
   const role = (roleQuery as Role) ?? Role.STAFF;

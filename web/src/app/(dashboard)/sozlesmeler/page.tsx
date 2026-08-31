@@ -76,6 +76,15 @@ function ContractsPageContent() {
     { header: "Bitiş", accessor: (row) => formatDate(row.endDate) },
     { header: "Süre", accessor: (row) => `${row.durationMonths} ay` },
     { header: "Durum", accessor: (row) => STATUS_LABELS[row.status] ?? row.status },
+    {
+      header: "Sıradaki Otomatik İş",
+      accessor: (row) =>
+        row.nextGenerationDate ? (
+          <span className="text-text-secondary">{formatDate(row.nextGenerationDate)}</span>
+        ) : (
+          <span className="text-text-faint">—</span>
+        ),
+    },
   ];
 
   return (

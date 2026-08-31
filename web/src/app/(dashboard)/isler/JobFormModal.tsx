@@ -3,7 +3,9 @@
 import { useEffect, useState, type FormEvent } from "react";
 import { Modal } from "@/components/Modal";
 import { api, ApiError } from "@/lib/api";
-import type { Customer, Staff } from "@/lib/types";
+import type { Customer, ServiceType, Staff } from "@/lib/types";
+
+const OTHER_SERVICE_TYPE = "__diger__";
 
 interface JobFormModalProps {
   open: boolean;
@@ -16,7 +18,9 @@ interface JobFormModalProps {
 export function JobFormModal({ open, onClose, onSaved, customers, staff }: JobFormModalProps) {
   const [customerId, setCustomerId] = useState("");
   const [assignedStaffId, setAssignedStaffId] = useState("");
-  const [serviceType, setServiceType] = useState("");
+  const [serviceTypes, setServiceTypes] = useState<ServiceType[]>([]);
+  const [serviceTypeSelect, setServiceTypeSelect] = useState("");
+  const [serviceTypeOther, setServiceTypeOther] = useState("");
   const [scheduledAt, setScheduledAt] = useState("");
   const [notes, setNotes] = useState("");
   const [price, setPrice] = useState("");
@@ -27,13 +31,20 @@ export function JobFormModal({ open, onClose, onSaved, customers, staff }: JobFo
     if (open) {
       setCustomerId("");
       setAssignedStaffId("");
-      setServiceType("");
+      setServiceTypeSelect("");
+      setServiceTypeOther("");
       setScheduledAt("");
       setNotes("");
       setPrice("");
       setError(null);
+      api
+        .get<{ data: ServiceType[] }>("/service-types")
+        .then((res) => setServiceTypes(res.data.filter((s) => s.isActive)))
+        .catch(() => setServiceTypes([]));
     }
   }, [open]);
+
+  const serviceType = serviceTypeSelect === OTHER_SERVICE_TYPE ? serviceTypeOther : serviceTypeSelect;
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
@@ -89,13 +100,31 @@ export function JobFormModal({ open, onClose, onSaved, customers, staff }: JobFo
 
         <div className="flex flex-col gap-1.5">
           <label className="text-sm font-medium text-text-secondary">Hizmet Türü</label>
-          <input
+          <select
             required
-            value={serviceType}
-            onChange={(e) => setServiceType(e.target.value)}
+            value={serviceTypeSelect}
+            onChange={(e) => setServiceTypeSelect(e.target.value)}
             className="input"
-            placeholder="Örn. Genel İlaçlama"
-          />
+          >
+            <option value="" disabled>
+              Seçin
+            </option>
+            {serviceTypes.map((s) => (
+              <option key={s.id} value={s.name}>
+                {s.name}
+              </option>
+            ))}
+            <option value={OTHER_SERVICE_TYPE}>Diğer</option>
+          </select>
+          {serviceTypeSelect === OTHER_SERVICE_TYPE && (
+            <input
+              required
+              value={serviceTypeOther}
+              onChange={(e) => setServiceTypeOther(e.target.value)}
+              className="input mt-2"
+              placeholder="Hizmet türünü yazın"
+            />
+          )}
         </div>
 
         <div className="flex flex-col gap-1.5">

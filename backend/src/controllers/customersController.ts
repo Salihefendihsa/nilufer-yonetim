@@ -50,7 +50,7 @@ export async function getCustomer(req: Request, res: Response) {
   });
 
   if (!customer) {
-    return res.status(404).json({ error: "Customer not found" });
+    return res.status(404).json({ error: "Müşteri bulunamadı" });
   }
 
   const totalPriced = customer.jobs.reduce((sum, job) => sum + Number(job.price ?? 0), 0);
@@ -71,7 +71,7 @@ export async function updateCustomer(req: Request, res: Response) {
 
   const existing = await prisma.customer.findUnique({ where: { id: idParam(req) } });
   if (!existing) {
-    return res.status(404).json({ error: "Customer not found" });
+    return res.status(404).json({ error: "Müşteri bulunamadı" });
   }
 
   const customer = await prisma.customer.update({ where: { id: idParam(req) }, data });
@@ -81,7 +81,7 @@ export async function updateCustomer(req: Request, res: Response) {
 export async function deleteCustomer(req: Request, res: Response) {
   const existing = await prisma.customer.findUnique({ where: { id: idParam(req) } });
   if (!existing) {
-    return res.status(404).json({ error: "Customer not found" });
+    return res.status(404).json({ error: "Müşteri bulunamadı" });
   }
 
   await prisma.customer.delete({ where: { id: idParam(req) } });

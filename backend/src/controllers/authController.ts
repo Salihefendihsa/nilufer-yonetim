@@ -4,6 +4,7 @@ import { z } from "zod";
 import { Role } from "@prisma/client";
 import { prisma } from "../lib/prisma";
 import { signToken } from "../lib/jwt";
+import { verifyRecaptcha } from "../lib/recaptcha";
 
 const SALT_ROUNDS = 10;
 
@@ -18,6 +19,7 @@ const registerSchema = z.object({
 const loginSchema = z.object({
   email: z.string().email(),
   password: z.string().min(1),
+  recaptchaToken: z.string().optional(),
 });
 
 export async function register(req: Request, res: Response) {
@@ -25,7 +27,7 @@ export async function register(req: Request, res: Response) {
 
   const existing = await prisma.user.findUnique({ where: { email } });
   if (existing) {
-    return res.status(409).json({ error: "Email already in use" });
+    return res.status(409).json({ error: "Bu e-posta adresi zaten kullanılıyor" });
   }
 
   const passwordHash = await bcrypt.hash(password, SALT_ROUNDS);
@@ -49,19 +51,27 @@ export async function register(req: Request, res: Response) {
 }
 
 export async function login(req: Request, res: Response) {
-  const { email, password } = loginSchema.parse(req.body);
+  const { email, password, recaptchaToken } = loginSchema.parse(req.body);
+
+  if (!(await verifyRecaptcha(recaptchaToken, "login"))) {
+    return res.status(400).json({ error: "Doğrulama başarısız, lütfen tekrar deneyin" });
+  }
 
   const user = await prisma.user.findUnique({ where: { email } });
   if (!user) {
-    return res.status(401).json({ error: "Invalid email or password" });
+    return res.status(401).json({ error: "E-posta veya şifre hatalı" });
   }
 
   const valid = await bcrypt.compare(password, user.passwordHash);
   if (!valid) {
-    return res.status(401).json({ error: "Invalid email or password" });
+    return res.status(401).json({ error: "E-posta veya şifre hatalı" });
   }
 
-  const token = signToken({ sub: user.id, role: user.role, email: user.email });
+  const session = await prisma.userSession.create({
+    data: { userId: user.id, deviceInfo: req.headers["user-agent"] ?? undefined },
+  });
+
+  const token = signToken({ sub: user.id, role: user.role, email: user.email, sessionId: session.id });
 
   return res.json({
     token,
@@ -69,10 +79,36 @@ export async function login(req: Request, res: Response) {
   });
 }
 
+export async function heartbeat(req: Request, res: Response) {
+  const sessionId = req.user!.sessionId;
+  if (!sessionId) {
+    return res.json({ ok: true });
+  }
+
+  await prisma.userSession.updateMany({
+    where: { id: sessionId, userId: req.user!.sub },
+    data: { lastActiveAt: new Date() },
+  });
+
+  return res.json({ ok: true });
+}
+
+export async function logoutSession(req: Request, res: Response) {
+  const sessionId = req.user!.sessionId;
+  if (sessionId) {
+    await prisma.userSession.updateMany({
+      where: { id: sessionId, userId: req.user!.sub },
+      data: { logoutAt: new Date(), lastActiveAt: new Date() },
+    });
+  }
+
+  return res.json({ ok: true });
+}
+
 export async function me(req: Request, res: Response) {
   const user = await prisma.user.findUnique({ where: { id: req.user!.sub } });
   if (!user) {
-    return res.status(404).json({ error: "User not found" });
+    return res.status(404).json({ error: "Kullanıcı bulunamadı" });
   }
 
   return res.json({

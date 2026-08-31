@@ -4,6 +4,7 @@ import { useEffect, useState, type FormEvent } from "react";
 import { Modal } from "@/components/Modal";
 import { api, ApiError } from "@/lib/api";
 import type { AuthUser } from "@/lib/auth";
+import { getRecaptchaToken } from "@/lib/recaptcha";
 
 interface QuoteRequestModalProps {
   open: boolean;
@@ -38,6 +39,7 @@ export function QuoteRequestModal({ open, onClose, onSent, user }: QuoteRequestM
     setSaving(true);
 
     try {
+      const recaptchaToken = await getRecaptchaToken("quote_request");
       await api.post("/quotes", {
         fullName: user?.fullName ?? "Müşteri",
         phone,
@@ -45,6 +47,7 @@ export function QuoteRequestModal({ open, onClose, onSent, user }: QuoteRequestM
         serviceType,
         address: address || undefined,
         district: district || undefined,
+        recaptchaToken,
       });
       onSent();
       onClose();
@@ -107,6 +110,18 @@ export function QuoteRequestModal({ open, onClose, onSent, user }: QuoteRequestM
             {saving ? "Gönderiliyor..." : "Talebi Gönder"}
           </button>
         </div>
+
+        <p className="text-center text-xs text-text-faint">
+          Bu site reCAPTCHA ile korunmaktadır. Google{" "}
+          <a href="https://policies.google.com/privacy" target="_blank" rel="noopener noreferrer" className="underline hover:text-text-secondary">
+            Gizlilik Politikası
+          </a>{" "}
+          ve{" "}
+          <a href="https://policies.google.com/terms" target="_blank" rel="noopener noreferrer" className="underline hover:text-text-secondary">
+            Kullanım Şartları
+          </a>{" "}
+          geçerlidir.
+        </p>
       </form>
     </Modal>
   );

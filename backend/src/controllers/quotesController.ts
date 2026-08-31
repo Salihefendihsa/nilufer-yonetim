@@ -4,6 +4,7 @@ import { prisma } from "../lib/prisma";
 import { getPagination, paginatedResponse } from "../lib/pagination";
 import { idParam } from "../lib/params";
 import { notifyManagement } from "../lib/notify";
+import { verifyRecaptcha } from "../lib/recaptcha";
 
 const createSchema = z.object({
   fullName: z.string().min(1),
@@ -13,6 +14,7 @@ const createSchema = z.object({
   serviceType: z.string().min(1),
   address: z.string().optional(),
   district: z.string().optional(),
+  recaptchaToken: z.string().optional(),
 });
 
 const updateSchema = z.object({
@@ -33,7 +35,12 @@ export async function listQuotes(req: Request, res: Response) {
 }
 
 export async function createQuote(req: Request, res: Response) {
-  const data = createSchema.parse(req.body);
+  const { recaptchaToken, ...data } = createSchema.parse(req.body);
+
+  if (!(await verifyRecaptcha(recaptchaToken, "quote_request"))) {
+    return res.status(400).json({ error: "Doğrulama başarısız, lütfen tekrar deneyin" });
+  }
+
   const quote = await prisma.quoteRequest.create({ data });
 
   await notifyManagement("Yeni teklif talebi alındı", `${quote.fullName} - ${quote.serviceType}`);
@@ -46,7 +53,7 @@ export async function updateQuote(req: Request, res: Response) {
 
   const existing = await prisma.quoteRequest.findUnique({ where: { id: idParam(req) } });
   if (!existing) {
-    return res.status(404).json({ error: "Quote request not found" });
+    return res.status(404).json({ error: "Teklif talebi bulunamadı" });
   }
 
   const quote = await prisma.quoteRequest.update({ where: { id: idParam(req) }, data });
@@ -56,7 +63,7 @@ export async function updateQuote(req: Request, res: Response) {
 export async function convertQuote(req: Request, res: Response) {
   const quote = await prisma.quoteRequest.findUnique({ where: { id: idParam(req) } });
   if (!quote) {
-    return res.status(404).json({ error: "Quote request not found" });
+    return res.status(404).json({ error: "Teklif talebi bulunamadı" });
   }
 
   const [customer] = await prisma.$transaction([

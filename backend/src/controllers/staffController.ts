@@ -64,7 +64,7 @@ export async function listStaff(req: Request, res: Response) {
 export async function getStaff(req: Request, res: Response) {
   const staff = await prisma.staff.findUnique({ where: { id: idParam(req) }, include: staffInclude });
   if (!staff) {
-    return res.status(404).json({ error: "Staff not found" });
+    return res.status(404).json({ error: "Personel bulunamadı" });
   }
 
   const startOfDay = new Date();
@@ -85,15 +85,15 @@ export async function createStaff(req: Request, res: Response) {
 
   const user = await prisma.user.findUnique({ where: { id: data.userId } });
   if (!user) {
-    return res.status(404).json({ error: "User not found" });
+    return res.status(404).json({ error: "Kullanıcı bulunamadı" });
   }
   if (user.role !== Role.STAFF && user.role !== Role.TEAM_LEAD) {
-    return res.status(400).json({ error: "User must have role STAFF or TEAM_LEAD before being linked as staff" });
+    return res.status(400).json({ error: "Personel olarak bağlanabilmesi için kullanıcının rolü STAFF veya TEAM_LEAD olmalıdır" });
   }
 
   const existing = await prisma.staff.findUnique({ where: { userId: data.userId } });
   if (existing) {
-    return res.status(409).json({ error: "User is already linked to a staff record" });
+    return res.status(409).json({ error: "Kullanıcı zaten bir personel kaydına bağlı" });
   }
 
   const staff = await prisma.staff.create({ data, include: staffInclude });
@@ -105,7 +105,7 @@ export async function updateStaff(req: Request, res: Response) {
 
   const existing = await prisma.staff.findUnique({ where: { id: idParam(req) } });
   if (!existing) {
-    return res.status(404).json({ error: "Staff not found" });
+    return res.status(404).json({ error: "Personel bulunamadı" });
   }
 
   const staff = await prisma.staff.update({ where: { id: idParam(req) }, data, include: staffInclude });
@@ -125,7 +125,7 @@ export async function updateStaff(req: Request, res: Response) {
 export async function deleteStaff(req: Request, res: Response) {
   const existing = await prisma.staff.findUnique({ where: { id: idParam(req) } });
   if (!existing) {
-    return res.status(404).json({ error: "Staff not found" });
+    return res.status(404).json({ error: "Personel bulunamadı" });
   }
 
   await prisma.staff.delete({ where: { id: idParam(req) } });
@@ -148,7 +148,7 @@ const permissionsUpdateSchema = z.object(
 export async function getStaffPermissions(req: Request, res: Response) {
   const staff = await prisma.staff.findUnique({ where: { id: idParam(req) } });
   if (!staff) {
-    return res.status(404).json({ error: "Staff not found" });
+    return res.status(404).json({ error: "Personel bulunamadı" });
   }
 
   const existing = await prisma.permission.findMany({ where: { staffId: staff.id } });
@@ -165,7 +165,7 @@ export async function getStaffPermissions(req: Request, res: Response) {
 export async function updateStaffPermissions(req: Request, res: Response) {
   const staff = await prisma.staff.findUnique({ where: { id: idParam(req) } });
   if (!staff) {
-    return res.status(404).json({ error: "Staff not found" });
+    return res.status(404).json({ error: "Personel bulunamadı" });
   }
 
   const data = permissionsUpdateSchema.parse(req.body);
@@ -196,4 +196,48 @@ export async function updateStaffPermissions(req: Request, res: Response) {
   });
 
   return res.json({ data: permissions });
+}
+
+export async function getStaffLeaderboard(req: Request, res: Response) {
+  const user = req.user!;
+
+  const now = new Date();
+  const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+
+  const where: Prisma.StaffWhereInput = {};
+  if (user.role === Role.TEAM_LEAD) {
+    const teamIds = await getTeamStaffIds(user.sub);
+    where.id = { in: teamIds };
+  }
+
+  const staffList = await prisma.staff.findMany({
+    where,
+    include: {
+      user: { select: { fullName: true } },
+      jobs: {
+        where: { status: "COMPLETED", completedAt: { gte: monthStart } },
+        select: { rating: true },
+      },
+    },
+  });
+
+  const leaderboard = staffList.map((staff) => {
+    const ratedJobs = staff.jobs.filter((j) => j.rating !== null);
+    const averageRating =
+      ratedJobs.length > 0
+        ? ratedJobs.reduce((sum, j) => sum + (j.rating ?? 0), 0) / ratedJobs.length
+        : null;
+
+    return {
+      staffId: staff.id,
+      fullName: staff.user.fullName,
+      position: staff.position,
+      completedJobsThisMonth: staff.jobs.length,
+      averageRating,
+    };
+  });
+
+  leaderboard.sort((a, b) => b.completedJobsThisMonth - a.completedJobsThisMonth);
+
+  return res.json({ data: leaderboard });
 }

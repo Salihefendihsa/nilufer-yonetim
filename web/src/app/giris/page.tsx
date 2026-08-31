@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Bug, ShieldCheck, Clock, Sparkles } from "lucide-react";
 import { login, logout, type Role } from "@/lib/auth";
 import { ApiError } from "@/lib/api";
+import { getRecaptchaToken } from "@/lib/recaptcha";
 
 interface RoleTab {
   role: Role;
@@ -37,7 +38,8 @@ export default function GirisPage() {
     setError(null);
     setLoading(true);
     try {
-      const user = await login(email, password);
+      const recaptchaToken = await getRecaptchaToken("login");
+      const user = await login(email, password, recaptchaToken);
 
       if (user.role !== selectedTab.role) {
         const actualLabel = ROLE_TABS.find((t) => t.role === user.role)?.label ?? user.role;
@@ -178,6 +180,18 @@ export default function GirisPage() {
             >
               {loading ? "Giriş yapılıyor..." : "Giriş yap"}
             </button>
+
+            <p className="text-center text-xs text-text-faint">
+              Bu site reCAPTCHA ile korunmaktadır.{" "}
+              <a href="https://policies.google.com/privacy" target="_blank" rel="noopener noreferrer" className="underline hover:text-text-secondary">
+                Gizlilik Politikası
+              </a>{" "}
+              ve{" "}
+              <a href="https://policies.google.com/terms" target="_blank" rel="noopener noreferrer" className="underline hover:text-text-secondary">
+                Kullanım Şartları
+              </a>{" "}
+              geçerlidir.
+            </p>
           </form>
         </motion.div>
       </div>

@@ -28,6 +28,21 @@ enum AdvanceStatus {
   REJECTED
 }
 
+enum StockMovementType {
+  IN
+  OUT
+}
+
+enum RecurrenceType {
+  MONTHLY
+  QUARTERLY
+}
+
+enum JobPhotoType {
+  BEFORE
+  AFTER
+}
+
 model User {
   id           String   @id @default(uuid())
   email        String   @unique
@@ -39,6 +54,7 @@ model User {
 
   customer Customer?
   staff    Staff?
+  notificationPreference NotificationPreference?
 
   conversationsAsA Conversation[] @relation("ConversationParticipantA")
   conversationsAsB Conversation[] @relation("ConversationParticipantB")
@@ -46,6 +62,8 @@ model User {
   notifications    Notification[]
   auditLogsAsActor  AuditLog[] @relation("AuditLogActor")
   auditLogsAsTarget AuditLog[] @relation("AuditLogTarget")
+  uploadedJobPhotos JobPhoto[]
+  sessions          UserSession[]
 
   @@index([role])
 }
@@ -84,9 +102,25 @@ model Staff {
   jobReports      JobReport[]
   advanceRequests AdvanceRequest[]
   permissions     Permission[]
+  certifications  StaffCertification[]
 
   @@index([position])
   @@index([supervisorId])
+}
+
+model StaffCertification {
+  id          String    @id @default(uuid())
+  staffId     String
+  name        String
+  issuedDate  DateTime
+  expiryDate  DateTime
+  documentUrl String?
+  createdAt   DateTime  @default(now())
+
+  staff Staff @relation(fields: [staffId], references: [id])
+
+  @@index([staffId])
+  @@index([expiryDate])
 }
 
 model Permission {
@@ -133,6 +167,7 @@ model Job {
   customer       Customer    @relation(fields: [customerId], references: [id])
   assignedStaff  Staff?      @relation("AssignedStaff", fields: [assignedStaffId], references: [id])
   jobReports     JobReport[]
+  photos         JobPhoto[]
 
   @@index([customerId])
   @@index([assignedStaffId])
@@ -140,38 +175,90 @@ model Job {
   @@index([scheduledAt])
 }
 
+model JobPhoto {
+  id               String       @id @default(uuid())
+  jobId            String
+  url              String
+  type             JobPhotoType
+  uploadedByUserId String
+  createdAt        DateTime     @default(now())
+
+  job          Job  @relation(fields: [jobId], references: [id])
+  uploadedBy   User @relation(fields: [uploadedByUserId], references: [id])
+
+  @@index([jobId])
+}
+
 model JobReport {
   id            String   @id @default(uuid())
   jobId         String
   staffId       String
-  productsUsed  String
+  productId     String?
+  quantity      Decimal? @db.Decimal(10, 2)
+  productsUsed  String?
   dosage        String
   notes         String?
   signatureUrl  String?
   pdfUrl        String?
   createdAt     DateTime @default(now())
 
-  job   Job   @relation(fields: [jobId], references: [id])
-  staff Staff @relation(fields: [staffId], references: [id])
+  job           Job            @relation(fields: [jobId], references: [id])
+  staff         Staff          @relation(fields: [staffId], references: [id])
+  product       Product?       @relation(fields: [productId], references: [id])
+  stockMovement StockMovement?
 
   @@index([jobId])
   @@index([staffId])
+  @@index([productId])
+}
+
+model Product {
+  id                String   @id @default(uuid())
+  name              String
+  unit              String
+  currentStock      Decimal  @db.Decimal(10, 2)
+  criticalThreshold Decimal  @db.Decimal(10, 2)
+  createdAt         DateTime @default(now())
+
+  movements  StockMovement[]
+  jobReports JobReport[]
+
+  @@index([name])
+}
+
+model StockMovement {
+  id                 String            @id @default(uuid())
+  productId          String
+  type               StockMovementType
+  quantity           Decimal           @db.Decimal(10, 2)
+  relatedJobReportId String?           @unique
+  note               String?
+  createdAt          DateTime          @default(now())
+
+  product          Product    @relation(fields: [productId], references: [id])
+  relatedJobReport JobReport? @relation(fields: [relatedJobReportId], references: [id])
+
+  @@index([productId])
 }
 
 model Contract {
-  id             String   @id @default(uuid())
-  customerId     String
-  startDate      DateTime
-  endDate        DateTime
-  durationMonths Int
-  status         String
-  pdfUrl         String?
-  createdAt      DateTime @default(now())
+  id                 String          @id @default(uuid())
+  customerId         String
+  startDate          DateTime
+  endDate            DateTime
+  durationMonths     Int
+  status             String
+  serviceType        String?
+  pdfUrl             String?
+  recurrenceType     RecurrenceType?
+  nextGenerationDate DateTime?
+  createdAt          DateTime        @default(now())
 
   customer Customer @relation(fields: [customerId], references: [id])
 
   @@index([customerId])
   @@index([status])
+  @@index([nextGenerationDate])
 }
 
 model Payment {
@@ -246,6 +333,51 @@ model Notification {
 
   @@index([userId])
   @@index([readAt])
+}
+
+model Setting {
+  id        String   @id @default(uuid())
+  key       String   @unique
+  value     String
+  updatedAt DateTime @updatedAt
+}
+
+model ServiceType {
+  id        String   @id @default(uuid())
+  name      String   @unique
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+}
+
+model District {
+  id       String  @id @default(uuid())
+  name     String  @unique
+  isActive Boolean @default(true)
+}
+
+model NotificationPreference {
+  id                  String   @id @default(uuid())
+  userId              String   @unique
+  emailEnabled        Boolean  @default(true)
+  dailyDigestEnabled  Boolean  @default(true)
+  updatedAt           DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id])
+}
+
+model UserSession {
+  id           String    @id @default(uuid())
+  userId       String
+  loginAt      DateTime  @default(now())
+  lastActiveAt DateTime  @default(now())
+  logoutAt     DateTime?
+  deviceInfo   String?
+  createdAt    DateTime  @default(now())
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+  @@index([loginAt])
 }
 
 model AuditLog {

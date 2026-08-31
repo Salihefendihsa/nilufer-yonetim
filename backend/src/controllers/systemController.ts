@@ -1,6 +1,7 @@
 import type { Request, Response } from "express";
 import { prisma } from "../lib/prisma";
 import { getMetrics } from "../lib/metrics";
+import { isEmailConfigured } from "../lib/email";
 
 export async function getSystemHealth(_req: Request, res: Response) {
   let databaseHealthy = true;
@@ -18,5 +19,6 @@ export async function getSystemHealth(_req: Request, res: Response) {
     uptimeSeconds: metrics.uptimeSeconds,
     totalRequestsToday: metrics.totalRequestsToday,
     errorCount24h: metrics.errorCount24h,
+    emailConfigured: isEmailConfigured(),
   });
 }

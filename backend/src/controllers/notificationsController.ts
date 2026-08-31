@@ -1,15 +1,24 @@
 import type { Request, Response } from "express";
 import { prisma } from "../lib/prisma";
 import { idParam } from "../lib/params";
+import { getPagination, paginatedResponse } from "../lib/pagination";
 
 export async function listNotifications(req: Request, res: Response) {
-  const notifications = await prisma.notification.findMany({
-    where: { userId: req.user!.sub },
-    orderBy: { createdAt: "desc" },
-    take: 200,
-  });
+  const { skip, take, page, limit } = getPagination(req);
 
-  return res.json({ data: notifications });
+  const where: { userId: string; readAt?: null | { not: null } } = { userId: req.user!.sub };
+  if (req.query.status === "unread") {
+    where.readAt = null;
+  } else if (req.query.status === "read") {
+    where.readAt = { not: null };
+  }
+
+  const [data, total] = await Promise.all([
+    prisma.notification.findMany({ where, orderBy: { createdAt: "desc" }, skip, take }),
+    prisma.notification.count({ where }),
+  ]);
+
+  return res.json(paginatedResponse(data, total, page, limit));
 }
 
 export async function getUnreadCount(req: Request, res: Response) {
@@ -23,7 +32,7 @@ export async function getUnreadCount(req: Request, res: Response) {
 export async function markNotificationRead(req: Request, res: Response) {
   const notification = await prisma.notification.findUnique({ where: { id: idParam(req) } });
   if (!notification || notification.userId !== req.user!.sub) {
-    return res.status(404).json({ error: "Notification not found" });
+    return res.status(404).json({ error: "Bildirim bulunamadı" });
   }
 
   await prisma.notification.update({ where: { id: notification.id }, data: { readAt: new Date() } });

@@ -17,6 +17,12 @@ import {
   Activity,
   ScrollText,
   LogOut,
+  Boxes,
+  Trophy,
+  Calendar,
+  Bell,
+  BarChart3,
+  Timer,
 } from "lucide-react";
 import { useAuth } from "@/lib/AuthProvider";
 import { ROLE_LABELS, ROLE_SHORT_LABELS, type Role } from "@/lib/auth";
@@ -30,16 +36,22 @@ interface NavItem {
 
 const NAV_ITEMS: NavItem[] = [
   { href: "/", label: "Ana Sayfa", icon: Home, roles: ["OWNER", "MANAGER", "TEAM_LEAD", "STAFF", "CUSTOMER"] },
+  { href: "/takvim", label: "Takvim", icon: Calendar, roles: ["OWNER", "MANAGER", "TEAM_LEAD", "STAFF", "CUSTOMER"] },
+  { href: "/bildirimler", label: "Bildirimler", icon: Bell, roles: ["OWNER", "MANAGER", "TEAM_LEAD", "STAFF", "CUSTOMER"] },
   { href: "/mesajlar", label: "Mesajlar", icon: MessageCircle, roles: ["OWNER", "MANAGER", "TEAM_LEAD", "STAFF", "CUSTOMER"] },
   { href: "/bekleyen-onaylar", label: "Bekleyen Onaylar", icon: ClipboardCheck, roles: ["OWNER", "MANAGER"] },
   { href: "/musteriler", label: "Müşteriler", icon: Users, roles: ["OWNER", "MANAGER"] },
   { href: "/personel", label: "Personel", icon: HardHat, roles: ["OWNER", "MANAGER"] },
+  { href: "/performans", label: "Performans", icon: Trophy, roles: ["OWNER", "MANAGER", "TEAM_LEAD"] },
+  { href: "/stok", label: "Stok", icon: Boxes, roles: ["OWNER", "MANAGER"] },
   { href: "/isler", label: "İşler", icon: Wrench, roles: ["OWNER", "MANAGER", "TEAM_LEAD", "STAFF", "CUSTOMER"] },
   { href: "/sozlesmeler", label: "Sözleşmeler", icon: FileSignature, roles: ["OWNER", "MANAGER"] },
   { href: "/teklifler", label: "Teklifler", icon: FileText, roles: ["OWNER", "MANAGER"] },
   { href: "/para", label: "Para", icon: Wallet, roles: ["OWNER", "MANAGER"] },
+  { href: "/raporlar", label: "Raporlar", icon: BarChart3, roles: ["OWNER", "MANAGER"] },
   { href: "/loglar", label: "Denetim Logları", icon: ScrollText, roles: ["OWNER"] },
   { href: "/sistem-durumu", label: "Sistem Durumu", icon: Activity, roles: ["OWNER"] },
+  { href: "/kullanim-istatistikleri", label: "Kullanım İstatistikleri", icon: Timer, roles: ["OWNER"] },
   { href: "/ayarlar", label: "Ayarlar", icon: Settings, roles: ["OWNER"] },
 ];
 

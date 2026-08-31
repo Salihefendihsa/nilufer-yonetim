@@ -21,7 +21,7 @@ export async function createAdvanceRequest(req: Request, res: Response) {
   const user = req.user!;
   const staffId = await getStaffIdForUser(user.sub);
   if (!staffId) {
-    return res.status(400).json({ error: "No staff record linked to this account" });
+    return res.status(400).json({ error: "Bu hesaba bağlı bir personel kaydı yok" });
   }
 
   const data = createSchema.parse(req.body);
@@ -68,7 +68,7 @@ export async function updateAdvanceRequest(req: Request, res: Response) {
     include: { staff: { select: { userId: true } } },
   });
   if (!existing) {
-    return res.status(404).json({ error: "Advance request not found" });
+    return res.status(404).json({ error: "Avans talebi bulunamadı" });
   }
 
   const data = updateSchema.parse(req.body);

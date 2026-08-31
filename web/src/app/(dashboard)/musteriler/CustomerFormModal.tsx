@@ -3,7 +3,7 @@
 import { useEffect, useState, type FormEvent } from "react";
 import { Modal } from "@/components/Modal";
 import { api, ApiError } from "@/lib/api";
-import type { Customer } from "@/lib/types";
+import type { Customer, District } from "@/lib/types";
 
 interface CustomerFormModalProps {
   open: boolean;
@@ -24,6 +24,7 @@ const EMPTY_FORM: FormState = { fullName: "", phone: "", email: "", address: "",
 
 export function CustomerFormModal({ open, onClose, onSaved, customer }: CustomerFormModalProps) {
   const [form, setForm] = useState<FormState>(EMPTY_FORM);
+  const [districts, setDistricts] = useState<District[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
 
@@ -41,6 +42,10 @@ export function CustomerFormModal({ open, onClose, onSaved, customer }: Customer
           : EMPTY_FORM
       );
       setError(null);
+      api
+        .get<{ data: District[] }>("/districts")
+        .then((res) => setDistricts(res.data.filter((d) => d.isActive)))
+        .catch(() => setDistricts([]));
     }
   }, [open, customer]);
 
@@ -103,11 +108,18 @@ export function CustomerFormModal({ open, onClose, onSaved, customer }: Customer
           <input value={form.address} onChange={(e) => setForm({ ...form, address: e.target.value })} className="input" />
         </Field>
         <Field label="Semt (opsiyonel)">
-          <input
+          <select
             value={form.district}
             onChange={(e) => setForm({ ...form, district: e.target.value })}
             className="input"
-          />
+          >
+            <option value="">Seçilmedi</option>
+            {districts.map((d) => (
+              <option key={d.id} value={d.name}>
+                {d.name}
+              </option>
+            ))}
+          </select>
         </Field>
 
         {error && <p className="rounded-2xl bg-primary-red/10 px-4 py-3 text-sm text-primary-redLight">{error}</p>}

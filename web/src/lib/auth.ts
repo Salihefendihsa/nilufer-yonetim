@@ -41,13 +41,17 @@ function persistSession(token: string, user: AuthUser) {
   document.cookie = `token=${token}; path=/; max-age=${60 * 60 * 24 * 7}`;
 }
 
-export async function login(email: string, password: string): Promise<AuthUser> {
-  const data = await api.post<LoginResponse>("/auth/login", { email, password });
+export async function login(email: string, password: string, recaptchaToken?: string): Promise<AuthUser> {
+  const data = await api.post<LoginResponse>("/auth/login", { email, password, recaptchaToken });
   persistSession(data.token, data.user);
   return data.user;
 }
 
 export function logout(options?: { redirect?: boolean }) {
+  // Best-effort: mark the server-side session as ended, but never block the
+  // client-side cleanup on it — a slow/failed request shouldn't delay logout.
+  api.post("/auth/logout").catch(() => {});
+
   window.localStorage.removeItem(TOKEN_KEY);
   window.localStorage.removeItem(USER_KEY);
   document.cookie = "token=; path=/; max-age=0";

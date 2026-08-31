@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { Plus, HardHat, Pencil, Trash2, CalendarCheck, ShieldCheck } from "lucide-react";
+import { Plus, HardHat, Pencil, Trash2, CalendarCheck, ShieldCheck, FileBadge } from "lucide-react";
 import { RequireRole } from "@/components/RequireRole";
 import { EmptyState } from "@/components/EmptyState";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
@@ -11,6 +11,7 @@ import { todayIsoDate } from "@/lib/format";
 import type { Staff, Paginated } from "@/lib/types";
 import { StaffFormModal } from "./StaffFormModal";
 import { PermissionsModal } from "./PermissionsModal";
+import { CertificationsModal } from "./CertificationsModal";
 
 interface StaffRow extends Staff {
   todaysJobsCount: number;
@@ -35,6 +36,7 @@ function StaffPageContent() {
   const [deleteTarget, setDeleteTarget] = useState<Staff | null>(null);
   const [deleting, setDeleting] = useState(false);
   const [permissionsTarget, setPermissionsTarget] = useState<Staff | null>(null);
+  const [certificationsTarget, setCertificationsTarget] = useState<Staff | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -158,6 +160,15 @@ function StaffPageContent() {
                 </button>
               </div>
 
+              <button
+                type="button"
+                onClick={() => setCertificationsTarget(staff)}
+                className="flex items-center justify-center gap-2 rounded-2xl bg-white/[0.03] px-3 py-2 text-xs font-medium text-text-secondary transition hover:bg-white/10"
+              >
+                <FileBadge size={14} strokeWidth={1.75} />
+                Belgeler
+              </button>
+
               {user?.role === "OWNER" && (
                 <button
                   type="button"
@@ -176,6 +187,8 @@ function StaffPageContent() {
       <StaffFormModal open={formOpen} onClose={() => setFormOpen(false)} onSaved={load} staff={editingStaff} />
 
       <PermissionsModal open={!!permissionsTarget} onClose={() => setPermissionsTarget(null)} staff={permissionsTarget} />
+
+      <CertificationsModal open={!!certificationsTarget} onClose={() => setCertificationsTarget(null)} staff={certificationsTarget} />
 
       <ConfirmDialog
         open={!!deleteTarget}

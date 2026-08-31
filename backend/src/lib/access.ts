@@ -1,5 +1,25 @@
+import { Role } from "@prisma/client";
 import { prisma } from "./prisma";
 import type { PermissionKey } from "./permissions";
+
+const MANAGEMENT_ROLES: Role[] = [Role.OWNER, Role.MANAGER];
+
+export async function canAccessJob(
+  user: { sub: string; role: Role },
+  job: { customerId: string; assignedStaffId: string | null }
+): Promise<boolean> {
+  if (MANAGEMENT_ROLES.includes(user.role)) return true;
+  if (user.role === Role.TEAM_LEAD) {
+    const teamIds = await getTeamStaffIds(user.sub);
+    return job.assignedStaffId !== null && teamIds.includes(job.assignedStaffId);
+  }
+  if (user.role === Role.STAFF) {
+    const staffId = await getStaffIdForUser(user.sub);
+    return staffId !== null && staffId === job.assignedStaffId;
+  }
+  const customerId = await getCustomerIdForUser(user.sub);
+  return customerId !== null && customerId === job.customerId;
+}
 
 export async function getCustomerIdForUser(userId: string): Promise<string | null> {
   const customer = await prisma.customer.findUnique({ where: { userId } });

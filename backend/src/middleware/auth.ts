@@ -15,7 +15,7 @@ declare global {
 export function requireAuth(req: Request, res: Response, next: NextFunction) {
   const header = req.headers.authorization;
   if (!header || !header.startsWith("Bearer ")) {
-    return res.status(401).json({ error: "Missing or invalid Authorization header" });
+    return res.status(401).json({ error: "Yetkilendirme başlığı eksik veya geçersiz" });
   }
 
   const token = header.slice("Bearer ".length);
@@ -23,17 +23,17 @@ export function requireAuth(req: Request, res: Response, next: NextFunction) {
     req.user = verifyToken(token);
     next();
   } catch {
-    return res.status(401).json({ error: "Invalid or expired token" });
+    return res.status(401).json({ error: "Geçersiz veya süresi dolmuş oturum" });
   }
 }
 
 export function requireRole(...roles: Role[]) {
   return (req: Request, res: Response, next: NextFunction) => {
     if (!req.user) {
-      return res.status(401).json({ error: "Not authenticated" });
+      return res.status(401).json({ error: "Giriş yapmanız gerekiyor" });
     }
     if (!roles.includes(req.user.role)) {
-      return res.status(403).json({ error: "Insufficient permissions" });
+      return res.status(403).json({ error: "Bu işlem için yetkiniz yok" });
     }
     next();
   };
@@ -43,7 +43,7 @@ export function requireRole(...roles: Role[]) {
 export function requirePermission(key: PermissionKey) {
   return async (req: Request, res: Response, next: NextFunction) => {
     if (!req.user) {
-      return res.status(401).json({ error: "Not authenticated" });
+      return res.status(401).json({ error: "Giriş yapmanız gerekiyor" });
     }
     if (req.user.role === Role.OWNER) {
       return next();
@@ -51,7 +51,7 @@ export function requirePermission(key: PermissionKey) {
     if (await hasPermission(req.user.sub, key)) {
       return next();
     }
-    return res.status(403).json({ error: "Insufficient permissions" });
+    return res.status(403).json({ error: "Bu işlem için yetkiniz yok" });
   };
 }
 
@@ -59,7 +59,7 @@ export function requirePermission(key: PermissionKey) {
 export function requireRoleOrPermission(roles: Role[], key: PermissionKey) {
   return async (req: Request, res: Response, next: NextFunction) => {
     if (!req.user) {
-      return res.status(401).json({ error: "Not authenticated" });
+      return res.status(401).json({ error: "Giriş yapmanız gerekiyor" });
     }
     if (req.user.role === Role.OWNER || roles.includes(req.user.role)) {
       return next();
@@ -67,6 +67,6 @@ export function requireRoleOrPermission(roles: Role[], key: PermissionKey) {
     if (await hasPermission(req.user.sub, key)) {
       return next();
     }
-    return res.status(403).json({ error: "Insufficient permissions" });
+    return res.status(403).json({ error: "Bu işlem için yetkiniz yok" });
   };
 }

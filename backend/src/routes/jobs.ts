@@ -11,6 +11,9 @@ import {
   getJobReport,
   rateJob,
 } from "../controllers/jobsController";
+import { exportJobReportPdf } from "../controllers/exportController";
+import { listJobPhotos, uploadJobPhoto, deleteJobPhoto } from "../controllers/jobPhotosController";
+import { upload } from "../lib/upload";
 
 const router = Router();
 
@@ -24,6 +27,11 @@ router.delete("/:id", requireRole(Role.OWNER, Role.MANAGER), deleteJob);
 
 router.post("/:id/report", requireRole(Role.STAFF), createJobReport);
 router.get("/:id/report", getJobReport);
+router.get("/:id/report/pdf", exportJobReportPdf);
 router.patch("/:id/rate", requireRole(Role.CUSTOMER), rateJob);
+
+router.get("/:id/photos", listJobPhotos);
+router.post("/:id/photos", upload.single("photo"), uploadJobPhoto);
+router.delete("/:id/photos/:photoId", deleteJobPhoto);
 
 export default router;

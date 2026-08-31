@@ -52,7 +52,7 @@ export function NotificationDrawer({ open, onClose, onChanged }: NotificationDra
     if (!open) return;
     setLoading(true);
     api
-      .get<{ data: AppNotification[] }>("/notifications")
+      .get<{ data: AppNotification[] }>("/notifications?limit=100")
       .then((res) => setNotifications(res.data))
       .catch(() => setNotifications([]))
       .finally(() => setLoading(false));

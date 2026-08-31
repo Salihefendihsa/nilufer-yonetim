@@ -1,13 +1,22 @@
 import type { Request, Response } from "express";
 import { z } from "zod";
-import { JobStatus, Role, type Prisma } from "@prisma/client";
+import { JobStatus, Role, StockMovementType, type Prisma } from "@prisma/client";
 import { prisma } from "../lib/prisma";
 import { getPagination, paginatedResponse } from "../lib/pagination";
-import { getCustomerIdForUser, getStaffIdForUser, getTeamStaffIds } from "../lib/access";
+import { getCustomerIdForUser, getStaffIdForUser, getTeamStaffIds, canAccessJob } from "../lib/access";
 import { idParam } from "../lib/params";
 import { notifyUser } from "../lib/notify";
+import { buildGoogleCalendarLink } from "../lib/googleCalendar";
+import { checkLowStockAndNotify } from "../lib/reminders";
+import { saveBase64Image } from "../lib/upload";
 
 const MANAGEMENT_ROLES: Role[] = [Role.OWNER, Role.MANAGER];
+
+function withCalendarLink<T extends { serviceType: string; scheduledAt: Date | null; notes: string | null }>(
+  job: T
+): T & { calendarLink: string | null } {
+  return { ...job, calendarLink: buildGoogleCalendarLink(job) };
+}
 
 const createSchema = z.object({
   customerId: z.string().uuid(),
@@ -37,10 +46,13 @@ const teamLeadUpdateSchema = z.object({
 });
 
 const reportSchema = z.object({
-  productsUsed: z.string().min(1),
+  productId: z.string().uuid().optional(),
+  quantity: z.number().positive().optional(),
+  productsUsed: z.string().min(1).optional(),
   dosage: z.string().min(1),
   notes: z.string().optional(),
   signatureUrl: z.string().optional(),
+  signatureBase64: z.string().optional(),
   pdfUrl: z.string().optional(),
 });
 
@@ -91,6 +103,17 @@ export async function listJobs(req: Request, res: Response) {
       end.setHours(23, 59, 59, 999);
       where.scheduledAt = { gte: start, lte: end };
     }
+  } else if (typeof req.query.from === "string" || typeof req.query.to === "string") {
+    const range: { gte?: Date; lte?: Date } = {};
+    if (typeof req.query.from === "string") {
+      const from = new Date(req.query.from);
+      if (!Number.isNaN(from.getTime())) range.gte = from;
+    }
+    if (typeof req.query.to === "string") {
+      const to = new Date(req.query.to);
+      if (!Number.isNaN(to.getTime())) range.lte = to;
+    }
+    if (range.gte || range.lte) where.scheduledAt = range;
   }
 
   const [data, total] = await Promise.all([
@@ -98,40 +121,26 @@ export async function listJobs(req: Request, res: Response) {
     prisma.job.count({ where }),
   ]);
 
-  return res.json(paginatedResponse(data, total, page, limit));
-}
-
-async function canAccessJob(user: { sub: string; role: Role }, job: { customerId: string; assignedStaffId: string | null }) {
-  if (MANAGEMENT_ROLES.includes(user.role)) return true;
-  if (user.role === Role.TEAM_LEAD) {
-    const teamIds = await getTeamStaffIds(user.sub);
-    return job.assignedStaffId !== null && teamIds.includes(job.assignedStaffId);
-  }
-  if (user.role === Role.STAFF) {
-    const staffId = await getStaffIdForUser(user.sub);
-    return staffId !== null && staffId === job.assignedStaffId;
-  }
-  const customerId = await getCustomerIdForUser(user.sub);
-  return customerId !== null && customerId === job.customerId;
+  return res.json(paginatedResponse(data.map(withCalendarLink), total, page, limit));
 }
 
 export async function getJob(req: Request, res: Response) {
   const job = await prisma.job.findUnique({ where: { id: idParam(req) } });
   if (!job) {
-    return res.status(404).json({ error: "Job not found" });
+    return res.status(404).json({ error: "İş bulunamadı" });
   }
 
   if (!(await canAccessJob(req.user!, job))) {
-    return res.status(403).json({ error: "Insufficient permissions" });
+    return res.status(403).json({ error: "Bu işlem için yetkiniz yok" });
   }
 
-  return res.json(job);
+  return res.json(withCalendarLink(job));
 }
 
 export async function createJob(req: Request, res: Response) {
   const data = createSchema.parse(req.body);
   const job = await prisma.job.create({ data });
-  return res.status(201).json(job);
+  return res.status(201).json(withCalendarLink(job));
 }
 
 async function notifyJobCompleted(jobId: string, customerId: string) {
@@ -144,7 +153,7 @@ async function notifyJobCompleted(jobId: string, customerId: string) {
 export async function updateJob(req: Request, res: Response) {
   const existing = await prisma.job.findUnique({ where: { id: idParam(req) } });
   if (!existing) {
-    return res.status(404).json({ error: "Job not found" });
+    return res.status(404).json({ error: "İş bulunamadı" });
   }
 
   const user = req.user!;
@@ -154,41 +163,41 @@ export async function updateJob(req: Request, res: Response) {
     const completedAt = data.status === JobStatus.COMPLETED ? new Date() : undefined;
     const job = await prisma.job.update({ where: { id: idParam(req) }, data: { ...data, ...(completedAt && { completedAt }) } });
     if (completedAt) await notifyJobCompleted(job.id, job.customerId);
-    return res.json(job);
+    return res.json(withCalendarLink(job));
   }
 
   if (user.role === Role.TEAM_LEAD) {
     const teamIds = await getTeamStaffIds(user.sub);
     if (!existing.assignedStaffId || !teamIds.includes(existing.assignedStaffId)) {
-      return res.status(403).json({ error: "Insufficient permissions" });
+      return res.status(403).json({ error: "Bu işlem için yetkiniz yok" });
     }
     const data = teamLeadUpdateSchema.parse(req.body);
     if (!teamIds.includes(data.assignedStaffId)) {
-      return res.status(400).json({ error: "Can only reassign to a member of your own team" });
+      return res.status(400).json({ error: "Sadece kendi ekibinizden birine atama yapabilirsiniz" });
     }
     const job = await prisma.job.update({ where: { id: idParam(req) }, data });
-    return res.json(job);
+    return res.json(withCalendarLink(job));
   }
 
   if (user.role === Role.STAFF) {
     const staffId = await getStaffIdForUser(user.sub);
     if (!staffId || staffId !== existing.assignedStaffId) {
-      return res.status(403).json({ error: "Insufficient permissions" });
+      return res.status(403).json({ error: "Bu işlem için yetkiniz yok" });
     }
     const data = staffUpdateSchema.parse(req.body);
     const completedAt = data.status === JobStatus.COMPLETED ? new Date() : undefined;
     const job = await prisma.job.update({ where: { id: idParam(req) }, data: { ...data, ...(completedAt && { completedAt }) } });
     if (completedAt) await notifyJobCompleted(job.id, job.customerId);
-    return res.json(job);
+    return res.json(withCalendarLink(job));
   }
 
-  return res.status(403).json({ error: "Insufficient permissions" });
+  return res.status(403).json({ error: "Bu işlem için yetkiniz yok" });
 }
 
 export async function deleteJob(req: Request, res: Response) {
   const existing = await prisma.job.findUnique({ where: { id: idParam(req) } });
   if (!existing) {
-    return res.status(404).json({ error: "Job not found" });
+    return res.status(404).json({ error: "İş bulunamadı" });
   }
 
   await prisma.job.delete({ where: { id: idParam(req) } });
@@ -199,18 +208,58 @@ export async function createJobReport(req: Request, res: Response) {
   const user = req.user!;
   const job = await prisma.job.findUnique({ where: { id: idParam(req) } });
   if (!job) {
-    return res.status(404).json({ error: "Job not found" });
+    return res.status(404).json({ error: "İş bulunamadı" });
   }
 
   const staffId = await getStaffIdForUser(user.sub);
   if (!staffId || staffId !== job.assignedStaffId) {
-    return res.status(403).json({ error: "Insufficient permissions" });
+    return res.status(403).json({ error: "Bu işlem için yetkiniz yok" });
   }
 
-  const data = reportSchema.parse(req.body);
-  const report = await prisma.jobReport.create({
-    data: { ...data, jobId: job.id, staffId },
+  const { signatureBase64, ...data } = reportSchema.parse(req.body);
+
+  if (data.productId && !data.quantity) {
+    return res.status(400).json({ error: "productId belirtildiğinde miktar zorunludur" });
+  }
+
+  if (data.productId && data.quantity) {
+    const product = await prisma.product.findUnique({ where: { id: data.productId } });
+    if (!product) {
+      return res.status(404).json({ error: "Ürün bulunamadı" });
+    }
+  }
+
+  if (signatureBase64) {
+    data.signatureUrl = saveBase64Image(signatureBase64, "imza");
+  }
+
+  const report = await prisma.$transaction(async (tx) => {
+    const created = await tx.jobReport.create({
+      data: { ...data, jobId: job.id, staffId },
+    });
+
+    if (data.productId && data.quantity) {
+      await tx.product.update({
+        where: { id: data.productId },
+        data: { currentStock: { decrement: data.quantity } },
+      });
+      await tx.stockMovement.create({
+        data: {
+          productId: data.productId,
+          type: StockMovementType.OUT,
+          quantity: data.quantity,
+          relatedJobReportId: created.id,
+          note: `İş raporu: ${job.serviceType}`,
+        },
+      });
+    }
+
+    return created;
   });
+
+  if (data.productId && data.quantity) {
+    await checkLowStockAndNotify(data.productId);
+  }
 
   return res.status(201).json(report);
 }
@@ -218,16 +267,16 @@ export async function createJobReport(req: Request, res: Response) {
 export async function getJobReport(req: Request, res: Response) {
   const job = await prisma.job.findUnique({ where: { id: idParam(req) } });
   if (!job) {
-    return res.status(404).json({ error: "Job not found" });
+    return res.status(404).json({ error: "İş bulunamadı" });
   }
 
   if (!(await canAccessJob(req.user!, job))) {
-    return res.status(403).json({ error: "Insufficient permissions" });
+    return res.status(403).json({ error: "Bu işlem için yetkiniz yok" });
   }
 
   const report = await prisma.jobReport.findFirst({ where: { jobId: job.id } });
   if (!report) {
-    return res.status(404).json({ error: "Job report not found" });
+    return res.status(404).json({ error: "İş raporu bulunamadı" });
   }
 
   return res.json(report);
@@ -237,16 +286,16 @@ export async function rateJob(req: Request, res: Response) {
   const user = req.user!;
   const job = await prisma.job.findUnique({ where: { id: idParam(req) } });
   if (!job) {
-    return res.status(404).json({ error: "Job not found" });
+    return res.status(404).json({ error: "İş bulunamadı" });
   }
 
   const customerId = await getCustomerIdForUser(user.sub);
   if (!customerId || customerId !== job.customerId) {
-    return res.status(403).json({ error: "Insufficient permissions" });
+    return res.status(403).json({ error: "Bu işlem için yetkiniz yok" });
   }
 
   if (job.status !== JobStatus.COMPLETED) {
-    return res.status(400).json({ error: "Only completed jobs can be rated" });
+    return res.status(400).json({ error: "Sadece tamamlanmış işler değerlendirilebilir" });
   }
 
   const data = rateSchema.parse(req.body);

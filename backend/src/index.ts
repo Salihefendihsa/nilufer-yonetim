@@ -1,4 +1,5 @@
 import "dotenv/config";
+import path from "path";
 import express from "express";
 import cors from "cors";
 import helmet from "helmet";
@@ -18,6 +19,16 @@ import conversationRoutes from "./routes/conversations";
 import notificationRoutes from "./routes/notifications";
 import auditLogRoutes from "./routes/auditLogs";
 import systemRoutes from "./routes/system";
+import productRoutes from "./routes/products";
+import searchRoutes from "./routes/search";
+import adminRoutes from "./routes/admin";
+import settingsRoutes from "./routes/settings";
+import serviceTypeRoutes from "./routes/serviceTypes";
+import districtRoutes from "./routes/districts";
+import { startRecurringJobsCron, startReminderCrons } from "./lib/cron";
+import notificationPreferenceRoutes from "./routes/notificationPreferences";
+import analyticsRoutes from "./routes/analytics";
+import sessionRoutes from "./routes/sessions";
 import { errorHandler } from "./middleware/errorHandler";
 import { recordRequest } from "./lib/metrics";
 
@@ -25,7 +36,7 @@ const app = express();
 
 app.use(helmet());
 app.use(cors());
-app.use(express.json());
+app.use(express.json({ limit: "5mb" })); // room for a base64-encoded signature image in the JSON body
 app.use(
   rateLimit({
     windowMs: 15 * 60 * 1000,
@@ -38,6 +49,15 @@ app.use((_req, _res, next) => {
 });
 
 app.get("/health", (_req, res) => res.json({ status: "ok" }));
+
+// Cross-origin resource policy override so the web app (a different origin in dev)
+// can actually load these images in <img>/canvas tags — helmet defaults to same-origin.
+app.use(
+  "/uploads",
+  express.static(path.join(__dirname, "..", "uploads"), {
+    setHeaders: (res) => res.setHeader("Cross-Origin-Resource-Policy", "cross-origin"),
+  })
+);
 
 app.use("/auth", authRoutes);
 app.use("/customers", customerRoutes);
@@ -53,6 +73,15 @@ app.use("/conversations", conversationRoutes);
 app.use("/notifications", notificationRoutes);
 app.use("/audit-logs", auditLogRoutes);
 app.use("/system", systemRoutes);
+app.use("/products", productRoutes);
+app.use("/search", searchRoutes);
+app.use("/admin", adminRoutes);
+app.use("/settings", settingsRoutes);
+app.use("/service-types", serviceTypeRoutes);
+app.use("/districts", districtRoutes);
+app.use("/notification-preferences", notificationPreferenceRoutes);
+app.use("/analytics", analyticsRoutes);
+app.use("/sessions", sessionRoutes);
 
 app.use(errorHandler);
 
@@ -60,4 +89,6 @@ const PORT = process.env.PORT ? Number(process.env.PORT) : 4000;
 
 app.listen(PORT, () => {
   console.log(`Server listening on port ${PORT}`);
+  startRecurringJobsCron();
+  startReminderCrons();
 });

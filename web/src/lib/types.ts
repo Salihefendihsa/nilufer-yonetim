@@ -24,6 +24,7 @@ export interface Job {
   rating: number | null;
   ratingComment: string | null;
   createdAt: string;
+  calendarLink: string | null;
 }
 
 export interface Payment {
@@ -43,6 +44,8 @@ export interface Contract {
   durationMonths: number;
   status: string;
   pdfUrl: string | null;
+  recurrenceType: "MONTHLY" | "QUARTERLY" | null;
+  nextGenerationDate: string | null;
   createdAt: string;
 }
 
@@ -50,7 +53,9 @@ export interface JobReport {
   id: string;
   jobId: string;
   staffId: string;
-  productsUsed: string;
+  productId: string | null;
+  quantity: number | null;
+  productsUsed: string | null;
   dosage: string;
   notes: string | null;
   signatureUrl: string | null;
@@ -141,6 +146,15 @@ export interface ConversationSummary {
   updatedAt: string;
 }
 
+export interface AllConversationSummary {
+  id: string;
+  participantA: ConversationParticipant;
+  participantB: ConversationParticipant;
+  lastMessage: MessageItem | null;
+  messageCount: number;
+  updatedAt: string;
+}
+
 export interface AvailableContact {
   id: string;
   fullName: string;
@@ -181,6 +195,111 @@ export interface SystemHealth {
   uptimeSeconds: number;
   totalRequestsToday: number;
   errorCount24h: number;
+  emailConfigured: boolean;
+}
+
+export interface Product {
+  id: string;
+  name: string;
+  unit: string;
+  currentStock: number;
+  criticalThreshold: number;
+  createdAt: string;
+}
+
+export type RecurrenceType = "MONTHLY" | "QUARTERLY";
+
+export interface StaffLeaderboardEntry {
+  staffId: string;
+  fullName: string;
+  position: string;
+  completedJobsThisMonth: number;
+  averageRating: number | null;
+}
+
+export interface SearchResults {
+  customers: { id: string; label: string; sublabel: string }[];
+  staff: { id: string; label: string; sublabel: string }[];
+  jobs: { id: string; label: string; sublabel: string }[];
+}
+
+export interface ServiceType {
+  id: string;
+  name: string;
+  isActive: boolean;
+  createdAt: string;
+}
+
+export interface District {
+  id: string;
+  name: string;
+  isActive: boolean;
+}
+
+export type JobPhotoType = "BEFORE" | "AFTER";
+
+export interface JobPhoto {
+  id: string;
+  jobId: string;
+  url: string;
+  type: JobPhotoType;
+  uploadedByUserId: string;
+  createdAt: string;
+}
+
+export interface StaffCertification {
+  id: string;
+  staffId: string;
+  name: string;
+  issuedDate: string;
+  expiryDate: string;
+  documentUrl: string | null;
+  createdAt: string;
+}
+
+export interface ExpiringCertification extends StaffCertification {
+  staff: { user: { fullName: string } };
+}
+
+export interface RevenueTrendPoint {
+  label: string;
+  total: number;
+}
+
+export interface ServiceBreakdownEntry {
+  serviceType: string;
+  count: number;
+  percentage: number;
+}
+
+export interface TopDistrictEntry {
+  district: string;
+  count: number;
+}
+
+export interface CustomerRetention {
+  newCustomers: number;
+  returningCustomers: number;
+}
+
+export interface SessionReportEntry {
+  userId: string;
+  fullName: string;
+  role: string;
+  totalSessions: number;
+  averageDurationMinutes: number;
+  lastLoginAt: string;
+  isApproximate: boolean;
+}
+
+export type SettingsMap = Record<string, string>;
+
+export interface NotificationPreference {
+  id: string;
+  userId: string;
+  emailEnabled: boolean;
+  dailyDigestEnabled: boolean;
+  updatedAt: string;
 }
 
 export interface Pagination {

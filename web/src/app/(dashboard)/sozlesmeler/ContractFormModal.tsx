@@ -20,12 +20,21 @@ const STATUS_LABELS: Record<string, string> = {
   CANCELLED: "İptal Edildi",
 };
 
+const RECURRENCE_OPTIONS = ["", "MONTHLY", "QUARTERLY"];
+const RECURRENCE_LABELS: Record<string, string> = {
+  "": "Yok",
+  MONTHLY: "Aylık",
+  QUARTERLY: "3 Aylık",
+};
+
 export function ContractFormModal({ open, onClose, onSaved, customers }: ContractFormModalProps) {
   const [customerId, setCustomerId] = useState("");
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
   const [durationMonths, setDurationMonths] = useState("12");
   const [status, setStatus] = useState(STATUS_OPTIONS[0]);
+  const [serviceType, setServiceType] = useState("");
+  const [recurrenceType, setRecurrenceType] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
 
@@ -36,6 +45,8 @@ export function ContractFormModal({ open, onClose, onSaved, customers }: Contrac
       setEndDate("");
       setDurationMonths("12");
       setStatus(STATUS_OPTIONS[0]);
+      setServiceType("");
+      setRecurrenceType("");
       setError(null);
     }
   }, [open]);
@@ -52,6 +63,8 @@ export function ContractFormModal({ open, onClose, onSaved, customers }: Contrac
         endDate,
         durationMonths: Number(durationMonths),
         status,
+        serviceType: serviceType || undefined,
+        recurrenceType: recurrenceType || null,
       });
       onSaved();
       onClose();
@@ -113,7 +126,23 @@ export function ContractFormModal({ open, onClose, onSaved, customers }: Contrac
           </select>
         </div>
 
-        {error && <p className="rounded-2xl bg-primary-red/10 px-4 py-3 text-sm text-primary-redLight">{error}</p>}
+        <div className="flex flex-col gap-1.5">
+          <label className="text-sm font-medium text-text-secondary">Hizmet Türü (opsiyonel)</label>
+          <input value={serviceType} onChange={(e) => setServiceType(e.target.value)} className="input" placeholder="Örn. Periyodik Haşere Kontrolü" />
+        </div>
+
+        <div className="flex flex-col gap-1.5">
+          <label className="text-sm font-medium text-text-secondary">Tekrarlama</label>
+          <select value={recurrenceType} onChange={(e) => setRecurrenceType(e.target.value)} className="input">
+            {RECURRENCE_OPTIONS.map((r) => (
+              <option key={r} value={r}>
+                {RECURRENCE_LABELS[r]}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        {error &&<p className="rounded-2xl bg-primary-red/10 px-4 py-3 text-sm text-primary-redLight">{error}</p>}
 
         <div className="mt-2 flex justify-end gap-3">
           <button type="button" onClick={onClose} className="rounded-2xl px-4 py-2.5 text-sm font-medium text-text-secondary transition hover:bg-white/5">

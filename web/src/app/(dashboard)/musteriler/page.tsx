@@ -1,12 +1,12 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { Plus, Users } from "lucide-react";
+import { Plus, Users, FileSpreadsheet } from "lucide-react";
 import { RequireRole } from "@/components/RequireRole";
 import { Table, type Column } from "@/components/Table";
 import { EmptyState } from "@/components/EmptyState";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
-import { api, ApiError } from "@/lib/api";
+import { api, ApiError, downloadFile } from "@/lib/api";
 import { formatDate, currencyFormatter } from "@/lib/format";
 import type { Customer, CustomerDetail, Paginated } from "@/lib/types";
 import { CustomerFormModal } from "./CustomerFormModal";
@@ -115,17 +115,27 @@ function CustomersPageContent() {
           <h1 className="font-serif text-3xl font-semibold tracking-tight text-text-primary">Müşteriler</h1>
           <p className="mt-1 text-sm text-text-secondary">Tüm müşterilerinizi buradan yönetin.</p>
         </div>
-        <button
-          type="button"
-          onClick={() => {
-            setEditingCustomer(null);
-            setFormOpen(true);
-          }}
-          className="flex items-center gap-2 rounded-2xl bg-gradient-to-r from-primary-green to-primary-green/90 px-4 py-2.5 text-sm font-semibold text-white transition hover:shadow-[0_0_20px_rgba(212,174,61,0.22)]"
-        >
-          <Plus size={16} strokeWidth={2} />
-          Yeni Müşteri
-        </button>
+        <div className="flex items-center gap-3">
+          <button
+            type="button"
+            onClick={() => downloadFile("/customers/export/excel", "musteriler.xlsx")}
+            className="flex items-center gap-2 rounded-2xl border border-white/10 px-4 py-2.5 text-sm font-medium text-text-secondary transition hover:bg-white/5"
+          >
+            <FileSpreadsheet size={16} strokeWidth={1.75} />
+            Excel&apos;e Aktar
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              setEditingCustomer(null);
+              setFormOpen(true);
+            }}
+            className="flex items-center gap-2 rounded-2xl bg-gradient-to-r from-primary-green to-primary-green/90 px-4 py-2.5 text-sm font-semibold text-white transition hover:shadow-[0_0_20px_rgba(212,174,61,0.22)]"
+          >
+            <Plus size={16} strokeWidth={2} />
+            Yeni Müşteri
+          </button>
+        </div>
       </div>
 
       {error && <p className="rounded-2xl bg-primary-red/10 px-4 py-3 text-sm text-primary-redLight">{error}</p>}

@@ -1,10 +1,11 @@
 import type { Request, Response } from "express";
 import { z } from "zod";
-import { Role, type Prisma } from "@prisma/client";
+import { Role, RecurrenceType, type Prisma } from "@prisma/client";
 import { prisma } from "../lib/prisma";
 import { getPagination, paginatedResponse } from "../lib/pagination";
 import { getCustomerIdForUser } from "../lib/access";
 import { idParam } from "../lib/params";
+import { addRecurrencePeriod } from "../lib/recurrence";
 
 const createSchema = z.object({
   customerId: z.string().uuid(),
@@ -12,10 +13,21 @@ const createSchema = z.object({
   endDate: z.coerce.date(),
   durationMonths: z.number().int().positive(),
   status: z.string().min(1),
+  serviceType: z.string().optional(),
   pdfUrl: z.string().optional(),
+  recurrenceType: z.enum(RecurrenceType).nullable().optional(),
 });
 
 const updateSchema = createSchema.partial();
+
+function computeNextGenerationDate(
+  recurrenceType: RecurrenceType | null | undefined,
+  effectiveStartDate: Date
+): Date | null | undefined {
+  if (recurrenceType === undefined) return undefined;
+  if (recurrenceType === null) return null;
+  return addRecurrencePeriod(effectiveStartDate, recurrenceType);
+}
 
 export async function listContracts(req: Request, res: Response) {
   const { skip, take, page, limit } = getPagination(req);
@@ -62,14 +74,14 @@ export async function getExpiringContracts(_req: Request, res: Response) {
 export async function getContract(req: Request, res: Response) {
   const contract = await prisma.contract.findUnique({ where: { id: idParam(req) } });
   if (!contract) {
-    return res.status(404).json({ error: "Contract not found" });
+    return res.status(404).json({ error: "Sözleşme bulunamadı" });
   }
 
   const user = req.user!;
   if (user.role === Role.CUSTOMER) {
     const customerId = await getCustomerIdForUser(user.sub);
     if (customerId !== contract.customerId) {
-      return res.status(403).json({ error: "Insufficient permissions" });
+      return res.status(403).json({ error: "Bu işlem için yetkiniz yok" });
     }
   }
 
@@ -78,7 +90,9 @@ export async function getContract(req: Request, res: Response) {
 
 export async function createContract(req: Request, res: Response) {
   const data = createSchema.parse(req.body);
-  const contract = await prisma.contract.create({ data });
+  const nextGenerationDate = computeNextGenerationDate(data.recurrenceType, data.startDate);
+
+  const contract = await prisma.contract.create({ data: { ...data, nextGenerationDate } });
   return res.status(201).json(contract);
 }
 
@@ -87,9 +101,15 @@ export async function updateContract(req: Request, res: Response) {
 
   const existing = await prisma.contract.findUnique({ where: { id: idParam(req) } });
   if (!existing) {
-    return res.status(404).json({ error: "Contract not found" });
+    return res.status(404).json({ error: "Sözleşme bulunamadı" });
   }
 
-  const contract = await prisma.contract.update({ where: { id: idParam(req) }, data });
+  const effectiveStartDate = data.startDate ?? existing.startDate;
+  const nextGenerationDate = computeNextGenerationDate(data.recurrenceType, effectiveStartDate);
+
+  const contract = await prisma.contract.update({
+    where: { id: idParam(req) },
+    data: { ...data, ...(nextGenerationDate !== undefined && { nextGenerationDate }) },
+  });
   return res.json(contract);
 }

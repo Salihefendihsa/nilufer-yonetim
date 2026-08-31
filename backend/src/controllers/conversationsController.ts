@@ -1,5 +1,6 @@
 import type { Request, Response } from "express";
 import { z } from "zod";
+import { Role } from "@prisma/client";
 import { prisma } from "../lib/prisma";
 import { getPagination, paginatedResponse } from "../lib/pagination";
 import { idParam } from "../lib/params";
@@ -48,14 +49,43 @@ export async function listConversations(req: Request, res: Response) {
   return res.json({ data: result });
 }
 
+/** OWNER-only: every conversation in the system, regardless of whether OWNER is a participant. */
+export async function listAllConversations(_req: Request, res: Response) {
+  const conversations = await prisma.conversation.findMany({
+    include: {
+      participantA: { select: participantSelect },
+      participantB: { select: participantSelect },
+      messages: { orderBy: { createdAt: "desc" }, take: 1 },
+      _count: { select: { messages: true } },
+    },
+  });
+
+  const result = conversations
+    .map((c) => {
+      const lastMessage = c.messages[0] ?? null;
+      return {
+        id: c.id,
+        participantA: c.participantA,
+        participantB: c.participantB,
+        lastMessage,
+        messageCount: c._count.messages,
+        updatedAt: lastMessage?.createdAt ?? c.createdAt,
+      };
+    })
+    .sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime());
+
+  return res.json({ data: result });
+}
+
 export async function getMessages(req: Request, res: Response) {
   const userId = req.user!.sub;
   const conversation = await prisma.conversation.findUnique({ where: { id: idParam(req) } });
   if (!conversation) {
-    return res.status(404).json({ error: "Conversation not found" });
+    return res.status(404).json({ error: "Konuşma bulunamadı" });
   }
-  if (conversation.participantAId !== userId && conversation.participantBId !== userId) {
-    return res.status(403).json({ error: "Insufficient permissions" });
+  const isParticipant = conversation.participantAId === userId || conversation.participantBId === userId;
+  if (!isParticipant && req.user!.role !== Role.OWNER) {
+    return res.status(403).json({ error: "Bu işlem için yetkiniz yok" });
   }
 
   const { skip, take, page, limit } = getPagination(req);
@@ -79,17 +109,17 @@ export async function createConversation(req: Request, res: Response) {
   const { participantId } = createConversationSchema.parse(req.body);
 
   if (participantId === me.sub) {
-    return res.status(400).json({ error: "Cannot start a conversation with yourself" });
+    return res.status(400).json({ error: "Kendinizle konuşma başlatamazsınız" });
   }
 
   const targetUser = await prisma.user.findUnique({ where: { id: participantId } });
   if (!targetUser) {
-    return res.status(404).json({ error: "User not found" });
+    return res.status(404).json({ error: "Kullanıcı bulunamadı" });
   }
 
   const allowed = await canUsersMessage({ id: me.sub, role: me.role }, { id: targetUser.id, role: targetUser.role });
   if (!allowed) {
-    return res.status(403).json({ error: "You are not allowed to message this user" });
+    return res.status(403).json({ error: "Bu kullanıcıya mesaj gönderme izniniz yok" });
   }
 
   const [participantAId, participantBId] = orderedPair(me.sub, participantId);
@@ -116,10 +146,10 @@ export async function sendMessage(req: Request, res: Response) {
   const userId = req.user!.sub;
   const conversation = await prisma.conversation.findUnique({ where: { id: idParam(req) } });
   if (!conversation) {
-    return res.status(404).json({ error: "Conversation not found" });
+    return res.status(404).json({ error: "Konuşma bulunamadı" });
   }
   if (conversation.participantAId !== userId && conversation.participantBId !== userId) {
-    return res.status(403).json({ error: "Insufficient permissions" });
+    return res.status(403).json({ error: "Bu işlem için yetkiniz yok" });
   }
 
   const { content } = sendMessageSchema.parse(req.body);
@@ -138,10 +168,10 @@ export async function markConversationRead(req: Request, res: Response) {
   const userId = req.user!.sub;
   const conversation = await prisma.conversation.findUnique({ where: { id: idParam(req) } });
   if (!conversation) {
-    return res.status(404).json({ error: "Conversation not found" });
+    return res.status(404).json({ error: "Konuşma bulunamadı" });
   }
   if (conversation.participantAId !== userId && conversation.participantBId !== userId) {
-    return res.status(403).json({ error: "Insufficient permissions" });
+    return res.status(403).json({ error: "Bu işlem için yetkiniz yok" });
   }
 
   await prisma.message.updateMany({

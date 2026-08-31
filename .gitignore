@@ -12,6 +12,10 @@ backend/dist/
 web/.next/
 web/out/
 
+# Uploaded files (keep folder structure via .gitkeep, not the files themselves)
+backend/uploads/*
+!backend/uploads/.gitkeep
+
 # Logs
 *.log
 backend.log

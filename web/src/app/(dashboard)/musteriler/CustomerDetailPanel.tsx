@@ -3,8 +3,8 @@
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { AnimatePresence, motion } from "framer-motion";
-import { X, Briefcase, Wallet, Pencil, Trash2 } from "lucide-react";
-import { api, ApiError } from "@/lib/api";
+import { X, Briefcase, Wallet, Pencil, Trash2, FileDown } from "lucide-react";
+import { api, ApiError, downloadFile } from "@/lib/api";
 import { formatDate, currencyFormatter } from "@/lib/format";
 import { StatusBadge } from "@/components/StatusBadge";
 import type { CustomerDetail } from "@/lib/types";
@@ -127,7 +127,20 @@ export function CustomerDetailPanel({ customerId, onClose, onEdit, onDelete }: C
                             <p className="text-sm font-medium text-text-primary">{job.serviceType}</p>
                             <p className="text-xs text-text-faint">{formatDate(job.scheduledAt)}</p>
                           </div>
-                          <StatusBadge status={job.status} />
+                          <div className="flex items-center gap-2">
+                            <StatusBadge status={job.status} />
+                            {job.status === "COMPLETED" && (
+                              <button
+                                type="button"
+                                aria-label="PDF İndir"
+                                title="PDF İndir"
+                                onClick={() => downloadFile(`/jobs/${job.id}/report/pdf`, `is-raporu-${job.id}.pdf`)}
+                                className="flex h-7 w-7 items-center justify-center rounded-xl text-text-faint transition hover:bg-white/5 hover:text-text-primary"
+                              >
+                                <FileDown size={15} strokeWidth={1.75} />
+                              </button>
+                            )}
+                          </div>
                         </li>
                       ))}
                     </ul>

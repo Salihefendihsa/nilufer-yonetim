@@ -8,11 +8,13 @@ import {
   updateCustomer,
   deleteCustomer,
 } from "../controllers/customersController";
+import { exportCustomersExcel } from "../controllers/exportController";
 
 const router = Router();
 
 router.use(requireAuth);
 
+router.get("/export/excel", requireRole(Role.OWNER, Role.MANAGER), exportCustomersExcel);
 router.get("/", requireRole(Role.OWNER, Role.MANAGER, Role.STAFF), listCustomers);
 router.get("/:id", requireRole(Role.OWNER, Role.MANAGER, Role.STAFF), getCustomer);
 router.post("/", requireRole(Role.OWNER, Role.MANAGER), createCustomer);

@@ -1,12 +1,12 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { Plus, Wallet, TrendingUp, Receipt, AlertCircle, PiggyBank, Check, X, HandCoins } from "lucide-react";
+import { Plus, Wallet, TrendingUp, Receipt, AlertCircle, PiggyBank, Check, X, HandCoins, FileSpreadsheet, FileDown } from "lucide-react";
 import { RequireRole } from "@/components/RequireRole";
 import { StatCard } from "@/components/StatCard";
 import { Table, type Column } from "@/components/Table";
 import { EmptyState } from "@/components/EmptyState";
-import { api, ApiError } from "@/lib/api";
+import { api, ApiError, downloadFile } from "@/lib/api";
 import { currencyFormatter, formatDate } from "@/lib/format";
 import type { Customer, Payment, Paginated, AdvanceRequest } from "@/lib/types";
 import { PaymentFormModal } from "./PaymentFormModal";
@@ -98,6 +98,20 @@ function PaymentsPageContent() {
     { header: "Tutar", accessor: (row) => <span className="font-medium text-text-primary">{currencyFormatter.format(row.amount)}</span> },
     { header: "Tür", accessor: (row) => PAYMENT_TYPE_LABELS[row.paymentType] ?? row.paymentType },
     { header: "Tarih", accessor: (row) => formatDate(row.createdAt) },
+    {
+      header: "Makbuz",
+      accessor: (row) => (
+        <button
+          type="button"
+          aria-label="Makbuz İndir"
+          title="Makbuz İndir"
+          onClick={() => downloadFile(`/payments/${row.id}/receipt/pdf`, `makbuz-${row.id}.pdf`)}
+          className="flex h-7 w-7 items-center justify-center rounded-xl text-text-faint transition hover:bg-white/5 hover:text-text-primary"
+        >
+          <FileDown size={15} strokeWidth={1.75} />
+        </button>
+      ),
+    },
   ];
 
   return (
@@ -107,14 +121,24 @@ function PaymentsPageContent() {
           <h1 className="font-serif text-3xl font-semibold tracking-tight text-text-primary">Para</h1>
           <p className="mt-1 text-sm text-text-secondary">Tahsilatlarınızı buradan takip edin.</p>
         </div>
-        <button
-          type="button"
-          onClick={() => setFormOpen(true)}
-          className="flex items-center gap-2 rounded-2xl bg-gradient-to-r from-primary-green to-primary-green/90 px-4 py-2.5 text-sm font-semibold text-white transition hover:shadow-[0_0_20px_rgba(212,174,61,0.22)]"
-        >
-          <Plus size={16} strokeWidth={2} />
-          Tahsilat Kaydet
-        </button>
+        <div className="flex items-center gap-3">
+          <button
+            type="button"
+            onClick={() => downloadFile("/payments/export/excel", "odemeler.xlsx")}
+            className="flex items-center gap-2 rounded-2xl border border-white/10 px-4 py-2.5 text-sm font-medium text-text-secondary transition hover:bg-white/5"
+          >
+            <FileSpreadsheet size={16} strokeWidth={1.75} />
+            Excel&apos;e Aktar
+          </button>
+          <button
+            type="button"
+            onClick={() => setFormOpen(true)}
+            className="flex items-center gap-2 rounded-2xl bg-gradient-to-r from-primary-green to-primary-green/90 px-4 py-2.5 text-sm font-semibold text-white transition hover:shadow-[0_0_20px_rgba(212,174,61,0.22)]"
+          >
+            <Plus size={16} strokeWidth={2} />
+            Tahsilat Kaydet
+          </button>
+        </div>
       </div>
 
       {error && <p className="rounded-2xl bg-primary-red/10 px-4 py-3 text-sm text-primary-redLight">{error}</p>}
