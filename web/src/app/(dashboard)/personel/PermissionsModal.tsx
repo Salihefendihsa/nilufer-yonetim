@@ -57,7 +57,7 @@ export function PermissionsModal({ open, onClose, staff }: PermissionsModalProps
         <p className="py-8 text-center text-sm text-text-faint">Yükleniyor...</p>
       ) : (
         <div className="flex flex-col gap-4">
-          <ul className="flex flex-col divide-y divide-white/5">
+          <ul className="flex flex-col divide-y divide-border">
             {permissions.map((p) => (
               <li key={p.key} className="flex items-center justify-between gap-4 py-3">
                 <span className="text-sm text-text-secondary">{PERMISSION_LABELS[p.key] ?? p.key}</span>
@@ -66,18 +66,18 @@ export function PermissionsModal({ open, onClose, staff }: PermissionsModalProps
             ))}
           </ul>
 
-          {error && <p className="rounded-2xl bg-primary-red/10 px-4 py-3 text-sm text-primary-redLight">{error}</p>}
-          {saved && <p className="rounded-2xl bg-primary-green/10 px-4 py-3 text-sm text-primary-greenLight">Yetkiler kaydedildi.</p>}
+          {error && <p className="rounded-2xl border border-danger-100 bg-danger-50 px-4 py-3 text-sm text-danger-500">{error}</p>}
+          {saved && <p className="rounded-2xl bg-primary-50 px-4 py-3 text-sm text-primary-600">Yetkiler kaydedildi.</p>}
 
           <div className="mt-2 flex justify-end gap-3">
-            <button type="button" onClick={onClose} className="rounded-2xl px-4 py-2.5 text-sm font-medium text-text-secondary transition hover:bg-white/5">
+            <button type="button" onClick={onClose} className="rounded-2xl px-4 py-2.5 text-sm font-medium text-text-secondary transition hover:bg-surface-subtle">
               Kapat
             </button>
             <button
               type="button"
               onClick={handleSave}
               disabled={saving}
-              className="rounded-2xl bg-gradient-to-r from-primary-green to-primary-green/90 px-4 py-2.5 text-sm font-semibold text-white transition hover:shadow-[0_0_20px_rgba(212,174,61,0.22)] disabled:opacity-60"
+              className="rounded-2xl bg-primary-600 px-4 py-2.5 text-sm font-semibold text-white shadow-card transition hover:bg-primary-700 disabled:opacity-60"
             >
               {saving ? "Kaydediliyor..." : "Kaydet"}
             </button>

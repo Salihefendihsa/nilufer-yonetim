@@ -78,17 +78,17 @@ export function CertificationsModal({ open, onClose, staff }: CertificationsModa
   return (
     <Modal open={open} onClose={onClose} title={staff ? `${staff.user.fullName} — Belgeler` : "Belgeler"}>
       <div className="flex flex-col gap-4">
-        {error && <p className="rounded-2xl bg-primary-red/10 px-4 py-3 text-sm text-primary-redLight">{error}</p>}
+        {error && <p className="rounded-2xl border border-danger-100 bg-danger-50 px-4 py-3 text-sm text-danger-500">{error}</p>}
 
         {loading ? (
           <p className="py-6 text-center text-sm text-text-faint">Yükleniyor...</p>
         ) : (
-          <ul className="flex flex-col divide-y divide-white/5">
+          <ul className="flex flex-col divide-y divide-border">
             {certifications.map((c) => (
               <li key={c.id} className="flex items-center justify-between gap-3 py-3">
                 <div>
                   <p className="text-sm font-medium text-text-primary">{c.name}</p>
-                  <p className={`mt-0.5 text-xs ${isExpiringSoon(c.expiryDate) ? "text-amber-400" : "text-text-faint"}`}>
+                  <p className={`mt-0.5 text-xs ${isExpiringSoon(c.expiryDate) ? "text-warning-500" : "text-text-faint"}`}>
                     {formatDate(c.issuedDate)} — {formatDate(c.expiryDate)}
                     {isExpiringSoon(c.expiryDate) ? " · süresi doluyor" : ""}
                   </p>
@@ -97,7 +97,7 @@ export function CertificationsModal({ open, onClose, staff }: CertificationsModa
                   type="button"
                   onClick={() => handleDelete(c.id)}
                   aria-label="Sil"
-                  className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl text-text-faint transition hover:bg-primary-redLight/10 hover:text-primary-redLight"
+                  className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl text-text-faint transition hover:bg-danger-50 hover:text-danger-500"
                 >
                   <Trash2 size={15} strokeWidth={1.75} />
                 </button>
@@ -107,7 +107,7 @@ export function CertificationsModal({ open, onClose, staff }: CertificationsModa
           </ul>
         )}
 
-        <form onSubmit={handleAdd} className="flex flex-col gap-3 border-t border-white/10 pt-4">
+        <form onSubmit={handleAdd} className="flex flex-col gap-3 border-t border-border pt-4">
           <div className="flex flex-col gap-1.5">
             <label className="text-sm font-medium text-text-secondary">Belge Adı</label>
             <input
@@ -142,13 +142,13 @@ export function CertificationsModal({ open, onClose, staff }: CertificationsModa
           </div>
 
           <div className="mt-1 flex justify-end gap-3">
-            <button type="button" onClick={onClose} className="rounded-2xl px-4 py-2.5 text-sm font-medium text-text-secondary transition hover:bg-white/5">
+            <button type="button" onClick={onClose} className="rounded-2xl px-4 py-2.5 text-sm font-medium text-text-secondary transition hover:bg-surface-subtle">
               Kapat
             </button>
             <button
               type="submit"
               disabled={saving}
-              className="rounded-2xl bg-gradient-to-r from-primary-green to-primary-green/90 px-4 py-2.5 text-sm font-semibold text-white transition hover:shadow-[0_0_20px_rgba(212,174,61,0.22)] disabled:opacity-60"
+              className="rounded-2xl bg-primary-600 px-4 py-2.5 text-sm font-semibold text-white shadow-card transition hover:bg-primary-700 disabled:opacity-60"
             >
               {saving ? "Ekleniyor..." : "Belge Ekle"}
             </button>

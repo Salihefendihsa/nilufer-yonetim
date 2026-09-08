@@ -1,14 +1,30 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
-import { Timer } from "lucide-react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { Activity, Clock3, Timer, TrendingUp, UserCheck, Users2 } from "lucide-react";
 import { RequireRole } from "@/components/RequireRole";
 import { EmptyState } from "@/components/EmptyState";
+import { PageHeader } from "@/components/PageHeader";
+import { StatCard } from "@/components/StatCard";
+import { ChartCard, DonutChart, RankBars, TrendChart } from "@/components/ChartCard";
+import { Table, type Column } from "@/components/Table";
 import { api, ApiError } from "@/lib/api";
 import { ROLE_LABELS } from "@/lib/auth";
 import type { SessionReportEntry } from "@/lib/types";
 
 const DAY_OPTIONS = [7, 30, 90];
+
+/** Rol renkleri — donut ve rozetlerde aynı eşleme kullanılır. */
+const ROLE_COLORS: Record<string, string> = {
+  OWNER: "#2F5233",
+  MANAGER: "#3D8A4E",
+  TEAM_LEAD: "#61A870",
+  STAFF: "#94C79E",
+  CUSTOMER: "#1F6FA8",
+};
+
+/** Trend grafiğinde gösterilecek gün sayısı üst sınırı (90 günde günlük çizgi okunmaz olur). */
+const MAX_TREND_DAYS = 30;
 
 function formatDuration(minutes: number): string {
   const hours = Math.floor(minutes / 60);
@@ -53,69 +69,216 @@ function UsageStatsContent() {
     load();
   }, [load]);
 
+  // Tüm görselleştirmeler tek yanıttan türetilir; ek istek yapılmaz.
+  const stats = useMemo(() => {
+    const totalSessions = rows.reduce((sum, r) => sum + r.totalSessions, 0);
+    const weightedMinutes = rows.reduce((sum, r) => sum + r.averageDurationMinutes * r.totalSessions, 0);
+    const avgDuration = totalSessions > 0 ? weightedMinutes / totalSessions : 0;
+
+    // "Aktif" = son 7 gün içinde giriş yapmış kullanıcı.
+    const weekAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
+    const activeUsers = rows.filter((r) => new Date(r.lastLoginAt).getTime() >= weekAgo).length;
+
+    const busiest = rows.reduce<SessionReportEntry | null>(
+      (best, r) => (best === null || r.totalSessions > best.totalSessions ? r : best),
+      null
+    );
+
+    return { totalUsers: rows.length, totalSessions, avgDuration, activeUsers, busiest };
+  }, [rows]);
+
+  /**
+   * Kullanım trendi: kullanıcıların son giriş tarihleri güne göre toplanır.
+   * API zaman serisi dönmediği için gösterilen şey "o gün en son giriş yapmış
+   * kullanıcı sayısı" — başlıkta da bu şekilde adlandırıldı.
+   */
+  const trend = useMemo(() => {
+    const span = Math.min(days, MAX_TREND_DAYS);
+    const buckets = new Map<string, number>();
+
+    for (let i = span - 1; i >= 0; i--) {
+      const d = new Date();
+      d.setHours(0, 0, 0, 0);
+      d.setDate(d.getDate() - i);
+      buckets.set(d.toISOString().slice(0, 10), 0);
+    }
+
+    for (const row of rows) {
+      const key = new Date(row.lastLoginAt).toISOString().slice(0, 10);
+      if (buckets.has(key)) buckets.set(key, (buckets.get(key) ?? 0) + 1);
+    }
+
+    return Array.from(buckets.entries()).map(([iso, count]) => ({
+      label: new Date(iso).toLocaleDateString("tr-TR", { day: "numeric", month: "short" }),
+      count,
+    }));
+  }, [rows, days]);
+
+  const roleSlices = useMemo(() => {
+    const counts = new Map<string, number>();
+    for (const row of rows) counts.set(row.role, (counts.get(row.role) ?? 0) + 1);
+    return Array.from(counts.entries()).map(([role, value]) => ({
+      name: ROLE_LABELS[role as keyof typeof ROLE_LABELS] ?? role,
+      value,
+      color: ROLE_COLORS[role] ?? "#8B9A8E",
+    }));
+  }, [rows]);
+
+  const topUsers = useMemo(
+    () =>
+      rows
+        .slice()
+        .sort((a, b) => b.totalSessions - a.totalSessions)
+        .slice(0, 8)
+        .map((r) => ({ label: r.fullName, value: r.totalSessions, meta: `${r.totalSessions} oturum` })),
+    [rows]
+  );
+
+  const columns: Column<SessionReportEntry>[] = [
+    {
+      header: "Kullanıcı",
+      isPrimary: true,
+      avatarLabel: (row) => row.fullName,
+      accessor: (row) => row.fullName,
+    },
+    {
+      header: "Rol",
+      accessor: (row) => (
+        <span
+          className="inline-flex items-center gap-1.5 rounded-full bg-surface-subtle px-2.5 py-1 text-xs font-medium text-text-secondary"
+        >
+          <span className="h-1.5 w-1.5 rounded-full" style={{ background: ROLE_COLORS[row.role] ?? "#8B9A8E" }} />
+          {ROLE_LABELS[row.role as keyof typeof ROLE_LABELS] ?? row.role}
+        </span>
+      ),
+    },
+    {
+      header: "Toplam Oturum",
+      accessor: (row) => (
+        <span className="inline-flex items-center gap-2">
+          <span className="font-mono font-semibold text-text-primary">{row.totalSessions}</span>
+          <span className="h-1.5 w-16 overflow-hidden rounded-full bg-surface-muted">
+            <span
+              className="block h-full rounded-full bg-primary-500"
+              style={{ width: `${(row.totalSessions / Math.max(1, stats.busiest?.totalSessions ?? 1)) * 100}%` }}
+            />
+          </span>
+        </span>
+      ),
+    },
+    {
+      header: "Ortalama Süre",
+      accessor: (row) => (
+        <span className="font-mono">
+          {row.isApproximate && <span className="text-text-faint">~</span>}
+          {formatDuration(row.averageDurationMinutes)}
+        </span>
+      ),
+    },
+    { header: "Son Giriş", accessor: (row) => formatDateTime(row.lastLoginAt) },
+  ];
+
   return (
-    <div className="flex flex-col gap-8">
-      <div className="flex flex-wrap items-center justify-between gap-4">
-        <div>
-          <h1 className="font-serif text-3xl font-semibold tracking-tight text-text-primary">Kullanım İstatistikleri</h1>
-          <p className="mt-1 text-sm text-text-secondary">
-            Kullanıcıların sistemde geçirdiği süreler. <span className="text-text-faint">~</span> işaretli değerler
-            kesin çıkış zamanı bilinmediği için yaklaşık hesaplanmıştır.
-          </p>
-        </div>
-        <div className="flex gap-1.5 rounded-2xl bg-surface-card p-1.5 shadow-[0_8px_24px_rgba(0,0,0,0.22)]">
-          {DAY_OPTIONS.map((d) => (
-            <button
-              key={d}
-              type="button"
-              onClick={() => setDays(d)}
-              className={`rounded-2xl px-4 py-2 text-sm font-medium transition ${
-                days === d ? "bg-primary-green text-white" : "text-text-secondary hover:bg-white/5"
-              }`}
-            >
-              Son {d} Gün
-            </button>
-          ))}
-        </div>
-      </div>
-
-      {error && <p className="rounded-2xl bg-primary-red/10 px-4 py-3 text-sm text-primary-redLight">{error}</p>}
-
-      <div className="rounded-2xl bg-surface-card shadow-[0_8px_24px_rgba(0,0,0,0.22)]">
-        {loading ? (
-          <p className="py-16 text-center text-sm text-text-faint">Yükleniyor...</p>
-        ) : rows.length === 0 ? (
-          <EmptyState icon={Timer} title="Bu aralıkta oturum kaydı yok" />
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-white/10 text-left text-xs font-semibold text-text-faint">
-                  <th className="px-6 py-3">Kullanıcı</th>
-                  <th className="px-6 py-3">Rol</th>
-                  <th className="px-6 py-3">Toplam Oturum</th>
-                  <th className="px-6 py-3">Ortalama Süre</th>
-                  <th className="px-6 py-3">Son Giriş</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-white/5">
-                {rows.map((row) => (
-                  <tr key={row.userId}>
-                    <td className="px-6 py-3.5 font-medium text-text-primary">{row.fullName}</td>
-                    <td className="px-6 py-3.5 text-text-secondary">{ROLE_LABELS[row.role as keyof typeof ROLE_LABELS] ?? row.role}</td>
-                    <td className="px-6 py-3.5 font-mono text-text-secondary">{row.totalSessions}</td>
-                    <td className="px-6 py-3.5 font-mono text-text-secondary">
-                      {row.isApproximate && <span className="text-text-faint">~</span>}
-                      {formatDuration(row.averageDurationMinutes)}
-                    </td>
-                    <td className="px-6 py-3.5 text-text-secondary">{formatDateTime(row.lastLoginAt)}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+    <div className="flex flex-col gap-6">
+      <PageHeader
+        icon={Timer}
+        title="Kullanım İstatistikleri"
+        description="Kullanıcıların sistemde geçirdiği süreler. ~ işaretli değerler kesin çıkış zamanı bilinmediği için yaklaşıktır."
+        actions={
+          <div className="flex gap-1 rounded-2xl border border-border bg-surface-card p-1 shadow-card">
+            {DAY_OPTIONS.map((d) => (
+              <button
+                key={d}
+                type="button"
+                onClick={() => setDays(d)}
+                className={`rounded-xl px-3.5 py-2 text-sm font-medium transition ${
+                  days === d ? "bg-primary-600 text-white shadow-card" : "text-text-secondary hover:bg-surface-subtle"
+                }`}
+              >
+                Son {d} Gün
+              </button>
+            ))}
           </div>
-        )}
+        }
+      />
+
+      {error && <p className="rounded-2xl border border-danger-100 bg-danger-50 px-4 py-3 text-sm text-danger-500">{error}</p>}
+
+      {/* [Özet kartlar] */}
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <StatCard label="Toplam kullanıcı" value={loading ? "—" : String(stats.totalUsers)} icon={Users2} mono />
+        <StatCard
+          label="Toplam oturum"
+          value={loading ? "—" : String(stats.totalSessions)}
+          icon={Activity}
+          accent="blue"
+          mono
+          hint={stats.totalUsers > 0 ? `Kişi başı ${(stats.totalSessions / stats.totalUsers).toFixed(1)}` : undefined}
+        />
+        <StatCard
+          label="Son 7 günde aktif"
+          value={loading ? "—" : String(stats.activeUsers)}
+          icon={UserCheck}
+          mono
+          progress={stats.totalUsers > 0 ? (stats.activeUsers / stats.totalUsers) * 100 : 0}
+          hint={`%${stats.totalUsers > 0 ? Math.round((stats.activeUsers / stats.totalUsers) * 100) : 0} aktif`}
+        />
+        <StatCard
+          label="Ortalama oturum süresi"
+          value={loading ? "—" : formatDuration(stats.avgDuration)}
+          icon={Clock3}
+          accent="gold"
+          mono
+          hint={stats.busiest ? `En aktif: ${stats.busiest.fullName}` : undefined}
+        />
       </div>
+
+      {/* [Grafikler] */}
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
+        <ChartCard
+          title="Kullanım Trendi"
+          description={`Son ${Math.min(days, MAX_TREND_DAYS)} günde en son giriş yapan kullanıcı sayısı`}
+          icon={TrendingUp}
+          height={240}
+          className="lg:col-span-2"
+        >
+          <TrendChart
+            data={trend}
+            xKey="label"
+            series={[{ key: "count", name: "Kullanıcı" }]}
+            area
+            emptyLabel={loading ? "Yükleniyor..." : "Veri yok"}
+          />
+        </ChartCard>
+
+        <ChartCard title="Rol Dağılımı" description="Oturum açan kullanıcıların rolleri" icon={Users2} height={240}>
+          <DonutChart
+            data={roleSlices}
+            centerValue={loading ? "—" : String(stats.totalUsers)}
+            centerLabel="kullanıcı"
+            emptyLabel={loading ? "Yükleniyor..." : "Veri yok"}
+          />
+        </ChartCard>
+
+        <ChartCard
+          title="En Çok Oturum Açanlar"
+          description="Seçili aralıktaki oturum sayısına göre"
+          icon={Activity}
+          height={220}
+          className="lg:col-span-3"
+        >
+          <RankBars rows={topUsers} emptyLabel={loading ? "Yükleniyor..." : "Oturum kaydı yok"} />
+        </ChartCard>
+      </div>
+
+      {/* [Detaylı tablo] */}
+      <Table
+        columns={columns}
+        data={rows}
+        keyField={(row) => row.userId}
+        loading={loading}
+        emptyState={<EmptyState icon={Timer} title="Bu aralıkta oturum kaydı yok" />}
+      />
     </div>
   );
 }

@@ -16,8 +16,8 @@ export function ActivityFeed({ events, loading }: { events: ActivityEvent[]; loa
   return (
     <ul className="flex flex-col">
       {events.map((event, i) => (
-        <li key={`${event.timestamp}-${i}`} className="flex items-baseline gap-4 border-b border-white/5 py-3 last:border-0">
-          <span className="shrink-0 font-mono text-xs text-text-faint">{formatTime(event.timestamp)}</span>
+        <li key={`${event.timestamp}-${i}`} className="flex items-baseline gap-4 border-b border-border py-2.5 last:border-0">
+          <span className="shrink-0 rounded-md bg-surface-subtle px-1.5 py-0.5 font-mono text-2xs text-text-faint">{formatTime(event.timestamp)}</span>
           <span className="text-sm text-text-secondary">{event.text}</span>
         </li>
       ))}

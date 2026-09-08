@@ -60,19 +60,19 @@ export default function GirisPage() {
   }
 
   return (
-    <main className="flex min-h-screen bg-background">
-      <div className="relative hidden w-1/2 flex-col justify-between overflow-hidden bg-ink px-12 py-12 text-white lg:flex">
-        <div className="pointer-events-none absolute inset-0 bg-gradient-to-br from-primary-green/20 via-transparent to-transparent" />
+    <main className="flex min-h-screen bg-surface-base">
+      <div className="relative hidden w-1/2 flex-col justify-between overflow-hidden bg-primary-700 px-12 py-12 text-white lg:flex">
+        <div className="pointer-events-none absolute inset-0 bg-gradient-to-br from-primary-500/40 via-transparent to-transparent" />
         <div
-          className="pointer-events-none absolute inset-0 opacity-5"
+          className="pointer-events-none absolute inset-0 opacity-10"
           style={{
-            backgroundImage: "radial-gradient(circle, #D4AE3D 1px, transparent 1px)",
+            backgroundImage: "radial-gradient(circle, #FFFFFF 1px, transparent 1px)",
             backgroundSize: "24px 24px",
           }}
         />
 
         <div className="relative flex items-center gap-2.5">
-          <div className="flex h-9 w-9 items-center justify-center rounded-2xl bg-primary-green/20 text-primary-greenLight">
+          <div className="flex h-9 w-9 items-center justify-center rounded-2xl bg-white/15 text-white">
             <Bug size={18} strokeWidth={1.75} />
           </div>
           <span className="text-sm font-semibold">Nilüfer İlaçlama</span>
@@ -84,8 +84,8 @@ export default function GirisPage() {
           </h1>
           <ul className="flex flex-col gap-4">
             {BRAND_BULLETS.map(({ icon: Icon, text }) => (
-              <li key={text} className="flex items-center gap-3 text-sm text-white/80">
-                <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-surface-card/10">
+              <li key={text} className="flex items-center gap-3 text-sm text-white/85">
+                <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-white/15 text-white">
                   <Icon size={15} strokeWidth={1.75} />
                 </span>
                 {text}
@@ -94,7 +94,7 @@ export default function GirisPage() {
           </ul>
         </div>
 
-        <p className="relative text-xs text-white/40">© {new Date().getFullYear()} Nilüfer İlaçlama</p>
+        <p className="relative text-xs text-white/50">© {new Date().getFullYear()} Nilüfer İlaçlama</p>
       </div>
 
       <div className="flex w-full flex-col items-center justify-center px-6 py-12 lg:w-1/2">
@@ -104,7 +104,7 @@ export default function GirisPage() {
           transition={{ duration: 0.4, ease: "easeOut" }}
           className="w-full max-w-sm"
         >
-          <div className="mb-8 flex flex-wrap gap-1.5 rounded-2xl bg-white/5 p-1.5">
+          <div className="mb-8 flex flex-wrap gap-1 rounded-2xl border border-border bg-surface-subtle p-1">
             {ROLE_TABS.map((tab) => (
               <button
                 key={tab.role}
@@ -113,10 +113,10 @@ export default function GirisPage() {
                   setSelectedTab(tab);
                   setError(null);
                 }}
-                className={`flex-1 rounded-2xl border-b-2 px-2.5 py-2 text-xs font-semibold transition sm:text-sm ${
+                className={`flex-1 rounded-xl px-2.5 py-2 text-xs font-semibold transition sm:text-sm ${
                   selectedTab.role === tab.role
-                    ? "border-primary-gold bg-primary-green text-white shadow-sm"
-                    : "border-transparent text-text-secondary hover:bg-white/5 hover:text-text-primary"
+                    ? "bg-primary-600 text-white shadow-card"
+                    : "text-text-secondary hover:bg-surface-base hover:text-text-primary"
                 }`}
               >
                 {tab.label}
@@ -133,7 +133,7 @@ export default function GirisPage() {
               transition={{ duration: 0.15 }}
               className="mb-8"
             >
-              <h2 className="font-serif text-2xl font-semibold tracking-tight text-text-primary">{selectedTab.label} Girişi</h2>
+              <h2 className="text-2xl font-bold tracking-tight text-text-primary">{selectedTab.label} Girişi</h2>
               <p className="mt-1 text-sm text-text-secondary">Devam etmek için hesap bilgilerinizi girin.</p>
             </motion.div>
           </AnimatePresence>
@@ -170,13 +170,13 @@ export default function GirisPage() {
             </div>
 
             {error && (
-              <p className="rounded-2xl bg-primary-red/10 px-4 py-3 text-sm text-primary-redLight">{error}</p>
+              <p className="rounded-2xl border border-danger-100 bg-danger-50 px-4 py-3 text-sm text-danger-500">{error}</p>
             )}
 
             <button
               type="submit"
               disabled={loading}
-              className="mt-2 rounded-2xl bg-gradient-to-r from-primary-green to-primary-green/90 px-4 py-3 text-sm font-semibold text-white transition hover:shadow-[0_0_20px_rgba(212,174,61,0.22)] disabled:opacity-60"
+              className="mt-2 rounded-2xl bg-primary-600 px-4 py-3 text-sm font-semibold text-white shadow-card transition hover:bg-primary-700 disabled:opacity-60"
             >
               {loading ? "Giriş yapılıyor..." : "Giriş yap"}
             </button>

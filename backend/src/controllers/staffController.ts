@@ -67,6 +67,13 @@ export async function getStaff(req: Request, res: Response) {
     return res.status(404).json({ error: "Personel bulunamadı" });
   }
 
+  if (req.user!.role === Role.TEAM_LEAD) {
+    const teamIds = await getTeamStaffIds(req.user!.sub);
+    if (!teamIds.includes(staff.id)) {
+      return res.status(403).json({ error: "Bu personele erişim yetkiniz yok" });
+    }
+  }
+
   const startOfDay = new Date();
   startOfDay.setHours(0, 0, 0, 0);
   const endOfDay = new Date();

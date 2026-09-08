@@ -12,6 +12,14 @@ import { saveBase64Image } from "../lib/upload";
 
 const MANAGEMENT_ROLES: Role[] = [Role.OWNER, Role.MANAGER];
 
+// Liste/detay sorgularına gömülen minimal ilişki verisi — web tarafı bu sayede
+// müşteri/personel adını göstermek için ayrıca /customers veya /staff çağırmak
+// zorunda kalmıyor (STAFF/CUSTOMER zaten bu uçlara tam erişemiyor).
+const JOB_NAME_INCLUDE = {
+  customer: { select: { fullName: true } },
+  assignedStaff: { select: { user: { select: { fullName: true } } } },
+} satisfies Prisma.JobInclude;
+
 function withCalendarLink<T extends { serviceType: string; scheduledAt: Date | null; notes: string | null }>(
   job: T
 ): T & { calendarLink: string | null } {
@@ -117,7 +125,7 @@ export async function listJobs(req: Request, res: Response) {
   }
 
   const [data, total] = await Promise.all([
-    prisma.job.findMany({ where, skip, take, orderBy: { createdAt: "desc" } }),
+    prisma.job.findMany({ where, skip, take, orderBy: { createdAt: "desc" }, include: JOB_NAME_INCLUDE }),
     prisma.job.count({ where }),
   ]);
 
@@ -125,7 +133,7 @@ export async function listJobs(req: Request, res: Response) {
 }
 
 export async function getJob(req: Request, res: Response) {
-  const job = await prisma.job.findUnique({ where: { id: idParam(req) } });
+  const job = await prisma.job.findUnique({ where: { id: idParam(req) }, include: JOB_NAME_INCLUDE });
   if (!job) {
     return res.status(404).json({ error: "İş bulunamadı" });
   }

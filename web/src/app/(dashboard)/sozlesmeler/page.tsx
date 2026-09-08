@@ -1,8 +1,11 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
-import { Plus, FileText, AlertTriangle } from "lucide-react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { Plus, FileText, AlertTriangle, FileSignature, CalendarClock, Repeat } from "lucide-react";
 import { RequireRole } from "@/components/RequireRole";
+import { PageHeader } from "@/components/PageHeader";
+import { StatCard } from "@/components/StatCard";
+import { StatusStrip } from "@/components/StatusStrip";
 import { Table, type Column } from "@/components/Table";
 import { EmptyState } from "@/components/EmptyState";
 import { api, ApiError } from "@/lib/api";
@@ -65,6 +68,18 @@ function ContractsPageContent() {
 
   const customerNames = Object.fromEntries(customers.map((c) => [c.id, c.fullName]));
 
+  // Özet değerler mevcut sözleşme listesinden türetilir.
+  const contractStats = useMemo(
+    () => ({
+      active: contracts.filter((c) => c.status === "ACTIVE").length,
+      renewed: contracts.filter((c) => c.status === "RENEWED").length,
+      expired: contracts.filter((c) => c.status === "EXPIRED").length,
+      cancelled: contracts.filter((c) => c.status === "CANCELLED").length,
+      recurring: contracts.filter((c) => c.recurrenceType !== null && c.recurrenceType !== undefined).length,
+    }),
+    [contracts]
+  );
+
   const columns: Column<Contract>[] = [
     {
       header: "Müşteri",
@@ -88,36 +103,70 @@ function ContractsPageContent() {
   ];
 
   return (
-    <div className="flex flex-col gap-8">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="font-serif text-3xl font-semibold tracking-tight text-text-primary">Sözleşmeler</h1>
-          <p className="mt-1 text-sm text-text-secondary">Müşteri sözleşmelerinizi ve sürelerini takip edin.</p>
-        </div>
-        <button
-          type="button"
-          onClick={() => setFormOpen(true)}
-          className="flex items-center gap-2 rounded-2xl bg-gradient-to-r from-primary-green to-primary-green/90 px-4 py-2.5 text-sm font-semibold text-white transition hover:shadow-[0_0_20px_rgba(212,174,61,0.22)]"
-        >
-          <Plus size={16} strokeWidth={2} />
-          Yeni Sözleşme
-        </button>
+    <div className="flex flex-col gap-6">
+      <PageHeader
+        icon={FileSignature}
+        title="Sözleşmeler"
+        description="Müşteri sözleşmelerinizi ve sürelerini takip edin."
+        actions={
+          <button
+            type="button"
+            onClick={() => setFormOpen(true)}
+            className="flex items-center gap-2 rounded-2xl bg-primary-600 px-4 py-2.5 text-sm font-semibold text-white shadow-card transition hover:bg-primary-700"
+          >
+            <Plus size={16} strokeWidth={2} />
+            Yeni Sözleşme
+          </button>
+        }
+      />
+
+      {/* [Özet kartlar] */}
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+        <StatCard label="Aktif sözleşme" value={loading ? "—" : String(contractStats.active)} icon={FileText} mono />
+        <StatCard
+          label="30 gün içinde bitiyor"
+          value={loading ? "—" : String(expiring.length)}
+          icon={CalendarClock}
+          accent="red"
+          mono
+          badge={expiring.length > 0 ? { label: "Dikkat", tone: "critical" } : undefined}
+        />
+        <StatCard
+          label="Tekrarlayan"
+          value={loading ? "—" : String(contractStats.recurring)}
+          icon={Repeat}
+          accent="blue"
+          mono
+          hint="Otomatik iş üreten sözleşmeler"
+        />
       </div>
 
-      {error && <p className="rounded-2xl bg-primary-red/10 px-4 py-3 text-sm text-primary-redLight">{error}</p>}
+      {/* [Durum dağılımı şeridi] */}
+      <StatusStrip
+        loading={loading}
+        totalLabel={`${contracts.length} sözleşme`}
+        segments={[
+          { label: "aktif", count: contractStats.active, color: "#15803D" },
+          { label: "yenilendi", count: contractStats.renewed, color: "#61A870" },
+          { label: "süresi doldu", count: contractStats.expired, color: "#B57F13" },
+          { label: "iptal", count: contractStats.cancelled, color: "#C0392B" },
+        ]}
+      />
+
+      {error && <p className="rounded-2xl border border-danger-100 bg-danger-50 px-4 py-3 text-sm text-danger-500">{error}</p>}
 
       {expiring.length > 0 && (
-        <div className="flex items-start gap-4 rounded-2xl border-l-4 border-primary-red bg-gradient-to-r from-primary-red/10 to-transparent p-5">
-          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary-red/15 text-primary-redLight">
+        <div className="flex items-start gap-4 rounded-2xl border border-danger-100 border-l-4 border-l-danger-500 bg-danger-50 p-5">
+          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white text-danger-500 ring-1 ring-danger-100">
             <AlertTriangle size={20} strokeWidth={1.75} />
           </span>
           <div className="flex-1">
-            <p className="font-bold text-primary-redLight">
+            <p className="font-bold text-danger-500">
               {expiring.length} sözleşme önümüzdeki 30 gün içinde sona eriyor
             </p>
             <ul className="mt-3 flex flex-col gap-2">
               {expiring.map((c) => (
-                <li key={c.id} className="rounded-xl bg-surface-card/5 p-3 text-sm text-text-secondary">
+                <li key={c.id} className="rounded-xl border border-danger-100 bg-white p-3 text-sm text-text-secondary">
                   <span className="font-medium text-text-primary">{c.customer.fullName}</span> · {formatDate(c.endDate)}
                 </li>
               ))}

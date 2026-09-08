@@ -1,12 +1,25 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
-import { ClipboardCheck, Inbox, HandCoins, FileSignature, Check, X, ArrowRightCircle } from "lucide-react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { ClipboardCheck, Inbox, HandCoins, FileSignature, Check, X, ArrowRightCircle, AlertTriangle } from "lucide-react";
 import { RequireRole } from "@/components/RequireRole";
 import { EmptyState } from "@/components/EmptyState";
+import { PageHeader } from "@/components/PageHeader";
+import { StatCard } from "@/components/StatCard";
+import { StatusStrip } from "@/components/StatusStrip";
 import { api, ApiError } from "@/lib/api";
 import { formatDate, currencyFormatter } from "@/lib/format";
 import type { QuoteRequest, AdvanceRequest, Contract, Customer, Paginated } from "@/lib/types";
+
+/** Onay kuyruğundaki üç kalem türünün ortak renk/etiket eşlemesi. */
+const QUEUE_COLORS = {
+  contract: "#B57F13",
+  advance: "#3D8A4E",
+  quote: "#1F6FA8",
+} as const;
+
+/** Bitişine 7 günden az kalan sözleşme "acil" sayılır ve kırmızı kodlanır. */
+const URGENT_DAY_THRESHOLD = 7;
 
 export default function ApprovalQueuePage() {
   return (
@@ -28,14 +41,22 @@ function ApprovalQueueContent() {
     setLoading(true);
     setError(null);
     try {
-      const [quotesRes, advancesRes, expiringRes] = await Promise.all([
+      // allSettled: bu üç kalemden biri yetki/ağ hatası verirse sayfanın tamamı
+      // çökmesin, yalnızca o kalem boş listeyle gösterilsin.
+      const [quotesRes, advancesRes, expiringRes] = await Promise.allSettled([
         api.get<Paginated<QuoteRequest>>("/quotes?status=NEW&limit=50"),
         api.get<Paginated<AdvanceRequest>>("/advances?status=PENDING&limit=50"),
         api.get<{ data: (Contract & { customer: Customer })[] }>("/contracts/expiring"),
       ]);
-      setQuotes(quotesRes.data);
-      setAdvances(advancesRes.data);
-      setExpiringContracts(expiringRes.data);
+      setQuotes(quotesRes.status === "fulfilled" ? quotesRes.value.data : []);
+      setAdvances(advancesRes.status === "fulfilled" ? advancesRes.value.data : []);
+      setExpiringContracts(expiringRes.status === "fulfilled" ? expiringRes.value.data : []);
+
+      const firstError = [quotesRes, advancesRes, expiringRes].find((r) => r.status === "rejected");
+      if (firstError && firstError.status === "rejected") {
+        const reason = firstError.reason;
+        setError(reason instanceof ApiError ? reason.message : "Kuyruğun bir kısmı yüklenemedi");
+      }
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "Kuyruk yüklenemedi");
     } finally {
@@ -85,64 +106,160 @@ function ApprovalQueueContent() {
 
   const total = quotes.length + advances.length + expiringContracts.length;
 
+  const daysLeftOf = (contract: Contract) =>
+    Math.max(0, Math.ceil((new Date(contract.endDate).getTime() - Date.now()) / (1000 * 60 * 60 * 24)));
+
+  // Aciliyet şeridi: acil (7 günden az kalan sözleşmeler) / normal kuyruk kalemleri.
+  const urgency = useMemo(() => {
+    const urgent = expiringContracts.filter((c) => daysLeftOf(c) <= URGENT_DAY_THRESHOLD).length;
+    return { urgent, normal: total - urgent };
+  }, [expiringContracts, total]);
+
+  const advanceTotal = useMemo(
+    () => advances.reduce((sum, a) => sum + Number(a.amount), 0),
+    [advances]
+  );
+
   return (
-    <div className="flex flex-col gap-8">
-      <div className="flex items-center gap-3">
-        <span className="flex h-11 w-11 items-center justify-center rounded-full bg-primary-gold/15 text-primary-gold">
-          <ClipboardCheck size={20} strokeWidth={1.75} />
-        </span>
-        <div>
-          <h1 className="font-serif text-3xl font-semibold tracking-tight text-text-primary">Bekleyen Onaylar</h1>
-          <p className="mt-1 text-sm text-text-secondary">
-            {total > 0 ? `${total} işlem sizi bekliyor.` : "Bekleyen bir işlem yok."}
-          </p>
-        </div>
+    <div className="flex flex-col gap-6">
+      <PageHeader
+        icon={ClipboardCheck}
+        title="Bekleyen Onaylar"
+        description={total > 0 ? `${total} işlem sizi bekliyor.` : "Bekleyen bir işlem yok."}
+      />
+
+      {error && <p className="rounded-2xl border border-danger-100 bg-danger-50 px-4 py-3 text-sm text-danger-500">{error}</p>}
+
+      {/* [Özet kartlar] */}
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <StatCard
+          label="Toplam bekleyen"
+          value={loading ? "—" : String(total)}
+          icon={ClipboardCheck}
+          accent={total > 0 ? "gold" : "neutral"}
+          mono
+          badge={urgency.urgent > 0 ? { label: "Acil", tone: "critical" } : undefined}
+        />
+        <StatCard
+          label="Teklif talebi"
+          value={loading ? "—" : String(quotes.length)}
+          icon={Inbox}
+          accent="blue"
+          mono
+          hint="Yeni gelen web talepleri"
+        />
+        <StatCard
+          label="Avans talebi"
+          value={loading ? "—" : String(advances.length)}
+          icon={HandCoins}
+          mono
+          hint={advances.length > 0 ? `Toplam ${currencyFormatter.format(advanceTotal)}` : undefined}
+        />
+        <StatCard
+          label="Bitmek üzere sözleşme"
+          value={loading ? "—" : String(expiringContracts.length)}
+          icon={FileSignature}
+          accent="red"
+          mono
+          hint={urgency.urgent > 0 ? `${urgency.urgent} tanesi ${URGENT_DAY_THRESHOLD} günden az` : undefined}
+        />
       </div>
 
-      {error && <p className="rounded-2xl bg-primary-redLight/10 px-4 py-3 text-sm text-primary-redLight">{error}</p>}
+      {/* [Aciliyet / tür dağılımı şeridi] */}
+      <StatusStrip
+        loading={loading}
+        totalLabel={`${total} kalem`}
+        segments={[
+          { label: "sözleşme", count: expiringContracts.length, color: QUEUE_COLORS.contract },
+          { label: "avans", count: advances.length, color: QUEUE_COLORS.advance },
+          { label: "teklif", count: quotes.length, color: QUEUE_COLORS.quote },
+        ]}
+        action={
+          urgency.urgent > 0 ? (
+            <span className="flex items-center gap-1.5 rounded-full bg-danger-50 px-3 py-1 text-xs font-semibold text-danger-500">
+              <AlertTriangle size={13} strokeWidth={2} />
+              {urgency.urgent} acil kalem
+            </span>
+          ) : (
+            <span className="rounded-full bg-primary-50 px-3 py-1 text-xs font-semibold text-primary-700">Acil kalem yok</span>
+          )
+        }
+      />
 
+      {/* [Kuyruk listesi] */}
       {loading ? (
         <p className="py-16 text-center text-sm text-text-faint">Yükleniyor...</p>
       ) : total === 0 ? (
-        <EmptyState icon={Inbox} title="Kuyruk boş" description="Yeni bir teklif, avans talebi veya bitmek üzere olan sözleşme geldiğinde burada görünecek." />
+        <div className="rounded-2xl border border-border bg-surface-card shadow-card">
+          <EmptyState icon={Inbox} title="Kuyruk boş" description="Yeni bir teklif, avans talebi veya bitmek üzere olan sözleşme geldiğinde burada görünecek." />
+        </div>
       ) : (
         <div className="flex flex-col gap-3">
           {expiringContracts.map((contract) => {
-            const daysLeft = Math.max(0, Math.ceil((new Date(contract.endDate).getTime() - Date.now()) / (1000 * 60 * 60 * 24)));
+            const daysLeft = daysLeftOf(contract);
+            const urgent = daysLeft <= URGENT_DAY_THRESHOLD;
+
             return (
-              <div key={contract.id} className="flex flex-wrap items-center justify-between gap-4 rounded-2xl bg-surface-card p-5 shadow-[0_8px_24px_rgba(0,0,0,0.22)]">
+              <div
+                key={contract.id}
+                className="flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-border border-l-4 bg-surface-card p-5 shadow-card transition hover:shadow-cardHover"
+                style={{ borderLeftColor: urgent ? "#C0392B" : QUEUE_COLORS.contract }}
+              >
                 <div className="flex items-start gap-3">
-                  <span className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-amber-400/15 text-amber-300">
+                  <span
+                    className={`mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-full ring-1 ${
+                      urgent ? "bg-danger-50 text-danger-500 ring-danger-100" : "bg-warning-50 text-warning-500 ring-warning-100"
+                    }`}
+                  >
                     <FileSignature size={16} strokeWidth={1.75} />
                   </span>
                   <div>
-                    <p className="text-xs font-semibold uppercase tracking-wide text-amber-300">Sözleşme · {daysLeft} gün kaldı</p>
+                    <p className="flex flex-wrap items-center gap-2">
+                      <span className={`text-2xs font-semibold uppercase tracking-wide ${urgent ? "text-danger-500" : "text-warning-600"}`}>
+                        Sözleşme
+                      </span>
+                      <span
+                        className={`rounded-full px-2 py-0.5 text-2xs font-semibold ${
+                          urgent ? "bg-danger-50 text-danger-500" : "bg-warning-50 text-warning-600"
+                        }`}
+                      >
+                        {daysLeft} gün kaldı
+                      </span>
+                    </p>
                     <p className="mt-0.5 font-medium text-text-primary">{contract.customer.fullName}</p>
                     <p className="text-sm text-text-secondary">Bitiş: {formatDate(contract.endDate)}</p>
                   </div>
                 </div>
                 <a
                   href="/sozlesmeler"
-                  className="flex items-center gap-1.5 whitespace-nowrap rounded-2xl bg-white/5 px-3.5 py-2 text-sm font-medium text-text-secondary transition hover:bg-white/10"
+                  className="flex items-center gap-1.5 whitespace-nowrap rounded-xl border border-border bg-surface-base px-3.5 py-2 text-sm font-medium text-text-secondary transition hover:border-border-strong hover:bg-surface-subtle hover:text-text-primary"
                 >
                   Sözleşmeye Git
+                  <ArrowRightCircle size={15} strokeWidth={1.75} />
                 </a>
               </div>
             );
           })}
 
           {advances.map((advance) => (
-            <div key={advance.id} className="flex flex-wrap items-center justify-between gap-4 rounded-2xl bg-surface-card p-5 shadow-[0_8px_24px_rgba(0,0,0,0.22)]">
+            <div
+              key={advance.id}
+              className="flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-border border-l-4 bg-surface-card p-5 shadow-card transition hover:shadow-cardHover"
+              style={{ borderLeftColor: QUEUE_COLORS.advance }}
+            >
               <div className="flex items-start gap-3">
-                <span className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary-gold/15 text-primary-gold">
+                <span className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary-50 text-primary-600 ring-1 ring-primary-100">
                   <HandCoins size={16} strokeWidth={1.75} />
                 </span>
                 <div>
-                  <p className="text-xs font-semibold uppercase tracking-wide text-primary-gold">Avans Talebi</p>
-                  <p className="mt-0.5 font-medium text-text-primary">{advance.staff?.user.fullName ?? "Personel"}</p>
-                  <p className="text-sm text-text-secondary">
-                    {currencyFormatter.format(advance.amount)} · {advance.reason}
+                  <p className="text-2xs font-semibold uppercase tracking-wide text-primary-700">Avans Talebi</p>
+                  <p className="mt-0.5 flex flex-wrap items-center gap-2 font-medium text-text-primary">
+                    {advance.staff?.user.fullName ?? "Personel"}
+                    <span className="rounded-full bg-primary-50 px-2 py-0.5 font-mono text-2xs font-semibold text-primary-700">
+                      {currencyFormatter.format(advance.amount)}
+                    </span>
                   </p>
+                  <p className="text-sm text-text-secondary">{advance.reason}</p>
                 </div>
               </div>
               <div className="flex gap-2">
@@ -150,18 +267,18 @@ function ApprovalQueueContent() {
                   type="button"
                   disabled={busyId === advance.id}
                   onClick={() => handleAdvanceDecision(advance.id, "APPROVED")}
-                  className="flex items-center gap-1.5 rounded-2xl bg-primary-greenLight/15 px-3 py-2 text-sm font-medium text-primary-greenLight transition hover:bg-primary-greenLight/25 disabled:opacity-50"
+                  className="flex items-center gap-1.5 rounded-xl bg-primary-600 px-4 py-2 text-sm font-semibold text-white shadow-card transition hover:bg-primary-700 disabled:opacity-50"
                 >
-                  <Check size={15} strokeWidth={1.75} />
+                  <Check size={15} strokeWidth={2} />
                   Onayla
                 </button>
                 <button
                   type="button"
                   disabled={busyId === advance.id}
                   onClick={() => handleAdvanceDecision(advance.id, "REJECTED")}
-                  className="flex items-center gap-1.5 rounded-2xl bg-primary-redLight/15 px-3 py-2 text-sm font-medium text-primary-redLight transition hover:bg-primary-redLight/25 disabled:opacity-50"
+                  className="flex items-center gap-1.5 rounded-xl border border-danger-100 bg-danger-50 px-4 py-2 text-sm font-semibold text-danger-500 transition hover:bg-danger-100 disabled:opacity-50"
                 >
-                  <X size={15} strokeWidth={1.75} />
+                  <X size={15} strokeWidth={2} />
                   Reddet
                 </button>
               </div>
@@ -169,16 +286,21 @@ function ApprovalQueueContent() {
           ))}
 
           {quotes.map((quote) => (
-            <div key={quote.id} className="flex flex-wrap items-center justify-between gap-4 rounded-2xl bg-surface-card p-5 shadow-[0_8px_24px_rgba(0,0,0,0.22)]">
+            <div
+              key={quote.id}
+              className="flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-border border-l-4 bg-surface-card p-5 shadow-card transition hover:shadow-cardHover"
+              style={{ borderLeftColor: QUEUE_COLORS.quote }}
+            >
               <div className="flex items-start gap-3">
-                <span className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-sky-400/15 text-sky-300">
+                <span className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-info-50 text-info-500 ring-1 ring-info-100">
                   <Inbox size={16} strokeWidth={1.75} />
                 </span>
                 <div>
-                  <p className="text-xs font-semibold uppercase tracking-wide text-sky-300">Teklif Talebi</p>
+                  <p className="text-2xs font-semibold uppercase tracking-wide text-info-600">Teklif Talebi</p>
                   <p className="mt-0.5 font-medium text-text-primary">{quote.fullName}</p>
                   <p className="text-sm text-text-secondary">
-                    {quote.serviceType} · {quote.phone}
+                    {quote.serviceType} · <span className="font-mono text-xs">{quote.phone}</span>
+                    {quote.district && ` · ${quote.district}`}
                   </p>
                 </div>
               </div>
@@ -187,7 +309,7 @@ function ApprovalQueueContent() {
                   type="button"
                   disabled={busyId === quote.id}
                   onClick={() => handleQuoteContact(quote.id)}
-                  className="flex items-center gap-1.5 whitespace-nowrap rounded-2xl bg-white/5 px-3.5 py-2 text-sm font-medium text-text-secondary transition hover:bg-white/10 disabled:opacity-50"
+                  className="flex items-center gap-1.5 whitespace-nowrap rounded-xl border border-border bg-surface-base px-3.5 py-2 text-sm font-medium text-text-secondary transition hover:border-border-strong hover:bg-surface-subtle hover:text-text-primary disabled:opacity-50"
                 >
                   İletişime Geçildi
                 </button>
@@ -195,9 +317,9 @@ function ApprovalQueueContent() {
                   type="button"
                   disabled={busyId === quote.id}
                   onClick={() => handleQuoteConvert(quote.id)}
-                  className="flex items-center gap-1.5 whitespace-nowrap rounded-2xl bg-primary-greenLight/15 px-3.5 py-2 text-sm font-medium text-primary-greenLight transition hover:bg-primary-greenLight/25 disabled:opacity-50"
+                  className="flex items-center gap-1.5 whitespace-nowrap rounded-xl bg-primary-600 px-3.5 py-2 text-sm font-semibold text-white shadow-card transition hover:bg-primary-700 disabled:opacity-50"
                 >
-                  <ArrowRightCircle size={15} strokeWidth={1.75} />
+                  <ArrowRightCircle size={15} strokeWidth={2} />
                   Dönüştür
                 </button>
               </div>

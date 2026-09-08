@@ -117,7 +117,7 @@ export function JobReportModal({ open, onClose, onCompleted, jobId }: JobReportM
         <div className="grid grid-cols-2 gap-3">
           <div className="flex flex-col gap-1.5">
             <label className="text-sm font-medium text-text-secondary">Öncesi Fotoğraf</label>
-            <label className="flex cursor-pointer items-center justify-center gap-2 rounded-2xl border border-dashed border-white/15 px-3 py-4 text-xs text-text-secondary transition hover:bg-white/5">
+            <label className="flex cursor-pointer items-center justify-center gap-2 rounded-2xl border border-dashed border-border-strong px-3 py-4 text-xs text-text-secondary transition hover:bg-surface-subtle">
               <Camera size={16} strokeWidth={1.75} />
               {beforePhoto ? beforePhoto.name : "Seç"}
               <input
@@ -131,7 +131,7 @@ export function JobReportModal({ open, onClose, onCompleted, jobId }: JobReportM
           </div>
           <div className="flex flex-col gap-1.5">
             <label className="text-sm font-medium text-text-secondary">Sonrası Fotoğraf</label>
-            <label className="flex cursor-pointer items-center justify-center gap-2 rounded-2xl border border-dashed border-white/15 px-3 py-4 text-xs text-text-secondary transition hover:bg-white/5">
+            <label className="flex cursor-pointer items-center justify-center gap-2 rounded-2xl border border-dashed border-border-strong px-3 py-4 text-xs text-text-secondary transition hover:bg-surface-subtle">
               <Camera size={16} strokeWidth={1.75} />
               {afterPhoto ? afterPhoto.name : "Seç"}
               <input
@@ -150,16 +150,16 @@ export function JobReportModal({ open, onClose, onCompleted, jobId }: JobReportM
           <SignaturePad key={signatureKeyRef.current} onChange={setSignature} />
         </div>
 
-        {error && <p className="rounded-2xl bg-primary-redLight/10 px-4 py-3 text-sm text-primary-redLight">{error}</p>}
+        {error && <p className="rounded-2xl border border-danger-100 bg-danger-50 px-4 py-3 text-sm text-danger-500">{error}</p>}
 
         <div className="mt-2 flex justify-end gap-3">
-          <button type="button" onClick={onClose} className="rounded-2xl px-4 py-2.5 text-sm font-medium text-text-secondary transition hover:bg-white/5">
+          <button type="button" onClick={onClose} className="rounded-2xl px-4 py-2.5 text-sm font-medium text-text-secondary transition hover:bg-surface-subtle">
             Vazgeç
           </button>
           <button
             type="submit"
             disabled={saving}
-            className="rounded-2xl bg-gradient-to-r from-primary-green to-primary-green/90 px-4 py-2.5 text-sm font-semibold text-white transition hover:shadow-[0_0_20px_rgba(212,174,61,0.22)] disabled:opacity-60"
+            className="rounded-2xl bg-primary-600 px-4 py-2.5 text-sm font-semibold text-white shadow-card transition hover:bg-primary-700 disabled:opacity-60"
           >
             {saving ? "Kaydediliyor..." : "Tamamla"}
           </button>

@@ -1,8 +1,11 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
-import { TrendingUp, MapPin, Users2 } from "lucide-react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { TrendingUp, MapPin, Users2, BarChart3, Wallet, PieChart, Repeat } from "lucide-react";
 import { RequireRole } from "@/components/RequireRole";
+import { PageHeader } from "@/components/PageHeader";
+import { StatCard } from "@/components/StatCard";
+import { ChartCard, DonutChart, RankBars, TrendChart } from "@/components/ChartCard";
 import { api, ApiError } from "@/lib/api";
 import { currencyFormatter } from "@/lib/format";
 import type { RevenueTrendPoint, ServiceBreakdownEntry, TopDistrictEntry, CustomerRetention } from "@/lib/types";
@@ -13,15 +16,6 @@ const RANGE_OPTIONS: { key: RangeKey; label: string; months: number }[] = [
   { key: "30d", label: "Son 30 Gün", months: 1 },
   { key: "3m", label: "Son 3 Ay", months: 3 },
   { key: "6m", label: "Son 6 Ay", months: 6 },
-];
-
-const BAR_COLORS = [
-  "bg-primary-green",
-  "bg-sky-400",
-  "bg-amber-400",
-  "bg-primary-redLight",
-  "bg-purple-400",
-  "bg-primary-gold",
 ];
 
 export default function ReportsPage() {
@@ -67,145 +61,150 @@ function ReportsPageContent() {
     load();
   }, [load]);
 
-  const maxRevenue = Math.max(1, ...revenue.map((r) => r.total));
-  const maxDistrictCount = Math.max(1, ...districts.map((d) => d.count));
+  // Üst özet satırı seçili aralığın kendi verisinden türetilir — ek istek yok.
+  const summary = useMemo(() => {
+    const total = revenue.reduce((sum, r) => sum + r.total, 0);
+    const average = revenue.length > 0 ? total / revenue.length : 0;
+    const last = revenue[revenue.length - 1]?.total ?? 0;
+    const previous = revenue[revenue.length - 2]?.total ?? 0;
+    const change = previous > 0 ? ((last - previous) / previous) * 100 : 0;
+    const jobCount = breakdown.reduce((sum, b) => sum + b.count, 0);
+    const topService = breakdown[0];
+    return { total, average, last, change, jobCount, topService };
+  }, [revenue, breakdown]);
+
+  const retentionSlices = useMemo(() => {
+    if (!retention) return [];
+    return [
+      { name: "Yeni müşteri", value: retention.newCustomers, color: "#3D8A4E" },
+      { name: "Tekrar eden", value: retention.returningCustomers, color: "#B57F13" },
+    ];
+  }, [retention]);
+
+  const breakdownSlices = useMemo(
+    () => breakdown.map((entry) => ({ name: entry.serviceType, value: entry.count })),
+    [breakdown]
+  );
+
+  const districtRows = useMemo(
+    () => districts.map((d) => ({ label: d.district, value: d.count })),
+    [districts]
+  );
 
   return (
-    <div className="flex flex-col gap-8">
-      <div className="flex flex-wrap items-center justify-between gap-4">
-        <div>
-          <h1 className="font-serif text-3xl font-semibold tracking-tight text-text-primary">Raporlar</h1>
-          <p className="mt-1 text-sm text-text-secondary">İşletmenizin performansını analiz edin.</p>
-        </div>
-        <div className="flex gap-1.5 rounded-2xl bg-surface-card p-1.5 shadow-[0_8px_24px_rgba(0,0,0,0.22)]">
-          {RANGE_OPTIONS.map((opt) => (
-            <button
-              key={opt.key}
-              type="button"
-              onClick={() => setRange(opt.key)}
-              className={`rounded-2xl px-4 py-2 text-sm font-medium transition ${
-                range === opt.key ? "bg-primary-green text-white" : "text-text-secondary hover:bg-white/5"
-              }`}
-            >
-              {opt.label}
-            </button>
-          ))}
-        </div>
+    <div className="flex flex-col gap-6">
+      <PageHeader
+        icon={BarChart3}
+        title="Raporlar"
+        description="İşletmenizin performansını analiz edin."
+        actions={
+          <div className="flex gap-1 rounded-2xl border border-border bg-surface-card p-1 shadow-card">
+            {RANGE_OPTIONS.map((opt) => (
+              <button
+                key={opt.key}
+                type="button"
+                onClick={() => setRange(opt.key)}
+                className={`rounded-xl px-3.5 py-2 text-sm font-medium transition ${
+                  range === opt.key ? "bg-primary-600 text-white shadow-card" : "text-text-secondary hover:bg-surface-subtle"
+                }`}
+              >
+                {opt.label}
+              </button>
+            ))}
+          </div>
+        }
+      />
+
+      {error && <p className="rounded-2xl border border-danger-100 bg-danger-50 px-4 py-3 text-sm text-danger-500">{error}</p>}
+
+      {/* [Özet kartlar] */}
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <StatCard
+          label="Toplam ciro (seçili aralık)"
+          value={loading ? "—" : currencyFormatter.format(summary.total)}
+          icon={Wallet}
+          mono
+        />
+        <StatCard
+          label="Aylık ortalama ciro"
+          value={loading ? "—" : currencyFormatter.format(summary.average)}
+          icon={TrendingUp}
+          accent="blue"
+          mono
+        />
+        <StatCard
+          label="Son ay cirosu"
+          value={loading ? "—" : currencyFormatter.format(summary.last)}
+          icon={BarChart3}
+          trend={{ value: summary.change, label: "önceki aya göre" }}
+          mono
+        />
+        <StatCard
+          label="En çok verilen hizmet"
+          value={loading || !summary.topService ? "—" : `%${summary.topService.percentage}`}
+          icon={PieChart}
+          accent="gold"
+          hint={summary.topService?.serviceType}
+        />
       </div>
 
-      {error && <p className="rounded-2xl bg-primary-red/10 px-4 py-3 text-sm text-primary-redLight">{error}</p>}
+      {/* [Grafikler] */}
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+        <ChartCard
+          title="Aylık Ciro Trendi"
+          description="Seçili aralıktaki tahsilat toplamı"
+          icon={TrendingUp}
+          height={280}
+          className="lg:col-span-2"
+        >
+          <TrendChart
+            data={revenue}
+            xKey="label"
+            series={[{ key: "total", name: "Ciro" }]}
+            area
+            currency
+            emptyLabel={loading ? "Yükleniyor..." : "Veri yok"}
+          />
+        </ChartCard>
 
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-        <div className="rounded-2xl bg-surface-card p-6 shadow-[0_8px_24px_rgba(0,0,0,0.22)]">
-          <div className="mb-5 flex items-center gap-2">
-            <TrendingUp size={17} strokeWidth={1.75} className="text-text-faint" />
-            <h2 className="text-base font-semibold text-text-primary">Aylık Ciro Trendi</h2>
-          </div>
+        <ChartCard title="Hizmet Dağılımı" description="İş sayısına göre" icon={PieChart} height={280}>
+          <DonutChart
+            data={breakdownSlices}
+            centerValue={loading ? "—" : String(summary.jobCount)}
+            centerLabel="toplam iş"
+            emptyLabel={loading ? "Yükleniyor..." : "Veri yok"}
+          />
+        </ChartCard>
 
-          {loading ? (
-            <p className="py-10 text-center text-sm text-text-faint">Yükleniyor...</p>
-          ) : revenue.length === 0 ? (
-            <p className="py-10 text-center text-sm text-text-faint">Veri yok</p>
-          ) : (
-            <div className="flex h-48 items-end gap-3">
-              {revenue.map((point) => (
-                <div key={point.label} className="flex flex-1 flex-col items-center gap-2">
-                  <span className="font-mono text-xs text-text-secondary">
-                    {point.total > 0 ? currencyFormatter.format(point.total) : "—"}
-                  </span>
-                  <div className="flex w-full items-end justify-center" style={{ height: "120px" }}>
-                    <div
-                      className="w-full max-w-[36px] rounded-t-lg bg-gradient-to-t from-primary-green to-primary-greenLight"
-                      style={{ height: `${Math.max(4, (point.total / maxRevenue) * 120)}px` }}
-                    />
-                  </div>
-                  <span className="text-xs text-text-faint">{point.label}</span>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
+        <ChartCard title="En Yoğun Bölgeler" description="İlçe bazında iş sayısı" icon={MapPin} height={280}>
+          <RankBars rows={districtRows} emptyLabel={loading ? "Yükleniyor..." : "Veri yok"} />
+        </ChartCard>
 
-        <div className="rounded-2xl bg-surface-card p-6 shadow-[0_8px_24px_rgba(0,0,0,0.22)]">
-          <h2 className="mb-5 text-base font-semibold text-text-primary">Hizmet Dağılımı</h2>
+        <ChartCard title="Müşteri Sadakati (Bu Ay)" icon={Users2} height={220}>
+          <DonutChart
+            data={retentionSlices}
+            centerValue={loading ? "—" : String((retention?.newCustomers ?? 0) + (retention?.returningCustomers ?? 0))}
+            centerLabel="müşteri"
+            emptyLabel={loading ? "Yükleniyor..." : "Veri yok"}
+          />
+        </ChartCard>
 
-          {loading ? (
-            <p className="py-10 text-center text-sm text-text-faint">Yükleniyor...</p>
-          ) : breakdown.length === 0 ? (
-            <p className="py-10 text-center text-sm text-text-faint">Veri yok</p>
-          ) : (
-            <div className="flex flex-col gap-4">
-              {breakdown.map((entry, i) => (
-                <div key={entry.serviceType}>
-                  <div className="mb-1.5 flex items-center justify-between text-sm">
-                    <span className="text-text-secondary">{entry.serviceType}</span>
-                    <span className="font-mono text-text-faint">
-                      {entry.count} · %{entry.percentage}
-                    </span>
-                  </div>
-                  <div className="h-2 w-full rounded-full bg-white/5">
-                    <div
-                      className={`h-2 rounded-full ${BAR_COLORS[i % BAR_COLORS.length]}`}
-                      style={{ width: `${entry.percentage}%` }}
-                    />
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-
-        <div className="rounded-2xl bg-surface-card p-6 shadow-[0_8px_24px_rgba(0,0,0,0.22)]">
-          <div className="mb-5 flex items-center gap-2">
-            <MapPin size={17} strokeWidth={1.75} className="text-text-faint" />
-            <h2 className="text-base font-semibold text-text-primary">En Yoğun Bölgeler</h2>
-          </div>
-
-          {loading ? (
-            <p className="py-10 text-center text-sm text-text-faint">Yükleniyor...</p>
-          ) : districts.length === 0 ? (
-            <p className="py-10 text-center text-sm text-text-faint">Veri yok</p>
-          ) : (
-            <ol className="flex flex-col gap-3">
-              {districts.map((d, i) => (
-                <li key={d.district} className="flex items-center gap-3">
-                  <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-white/5 text-xs font-semibold text-text-secondary">
-                    {i + 1}
-                  </span>
-                  <span className="flex-1 text-sm text-text-primary">{d.district}</span>
-                  <div className="h-2 w-24 rounded-full bg-white/5">
-                    <div
-                      className="h-2 rounded-full bg-primary-gold"
-                      style={{ width: `${(d.count / maxDistrictCount) * 100}%` }}
-                    />
-                  </div>
-                  <span className="w-6 text-right font-mono text-xs text-text-faint">{d.count}</span>
-                </li>
-              ))}
-            </ol>
-          )}
-        </div>
-
-        <div className="rounded-2xl bg-surface-card p-6 shadow-[0_8px_24px_rgba(0,0,0,0.22)]">
-          <div className="mb-5 flex items-center gap-2">
-            <Users2 size={17} strokeWidth={1.75} className="text-text-faint" />
-            <h2 className="text-base font-semibold text-text-primary">Müşteri Sadakati (Bu Ay)</h2>
-          </div>
-
-          {loading ? (
-            <p className="py-10 text-center text-sm text-text-faint">Yükleniyor...</p>
-          ) : (
-            <div className="grid grid-cols-2 gap-4">
-              <div className="rounded-2xl bg-primary-green/10 p-6 text-center">
-                <p className="font-mono text-4xl font-semibold text-primary-greenLight">{retention?.newCustomers ?? 0}</p>
-                <p className="mt-2 text-sm text-text-secondary">Yeni Müşteri</p>
-              </div>
-              <div className="rounded-2xl bg-primary-gold/10 p-6 text-center">
-                <p className="font-mono text-4xl font-semibold text-primary-gold">{retention?.returningCustomers ?? 0}</p>
-                <p className="mt-2 text-sm text-text-secondary">Tekrar Eden Müşteri</p>
-              </div>
-            </div>
-          )}
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <StatCard
+            label="Yeni Müşteri"
+            value={loading ? "—" : String(retention?.newCustomers ?? 0)}
+            icon={Users2}
+            mono
+            hint="Bu ay ilk kez hizmet alan"
+          />
+          <StatCard
+            label="Tekrar Eden Müşteri"
+            value={loading ? "—" : String(retention?.returningCustomers ?? 0)}
+            icon={Repeat}
+            accent="gold"
+            mono
+            hint="Daha önce hizmet almış"
+          />
         </div>
       </div>
     </div>

@@ -67,6 +67,12 @@ async function main() {
   }
   console.log(`${Object.keys(settings).length} ayar hazır.`);
 
+  // ── Owner ──
+  // Staff kaydı gerekmiyor: OWNER hiçbir yerde bir Staff satırına atıfta bulunmuyor
+  // (bkz. lib/access.ts) — sadece bir User yeter.
+  const ownerUser = await upsertUser("owner@nilufer.com", "Salih Patron", Role.OWNER, "0532 000 00 00", passwordHash);
+  console.log("1 patron hazır.");
+
   // ── Staff (manager, team lead, staff) ──
   const manager = await upsertUser("manager@nilufer.com", "Ayşe Yılmaz", Role.MANAGER, "0532 111 22 33", passwordHash);
   const managerStaff = await prisma.staff.upsert({
@@ -333,20 +339,17 @@ async function main() {
   console.log(`${advanceDefs.length} avans talebi hazır.`);
 
   // ── Conversations & messages ──
-  const ownerUser = await prisma.user.findUnique({ where: { email: "owner@nilufer.com" } });
-  if (ownerUser) {
-    const conv1 = await prisma.conversation.upsert({
-      where: { participantAId_participantBId: { participantAId: ownerUser.id, participantBId: manager.id } },
-      update: {},
-      create: { participantAId: ownerUser.id, participantBId: manager.id },
-    });
-    await prisma.message.createMany({
-      data: [
-        { conversationId: conv1.id, senderId: ownerUser.id, content: "Bu hafta tamamlanan iş sayısını bir raporlayabilir misin?" },
-        { conversationId: conv1.id, senderId: manager.id, content: "Tabii, akşama kadar hazırlayıp iletirim." },
-      ],
-    });
-  }
+  const conv1 = await prisma.conversation.upsert({
+    where: { participantAId_participantBId: { participantAId: ownerUser.id, participantBId: manager.id } },
+    update: {},
+    create: { participantAId: ownerUser.id, participantBId: manager.id },
+  });
+  await prisma.message.createMany({
+    data: [
+      { conversationId: conv1.id, senderId: ownerUser.id, content: "Bu hafta tamamlanan iş sayısını bir raporlayabilir misin?" },
+      { conversationId: conv1.id, senderId: manager.id, content: "Tabii, akşama kadar hazırlayıp iletirim." },
+    ],
+  });
 
   const conv2 = await prisma.conversation.upsert({
     where: { participantAId_participantBId: { participantAId: demoCustomerUser1.id, participantBId: teamLead.id } },
@@ -361,6 +364,75 @@ async function main() {
     ],
   });
   console.log("Örnek konuşmalar hazır.");
+
+  // ── Notifications ──
+  // Kategori eşlemesi web/src/lib/notifications.ts'teki categorizeNotification()
+  // ile aynı anahtar kelimelere dayanır (başlıkta "iş"/"tahsilat, ödeme, avans"/
+  // "mesaj" geçmiyorsa "uyarılar" kovasına düşer) — /bildirimler sayfasının
+  // kart/şerit/donut görselleştirmelerinin dolu görünmesi için birden fazla
+  // kategoriden, okunmuş ve okunmamış karışık örnekler.
+  const notificationDefs: { userId: string; title: string; body?: string; daysAgo: number; read: boolean }[] = [
+    { userId: ownerUser.id, title: "Yeni iş planlandı", body: "Bahar Pastanesi için yarın 10:00'a iş planlandı.", daysAgo: 0, read: false },
+    { userId: ownerUser.id, title: "Tahsilat alındı", body: "Ahmet Yıldız 2.500₺ ödeme yaptı.", daysAgo: 0, read: false },
+    { userId: ownerUser.id, title: "Kritik stok uyarısı", body: "Bir ürün kritik seviyenin altına düştü.", daysAgo: 1, read: true },
+    { userId: ownerUser.id, title: "Yeni mesaj", body: "Ayşe Yılmaz size bir mesaj gönderdi.", daysAgo: 2, read: true },
+    { userId: ownerUser.id, title: "Sözleşme yenileme hatırlatması", body: "Bir sözleşmenin süresi 7 gün içinde doluyor.", daysAgo: 3, read: true },
+    { userId: manager.id, title: "Avans talebi bekliyor", body: "Mehmet Demir 2.500₺ avans talep etti.", daysAgo: 0, read: false },
+    { userId: manager.id, title: "Yeni teklif talebi", body: "Web sitesinden yeni bir teklif talebi geldi.", daysAgo: 0, read: false },
+    { userId: manager.id, title: "İş tamamlandı", body: "Yeşim Tekstil için planlanan iş tamamlandı.", daysAgo: 1, read: true },
+    { userId: manager.id, title: "Yeni mesaj", body: "Salih Patron size bir mesaj gönderdi.", daysAgo: 2, read: true },
+    { userId: teamLead.id, title: "Ekibinize yeni iş atandı", body: "Ekibinizden birine bugün için iş atandı.", daysAgo: 0, read: false },
+    { userId: teamLead.id, title: "Yeni mesaj", body: "Ahmet Yıldız size bir mesaj gönderdi.", daysAgo: 0, read: false },
+    { userId: teamLead.id, title: "İş iptal edildi", body: "Planlanan bir iş müşteri tarafından iptal edildi.", daysAgo: 4, read: true },
+    { userId: staffList[0].userId, title: "Bugün için yeni iş", body: "Bugün için size bir iş atandı.", daysAgo: 0, read: false },
+    { userId: staffList[0].userId, title: "Avans talebiniz onaylandı", body: "2.000₺ avans talebiniz onaylandı.", daysAgo: 1, read: true },
+    { userId: staffList[1].userId, title: "Bugün için yeni iş", body: "Bugün için size bir iş atandı.", daysAgo: 0, read: false },
+    { userId: demoCustomerUser1.id, title: "İşiniz tamamlandı", body: "Uygulama tamamlandı, geçmiş işlemler bölümünden değerlendirebilirsiniz.", daysAgo: 0, read: false },
+    { userId: demoCustomerUser1.id, title: "Tahsilat alındı", body: "1.200₺ ödemeniz alındı, teşekkür ederiz.", daysAgo: 2, read: true },
+    { userId: demoCustomerUser2.id, title: "Yeni mesaj", body: "Mehmet Demir size bir mesaj gönderdi.", daysAgo: 1, read: false },
+  ];
+  await prisma.notification.createMany({
+    data: notificationDefs.map((n) => ({
+      userId: n.userId,
+      title: n.title,
+      body: n.body,
+      createdAt: daysFromNow(-n.daysAgo),
+      readAt: n.read ? daysFromNow(-n.daysAgo + 1) : null,
+    })),
+  });
+  console.log(`${notificationDefs.length} bildirim hazır.`);
+
+  // ── Audit logs ──
+  // /loglar sayfasındaki Timeline + RankBars + donut'un dolu görünmesi için
+  // farklı aktörlerden, farklı işlem tiplerinden (create/update/delete) örnekler.
+  const auditLogDefs: { actorUserId: string; action: string; targetUserId: string; targetType?: string; detail?: string; daysAgo: number }[] = [
+    { actorUserId: ownerUser.id, action: "staff.create", targetUserId: staffList[4].userId, targetType: "Staff", detail: "Burak Aydın işe alındı", daysAgo: 20 },
+    { actorUserId: ownerUser.id, action: "staff.permissions.update", targetUserId: manager.id, targetType: "Permission", detail: "view_finance yetkisi verildi", daysAgo: 15 },
+    { actorUserId: ownerUser.id, action: "customer.delete", targetUserId: manager.id, targetType: "Customer", detail: "Yinelenen kayıt silindi", daysAgo: 12 },
+    { actorUserId: manager.id, action: "customer.create", targetUserId: manager.id, targetType: "Customer", detail: "Bahar Pastanesi eklendi", daysAgo: 10 },
+    { actorUserId: manager.id, action: "job.update", targetUserId: teamLead.id, targetType: "Job", detail: "Personel ataması değiştirildi", daysAgo: 9 },
+    { actorUserId: manager.id, action: "contract.create", targetUserId: manager.id, targetType: "Contract", detail: "Yeni yıllık sözleşme oluşturuldu", daysAgo: 8 },
+    { actorUserId: manager.id, action: "advance.approve", targetUserId: staffList[1].userId, targetType: "AdvanceRequest", detail: "2.000₺ avans onaylandı", daysAgo: 7 },
+    { actorUserId: manager.id, action: "advance.reject", targetUserId: staffList[2].userId, targetType: "AdvanceRequest", detail: "1.000₺ avans reddedildi", daysAgo: 7 },
+    { actorUserId: ownerUser.id, action: "settings.update", targetUserId: ownerUser.id, targetType: "Setting", detail: "Firma bilgileri güncellendi", daysAgo: 6 },
+    { actorUserId: teamLead.id, action: "job.update", targetUserId: teamLead.id, targetType: "Job", detail: "İş durumu tamamlandı olarak işaretlendi", daysAgo: 5 },
+    { actorUserId: manager.id, action: "product.restock", targetUserId: manager.id, targetType: "Product", detail: "Stok girişi yapıldı", daysAgo: 4 },
+    { actorUserId: ownerUser.id, action: "staff.delete", targetUserId: manager.id, targetType: "Staff", detail: "Ayrılan personel kaydı silindi", daysAgo: 3 },
+    { actorUserId: manager.id, action: "quote.convert", targetUserId: manager.id, targetType: "QuoteRequest", detail: "Teklif müşteriye dönüştürüldü", daysAgo: 2 },
+    { actorUserId: ownerUser.id, action: "customer.update", targetUserId: ownerUser.id, targetType: "Customer", detail: "İletişim bilgileri güncellendi", daysAgo: 1 },
+    { actorUserId: manager.id, action: "job.create", targetUserId: manager.id, targetType: "Job", detail: "Yeni iş oluşturuldu", daysAgo: 0 },
+  ];
+  await prisma.auditLog.createMany({
+    data: auditLogDefs.map((l) => ({
+      actorUserId: l.actorUserId,
+      action: l.action,
+      targetUserId: l.targetUserId,
+      targetType: l.targetType,
+      detail: l.detail,
+      createdAt: daysFromNow(-l.daysAgo),
+    })),
+  });
+  console.log(`${auditLogDefs.length} denetim kaydı hazır.`);
 
   console.log("Seed tamamlandı.");
 }

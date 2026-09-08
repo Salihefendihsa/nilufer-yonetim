@@ -4,7 +4,6 @@ import type { Job } from "@/lib/types";
 
 interface WeekCalendarProps {
   jobs: Job[];
-  customerNames: Record<string, string>;
 }
 
 const DAY_LABELS = ["Pzt", "Sal", "Çar", "Per", "Cum", "Cmt", "Paz"];
@@ -21,7 +20,7 @@ function isSameDay(a: Date, b: Date): boolean {
   return a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
 }
 
-export function WeekCalendar({ jobs, customerNames }: WeekCalendarProps) {
+export function WeekCalendar({ jobs }: WeekCalendarProps) {
   const monday = startOfWeek(new Date());
   const days = Array.from({ length: 7 }, (_, i) => {
     const d = new Date(monday);
@@ -38,9 +37,9 @@ export function WeekCalendar({ jobs, customerNames }: WeekCalendarProps) {
         const isToday = isSameDay(day, today);
 
         return (
-          <div key={i} className={`flex flex-col gap-3 rounded-2xl p-4 ${isToday ? "bg-primary-green/5" : "bg-surface-card"}`}>
+          <div key={i} className={`flex flex-col gap-3 rounded-2xl p-4 ${isToday ? "bg-primary-50" : "bg-surface-card"}`}>
             <div>
-              <p className={`text-xs font-medium uppercase tracking-wide ${isToday ? "text-primary-greenLight" : "text-text-faint"}`}>
+              <p className={`text-xs font-medium uppercase tracking-wide ${isToday ? "text-primary-600" : "text-text-faint"}`}>
                 {DAY_LABELS[i]}
               </p>
               <p className="text-lg font-semibold text-text-primary">{day.getDate()}</p>
@@ -51,8 +50,8 @@ export function WeekCalendar({ jobs, customerNames }: WeekCalendarProps) {
                 <p className="text-xs text-text-faint">İş yok</p>
               ) : (
                 dayJobs.map((job) => (
-                  <div key={job.id} className="rounded-2xl bg-white/[0.04] px-3 py-2">
-                    <p className="text-xs font-medium text-text-primary">{customerNames[job.customerId] ?? "Müşteri"}</p>
+                  <div key={job.id} className="rounded-2xl bg-surface-subtle px-3 py-2">
+                    <p className="text-xs font-medium text-text-primary">{job.customer?.fullName ?? "Müşteri"}</p>
                     <p className="text-xs text-text-secondary">{formatTime(job.scheduledAt)}</p>
                     <div className="mt-1">
                       <StatusBadge status={job.status} />

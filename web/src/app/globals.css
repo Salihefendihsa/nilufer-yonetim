@@ -2,19 +2,146 @@
 @tailwind components;
 @tailwind utilities;
 
+/*
+ * Açık tema token'ları. Tailwind renk adlarıyla birebir aynı değerler —
+ * CSS değişkenleri, Tailwind sınıfının yetmediği yerler (recharts SVG dolguları,
+ * inline style, canvas) için tek kaynak.
+ */
 :root {
-  --background: #1c1e1b;
-  --foreground: #ededea;
+  color-scheme: light;
+
+  --background: #f4f7f4;
+  --foreground: #16211a;
+
+  /* Yeşil skala */
+  --primary-50: #f1f8f2;
+  --primary-100: #deefe1;
+  --primary-200: #bfdfc5;
+  --primary-300: #94c79e;
+  --primary-400: #61a870;
+  --primary-500: #3d8a4e;
+  --primary-600: #2f6b3d;
+  --primary-700: #2f5233;
+  --primary-800: #243f28;
+  --primary-900: #17281a;
+
+  /* Yüzeyler */
+  --surface-page: #f4f7f4;
+  --surface-base: #ffffff;
+  --surface-card: #ffffff;
+  --surface-card-hover: #f7faf7;
+  --surface-subtle: #f2f6f2;
+  --surface-muted: #e8eee8;
+
+  /* Kenarlıklar */
+  --border: #e3e8e3;
+  --border-strong: #cfd8d0;
+  --border-accent: #bfdfc5;
+
+  /* Metin */
+  --text-primary: #16211a;
+  --text-secondary: #5a6b5e;
+  --text-faint: #8b9a8e;
+
+  /* Semantik */
+  --success: #15803d;
+  --success-soft: #ecfbf0;
+  --warning: #b57f13;
+  --warning-soft: #fef7e7;
+  --danger: #c0392b;
+  --danger-soft: #fdf0ef;
+  --info: #1f6fa8;
+  --info-soft: #edf5fb;
+
+  /* Grafik serileri — dashboard/raporlar genelinde aynı sırayla kullanılır */
+  --chart-1: #2f5233;
+  --chart-2: #3d8a4e;
+  --chart-3: #61a870;
+  --chart-4: #94c79e;
+  --chart-5: #b57f13;
+  --chart-6: #1f6fa8;
+
+  /* Gölgeler */
+  --shadow-card: 0 1px 2px rgba(22, 33, 26, 0.04), 0 4px 16px rgba(22, 33, 26, 0.06);
+  --shadow-pop: 0 8px 32px rgba(22, 33, 26, 0.14);
 }
 
 body {
   color: var(--foreground);
   background: var(--background);
   font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* İnce, tema ile uyumlu kaydırma çubuğu */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--border-strong) transparent;
+}
+*::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+*::-webkit-scrollbar-thumb {
+  background: var(--border-strong);
+  border-radius: 999px;
+}
+*::-webkit-scrollbar-track {
+  background: transparent;
 }
 
 @layer components {
+  /* ---- Form kontrolleri ---- */
   .input {
-    @apply rounded-2xl border border-white/10 bg-surface-base px-4 py-3 text-sm text-text-primary outline-none transition placeholder:text-text-faint focus:border-primary-green focus:ring-2 focus:ring-primary-green/30;
+    @apply w-full rounded-2xl border border-border bg-surface-base px-4 py-2.5 text-sm text-text-primary outline-none transition placeholder:text-text-faint hover:border-border-strong focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 disabled:cursor-not-allowed disabled:bg-surface-subtle disabled:text-text-faint;
+  }
+
+  .label {
+    @apply mb-1.5 block text-xs font-semibold uppercase tracking-wide text-text-faint;
+  }
+
+  /* ---- Butonlar ---- */
+  .btn {
+    @apply inline-flex items-center justify-center gap-2 rounded-2xl px-4 py-2.5 text-sm font-semibold transition disabled:cursor-not-allowed disabled:opacity-50;
+  }
+  .btn-primary {
+    @apply btn bg-primary-600 text-white shadow-card hover:bg-primary-700 active:bg-primary-800;
+  }
+  .btn-secondary {
+    @apply btn border border-border bg-surface-base text-text-secondary hover:border-border-strong hover:bg-surface-subtle hover:text-text-primary;
+  }
+  .btn-ghost {
+    @apply btn text-text-secondary hover:bg-surface-subtle hover:text-text-primary;
+  }
+  .btn-danger {
+    @apply btn bg-danger-500 text-white hover:bg-danger-600;
+  }
+
+  /* ---- Yüzeyler ---- */
+  .card {
+    @apply rounded-2xl border border-border bg-surface-card shadow-card;
+  }
+  .card-pad {
+    @apply card p-6;
+  }
+
+  /* ---- Tipografi yardımcıları ---- */
+  .page-title {
+    @apply text-2xl font-bold tracking-tight text-text-primary;
+  }
+  .section-title {
+    @apply text-base font-semibold text-text-primary;
+  }
+  .eyebrow {
+    @apply text-2xs font-semibold uppercase tracking-[0.08em] text-text-faint;
+  }
+
+  /* ---- Grafik yardımcıları ---- */
+  .recharts-cartesian-grid line {
+    stroke: var(--border);
+  }
+  .recharts-text {
+    fill: var(--text-faint);
+    font-size: 11px;
   }
 }

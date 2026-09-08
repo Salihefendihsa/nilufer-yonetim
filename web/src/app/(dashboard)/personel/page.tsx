@@ -1,8 +1,11 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
-import { Plus, HardHat, Pencil, Trash2, CalendarCheck, ShieldCheck, FileBadge } from "lucide-react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { Plus, HardHat, Pencil, Trash2, CalendarCheck, ShieldCheck, FileBadge, Users2, Briefcase, Coffee } from "lucide-react";
 import { RequireRole } from "@/components/RequireRole";
+import { PageHeader } from "@/components/PageHeader";
+import { StatusStrip } from "@/components/StatusStrip";
+import { StatCard } from "@/components/StatCard";
 import { EmptyState } from "@/components/EmptyState";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { api, ApiError } from "@/lib/api";
@@ -83,32 +86,71 @@ function StaffPageContent() {
     }
   }
 
+  // Kart ve şerit değerleri, halihazırda çekilen todaysJobsCount alanından türetilir.
+  const workload = useMemo(() => {
+    const busy = rows.filter((r) => r.todaysJobsCount > 0).length;
+    const totalJobs = rows.reduce((sum, r) => sum + r.todaysJobsCount, 0);
+    return { busy, idle: rows.length - busy, totalJobs };
+  }, [rows]);
+
   return (
-    <div className="flex flex-col gap-8">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="font-serif text-3xl font-semibold tracking-tight text-text-primary">Personel</h1>
-          <p className="mt-1 text-sm text-text-secondary">Ekibinizi ve günlük iş yükünü buradan takip edin.</p>
-        </div>
-        <button
-          type="button"
-          onClick={() => {
-            setEditingStaff(null);
-            setFormOpen(true);
-          }}
-          className="flex items-center gap-2 rounded-2xl bg-gradient-to-r from-primary-green to-primary-green/90 px-4 py-2.5 text-sm font-semibold text-white transition hover:shadow-[0_0_20px_rgba(212,174,61,0.22)]"
-        >
-          <Plus size={16} strokeWidth={2} />
-          Yeni Personel
-        </button>
+    <div className="flex flex-col gap-6">
+      <PageHeader
+        icon={HardHat}
+        title="Personel"
+        description="Ekibinizi ve günlük iş yükünü buradan takip edin."
+        actions={
+          <button
+            type="button"
+            onClick={() => {
+              setEditingStaff(null);
+              setFormOpen(true);
+            }}
+            className="flex items-center gap-2 rounded-2xl bg-primary-600 px-4 py-2.5 text-sm font-semibold text-white shadow-card transition hover:bg-primary-700"
+          >
+            <Plus size={16} strokeWidth={2} />
+            Yeni Personel
+          </button>
+        }
+      />
+
+      {/* [Özet kartlar] */}
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+        <StatCard label="Toplam personel" value={loading ? "—" : String(rows.length)} icon={Users2} mono />
+        <StatCard
+          label="Bugün işi olan"
+          value={loading ? "—" : String(workload.busy)}
+          icon={Briefcase}
+          accent="blue"
+          mono
+          progress={rows.length > 0 ? (workload.busy / rows.length) * 100 : 0}
+        />
+        <StatCard
+          label="Bugün toplam iş"
+          value={loading ? "—" : String(workload.totalJobs)}
+          icon={CalendarCheck}
+          accent="gold"
+          mono
+          hint={rows.length > 0 ? `Kişi başı ${(workload.totalJobs / rows.length).toFixed(1)}` : undefined}
+        />
       </div>
 
-      {error && <p className="rounded-2xl bg-primary-red/10 px-4 py-3 text-sm text-primary-redLight">{error}</p>}
+      {/* [Durum dağılımı şeridi] */}
+      <StatusStrip
+        loading={loading}
+        totalLabel={`${rows.length} personel`}
+        segments={[
+          { label: "bugün işi var", count: workload.busy, color: "#3D8A4E" },
+          { label: "bugün boşta", count: workload.idle, color: "#CFD8D0" },
+        ]}
+      />
+
+      {error && <p className="rounded-2xl border border-danger-100 bg-danger-50 px-4 py-3 text-sm text-danger-500">{error}</p>}
 
       {loading ? (
         <p className="py-16 text-center text-sm text-text-faint">Yükleniyor...</p>
       ) : rows.length === 0 ? (
-        <div className="rounded-2xl bg-surface-card shadow-[0_8px_24px_rgba(0,0,0,0.22)]">
+        <div className="rounded-2xl border border-border bg-surface-card shadow-card">
           <EmptyState
             icon={HardHat}
             title="Henüz personel yok"
@@ -118,11 +160,14 @@ function StaffPageContent() {
           />
         </div>
       ) : (
-        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {rows.map((staff) => (
-            <div key={staff.id} className="flex flex-col gap-4 rounded-2xl bg-surface-card p-6 shadow-[0_8px_24px_rgba(0,0,0,0.22)]">
+            <div
+              key={staff.id}
+              className="flex flex-col gap-4 rounded-2xl border border-border bg-surface-card p-5 shadow-card transition hover:shadow-cardHover"
+            >
               <div className="flex items-center gap-3">
-                <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-primary-green/10 text-lg font-semibold text-primary-greenLight">
+                <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-primary-600 text-lg font-semibold text-white">
                   {staff.user.fullName[0]?.toUpperCase() ?? "?"}
                 </div>
                 <div>
@@ -131,11 +176,25 @@ function StaffPageContent() {
                 </div>
               </div>
 
-              <div className="flex items-center gap-2 rounded-2xl bg-white/[0.03] px-4 py-3">
-                <CalendarCheck size={16} strokeWidth={1.75} className="text-text-faint" />
+              <div
+                className={`flex items-center gap-2 rounded-2xl border px-4 py-3 ${
+                  staff.todaysJobsCount > 0 ? "border-primary-100 bg-primary-50" : "border-border bg-surface-subtle"
+                }`}
+              >
+                {staff.todaysJobsCount > 0 ? (
+                  <CalendarCheck size={16} strokeWidth={1.75} className="text-primary-600" />
+                ) : (
+                  <Coffee size={16} strokeWidth={1.75} className="text-text-faint" />
+                )}
                 <p className="text-sm text-text-secondary">
                   Bugün <span className="font-semibold text-text-primary">{staff.todaysJobsCount}</span> iş
                 </p>
+                <span className="ml-auto h-1.5 w-16 overflow-hidden rounded-full bg-surface-muted">
+                  <span
+                    className="block h-full rounded-full bg-primary-500"
+                    style={{ width: `${Math.min(100, staff.todaysJobsCount * 25)}%` }}
+                  />
+                </span>
               </div>
 
               <div className="flex gap-2">
@@ -145,7 +204,7 @@ function StaffPageContent() {
                     setEditingStaff(staff);
                     setFormOpen(true);
                   }}
-                  className="flex flex-1 items-center justify-center gap-2 rounded-2xl bg-white/5 px-3 py-2 text-xs font-medium text-text-primary transition hover:bg-white/10"
+                  className="flex flex-1 items-center justify-center gap-2 rounded-xl border border-border bg-surface-base px-3 py-2 text-xs font-medium text-text-primary transition hover:border-border-strong hover:bg-surface-subtle"
                 >
                   <Pencil size={14} strokeWidth={1.75} />
                   Düzenle
@@ -153,7 +212,7 @@ function StaffPageContent() {
                 <button
                   type="button"
                   onClick={() => setDeleteTarget(staff)}
-                  className="flex flex-1 items-center justify-center gap-2 rounded-2xl bg-primary-red/10 px-3 py-2 text-xs font-medium text-primary-redLight transition hover:bg-primary-red/20"
+                  className="flex flex-1 items-center justify-center gap-2 rounded-xl border border-danger-100 bg-danger-50 px-3 py-2 text-xs font-medium text-danger-500 transition hover:bg-danger-100"
                 >
                   <Trash2 size={14} strokeWidth={1.75} />
                   Sil
@@ -163,7 +222,7 @@ function StaffPageContent() {
               <button
                 type="button"
                 onClick={() => setCertificationsTarget(staff)}
-                className="flex items-center justify-center gap-2 rounded-2xl bg-white/[0.03] px-3 py-2 text-xs font-medium text-text-secondary transition hover:bg-white/10"
+                className="flex items-center justify-center gap-2 rounded-xl border border-border bg-surface-base px-3 py-2 text-xs font-medium text-text-secondary transition hover:border-border-strong hover:bg-surface-subtle hover:text-text-primary"
               >
                 <FileBadge size={14} strokeWidth={1.75} />
                 Belgeler
@@ -173,7 +232,7 @@ function StaffPageContent() {
                 <button
                   type="button"
                   onClick={() => setPermissionsTarget(staff)}
-                  className="flex items-center justify-center gap-2 rounded-2xl bg-white/[0.03] px-3 py-2 text-xs font-medium text-text-secondary transition hover:bg-white/10"
+                  className="flex items-center justify-center gap-2 rounded-xl border border-border bg-surface-base px-3 py-2 text-xs font-medium text-text-secondary transition hover:border-border-strong hover:bg-surface-subtle hover:text-text-primary"
                 >
                   <ShieldCheck size={14} strokeWidth={1.75} />
                   Yetkiler

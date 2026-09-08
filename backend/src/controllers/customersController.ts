@@ -1,9 +1,11 @@
 import type { Request, Response } from "express";
 import { z } from "zod";
+import { Role, type Prisma } from "@prisma/client";
 import { prisma } from "../lib/prisma";
 import { idParam } from "../lib/params";
 import { getPagination, paginatedResponse } from "../lib/pagination";
 import { recordAuditLog } from "../lib/auditLog";
+import { getStaffIdForUser } from "../lib/access";
 
 const createSchema = z.object({
   fullName: z.string().min(1),
@@ -20,7 +22,7 @@ export async function listCustomers(req: Request, res: Response) {
   const { skip, take, page, limit } = getPagination(req);
   const search = typeof req.query.search === "string" ? req.query.search : undefined;
 
-  const where = search
+  const searchFilter: Prisma.CustomerWhereInput | undefined = search
     ? {
         OR: [
           { fullName: { contains: search, mode: "insensitive" as const } },
@@ -29,7 +31,17 @@ export async function listCustomers(req: Request, res: Response) {
           { district: { contains: search, mode: "insensitive" as const } },
         ],
       }
-    : {};
+    : undefined;
+
+  let where: Prisma.CustomerWhereInput = searchFilter ?? {};
+
+  // STAFF finansal ve iletişim bilgilerine toplu erişemesin diye yalnızca
+  // kendisine atanmış bir işi olan müşterilerle sınırlanır.
+  if (req.user!.role === Role.STAFF) {
+    const staffId = await getStaffIdForUser(req.user!.sub);
+    const scopeFilter: Prisma.CustomerWhereInput = { jobs: { some: { assignedStaffId: staffId ?? "" } } };
+    where = searchFilter ? { AND: [scopeFilter, searchFilter] } : scopeFilter;
+  }
 
   const [data, total] = await Promise.all([
     prisma.customer.findMany({ where, skip, take, orderBy: { createdAt: "desc" } }),
@@ -51,6 +63,18 @@ export async function getCustomer(req: Request, res: Response) {
 
   if (!customer) {
     return res.status(404).json({ error: "Müşteri bulunamadı" });
+  }
+
+  if (req.user!.role === Role.STAFF) {
+    const staffId = await getStaffIdForUser(req.user!.sub);
+    const isAssigned = staffId !== null && customer.jobs.some((job) => job.assignedStaffId === staffId);
+    if (!isAssigned) {
+      return res.status(403).json({ error: "Bu işlem için yetkiniz yok" });
+    }
+
+    // Finansal veriler (ödemeler, bakiye) yalnızca OWNER/MANAGER'a görünür.
+    const { payments: _payments, ...customerWithoutPayments } = customer;
+    return res.json(customerWithoutPayments);
   }
 
   const totalPriced = customer.jobs.reduce((sum, job) => sum + Number(job.price ?? 0), 0);

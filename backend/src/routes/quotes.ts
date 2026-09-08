@@ -7,8 +7,8 @@ const router = Router();
 
 router.post("/", createQuote);
 
-router.get("/", requireAuth, requireRole(Role.OWNER), listQuotes);
-router.patch("/:id", requireAuth, requireRole(Role.OWNER), updateQuote);
-router.post("/:id/convert", requireAuth, requireRole(Role.OWNER), convertQuote);
+router.get("/", requireAuth, requireRole(Role.OWNER, Role.MANAGER), listQuotes);
+router.patch("/:id", requireAuth, requireRole(Role.OWNER, Role.MANAGER), updateQuote);
+router.post("/:id/convert", requireAuth, requireRole(Role.OWNER, Role.MANAGER), convertQuote);
 
 export default router;

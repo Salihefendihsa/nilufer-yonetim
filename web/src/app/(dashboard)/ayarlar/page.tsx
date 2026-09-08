@@ -1,8 +1,23 @@
 "use client";
 
 import { useCallback, useEffect, useState, type FormEvent } from "react";
-import { AlertTriangle, Download, Info, Pencil, Plus, Trash2 } from "lucide-react";
+import {
+  AlertTriangle,
+  Bell,
+  Building2,
+  Download,
+  HardDrive,
+  Info,
+  MapPin,
+  Pencil,
+  Plus,
+  Settings,
+  Sparkles,
+  Trash2,
+  type LucideIcon,
+} from "lucide-react";
 import { RequireRole } from "@/components/RequireRole";
+import { PageHeader } from "@/components/PageHeader";
 import { Modal } from "@/components/Modal";
 import { Toggle } from "@/components/Toggle";
 import { useAuth } from "@/lib/AuthProvider";
@@ -15,22 +30,24 @@ export default function SettingsPage() {
 
   return (
     <RequireRole roles={["OWNER", "MANAGER", "TEAM_LEAD", "STAFF", "CUSTOMER"]}>
-      <div className="flex flex-col gap-8">
-        <div>
-          <h1 className="font-serif text-3xl font-semibold tracking-tight text-text-primary">Ayarlar</h1>
-          <p className="mt-1 text-sm text-text-secondary">
-            {isOwner ? "İşletme ayarlarınızı buradan yönetin." : "Bildirim tercihlerinizi buradan yönetin."}
-          </p>
-        </div>
+      <div className="flex flex-col gap-6">
+        <PageHeader
+          icon={Settings}
+          title="Ayarlar"
+          description={isOwner ? "İşletme ayarlarınızı buradan yönetin." : "Bildirim tercihlerinizi buradan yönetin."}
+        />
+
+        {isOwner && <EmailStatusNote />}
 
         <NotificationPreferencesSection isOwner={isOwner} />
 
         {isOwner && (
           <>
-            <EmailStatusNote />
             <CompanyInfoSection />
-            <ServiceTypesSection />
-            <DistrictsSection />
+            <div className="grid grid-cols-1 gap-6 xl:grid-cols-2">
+              <ServiceTypesSection />
+              <DistrictsSection />
+            </div>
             <BackupSection />
             <DangerZoneSection />
           </>
@@ -72,14 +89,18 @@ function NotificationPreferencesSection({ isOwner }: { isOwner: boolean }) {
   }
 
   return (
-    <SectionCard title="Bildirim Tercihleri" description="Sistem bildirimlerini email olarak da almak isteyip istemediğinizi seçin.">
+    <SectionCard
+      icon={Bell}
+      title="Bildirim Tercihleri"
+      description="Sistem bildirimlerini email olarak da almak isteyip istemediğinizi seçin."
+    >
       {loading ? (
         <p className="text-sm text-text-secondary">Yükleniyor...</p>
       ) : !preference ? (
         <p className="text-sm text-text-secondary">Bildirim tercihleri yüklenemedi.</p>
       ) : (
         <div className="flex flex-col gap-5">
-          {error && <p className="rounded-2xl bg-primary-red/10 px-4 py-3 text-sm text-primary-redLight">{error}</p>}
+          {error && <p className="rounded-2xl border border-danger-100 bg-danger-50 px-4 py-3 text-sm text-danger-500">{error}</p>}
 
           <div className="flex items-center justify-between gap-4">
             <div>
@@ -127,8 +148,8 @@ function EmailStatusNote() {
   if (emailConfigured !== false) return null;
 
   return (
-    <div className="flex items-start gap-3 rounded-2xl border border-primary-gold/20 bg-primary-gold/5 px-5 py-4">
-      <Info size={18} strokeWidth={1.75} className="mt-0.5 shrink-0 text-primary-gold" />
+    <div className="flex items-start gap-3 rounded-2xl border border-warning-100 bg-warning-50 px-5 py-4">
+      <Info size={18} strokeWidth={1.75} className="mt-0.5 shrink-0 text-warning-500" />
       <p className="text-sm text-text-secondary">
         Email yapılandırılmadığı için giriş doğrulama kodu (2FA) şu an devre dışı — SMTP ayarları eklenince
         otomatik aktifleşir.
@@ -137,12 +158,39 @@ function EmailStatusNote() {
   );
 }
 
-function SectionCard({ title, description, children }: { title: string; description?: string; children: React.ReactNode }) {
+/**
+ * Her ayar grubu kendi kartında: ikon rozeti + başlık + açıklama, altında içerik.
+ * Panelin diğer sayfalarındaki ChartCard/StatCard kabuğuyla aynı köşe yarıçapı,
+ * kenarlık ve gölge kurallarını kullanır.
+ */
+function SectionCard({
+  title,
+  description,
+  icon: Icon,
+  action,
+  children,
+}: {
+  title: string;
+  description?: string;
+  icon: LucideIcon;
+  action?: React.ReactNode;
+  children: React.ReactNode;
+}) {
   return (
-    <div className="rounded-2xl bg-surface-card p-6 shadow-[0_8px_24px_rgba(0,0,0,0.22)]">
-      <h2 className="text-lg font-semibold text-text-primary">{title}</h2>
-      {description && <p className="mt-1 text-sm text-text-secondary">{description}</p>}
-      <div className="mt-5">{children}</div>
+    <div className="flex flex-col rounded-2xl border border-border bg-surface-card p-6 shadow-card">
+      <div className="flex items-start justify-between gap-3">
+        <div className="flex items-start gap-3">
+          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-2xl bg-primary-50 text-primary-600 ring-1 ring-primary-100">
+            <Icon size={17} strokeWidth={1.75} />
+          </span>
+          <div>
+            <h2 className="text-base font-semibold text-text-primary">{title}</h2>
+            {description && <p className="mt-0.5 text-sm text-text-secondary">{description}</p>}
+          </div>
+        </div>
+        {action}
+      </div>
+      <div className="mt-5 flex-1">{children}</div>
     </div>
   );
 }
@@ -187,14 +235,18 @@ function CompanyInfoSection() {
   }
 
   return (
-    <SectionCard title="Firma Bilgileri" description="Bu bilgiler raporlarda ve müşteriye görünen belgelerde kullanılır.">
+    <SectionCard
+      icon={Building2}
+      title="Firma Bilgileri"
+      description="Bu bilgiler raporlarda ve müşteriye görünen belgelerde kullanılır."
+    >
       {loading ? (
         <p className="text-sm text-text-secondary">Yükleniyor...</p>
       ) : (
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
           {COMPANY_FIELDS.map((field) => (
-            <div key={field.key} className="flex flex-col gap-1.5">
-              <label className="text-sm font-medium text-text-secondary">{field.label}</label>
+            <div key={field.key} className="flex flex-col">
+              <label className="label">{field.label}</label>
               <input
                 value={form[field.key] ?? ""}
                 onChange={(e) => setForm({ ...form, [field.key]: e.target.value })}
@@ -203,14 +255,14 @@ function CompanyInfoSection() {
             </div>
           ))}
 
-          {error && <p className="rounded-2xl bg-primary-red/10 px-4 py-3 text-sm text-primary-redLight">{error}</p>}
-          {saved && !error && <p className="rounded-2xl bg-primary-green/10 px-4 py-3 text-sm text-primary-greenLight">Kaydedildi.</p>}
+          {error && <p className="rounded-2xl border border-danger-100 bg-danger-50 px-4 py-3 text-sm text-danger-500">{error}</p>}
+          {saved && !error && <p className="rounded-2xl border border-primary-100 bg-primary-50 px-4 py-3 text-sm font-medium text-primary-700">Kaydedildi.</p>}
 
           <div className="mt-2 flex justify-end">
             <button
               type="submit"
               disabled={saving}
-              className="rounded-2xl bg-gradient-to-r from-primary-green to-primary-green/90 px-4 py-2.5 text-sm font-semibold text-white transition hover:shadow-[0_0_20px_rgba(212,174,61,0.22)] disabled:opacity-60"
+              className="btn-primary"
             >
               {saving ? "Kaydediliyor..." : "Kaydet"}
             </button>
@@ -295,14 +347,23 @@ function ServiceTypesSection() {
   }
 
   return (
-    <SectionCard title="Hizmet Türleri" description="Yeni iş oluşturulurken seçilebilecek hizmet türleri.">
+    <SectionCard
+      icon={Sparkles}
+      title="Hizmet Türleri"
+      description="Yeni iş oluşturulurken seçilebilecek hizmet türleri."
+      action={
+        <span className="rounded-full bg-surface-subtle px-2.5 py-1 font-mono text-2xs text-text-faint">
+          {items.filter((i) => i.isActive).length} aktif
+        </span>
+      }
+    >
       <div className="flex flex-col gap-4">
-        {error && <p className="rounded-2xl bg-primary-red/10 px-4 py-3 text-sm text-primary-redLight">{error}</p>}
+        {error && <p className="rounded-2xl border border-danger-100 bg-danger-50 px-4 py-3 text-sm text-danger-500">{error}</p>}
 
         {loading ? (
           <p className="text-sm text-text-secondary">Yükleniyor...</p>
         ) : (
-          <ul className="flex flex-col divide-y divide-white/5">
+          <ul className="flex flex-col divide-y divide-border">
             {items.map((item) => (
               <li key={item.id} className="flex items-center justify-between gap-3 py-3">
                 {editingId === item.id ? (
@@ -326,14 +387,14 @@ function ServiceTypesSection() {
                         type="button"
                         disabled={busy}
                         onClick={() => handleRename(item.id)}
-                        className="rounded-xl px-3 py-1.5 text-xs font-semibold text-primary-greenLight transition hover:bg-white/5"
+                        className="rounded-xl border border-primary-100 bg-primary-50 px-3 py-1.5 text-xs font-semibold text-primary-700 transition hover:bg-primary-100"
                       >
                         Kaydet
                       </button>
                       <button
                         type="button"
                         onClick={() => setEditingId(null)}
-                        className="rounded-xl px-3 py-1.5 text-xs font-medium text-text-secondary transition hover:bg-white/5"
+                        className="rounded-xl border border-border bg-surface-base px-3 py-1.5 text-xs font-medium text-text-secondary transition hover:bg-surface-subtle hover:text-text-primary"
                       >
                         Vazgeç
                       </button>
@@ -347,7 +408,7 @@ function ServiceTypesSection() {
                           setEditingName(item.name);
                         }}
                         aria-label="Düzenle"
-                        className="flex h-8 w-8 items-center justify-center rounded-xl text-text-faint transition hover:bg-white/5 hover:text-text-primary"
+                        className="flex h-8 w-8 items-center justify-center rounded-xl text-text-faint transition hover:bg-surface-subtle hover:text-text-primary"
                       >
                         <Pencil size={15} strokeWidth={1.75} />
                       </button>
@@ -355,8 +416,8 @@ function ServiceTypesSection() {
                         type="button"
                         disabled={busy}
                         onClick={() => handleToggleActive(item)}
-                        className={`rounded-xl px-3 py-1.5 text-xs font-medium transition hover:bg-white/5 ${
-                          item.isActive ? "text-primary-redLight" : "text-primary-greenLight"
+                        className={`rounded-xl px-3 py-1.5 text-xs font-medium transition hover:bg-surface-subtle ${
+                          item.isActive ? "text-danger-500" : "text-primary-600"
                         }`}
                       >
                         {item.isActive ? "Pasifleştir" : "Aktifleştir"}
@@ -380,7 +441,7 @@ function ServiceTypesSection() {
           <button
             type="submit"
             disabled={busy}
-            className="flex items-center gap-2 rounded-2xl bg-gradient-to-r from-primary-green to-primary-green/90 px-4 py-2.5 text-sm font-semibold text-white transition hover:shadow-[0_0_20px_rgba(212,174,61,0.22)] disabled:opacity-60"
+            className="btn-primary"
           >
             <Plus size={16} strokeWidth={2} />
             Ekle
@@ -465,14 +526,23 @@ function DistrictsSection() {
   }
 
   return (
-    <SectionCard title="Bölgeler" description="Müşteri kaydında seçilebilecek ilçeler.">
+    <SectionCard
+      icon={MapPin}
+      title="Bölgeler"
+      description="Müşteri kaydında seçilebilecek ilçeler."
+      action={
+        <span className="rounded-full bg-surface-subtle px-2.5 py-1 font-mono text-2xs text-text-faint">
+          {items.filter((i) => i.isActive).length} aktif
+        </span>
+      }
+    >
       <div className="flex flex-col gap-4">
-        {error && <p className="rounded-2xl bg-primary-red/10 px-4 py-3 text-sm text-primary-redLight">{error}</p>}
+        {error && <p className="rounded-2xl border border-danger-100 bg-danger-50 px-4 py-3 text-sm text-danger-500">{error}</p>}
 
         {loading ? (
           <p className="text-sm text-text-secondary">Yükleniyor...</p>
         ) : (
-          <ul className="flex flex-col divide-y divide-white/5">
+          <ul className="flex flex-col divide-y divide-border">
             {items.map((item) => (
               <li key={item.id} className="flex items-center justify-between gap-3 py-3">
                 {editingId === item.id ? (
@@ -496,14 +566,14 @@ function DistrictsSection() {
                         type="button"
                         disabled={busy}
                         onClick={() => handleRename(item.id)}
-                        className="rounded-xl px-3 py-1.5 text-xs font-semibold text-primary-greenLight transition hover:bg-white/5"
+                        className="rounded-xl border border-primary-100 bg-primary-50 px-3 py-1.5 text-xs font-semibold text-primary-700 transition hover:bg-primary-100"
                       >
                         Kaydet
                       </button>
                       <button
                         type="button"
                         onClick={() => setEditingId(null)}
-                        className="rounded-xl px-3 py-1.5 text-xs font-medium text-text-secondary transition hover:bg-white/5"
+                        className="rounded-xl border border-border bg-surface-base px-3 py-1.5 text-xs font-medium text-text-secondary transition hover:bg-surface-subtle hover:text-text-primary"
                       >
                         Vazgeç
                       </button>
@@ -517,7 +587,7 @@ function DistrictsSection() {
                           setEditingName(item.name);
                         }}
                         aria-label="Düzenle"
-                        className="flex h-8 w-8 items-center justify-center rounded-xl text-text-faint transition hover:bg-white/5 hover:text-text-primary"
+                        className="flex h-8 w-8 items-center justify-center rounded-xl text-text-faint transition hover:bg-surface-subtle hover:text-text-primary"
                       >
                         <Pencil size={15} strokeWidth={1.75} />
                       </button>
@@ -525,8 +595,8 @@ function DistrictsSection() {
                         type="button"
                         disabled={busy}
                         onClick={() => handleToggleActive(item)}
-                        className={`rounded-xl px-3 py-1.5 text-xs font-medium transition hover:bg-white/5 ${
-                          item.isActive ? "text-primary-redLight" : "text-primary-greenLight"
+                        className={`rounded-xl px-3 py-1.5 text-xs font-medium transition hover:bg-surface-subtle ${
+                          item.isActive ? "text-danger-500" : "text-primary-600"
                         }`}
                       >
                         {item.isActive ? "Pasifleştir" : "Aktifleştir"}
@@ -550,7 +620,7 @@ function DistrictsSection() {
           <button
             type="submit"
             disabled={busy}
-            className="flex items-center gap-2 rounded-2xl bg-gradient-to-r from-primary-green to-primary-green/90 px-4 py-2.5 text-sm font-semibold text-white transition hover:shadow-[0_0_20px_rgba(212,174,61,0.22)] disabled:opacity-60"
+            className="btn-primary"
           >
             <Plus size={16} strokeWidth={2} />
             Ekle
@@ -579,14 +649,18 @@ function BackupSection() {
   }
 
   return (
-    <SectionCard title="Yedekleme" description="Veritabanındaki tüm verilerin bir JSON dosyası olarak indirilmesi.">
+    <SectionCard
+      icon={HardDrive}
+      title="Yedekleme"
+      description="Veritabanındaki tüm verilerin bir JSON dosyası olarak indirilmesi."
+    >
       <div className="flex flex-col gap-3">
-        {error && <p className="rounded-2xl bg-primary-red/10 px-4 py-3 text-sm text-primary-redLight">{error}</p>}
+        {error && <p className="rounded-2xl border border-danger-100 bg-danger-50 px-4 py-3 text-sm text-danger-500">{error}</p>}
         <button
           type="button"
           onClick={handleBackup}
           disabled={downloading}
-          className="flex w-fit items-center gap-2 rounded-2xl border border-white/10 px-4 py-2.5 text-sm font-medium text-text-secondary transition hover:bg-white/5 disabled:opacity-60"
+          className="btn-secondary w-fit"
         >
           <Download size={16} strokeWidth={1.75} />
           {downloading ? "İndiriliyor..." : "Yedek Al"}
@@ -628,13 +702,13 @@ function DangerZoneSection() {
   }
 
   return (
-    <div className="rounded-2xl border border-primary-red/30 bg-primary-red/5 p-6">
+    <div className="rounded-2xl border border-danger-100 bg-danger-50 p-6 shadow-card">
       <div className="flex items-start gap-3">
-        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-primary-red/10 text-primary-redLight">
+        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-white text-danger-500 ring-1 ring-danger-100">
           <AlertTriangle size={18} strokeWidth={1.75} />
         </div>
         <div>
-          <h2 className="text-lg font-semibold text-primary-redLight">Tehlikeli Bölge</h2>
+          <h2 className="text-base font-semibold text-danger-500">Tehlikeli Bölge</h2>
           <p className="mt-1 text-sm text-text-secondary">
             Tüm müşteri, iş, sözleşme, ödeme, teklif, mesaj ve avans kayıtlarını kalıcı olarak siler. Kullanıcı
             hesapları ve giriş bilgileri etkilenmez, sisteme giriş yapmaya devam edebilirsiniz.
@@ -642,13 +716,13 @@ function DangerZoneSection() {
         </div>
       </div>
 
-      {result && <p className="mt-4 rounded-2xl bg-primary-green/10 px-4 py-3 text-sm text-primary-greenLight">{result}</p>}
+      {result && <p className="mt-4 rounded-2xl border border-primary-100 bg-primary-50 px-4 py-3 text-sm font-medium text-primary-700">{result}</p>}
 
       <div className="mt-5">
         <button
           type="button"
           onClick={openModal}
-          className="flex items-center gap-2 rounded-2xl bg-primary-red px-4 py-2.5 text-sm font-semibold text-white transition hover:opacity-90"
+          className="btn-danger"
         >
           <Trash2 size={16} strokeWidth={1.75} />
           Tüm Demo Verileri Sil
@@ -670,13 +744,13 @@ function DangerZoneSection() {
             placeholder={CLEAR_CONFIRM_WORD}
           />
 
-          {error && <p className="rounded-2xl bg-primary-red/10 px-4 py-3 text-sm text-primary-redLight">{error}</p>}
+          {error && <p className="rounded-2xl border border-danger-100 bg-danger-50 px-4 py-3 text-sm text-danger-500">{error}</p>}
 
           <div className="mt-2 flex justify-end gap-3">
             <button
               type="button"
               onClick={() => setModalOpen(false)}
-              className="rounded-2xl px-4 py-2.5 text-sm font-medium text-text-secondary transition hover:bg-white/5"
+              className="btn-ghost"
             >
               Vazgeç
             </button>
@@ -684,7 +758,7 @@ function DangerZoneSection() {
               type="button"
               disabled={confirmText !== CLEAR_CONFIRM_WORD || loading}
               onClick={handleClear}
-              className="rounded-2xl bg-primary-red px-4 py-2.5 text-sm font-semibold text-white transition hover:opacity-90 disabled:opacity-40"
+              className="btn-danger"
             >
               {loading ? "Siliniyor..." : "Kalıcı Olarak Sil"}
             </button>

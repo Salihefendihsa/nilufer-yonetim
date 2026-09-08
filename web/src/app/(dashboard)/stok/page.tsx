@@ -1,8 +1,12 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
-import { Plus, PackagePlus, Boxes, Trash2, AlertTriangle } from "lucide-react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { Plus, PackagePlus, Boxes, Trash2, AlertTriangle, PackageCheck, Layers } from "lucide-react";
 import { RequireRole } from "@/components/RequireRole";
+import { PageHeader } from "@/components/PageHeader";
+import { StatCard } from "@/components/StatCard";
+import { StatusStrip } from "@/components/StatusStrip";
+import { ChartCard, RankBars } from "@/components/ChartCard";
 import { Table, type Column } from "@/components/Table";
 import { EmptyState } from "@/components/EmptyState";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
@@ -66,6 +70,26 @@ function StockPageContent() {
     }
   }
 
+  // Kart, şerit ve grafik aynı ürün listesinden hesaplanır — ek istek yok.
+  const stock = useMemo(() => {
+    const critical = products.filter((p) => Number(p.currentStock) <= Number(p.criticalThreshold)).length;
+    return { critical, healthy: products.length - critical };
+  }, [products]);
+
+  const stockRows = useMemo(
+    () =>
+      products
+        .slice()
+        .sort((a, b) => Number(a.currentStock) - Number(b.currentStock))
+        .slice(0, 8)
+        .map((p) => ({
+          label: p.name,
+          value: Number(p.currentStock),
+          meta: `${p.currentStock} ${p.unit}`,
+        })),
+    [products]
+  );
+
   const columns: Column<Product>[] = [
     {
       header: "Ürün",
@@ -79,11 +103,11 @@ function StockPageContent() {
         const critical = row.currentStock <= row.criticalThreshold;
         return (
           <span className="flex items-center gap-2">
-            <span className={critical ? "font-semibold text-primary-redLight" : "text-text-primary"}>
+            <span className={critical ? "font-semibold text-danger-500" : "text-text-primary"}>
               {row.currentStock} {row.unit}
             </span>
             {critical && (
-              <span className="inline-flex items-center gap-1 rounded-full border border-primary-redLight/30 bg-primary-redLight/10 px-2 py-0.5 text-[10px] font-semibold text-primary-redLight">
+              <span className="inline-flex items-center gap-1 rounded-full border border-danger-100 bg-danger-50 px-2 py-0.5 text-[10px] font-semibold text-danger-500">
                 <AlertTriangle size={10} strokeWidth={2} />
                 Kritik
               </span>
@@ -101,7 +125,7 @@ function StockPageContent() {
           <button
             type="button"
             onClick={() => setRestockTarget(row)}
-            className="flex items-center gap-1.5 rounded-2xl bg-white/5 px-3 py-1.5 text-xs font-medium text-text-secondary transition hover:bg-white/10"
+            className="flex items-center gap-1.5 rounded-xl border border-border bg-surface-base px-3 py-1.5 text-xs font-medium text-text-secondary transition hover:border-border-strong hover:bg-surface-subtle hover:text-text-primary"
           >
             <PackagePlus size={13} strokeWidth={1.75} />
             Stok Ekle
@@ -109,7 +133,7 @@ function StockPageContent() {
           <button
             type="button"
             onClick={() => setDeleteTarget(row)}
-            className="flex items-center gap-1.5 rounded-2xl bg-primary-redLight/10 px-3 py-1.5 text-xs font-medium text-primary-redLight transition hover:bg-primary-redLight/20"
+            className="flex items-center gap-1.5 rounded-xl border border-danger-100 bg-danger-50 px-3 py-1.5 text-xs font-medium text-danger-500 transition hover:bg-danger-100"
           >
             <Trash2 size={13} strokeWidth={1.75} />
           </button>
@@ -119,23 +143,59 @@ function StockPageContent() {
   ];
 
   return (
-    <div className="flex flex-col gap-8">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="font-serif text-3xl font-semibold tracking-tight text-text-primary">Stok</h1>
-          <p className="mt-1 text-sm text-text-secondary">İlaç ve ekipman stoğunuzu buradan takip edin.</p>
-        </div>
-        <button
-          type="button"
-          onClick={() => setFormOpen(true)}
-          className="flex items-center gap-2 rounded-2xl bg-gradient-to-r from-primary-green to-primary-green/90 px-4 py-2.5 text-sm font-semibold text-white transition hover:shadow-[0_0_20px_rgba(212,174,61,0.22)]"
-        >
-          <Plus size={16} strokeWidth={2} />
-          Yeni Ürün
-        </button>
+    <div className="flex flex-col gap-6">
+      <PageHeader
+        icon={Boxes}
+        title="Stok"
+        description="İlaç ve ekipman stoğunuzu buradan takip edin."
+        actions={
+          <button
+            type="button"
+            onClick={() => setFormOpen(true)}
+            className="flex items-center gap-2 rounded-2xl bg-primary-600 px-4 py-2.5 text-sm font-semibold text-white shadow-card transition hover:bg-primary-700"
+          >
+            <Plus size={16} strokeWidth={2} />
+            Yeni Ürün
+          </button>
+        }
+      />
+
+      {/* [Özet kartlar] */}
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+        <StatCard label="Ürün çeşidi" value={loading ? "—" : String(products.length)} icon={Layers} mono />
+        <StatCard
+          label="Kritik seviyede"
+          value={loading ? "—" : String(stock.critical)}
+          icon={AlertTriangle}
+          accent="red"
+          mono
+          badge={stock.critical > 0 ? { label: "Kritik", tone: "critical" } : undefined}
+        />
+        <StatCard
+          label="Yeterli stoklu"
+          value={loading ? "—" : String(stock.healthy)}
+          icon={PackageCheck}
+          mono
+          progress={products.length > 0 ? (stock.healthy / products.length) * 100 : 0}
+        />
       </div>
 
-      {error && <p className="rounded-2xl bg-primary-redLight/10 px-4 py-3 text-sm text-primary-redLight">{error}</p>}
+      {/* [Durum dağılımı şeridi] */}
+      <StatusStrip
+        loading={loading}
+        totalLabel={`${products.length} ürün`}
+        segments={[
+          { label: "yeterli", count: stock.healthy, color: "#15803D" },
+          { label: "kritik", count: stock.critical, color: "#C0392B" },
+        ]}
+      />
+
+      {/* [Grafik] */}
+      <ChartCard title="Stok Seviyeleri" description="Kritik eşiğe göre mevcut miktar" icon={Boxes} height={220}>
+        <RankBars rows={stockRows} emptyLabel={loading ? "Yükleniyor..." : "Ürün yok"} />
+      </ChartCard>
+
+      {error && <p className="rounded-2xl border border-danger-100 bg-danger-50 px-4 py-3 text-sm text-danger-500">{error}</p>}
 
       <Table
         columns={columns}

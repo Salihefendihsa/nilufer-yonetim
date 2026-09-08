@@ -10,8 +10,8 @@ interface EmptyStateProps {
 
 export function EmptyState({ icon: Icon, title, description, actionLabel, onAction }: EmptyStateProps) {
   return (
-    <div className="flex flex-col items-center gap-3 rounded-2xl border border-white/5 bg-white/[0.02] py-20 text-center backdrop-blur-sm">
-      <div className="flex h-14 w-14 items-center justify-center rounded-full bg-white/5 text-text-faint">
+    <div className="flex flex-col items-center gap-3 py-16 text-center">
+      <div className="flex h-14 w-14 items-center justify-center rounded-full bg-primary-50 text-primary-400 ring-1 ring-primary-100">
         <Icon size={26} strokeWidth={1.5} />
       </div>
       <p className="text-sm font-medium text-text-primary">{title}</p>
@@ -20,7 +20,7 @@ export function EmptyState({ icon: Icon, title, description, actionLabel, onActi
         <button
           type="button"
           onClick={onAction}
-          className="mt-2 rounded-2xl bg-gradient-to-r from-primary-green to-primary-green/90 px-4 py-2.5 text-sm font-semibold text-white transition hover:shadow-[0_0_20px_rgba(212,174,61,0.22)]"
+          className="mt-2 rounded-2xl bg-primary-600 px-4 py-2.5 text-sm font-semibold text-white shadow-card transition hover:bg-primary-700"
         >
           {actionLabel}
         </button>

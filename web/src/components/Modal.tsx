@@ -33,7 +33,7 @@ export function Modal({ open, onClose, title, children }: ModalProps) {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          className="fixed inset-0 z-50 flex items-center justify-center bg-ink/30 px-4"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-ink/35 px-4 backdrop-blur-[2px]"
           onClick={onClose}
         >
           <motion.div
@@ -41,7 +41,7 @@ export function Modal({ open, onClose, title, children }: ModalProps) {
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 12, scale: 0.98 }}
             transition={{ duration: 0.18, ease: "easeOut" }}
-            className="w-full max-w-lg rounded-2xl border border-white/10 bg-surface-card p-6 shadow-xl"
+            className="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-3xl border border-border bg-surface-card p-6 shadow-pop"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="mb-5 flex items-center justify-between">
@@ -50,7 +50,7 @@ export function Modal({ open, onClose, title, children }: ModalProps) {
                 type="button"
                 onClick={onClose}
                 aria-label="Kapat"
-                className="flex h-8 w-8 items-center justify-center rounded-2xl text-text-faint transition hover:bg-white/5 hover:text-text-primary"
+                className="flex h-8 w-8 items-center justify-center rounded-xl text-text-faint transition hover:bg-surface-subtle hover:text-text-primary"
               >
                 <X size={18} strokeWidth={1.75} />
               </button>

@@ -25,6 +25,9 @@ export interface Job {
   ratingComment: string | null;
   createdAt: string;
   calendarLink: string | null;
+  /** Liste/detay yanıtına gömülü — ayrıca /customers veya /staff çağırmaya gerek bırakmaz. */
+  customer?: { fullName: string };
+  assignedStaff?: { user: { fullName: string } } | null;
 }
 
 export interface Payment {

@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import {
   CalendarCheck,
@@ -26,17 +26,22 @@ import {
   Activity,
   BarChart3,
   MapPin,
+  Calendar,
+  Wrench,
 } from "lucide-react";
 import { api, ApiError, resolveUploadUrl } from "@/lib/api";
 import { useAuth } from "@/lib/AuthProvider";
 import { StatCard } from "@/components/StatCard";
-import { StatusBadge } from "@/components/StatusBadge";
+import { PageHeader } from "@/components/PageHeader";
+import { StatusStrip } from "@/components/StatusStrip";
+import { ChartCard, DonutChart, RankBars, SimpleBarChart } from "@/components/ChartCard";
+import { StatusBadge, STATUS_COLORS, STATUS_TEXT } from "@/components/StatusBadge";
 import { EmptyState } from "@/components/EmptyState";
 import { StarRating } from "@/components/StarRating";
 import { ActivityFeed } from "@/components/ActivityFeed";
 import { PhotoLightbox } from "@/components/PhotoLightbox";
 import { currencyFormatter, formatDateTime, todayIsoDate, toIsoDate } from "@/lib/format";
-import type { Job, JobReport, JobPhoto, Staff, Paginated, Customer, ActivityEvent, SystemHealth } from "@/lib/types";
+import type { Job, JobReport, JobPhoto, JobStatus, Staff, Paginated, Customer, ActivityEvent, SystemHealth } from "@/lib/types";
 import { QuoteRequestModal } from "./QuoteRequestModal";
 import { JobReportModal } from "./JobReportModal";
 import { AdvanceRequestModal } from "./AdvanceRequestModal";
@@ -79,6 +84,17 @@ interface CommandCenterData {
   health: SystemHealth | null;
 }
 
+const ALL_STATUSES: JobStatus[] = ["PENDING", "SCHEDULED", "COMPLETED", "CANCELLED"];
+
+/** Bir iş listesini StatusStrip segmentlerine çevirir — beş dashboard da aynı eşlemeyi kullanır. */
+function toStatusSegments(jobs: Job[]) {
+  return ALL_STATUSES.map((status) => ({
+    label: STATUS_TEXT[status],
+    count: jobs.filter((j) => j.status === status).length,
+    color: STATUS_COLORS[status],
+  }));
+}
+
 function useClock() {
   const [now, setNow] = useState(new Date());
   useEffect(() => {
@@ -89,23 +105,7 @@ function useClock() {
 }
 
 function WeekBarChart({ data }: { data: { label: string; count: number }[] }) {
-  const max = Math.max(1, ...data.map((d) => d.count));
-  return (
-    <div className="flex h-40 items-end gap-3">
-      {data.map((d) => (
-        <div key={d.label} className="flex flex-1 flex-col items-center gap-2">
-          <span className="font-mono text-xs text-text-secondary">{d.count}</span>
-          <div className="flex w-full items-end justify-center" style={{ height: "96px" }}>
-            <div
-              className="w-full max-w-[28px] rounded-t-lg bg-gradient-to-t from-primary-green to-primary-greenLight"
-              style={{ height: `${Math.max(4, (d.count / max) * 96)}px` }}
-            />
-          </div>
-          <span className="text-xs text-text-faint">{d.label}</span>
-        </div>
-      ))}
-    </div>
-  );
+  return <SimpleBarChart data={data} xKey="label" series={[{ key: "count", name: "İş sayısı" }]} />;
 }
 
 function OwnerDashboard() {
@@ -228,42 +228,50 @@ function OwnerDashboard() {
 
   const pendingApprovalsCount = data.pendingQuotes + data.pendingAdvances + data.expiringContracts;
   const activeJobsCount = jobs.filter((j) => j.status === "PENDING" || j.status === "SCHEDULED").length;
+  const completionRate =
+    jobs.length > 0 ? (jobs.filter((j) => j.status === "COMPLETED").length / jobs.length) * 100 : 0;
 
   return (
-    <div className="flex flex-col gap-8">
-      <div className="flex flex-wrap items-center justify-between gap-4 rounded-2xl bg-surface-card p-6 shadow-[0_8px_24px_rgba(0,0,0,0.22)]">
-        <div>
-          <h1 className="bg-gradient-to-r from-primary-green to-primary-gold bg-clip-text font-serif text-3xl font-semibold tracking-tight text-transparent">
-            Komuta Merkezi
-          </h1>
-          <p className="mt-1 text-sm text-text-secondary">Canlı operasyon özeti</p>
-          <div className="mt-3 flex flex-wrap items-center gap-4">
-            <span className="flex items-center gap-1.5 text-xs text-text-secondary">
-              <span className={`h-1.5 w-1.5 rounded-full ${data.health?.api === "healthy" ? "bg-primary-greenLight" : "bg-primary-redLight"}`} />
-              API
-            </span>
-            <span className="flex items-center gap-1.5 text-xs text-text-secondary">
-              <span className={`h-1.5 w-1.5 rounded-full ${data.health?.database === "healthy" ? "bg-primary-greenLight" : "bg-primary-redLight"}`} />
-              Veritabanı
-            </span>
-            <span className="font-mono text-xs text-text-faint">
-              {clock.toLocaleTimeString("tr-TR", { hour: "2-digit", minute: "2-digit", second: "2-digit" })}
-            </span>
+    <div className="flex flex-col gap-6">
+      <div className="flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-border bg-surface-card p-6 shadow-card">
+        <div className="flex items-start gap-3">
+          <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-primary-600 text-white">
+            <Activity size={20} strokeWidth={1.75} />
+          </span>
+          <div>
+            <h1 className="text-2xl font-bold tracking-tight text-text-primary">Komuta Merkezi</h1>
+            <p className="mt-1 text-sm text-text-secondary">Canlı operasyon özeti</p>
+            <div className="mt-3 flex flex-wrap items-center gap-2">
+              <span className="flex items-center gap-1.5 rounded-full bg-surface-subtle px-2.5 py-1 text-xs text-text-secondary">
+                <span className={`h-1.5 w-1.5 rounded-full ${data.health?.api === "healthy" ? "bg-primary-500" : "bg-danger-500"}`} />
+                API
+              </span>
+              <span className="flex items-center gap-1.5 rounded-full bg-surface-subtle px-2.5 py-1 text-xs text-text-secondary">
+                <span className={`h-1.5 w-1.5 rounded-full ${data.health?.database === "healthy" ? "bg-primary-500" : "bg-danger-500"}`} />
+                Veritabanı
+              </span>
+              <span className="rounded-full bg-surface-subtle px-2.5 py-1 font-mono text-xs text-text-faint">
+                {clock.toLocaleTimeString("tr-TR", { hour: "2-digit", minute: "2-digit", second: "2-digit" })}
+              </span>
+            </div>
           </div>
         </div>
         <Link
           href="/bekleyen-onaylar"
-          className="flex items-center gap-2 rounded-2xl bg-gradient-to-r from-primary-green to-primary-green/90 px-4 py-2.5 text-sm font-semibold text-white transition hover:shadow-[0_0_20px_rgba(212,174,61,0.22)]"
+          className="flex items-center gap-2 rounded-2xl bg-primary-600 px-4 py-2.5 text-sm font-semibold text-white shadow-card transition hover:bg-primary-700"
         >
           <ClipboardCheck size={16} strokeWidth={1.75} />
           Bekleyen Onaylar
         </Link>
       </div>
 
-      {error && <p className="rounded-2xl bg-primary-redLight/10 px-4 py-3 text-sm text-primary-redLight">{error}</p>}
+      {/* [Bugünün durum dağılımı] */}
+      <StatusStrip loading={loading} totalLabel={`Bugün ${jobs.length} iş`} segments={toStatusSegments(jobs)} />
 
-      <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
-        <StatCard label="Toplam Müşteri" value={data.totalCustomers !== null ? String(data.totalCustomers) : "—"} icon={Users} />
+      {error && <p className="rounded-2xl border border-danger-100 bg-danger-50 px-4 py-3 text-sm text-danger-500">{error}</p>}
+
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <StatCard label="Toplam Müşteri" value={data.totalCustomers !== null ? String(data.totalCustomers) : "—"} icon={Users} mono />
         <StatCard
           label="Aktif İş"
           value={loading ? "—" : String(activeJobsCount)}
@@ -281,12 +289,22 @@ function OwnerDashboard() {
           label="Toplam Tahsilat"
           value={data.summary ? currencyFormatter.format(data.summary.thisMonthPaymentsTotal) : "—"}
           icon={Wallet}
+          accent="blue"
+          mono
+          hint="Bu ay tahsil edilen"
         />
       </div>
 
-      <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
-        <StatCard label="Bugün Tamamlanan İş" value={data.summary ? String(data.summary.completedJobsThisMonth) : "—"} icon={CheckCircle2} />
-        <StatCard label="Aktif Personel" value={data.summary ? String(data.summary.activeStaffCount) : "—"} icon={HardHat} />
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <StatCard
+          label="Bu Ay Tamamlanan İş"
+          value={data.summary ? String(data.summary.completedJobsThisMonth) : "—"}
+          icon={CheckCircle2}
+          mono
+          progress={completionRate}
+          hint={`Bugünkü işlerin %${Math.round(completionRate)}'i tamamlandı`}
+        />
+        <StatCard label="Aktif Personel" value={data.summary ? String(data.summary.activeStaffCount) : "—"} icon={HardHat} accent="neutral" mono />
         <StatCard
           label="Bu Ay Net Kâr"
           value={data.netProfitThisMonth !== null ? currencyFormatter.format(data.netProfitThisMonth) : "—"}
@@ -301,73 +319,75 @@ function OwnerDashboard() {
         />
       </div>
 
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-        <div className="rounded-2xl bg-surface-card p-6 shadow-[0_8px_24px_rgba(0,0,0,0.22)]">
-          <div className="mb-5 flex items-center gap-2">
-            <BarChart3 size={18} strokeWidth={1.75} className="text-text-faint" />
-            <h2 className="text-base font-semibold text-text-primary">Son 7 Günlük İş Grafiği</h2>
-          </div>
-          {data.weekCounts.length === 0 ? (
-            <p className="py-8 text-center text-sm text-text-faint">Yükleniyor...</p>
-          ) : (
-            <WeekBarChart data={data.weekCounts} />
-          )}
-        </div>
+      {/* [Grafikler] */}
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
+        <ChartCard
+          title="Son 7 Günlük İş Grafiği"
+          description="Günlük planlanan iş sayısı"
+          icon={BarChart3}
+          height={260}
+          className="lg:col-span-2"
+        >
+          <WeekBarChart data={data.weekCounts} />
+        </ChartCard>
 
-        <div className="rounded-2xl bg-surface-card p-6 shadow-[0_8px_24px_rgba(0,0,0,0.22)]">
-          <div className="mb-5 flex items-center gap-2">
-            <MapPin size={18} strokeWidth={1.75} className="text-text-faint" />
-            <h2 className="text-base font-semibold text-text-primary">Bölge Dağılımı</h2>
-          </div>
-          {data.districtCounts.length === 0 ? (
-            <p className="py-8 text-center text-sm text-text-faint">Henüz veri yok.</p>
-          ) : (
-            <ul className="flex flex-col divide-y divide-white/5">
-              {data.districtCounts.map((d) => (
-                <li key={d.district} className="flex items-center justify-between py-2.5 text-sm">
-                  <span className="text-text-secondary">{d.district}</span>
-                  <span className="font-mono font-medium text-text-primary">{d.count}</span>
-                </li>
-              ))}
-            </ul>
-          )}
-        </div>
+        <ChartCard title="Bugünün Durum Dağılımı" description="Açık ve kapanan işler" icon={Activity} height={260}>
+          <DonutChart
+            data={toStatusSegments(jobs).map((seg) => ({ name: seg.label, value: seg.count, color: seg.color }))}
+            centerValue={String(jobs.length)}
+            centerLabel="bugünkü iş"
+            emptyLabel={loading ? "Yükleniyor..." : "Bugün iş yok"}
+          />
+        </ChartCard>
+
+        <ChartCard title="Bölge Dağılımı" description="Müşterilerin semt kırılımı" icon={MapPin} height={240} className="lg:col-span-2">
+          <RankBars
+            rows={data.districtCounts.map((d) => ({ label: d.district, value: d.count }))}
+            emptyLabel={loading ? "Yükleniyor..." : "Henüz veri yok"}
+          />
+        </ChartCard>
+
+        <ChartCard title="Bekleyen Uyarılar" description="Aksiyon bekleyen kalemler" icon={ClipboardCheck} height={240}>
+          <ul className="flex h-full flex-col justify-center gap-2 text-sm">
+            {[
+              { label: "Bekleyen onay", value: pendingApprovalsCount, tone: "warning" },
+              { label: "Kritik seviyede ürün", value: data.lowStockCount, tone: "warning" },
+              { label: "30 gün içi bitecek sözleşme", value: data.expiringContracts, tone: "warning" },
+              { label: "Sertifika süresi doluyor", value: data.expiringCertifications, tone: "warning" },
+              { label: "İptal edilen iş", value: data.cancelledJobs, tone: "danger" },
+            ].map((row) => (
+              <li
+                key={row.label}
+                className={`flex items-center justify-between rounded-xl border px-3 py-2 ${
+                  row.value === 0
+                    ? "border-border bg-surface-subtle"
+                    : row.tone === "danger"
+                      ? "border-danger-100 bg-danger-50"
+                      : "border-warning-100 bg-warning-50"
+                }`}
+              >
+                <span className="text-text-secondary">{row.label}</span>
+                <span
+                  className={`font-mono font-semibold ${
+                    row.value === 0 ? "text-text-faint" : row.tone === "danger" ? "text-danger-500" : "text-warning-600"
+                  }`}
+                >
+                  {row.value}
+                </span>
+              </li>
+            ))}
+          </ul>
+        </ChartCard>
       </div>
 
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-        <div className="rounded-2xl bg-surface-card p-6 shadow-[0_8px_24px_rgba(0,0,0,0.22)]">
-          <div className="mb-3 flex items-center gap-2">
-            <Activity size={18} strokeWidth={1.75} className="text-text-faint" />
-            <h2 className="text-base font-semibold text-text-primary">Aktivite Akışı</h2>
-          </div>
-          <ActivityFeed events={data.activity} loading={loading} />
+      <div className="rounded-2xl border border-border bg-surface-card p-6 shadow-card">
+        <div className="mb-3 flex items-center gap-2.5">
+          <span className="flex h-9 w-9 items-center justify-center rounded-2xl bg-primary-50 text-primary-600 ring-1 ring-primary-100">
+            <Activity size={17} strokeWidth={1.75} />
+          </span>
+          <h2 className="text-base font-semibold text-text-primary">Aktivite Akışı</h2>
         </div>
-
-        <div className="rounded-2xl bg-surface-card p-6 shadow-[0_8px_24px_rgba(0,0,0,0.22)]">
-          <h2 className="mb-4 text-base font-semibold text-text-primary">Bekleyen Uyarılar</h2>
-          <ul className="flex flex-col gap-3 text-sm">
-            <li className="flex items-center justify-between rounded-2xl bg-amber-400/10 px-4 py-3">
-              <span className="text-text-secondary">🟨 Bekleyen onay</span>
-              <span className="font-mono font-semibold text-amber-300">{pendingApprovalsCount}</span>
-            </li>
-            <li className="flex items-center justify-between rounded-2xl bg-amber-400/10 px-4 py-3">
-              <span className="text-text-secondary">🟨 Kritik seviyede ürün</span>
-              <span className="font-mono font-semibold text-amber-300">{data.lowStockCount}</span>
-            </li>
-            <li className="flex items-center justify-between rounded-2xl bg-orange-400/10 px-4 py-3">
-              <span className="text-text-secondary">🟧 30 gün içi bitecek sözleşme</span>
-              <span className="font-mono font-semibold text-orange-300">{data.expiringContracts}</span>
-            </li>
-            <li className="flex items-center justify-between rounded-2xl bg-amber-400/10 px-4 py-3">
-              <span className="text-text-secondary">🟨 Sertifika süresi doluyor</span>
-              <span className="font-mono font-semibold text-amber-300">{data.expiringCertifications}</span>
-            </li>
-            <li className="flex items-center justify-between rounded-2xl bg-primary-redLight/10 px-4 py-3">
-              <span className="text-text-secondary">🟥 İptal edilen iş</span>
-              <span className="font-mono font-semibold text-primary-redLight">{data.cancelledJobs}</span>
-            </li>
-          </ul>
-        </div>
+        <ActivityFeed events={data.activity} loading={loading} />
       </div>
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
@@ -384,9 +404,9 @@ function QuickAccessCard({ href, icon: Icon, label }: { href: string; icon: type
   return (
     <Link
       href={href}
-      className="flex items-center gap-3 rounded-2xl bg-surface-card p-5 shadow-[0_8px_24px_rgba(0,0,0,0.22)] transition hover:bg-surface-cardHover"
+      className="flex items-center gap-3 rounded-2xl border border-border bg-surface-card p-4 shadow-card transition hover:border-primary-200 hover:bg-primary-50/50 hover:shadow-cardHover"
     >
-      <span className="flex h-10 w-10 items-center justify-center rounded-2xl bg-primary-gold/15 text-primary-gold">
+      <span className="flex h-10 w-10 items-center justify-center rounded-2xl bg-primary-50 text-primary-600 ring-1 ring-primary-100">
         <Icon size={18} strokeWidth={1.75} />
       </span>
       <span className="text-sm font-medium text-text-primary">{label}</span>
@@ -419,29 +439,77 @@ function ManagerDashboard() {
     load();
   }, []);
 
+  // Hizmet kırılımı bugünkü iş listesinden türetilir; ek istek yok.
+  const serviceRows = useMemo(() => {
+    const counts = new Map<string, number>();
+    for (const job of jobs) counts.set(job.serviceType, (counts.get(job.serviceType) ?? 0) + 1);
+    return Array.from(counts.entries())
+      .map(([label, value]) => ({ label, value }))
+      .sort((a, b) => b.value - a.value)
+      .slice(0, 6);
+  }, [jobs]);
+
   return (
-    <div className="flex flex-col gap-8">
-      <div>
-        <h1 className="font-serif text-3xl font-semibold tracking-tight text-text-primary">Merhaba{user ? `, ${user.fullName.split(" ")[0]}` : ""}</h1>
-        <p className="mt-1 text-sm text-text-secondary">İşte bugün işletmende olup bitenler.</p>
-      </div>
+    <div className="flex flex-col gap-6">
+      <PageHeader
+        icon={BarChart3}
+        title={`Merhaba${user ? `, ${user.fullName.split(" ")[0]}` : ""}`}
+        description="İşte bugün işletmende olup bitenler."
+      />
 
-      {error && <p className="rounded-2xl bg-primary-red/10 px-4 py-3 text-sm text-primary-redLight">{error}</p>}
+      {error && <p className="rounded-2xl border border-danger-100 bg-danger-50 px-4 py-3 text-sm text-danger-500">{error}</p>}
 
-      <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
-        <StatCard label="Bugünkü işler" value={summary ? String(summary.todaysJobsCount) : "—"} icon={CalendarCheck} />
+      {/* [Özet kartlar] */}
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <StatCard label="Bugünkü işler" value={summary ? String(summary.todaysJobsCount) : "—"} icon={CalendarCheck} mono />
         <StatCard
           label="Bu ay tamamlanan iş"
           value={summary ? String(summary.completedJobsThisMonth) : "—"}
           icon={ClipboardCheck}
+          accent="blue"
+          mono
         />
-        <StatCard label="Yeni talepler" value={summary ? String(summary.newQuoteRequestsCount) : "—"} icon={MessageSquarePlus} accent="red" />
-        <StatCard label="Aktif personel" value={summary ? String(summary.activeStaffCount) : "—"} icon={HardHat} />
+        <StatCard
+          label="Yeni talepler"
+          value={summary ? String(summary.newQuoteRequestsCount) : "—"}
+          icon={MessageSquarePlus}
+          accent="red"
+          mono
+        />
+        <StatCard
+          label="Aktif personel"
+          value={summary ? String(summary.activeStaffCount) : "—"}
+          icon={HardHat}
+          accent="neutral"
+          mono
+        />
       </div>
 
-      <div className="rounded-2xl bg-surface-card p-6 shadow-[0_8px_24px_rgba(0,0,0,0.22)]">
-        <div className="mb-5 flex items-center gap-2">
-          <Clock size={18} strokeWidth={1.75} className="text-text-faint" />
+      {/* [Durum dağılımı şeridi] */}
+      <StatusStrip loading={loading} totalLabel={`Bugün ${jobs.length} iş`} segments={toStatusSegments(jobs)} />
+
+      {/* [Grafik] */}
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+        <ChartCard title="Bugünün Durum Dağılımı" icon={Activity} height={240}>
+          <DonutChart
+            data={toStatusSegments(jobs).map((seg) => ({ name: seg.label, value: seg.count, color: seg.color }))}
+            centerValue={String(jobs.length)}
+            centerLabel="bugünkü iş"
+            emptyLabel={loading ? "Yükleniyor..." : "Bugün iş yok"}
+          />
+        </ChartCard>
+
+        <ChartCard title="Hizmet Türü Kırılımı" description="Bugünkü işler" icon={BarChart3} height={240}>
+          <RankBars rows={serviceRows} emptyLabel={loading ? "Yükleniyor..." : "Bugün iş yok"} />
+        </ChartCard>
+      </div>
+
+      {/* [Detaylı liste] */}
+      <div className="rounded-2xl border border-border bg-surface-card p-6 shadow-card">
+        <div className="mb-5 flex items-center gap-2.5">
+          <span className="flex h-9 w-9 items-center justify-center rounded-2xl bg-primary-50 text-primary-600 ring-1 ring-primary-100">
+            <Clock size={17} strokeWidth={1.75} />
+          </span>
           <h2 className="text-base font-semibold text-text-primary">Bugünkü işler</h2>
         </div>
 
@@ -450,7 +518,7 @@ function ManagerDashboard() {
         ) : jobs.length === 0 ? (
           <EmptyState icon={CalendarCheck} title="Bugün için planlanmış iş yok" />
         ) : (
-          <ul className="flex flex-col divide-y divide-white/5">
+          <ul className="flex flex-col divide-y divide-border">
             {jobs.map((job) => (
               <li key={job.id} className="flex items-center justify-between gap-4 py-4">
                 <div>
@@ -510,28 +578,63 @@ function TeamLeadDashboard() {
 
   const staffNames = Object.fromEntries(team.map((s) => [s.id, s.user.fullName]));
 
+  // İş yükü çubukları mevcut jobs/team dizilerinden hesaplanır.
+  const teamLoadRows = useMemo(() => {
+    const counts = new Map<string, number>();
+    for (const job of jobs) {
+      if (!job.assignedStaffId) continue;
+      counts.set(job.assignedStaffId, (counts.get(job.assignedStaffId) ?? 0) + 1);
+    }
+    return Array.from(counts.entries())
+      .map(([staffId, value]) => ({ label: staffNames[staffId] ?? "Personel", value }))
+      .sort((a, b) => b.value - a.value);
+  }, [jobs, staffNames]);
+
   return (
-    <div className="flex flex-col gap-8">
-      <div className="flex items-center gap-2">
-        <Users2 size={22} strokeWidth={1.75} className="text-text-faint" />
-        <div>
-          <h1 className="font-serif text-3xl font-semibold tracking-tight text-text-primary">Ekibim</h1>
-          <p className="mt-1 text-sm text-text-secondary">Merhaba{user ? `, ${user.fullName.split(" ")[0]}` : ""}. Ekibinin bugünkü işleri burada.</p>
-        </div>
+    <div className="flex flex-col gap-6">
+      <PageHeader
+        icon={Users2}
+        title="Ekibim"
+        description={`Merhaba${user ? `, ${user.fullName.split(" ")[0]}` : ""}. Ekibinin bugünkü işleri burada.`}
+      />
+
+      {error && <p className="rounded-2xl border border-danger-100 bg-danger-50 px-4 py-3 text-sm text-danger-500">{error}</p>}
+
+      {/* [Özet kartlar] */}
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+        <StatCard label="Bugünkü iş" value={loading ? "—" : String(jobs.length)} icon={CalendarCheck} mono />
+        <StatCard
+          label="Tamamlanan"
+          value={loading ? "—" : String(jobs.filter((j) => j.status === "COMPLETED").length)}
+          icon={CheckCircle2}
+          mono
+          progress={jobs.length > 0 ? (jobs.filter((j) => j.status === "COMPLETED").length / jobs.length) * 100 : 0}
+        />
+        <StatCard label="Ekip mevcudu" value={loading ? "—" : String(team.length)} icon={Users2} accent="blue" mono />
       </div>
 
-      {error && <p className="rounded-2xl bg-primary-red/10 px-4 py-3 text-sm text-primary-redLight">{error}</p>}
+      {/* [Durum dağılımı şeridi] */}
+      <StatusStrip loading={loading} totalLabel={`${jobs.length} iş`} segments={toStatusSegments(jobs)} />
+
+      {/* [Ekip iş yükü] */}
+      <ChartCard title="Ekip İş Yükü" description="Bugün kişi başına düşen iş" icon={Shuffle} height={200}>
+        <RankBars rows={teamLoadRows} emptyLabel={loading ? "Yükleniyor..." : "Bugün atanmış iş yok"} />
+      </ChartCard>
 
       {loading ? (
         <p className="py-8 text-center text-sm text-text-faint">Yükleniyor...</p>
       ) : jobs.length === 0 ? (
-        <div className="rounded-2xl bg-surface-card shadow-[0_8px_24px_rgba(0,0,0,0.22)]">
+        <div className="rounded-2xl border border-border bg-surface-card shadow-card">
           <EmptyState icon={CalendarCheck} title="Bugün ekibine ait planlanmış iş yok" />
         </div>
       ) : (
         <div className="flex flex-col gap-4">
           {jobs.map((job) => (
-            <div key={job.id} className="flex flex-wrap items-center justify-between gap-4 rounded-2xl bg-surface-card p-6 shadow-[0_8px_24px_rgba(0,0,0,0.22)]">
+            <div
+              key={job.id}
+              className="flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-border border-l-4 bg-surface-card p-5 shadow-card transition hover:shadow-cardHover"
+              style={{ borderLeftColor: STATUS_COLORS[job.status] }}
+            >
               <div>
                 <p className="text-lg font-semibold text-text-primary">{job.serviceType}</p>
                 <p className="mt-1 text-sm text-text-secondary">
@@ -548,7 +651,7 @@ function TeamLeadDashboard() {
                   value={job.assignedStaffId ?? ""}
                   disabled={reassigningId === job.id}
                   onChange={(e) => handleReassign(job.id, e.target.value)}
-                  className="rounded-2xl border border-white/10 bg-surface-card px-3 py-2 text-sm text-text-primary outline-none disabled:opacity-50"
+                  className="rounded-xl border border-border bg-surface-base px-3 py-2 text-sm font-medium text-text-primary outline-none transition hover:border-border-strong focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 disabled:opacity-50"
                 >
                   <option value="" disabled>
                     Yeniden ata
@@ -595,25 +698,49 @@ function StaffDashboard() {
   }, [load]);
 
   return (
-    <div className="flex flex-col gap-8">
-      <div className="flex flex-wrap items-center justify-between gap-4">
-        <div>
-          <h1 className="font-serif text-3xl font-semibold tracking-tight text-text-primary">Merhaba{user ? `, ${user.fullName.split(" ")[0]}` : ""}</h1>
-          <p className="mt-1 text-sm text-text-secondary">Bugünkü işlerin burada.</p>
-        </div>
-        <button
-          type="button"
-          onClick={() => setAdvanceModalOpen(true)}
-          className="flex items-center gap-2 rounded-2xl bg-white/5 px-4 py-2.5 text-sm font-medium text-text-primary transition hover:bg-white/10"
-        >
-          <HandCoins size={16} strokeWidth={1.75} />
-          Avans Talep Et
-        </button>
+    <div className="flex flex-col gap-6">
+      <PageHeader
+        icon={Wrench}
+        title={`Merhaba${user ? `, ${user.fullName.split(" ")[0]}` : ""}`}
+        description="Bugünkü işlerin burada."
+        actions={
+          <button
+            type="button"
+            onClick={() => setAdvanceModalOpen(true)}
+            className="flex items-center gap-2 rounded-2xl border border-border bg-surface-base px-4 py-2.5 text-sm font-medium text-text-primary transition hover:border-border-strong hover:bg-surface-subtle"
+          >
+            <HandCoins size={16} strokeWidth={1.75} />
+            Avans Talep Et
+          </button>
+        }
+      />
+
+      {error && <p className="rounded-2xl border border-danger-100 bg-danger-50 px-4 py-3 text-sm text-danger-500">{error}</p>}
+
+      {/* [Özet kartlar] */}
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+        <StatCard label="Bugünkü iş" value={loading ? "—" : String(jobs.length)} icon={CalendarCheck} mono />
+        <StatCard
+          label="Tamamladığın"
+          value={loading ? "—" : String(jobs.filter((j) => j.status === "COMPLETED").length)}
+          icon={CheckCircle2}
+          mono
+          progress={jobs.length > 0 ? (jobs.filter((j) => j.status === "COMPLETED").length / jobs.length) * 100 : 0}
+          hint="Günlük ilerleme"
+        />
+        <StatCard
+          label="Bekleyen"
+          value={loading ? "—" : String(jobs.filter((j) => j.status === "PENDING" || j.status === "SCHEDULED").length)}
+          icon={Clock}
+          accent="gold"
+          mono
+        />
       </div>
 
-      {error && <p className="rounded-2xl bg-primary-red/10 px-4 py-3 text-sm text-primary-redLight">{error}</p>}
+      {/* [Durum dağılımı şeridi] */}
+      <StatusStrip loading={loading} totalLabel={`${jobs.length} iş`} segments={toStatusSegments(jobs)} />
       {advanceSent && (
-        <p className="rounded-2xl bg-primary-green/10 px-4 py-3 text-sm text-primary-greenLight">
+        <p className="rounded-2xl border border-primary-100 bg-primary-50 px-4 py-3 text-sm text-primary-700">
           Avans talebiniz gönderildi, onay bekliyor.
         </p>
       )}
@@ -621,7 +748,7 @@ function StaffDashboard() {
       {loading ? (
         <p className="py-8 text-center text-sm text-text-faint">Yükleniyor...</p>
       ) : jobs.length === 0 ? (
-        <div className="rounded-2xl bg-surface-card shadow-[0_8px_24px_rgba(0,0,0,0.22)]">
+        <div className="rounded-2xl border border-border bg-surface-card shadow-card">
           <EmptyState icon={CalendarCheck} title="Bugün için işin yok" description="Yeni bir iş atandığında burada görünecek." />
         </div>
       ) : (
@@ -629,7 +756,11 @@ function StaffDashboard() {
           {jobs.map((job) => {
             const isDone = job.status === "COMPLETED" || job.status === "CANCELLED";
             return (
-              <div key={job.id} className="flex flex-wrap items-center justify-between gap-4 rounded-2xl bg-surface-card p-6 shadow-[0_8px_24px_rgba(0,0,0,0.22)]">
+              <div
+                key={job.id}
+                className="flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-border border-l-4 bg-surface-card p-5 shadow-card transition hover:shadow-cardHover"
+                style={{ borderLeftColor: STATUS_COLORS[job.status] }}
+              >
                 <div>
                   <p className="text-lg font-semibold text-text-primary">{job.serviceType}</p>
                   <p className="mt-1 text-sm text-text-secondary">{formatDateTime(job.scheduledAt)}</p>
@@ -643,16 +774,17 @@ function StaffDashboard() {
                       href={job.calendarLink}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="flex items-center gap-2 rounded-2xl bg-white/5 px-4 py-3 text-sm font-medium text-text-secondary transition hover:bg-white/10"
+                      className="flex items-center gap-2 rounded-2xl border border-border bg-surface-base px-4 py-2.5 text-sm font-medium text-text-secondary transition hover:border-border-strong hover:bg-surface-subtle"
                     >
-                      📅 Takvime Ekle
+                      <Calendar size={15} strokeWidth={1.75} />
+                      Takvime Ekle
                     </a>
                   )}
                   <button
                     type="button"
                     disabled={isDone}
                     onClick={() => setReportJobId(job.id)}
-                    className="flex items-center gap-2 rounded-2xl bg-primary-green px-5 py-3 text-sm font-semibold text-white transition hover:opacity-90 disabled:opacity-40"
+                    className="flex items-center gap-2 rounded-2xl bg-primary-600 px-5 py-2.5 text-sm font-semibold text-white shadow-card transition hover:bg-primary-700 disabled:opacity-40"
                   >
                     <CheckCircle2 size={18} strokeWidth={1.75} />
                     {isDone ? "Tamamlandı" : "Tamamla"}
@@ -750,33 +882,65 @@ function CustomerDashboard() {
   const lastJob = jobs[0] ?? null;
   const pastJobs = jobs.slice(1);
 
+  const averageRating = useMemo(() => {
+    const rated = jobs.filter((j) => j.rating);
+    if (rated.length === 0) return null;
+    return rated.reduce((sum, j) => sum + (j.rating ?? 0), 0) / rated.length;
+  }, [jobs]);
+
   return (
-    <div className="flex flex-col gap-8">
-      <div className="flex flex-wrap items-center justify-between gap-4">
-        <div>
-          <h1 className="font-serif text-3xl font-semibold tracking-tight text-text-primary">Merhaba{user ? `, ${user.fullName.split(" ")[0]}` : ""}</h1>
-          <p className="mt-1 text-sm text-text-secondary">Hizmetlerinizi buradan takip edebilirsiniz.</p>
-        </div>
-        <button
-          type="button"
-          onClick={() => setModalOpen(true)}
-          className="flex items-center gap-2 rounded-2xl bg-gradient-to-r from-primary-green to-primary-green/90 px-4 py-2.5 text-sm font-semibold text-white transition hover:shadow-[0_0_20px_rgba(212,174,61,0.22)]"
-        >
-          <Plus size={16} strokeWidth={2} />
-          Yeni Randevu İste
-        </button>
+    <div className="flex flex-col gap-6">
+      <PageHeader
+        icon={Bug}
+        title={`Merhaba${user ? `, ${user.fullName.split(" ")[0]}` : ""}`}
+        description="Hizmetlerinizi buradan takip edebilirsiniz."
+        actions={
+          <button
+            type="button"
+            onClick={() => setModalOpen(true)}
+            className="flex items-center gap-2 rounded-2xl bg-primary-600 px-4 py-2.5 text-sm font-semibold text-white shadow-card transition hover:bg-primary-700"
+          >
+            <Plus size={16} strokeWidth={2} />
+            Yeni Randevu İste
+          </button>
+        }
+      />
+
+      {error && <p className="rounded-2xl border border-danger-100 bg-danger-50 px-4 py-3 text-sm text-danger-500">{error}</p>}
+
+      {/* [Özet kartlar] */}
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+        <StatCard label="Toplam hizmet" value={loading ? "—" : String(jobs.length)} icon={Bug} mono />
+        <StatCard
+          label="Tamamlanan"
+          value={loading ? "—" : String(jobs.filter((j) => j.status === "COMPLETED").length)}
+          icon={CheckCircle2}
+          mono
+          progress={jobs.length > 0 ? (jobs.filter((j) => j.status === "COMPLETED").length / jobs.length) * 100 : 0}
+        />
+        <StatCard
+          label="Verdiğiniz ortalama puan"
+          value={loading || averageRating === null ? "—" : averageRating.toFixed(1)}
+          icon={History}
+          accent="gold"
+          hint="5 üzerinden"
+          progress={averageRating ? (averageRating / 5) * 100 : 0}
+        />
       </div>
 
-      {error && <p className="rounded-2xl bg-primary-red/10 px-4 py-3 text-sm text-primary-redLight">{error}</p>}
+      {/* [Durum dağılımı şeridi] */}
+      <StatusStrip loading={loading} totalLabel={`${jobs.length} hizmet`} segments={toStatusSegments(jobs)} />
       {sent && (
-        <p className="rounded-2xl bg-primary-green/10 px-4 py-3 text-sm text-primary-greenLight">
+        <p className="rounded-2xl border border-primary-100 bg-primary-50 px-4 py-3 text-sm text-primary-700">
           Talebiniz alındı, en kısa sürede sizinle iletişime geçeceğiz.
         </p>
       )}
 
-      <div className="rounded-2xl bg-surface-card p-6 shadow-[0_8px_24px_rgba(0,0,0,0.22)]">
-        <div className="mb-4 flex items-center gap-2">
-          <Bug size={18} strokeWidth={1.75} className="text-text-faint" />
+      <div className="rounded-2xl border border-border bg-surface-card p-6 shadow-card">
+        <div className="mb-4 flex items-center gap-2.5">
+          <span className="flex h-9 w-9 items-center justify-center rounded-2xl bg-primary-50 text-primary-600 ring-1 ring-primary-100">
+            <Bug size={17} strokeWidth={1.75} />
+          </span>
           <h2 className="text-base font-semibold text-text-primary">Son Uygulamanız</h2>
         </div>
 
@@ -795,16 +959,18 @@ function CustomerDashboard() {
         )}
       </div>
 
-      <div className="rounded-2xl bg-surface-card p-6 shadow-[0_8px_24px_rgba(0,0,0,0.22)]">
-        <div className="mb-4 flex items-center gap-2">
-          <History size={18} strokeWidth={1.75} className="text-text-faint" />
+      <div className="rounded-2xl border border-border bg-surface-card p-6 shadow-card">
+        <div className="mb-4 flex items-center gap-2.5">
+          <span className="flex h-9 w-9 items-center justify-center rounded-2xl bg-primary-50 text-primary-600 ring-1 ring-primary-100">
+            <History size={17} strokeWidth={1.75} />
+          </span>
           <h2 className="text-base font-semibold text-text-primary">Geçmiş İşlemler</h2>
         </div>
 
         {pastJobs.length === 0 ? (
           <p className="py-6 text-center text-sm text-text-faint">Henüz geçmiş işlem yok.</p>
         ) : (
-          <ul className="flex flex-col divide-y divide-white/5">
+          <ul className="flex flex-col divide-y divide-border">
             {pastJobs.map((job) => {
               const isCompleted = job.status === "COMPLETED";
               const report = reports[job.id];
@@ -845,7 +1011,7 @@ function CustomerDashboard() {
                   )}
 
                   {isExpanded && (
-                    <div className="mt-3 rounded-2xl bg-white/[0.03] p-4">
+                    <div className="mt-3 rounded-2xl bg-surface-subtle p-4">
                       {report === "loading" ? (
                         <p className="text-sm text-text-faint">Yükleniyor...</p>
                       ) : report === "none" || !report ? (
@@ -865,7 +1031,7 @@ function CustomerDashboard() {
                               <img
                                 src={resolveUploadUrl(report.signatureUrl)}
                                 alt="İmza"
-                                className="h-16 rounded-lg bg-white/90 object-contain px-2"
+                                className="h-16 rounded-lg bg-surface-base/90 object-contain px-2"
                               />
                             </div>
                           )}
@@ -876,7 +1042,7 @@ function CustomerDashboard() {
                                   key={photo.id}
                                   type="button"
                                   onClick={() => setLightboxSrc(resolveUploadUrl(photo.url))}
-                                  className="overflow-hidden rounded-xl border border-white/10 transition hover:opacity-80"
+                                  className="overflow-hidden rounded-xl border border-border transition hover:opacity-80"
                                 >
                                   {/* eslint-disable-next-line @next/next/no-img-element */}
                                   <img

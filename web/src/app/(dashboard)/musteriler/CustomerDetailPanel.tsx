@@ -62,13 +62,13 @@ export function CustomerDetailPanel({ customerId, onClose, onEdit, onDelete }: C
                 type="button"
                 onClick={onClose}
                 aria-label="Kapat"
-                className="flex h-8 w-8 items-center justify-center rounded-2xl text-text-faint transition hover:bg-white/5 hover:text-text-primary"
+                className="flex h-8 w-8 items-center justify-center rounded-2xl text-text-faint transition hover:bg-surface-subtle hover:text-text-primary"
               >
                 <X size={18} strokeWidth={1.75} />
               </button>
             </div>
 
-            {error && <p className="rounded-2xl bg-primary-red/10 px-4 py-3 text-sm text-primary-redLight">{error}</p>}
+            {error && <p className="rounded-2xl border border-danger-100 bg-danger-50 px-4 py-3 text-sm text-danger-500">{error}</p>}
 
             {detail && (
               <div className="flex flex-col gap-6">
@@ -81,15 +81,15 @@ export function CustomerDetailPanel({ customerId, onClose, onEdit, onDelete }: C
 
                 <div
                   className={`rounded-2xl p-4 ${
-                    detail.outstandingBalance > 0 ? "bg-primary-red/10" : "bg-primary-green/10"
+                    detail.outstandingBalance > 0 ? "bg-danger-50" : "bg-primary-50"
                   }`}
                 >
                   <p className="text-xs font-medium text-text-secondary">Bekleyen Bakiye</p>
-                  <p className={`mt-1 text-2xl font-semibold ${detail.outstandingBalance > 0 ? "text-primary-redLight" : "text-primary-greenLight"}`}>
+                  <p className={`mt-1 text-2xl font-semibold ${detail.outstandingBalance > 0 ? "text-danger-500" : "text-primary-600"}`}>
                     {currencyFormatter.format(Math.max(detail.outstandingBalance, 0))}
                   </p>
                   {detail.outstandingBalance <= 0 && (
-                    <p className="mt-0.5 text-xs text-primary-greenLight">Bakiye kapalı</p>
+                    <p className="mt-0.5 text-xs text-primary-600">Bakiye kapalı</p>
                   )}
                 </div>
 
@@ -97,7 +97,7 @@ export function CustomerDetailPanel({ customerId, onClose, onEdit, onDelete }: C
                   <button
                     type="button"
                     onClick={onEdit}
-                    className="flex flex-1 items-center justify-center gap-2 rounded-2xl bg-white/5 px-4 py-2.5 text-sm font-medium text-text-primary transition hover:bg-white/10"
+                    className="flex flex-1 items-center justify-center gap-2 rounded-2xl border border-border bg-surface-base px-4 py-2.5 text-sm font-medium text-text-primary transition hover:border-border-strong hover:bg-surface-subtle"
                   >
                     <Pencil size={15} strokeWidth={1.75} />
                     Düzenle
@@ -105,7 +105,7 @@ export function CustomerDetailPanel({ customerId, onClose, onEdit, onDelete }: C
                   <button
                     type="button"
                     onClick={onDelete}
-                    className="flex flex-1 items-center justify-center gap-2 rounded-2xl bg-primary-red/10 px-4 py-2.5 text-sm font-medium text-primary-redLight transition hover:bg-primary-red/20"
+                    className="flex flex-1 items-center justify-center gap-2 rounded-2xl bg-danger-50 px-4 py-2.5 text-sm font-medium text-danger-500 transition hover:bg-danger-100"
                   >
                     <Trash2 size={15} strokeWidth={1.75} />
                     Sil
@@ -120,7 +120,7 @@ export function CustomerDetailPanel({ customerId, onClose, onEdit, onDelete }: C
                   {detail.jobs.length === 0 ? (
                     <p className="text-sm text-text-faint">Henüz iş kaydı yok.</p>
                   ) : (
-                    <ul className="flex flex-col divide-y divide-white/5 rounded-2xl bg-white/[0.02]">
+                    <ul className="flex flex-col divide-y divide-border rounded-2xl bg-surface-subtle">
                       {detail.jobs.map((job) => (
                         <li key={job.id} className="flex items-center justify-between gap-3 px-4 py-3">
                           <div>
@@ -135,7 +135,7 @@ export function CustomerDetailPanel({ customerId, onClose, onEdit, onDelete }: C
                                 aria-label="PDF İndir"
                                 title="PDF İndir"
                                 onClick={() => downloadFile(`/jobs/${job.id}/report/pdf`, `is-raporu-${job.id}.pdf`)}
-                                className="flex h-7 w-7 items-center justify-center rounded-xl text-text-faint transition hover:bg-white/5 hover:text-text-primary"
+                                className="flex h-7 w-7 items-center justify-center rounded-xl text-text-faint transition hover:bg-surface-subtle hover:text-text-primary"
                               >
                                 <FileDown size={15} strokeWidth={1.75} />
                               </button>
@@ -155,7 +155,7 @@ export function CustomerDetailPanel({ customerId, onClose, onEdit, onDelete }: C
                   {detail.payments.length === 0 ? (
                     <p className="text-sm text-text-faint">Henüz ödeme kaydı yok.</p>
                   ) : (
-                    <ul className="flex flex-col divide-y divide-white/5 rounded-2xl bg-white/[0.02]">
+                    <ul className="flex flex-col divide-y divide-border rounded-2xl bg-surface-subtle">
                       {detail.payments.map((payment) => (
                         <li key={payment.id} className="flex items-center justify-between gap-3 px-4 py-3">
                           <div>

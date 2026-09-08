@@ -28,7 +28,7 @@ export function SignaturePad({ onChange }: SignaturePadProps) {
     ctx.scale(2, 2);
     ctx.lineWidth = 2;
     ctx.lineCap = "round";
-    ctx.strokeStyle = "#1a1a1a";
+    ctx.strokeStyle = "#16211A";
   }, []);
 
   function handlePointerDown(e: React.PointerEvent<HTMLCanvasElement>) {
@@ -77,7 +77,7 @@ export function SignaturePad({ onChange }: SignaturePadProps) {
 
   return (
     <div className="flex flex-col gap-2">
-      <div className="relative overflow-hidden rounded-2xl border border-white/10 bg-white">
+      <div className="relative overflow-hidden rounded-2xl border border-border-strong bg-white">
         <canvas
           ref={canvasRef}
           className="h-40 w-full touch-none"
@@ -87,7 +87,7 @@ export function SignaturePad({ onChange }: SignaturePadProps) {
           onPointerLeave={finishStroke}
         />
         {!hasSignature && (
-          <span className="pointer-events-none absolute inset-0 flex items-center justify-center text-sm text-black/30">
+          <span className="pointer-events-none absolute inset-0 flex items-center justify-center text-sm text-text-faint">
             Buraya imzalayın
           </span>
         )}
@@ -95,7 +95,7 @@ export function SignaturePad({ onChange }: SignaturePadProps) {
       <button
         type="button"
         onClick={handleClear}
-        className="flex w-fit items-center gap-1.5 rounded-xl px-3 py-1.5 text-xs font-medium text-text-secondary transition hover:bg-white/5"
+        className="flex w-fit items-center gap-1.5 rounded-xl px-3 py-1.5 text-xs font-medium text-text-secondary transition hover:bg-surface-subtle"
       >
         <Eraser size={13} strokeWidth={1.75} />
         Temizle

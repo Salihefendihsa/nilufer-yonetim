@@ -1,14 +1,43 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { ScrollText } from "lucide-react";
+import {
+  CalendarClock,
+  KeyRound,
+  Pencil,
+  Plus,
+  ScrollText,
+  Shield,
+  Trash2,
+  UserCog,
+  Users2,
+  type LucideIcon,
+} from "lucide-react";
 import { RequireRole } from "@/components/RequireRole";
 import { EmptyState } from "@/components/EmptyState";
+import { PageHeader } from "@/components/PageHeader";
+import { StatCard } from "@/components/StatCard";
+import { ChartCard, DonutChart, RankBars } from "@/components/ChartCard";
+import { Timeline, type TimelineItem, type TimelineTone } from "@/components/Timeline";
 import { api, ApiError } from "@/lib/api";
 import type { AuditLogEntry } from "@/lib/types";
 
 function formatDateTime(value: string): string {
   return new Date(value).toLocaleString("tr-TR", { day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" });
+}
+
+/**
+ * İşlem adından ikon ve renk tonu türetir. Backend serbest metin `action`
+ * kullandığı için tam eşleşme yerine anahtar kelime araması yapılır.
+ */
+function actionAppearance(action: string): { icon: LucideIcon; tone: TimelineTone } {
+  const a = action.toUpperCase();
+  if (a.includes("DELETE") || a.includes("SIL")) return { icon: Trash2, tone: "danger" };
+  if (a.includes("CREATE") || a.includes("EKLE")) return { icon: Plus, tone: "primary" };
+  if (a.includes("UPDATE") || a.includes("GUNCELLE") || a.includes("EDIT")) return { icon: Pencil, tone: "info" };
+  if (a.includes("PERMISSION") || a.includes("YETKI") || a.includes("ROLE")) return { icon: Shield, tone: "warning" };
+  if (a.includes("LOGIN") || a.includes("PASSWORD") || a.includes("SIFRE")) return { icon: KeyRound, tone: "warning" };
+  return { icon: UserCog, tone: "neutral" };
 }
 
 export default function AuditLogsPage() {
@@ -58,26 +87,117 @@ function AuditLogsContent() {
     });
   }, [logs, startDate, endDate, actionFilter, userSearch]);
 
+  // Özet kartlar filtreden bağımsız, tüm log kümesini yansıtır.
+  const stats = useMemo(() => {
+    const startOfToday = new Date();
+    startOfToday.setHours(0, 0, 0, 0);
+    const weekAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
+
+    return {
+      total: logs.length,
+      today: logs.filter((l) => new Date(l.createdAt) >= startOfToday).length,
+      week: logs.filter((l) => new Date(l.createdAt).getTime() >= weekAgo).length,
+      actors: new Set(logs.map((l) => l.actorUserId)).size,
+    };
+  }, [logs]);
+
+  /** En çok işlem yapan kullanıcılar — filtrelenmiş kümeden. */
+  const actorRows = useMemo(() => {
+    const counts = new Map<string, number>();
+    for (const log of filtered) counts.set(log.actor.fullName, (counts.get(log.actor.fullName) ?? 0) + 1);
+    return Array.from(counts.entries())
+      .map(([label, value]) => ({ label, value }))
+      .sort((a, b) => b.value - a.value)
+      .slice(0, 8);
+  }, [filtered]);
+
+  const actionSlices = useMemo(() => {
+    const counts = new Map<string, number>();
+    for (const log of filtered) counts.set(log.action, (counts.get(log.action) ?? 0) + 1);
+    return Array.from(counts.entries())
+      .map(([name, value]) => ({ name, value }))
+      .sort((a, b) => b.value - a.value)
+      .slice(0, 6);
+  }, [filtered]);
+
+  const timelineItems: TimelineItem[] = useMemo(
+    () =>
+      filtered.map((log) => {
+        const { icon, tone } = actionAppearance(log.action);
+        return {
+          id: log.id,
+          icon,
+          tone,
+          tag: log.action,
+          title: log.actor.fullName,
+          description: (
+            <>
+              <span className="font-medium text-text-primary">{log.target.fullName}</span>
+              {log.detail ? ` · ${log.detail}` : ""}
+              {log.targetType ? ` · ${log.targetType}` : ""}
+            </>
+          ),
+          timestamp: formatDateTime(log.createdAt),
+        };
+      }),
+    [filtered]
+  );
+
+  const hasFilters = !!(startDate || endDate || userSearch.trim() || actionFilter !== "ALL");
+
   return (
-    <div className="flex flex-col gap-8">
-      <div>
-        <h1 className="font-serif text-3xl font-semibold tracking-tight text-text-primary">Denetim Logları</h1>
-        <p className="mt-1 text-sm text-text-secondary">Kritik işlemlerin kaydı — kim, ne zaman, kime ne yaptı.</p>
+    <div className="flex flex-col gap-6">
+      <PageHeader
+        icon={ScrollText}
+        title="Denetim Logları"
+        description="Kritik işlemlerin kaydı — kim, ne zaman, kime ne yaptı."
+      />
+
+      {error && <p className="rounded-2xl border border-danger-100 bg-danger-50 px-4 py-3 text-sm text-danger-500">{error}</p>}
+
+      {/* [Özet kartlar] */}
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <StatCard label="Toplam kayıt" value={loading ? "—" : String(stats.total)} icon={ScrollText} accent="neutral" mono />
+        <StatCard label="Bugünkü işlem" value={loading ? "—" : String(stats.today)} icon={CalendarClock} mono />
+        <StatCard
+          label="Son 7 gün"
+          value={loading ? "—" : String(stats.week)}
+          icon={Shield}
+          accent="blue"
+          mono
+          hint={stats.week > 0 ? `Günde ortalama ${(stats.week / 7).toFixed(1)} işlem` : undefined}
+        />
+        <StatCard label="İşlem yapan kişi" value={loading ? "—" : String(stats.actors)} icon={Users2} accent="gold" mono />
       </div>
 
-      {error && <p className="rounded-2xl bg-primary-redLight/10 px-4 py-3 text-sm text-primary-redLight">{error}</p>}
+      {/* [Dağılım grafikleri] */}
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+        <ChartCard title="En Aktif Kullanıcılar" description="Filtrelenmiş kayıtlara göre" icon={Users2} height={220}>
+          <RankBars rows={actorRows} emptyLabel={loading ? "Yükleniyor..." : "Kayıt yok"} />
+        </ChartCard>
 
-      <div className="flex flex-wrap items-end gap-3 rounded-2xl bg-surface-card p-5 shadow-[0_8px_24px_rgba(0,0,0,0.22)]">
-        <div className="flex flex-col gap-1.5">
-          <label className="text-xs font-medium text-text-secondary">Başlangıç</label>
+        <ChartCard title="İşlem Türü Dağılımı" description="En sık görülen 6 işlem" icon={Shield} height={220}>
+          <DonutChart
+            data={actionSlices}
+            centerValue={loading ? "—" : String(filtered.length)}
+            centerLabel="kayıt"
+            emptyLabel={loading ? "Yükleniyor..." : "Kayıt yok"}
+          />
+        </ChartCard>
+      </div>
+
+      {/* [Filtreler] */}
+      <div className="flex flex-wrap items-end gap-3 rounded-2xl border border-border bg-surface-card p-5 shadow-card">
+        <div className="flex flex-col">
+          <label className="label">Başlangıç</label>
           <input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} className="input" />
         </div>
-        <div className="flex flex-col gap-1.5">
-          <label className="text-xs font-medium text-text-secondary">Bitiş</label>
+        <div className="flex flex-col">
+          <label className="label">Bitiş</label>
           <input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} className="input" />
         </div>
-        <div className="flex flex-col gap-1.5">
-          <label className="text-xs font-medium text-text-secondary">İşlem Türü</label>
+        <div className="flex flex-col">
+          <label className="label">İşlem Türü</label>
           <select value={actionFilter} onChange={(e) => setActionFilter(e.target.value)} className="input">
             <option value="ALL">Tümü</option>
             {actions.map((a) => (
@@ -87,8 +207,8 @@ function AuditLogsContent() {
             ))}
           </select>
         </div>
-        <div className="flex flex-1 flex-col gap-1.5">
-          <label className="text-xs font-medium text-text-secondary">Kullanıcı Ara</label>
+        <div className="flex min-w-[12rem] flex-1 flex-col">
+          <label className="label">Kullanıcı Ara</label>
           <input
             type="text"
             value={userSearch}
@@ -97,42 +217,44 @@ function AuditLogsContent() {
             className="input"
           />
         </div>
+        {hasFilters && (
+          <button
+            type="button"
+            onClick={() => {
+              setStartDate("");
+              setEndDate("");
+              setActionFilter("ALL");
+              setUserSearch("");
+            }}
+            className="rounded-2xl border border-border bg-surface-base px-4 py-2.5 text-sm font-medium text-text-secondary transition hover:border-border-strong hover:bg-surface-subtle hover:text-text-primary"
+          >
+            Filtreleri Temizle
+          </button>
+        )}
       </div>
 
+      {/* [Zaman çizelgesi] */}
       {loading ? (
         <p className="py-16 text-center text-sm text-text-faint">Yükleniyor...</p>
       ) : filtered.length === 0 ? (
-        <div className="rounded-2xl bg-surface-card">
+        <div className="rounded-2xl border border-border bg-surface-card shadow-card">
           <EmptyState icon={ScrollText} title="Kayıt yok" description="Bu filtrelerle eşleşen bir log kaydı bulunamadı." />
         </div>
       ) : (
-        <div className="overflow-hidden rounded-2xl bg-surface-card shadow-[0_8px_24px_rgba(0,0,0,0.22)]">
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-sm">
-              <thead>
-                <tr className="border-b border-white/10 text-xs font-semibold uppercase tracking-wide text-text-faint">
-                  <th className="px-6 py-4">Zaman</th>
-                  <th className="px-6 py-4">Kim</th>
-                  <th className="px-6 py-4">İşlem</th>
-                  <th className="px-6 py-4">Hedef</th>
-                  <th className="px-6 py-4">Detay</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filtered.map((log) => (
-                  <tr key={log.id} className="border-b border-white/5 last:border-0">
-                    <td className="px-6 py-4 font-mono text-xs text-text-faint">{formatDateTime(log.createdAt)}</td>
-                    <td className="px-6 py-4 text-text-primary">{log.actor.fullName}</td>
-                    <td className="px-6 py-4">
-                      <span className="rounded-full bg-white/5 px-2.5 py-1 text-xs font-medium text-text-secondary">{log.action}</span>
-                    </td>
-                    <td className="px-6 py-4 text-text-primary">{log.target.fullName}</td>
-                    <td className="px-6 py-4 text-text-secondary">{log.detail ?? "—"}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+        <div className="rounded-2xl border border-border bg-surface-card p-6 shadow-card">
+          <div className="mb-4 flex items-center justify-between gap-3">
+            <div className="flex items-center gap-2.5">
+              <span className="flex h-9 w-9 items-center justify-center rounded-2xl bg-primary-50 text-primary-600 ring-1 ring-primary-100">
+                <CalendarClock size={17} strokeWidth={1.75} />
+              </span>
+              <h2 className="text-base font-semibold text-text-primary">İşlem Geçmişi</h2>
+            </div>
+            <span className="rounded-full bg-surface-subtle px-2.5 py-1 font-mono text-2xs text-text-faint">
+              {filtered.length} kayıt
+            </span>
           </div>
+
+          <Timeline items={timelineItems} />
         </div>
       )}
     </div>

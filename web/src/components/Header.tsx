@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
-import { Search, Bell, LogOut, ChevronDown, User, Settings } from "lucide-react";
+import { Search, Bell, LogOut, ChevronDown, User, Settings, Menu } from "lucide-react";
 import { useAuth } from "@/lib/AuthProvider";
 import { ROLE_LABELS } from "@/lib/auth";
 import { api } from "@/lib/api";
@@ -22,7 +22,12 @@ function greeting(): string {
   return "İyi akşamlar";
 }
 
-export function Header() {
+interface HeaderProps {
+  /** Mobilde (< md) sol üstteki hamburger butonuna basılınca sidebar drawer'ını açar. */
+  onOpenMobileNav?: () => void;
+}
+
+export function Header({ onOpenMobileNav }: HeaderProps) {
   const { user, logout } = useAuth();
   const router = useRouter();
   const [unreadCount, setUnreadCount] = useState(0);
@@ -100,10 +105,18 @@ export function Header() {
   }
 
   return (
-    <header className="sticky top-0 z-10 flex items-center justify-between gap-4 bg-surface-base/90 px-8 py-5 backdrop-blur-xl relative">
-      <div className="pointer-events-none absolute inset-x-0 bottom-0 h-px bg-gradient-to-r from-transparent via-primary-gold/30 to-transparent" />
+    <header className="sticky top-0 z-10 flex items-center justify-between gap-3 border-b border-border bg-surface-base/85 px-4 py-4 backdrop-blur-xl sm:gap-4 md:px-8">
+      <button
+        type="button"
+        onClick={onOpenMobileNav}
+        aria-label="Menüyü aç"
+        className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl border border-border bg-surface-base text-text-secondary transition hover:bg-surface-subtle hover:text-text-primary md:hidden"
+      >
+        <Menu size={19} strokeWidth={1.75} />
+      </button>
+
       <div className="relative w-full max-w-md" ref={searchRef}>
-        <div className="flex items-center gap-2.5 rounded-2xl bg-white/[0.04] px-4 py-2.5 text-sm text-text-secondary transition focus-within:ring-2 focus-within:ring-primary-green/30">
+        <div className="flex items-center gap-2.5 rounded-2xl border border-border bg-surface-subtle px-4 py-2.5 text-sm text-text-secondary transition focus-within:border-primary-500 focus-within:bg-surface-base focus-within:ring-2 focus-within:ring-primary-500/20">
           <Search size={16} strokeWidth={1.75} />
           <input
             ref={searchInputRef}
@@ -114,7 +127,7 @@ export function Header() {
             placeholder="Ara..."
             className="w-full bg-transparent text-text-primary outline-none placeholder:text-text-faint"
           />
-          <kbd className="hidden shrink-0 rounded-lg bg-white/5 px-1.5 py-0.5 text-[10px] font-medium text-text-faint sm:block">
+          <kbd className="hidden shrink-0 rounded-lg border border-border bg-surface-base px-1.5 py-0.5 text-[10px] font-medium text-text-faint sm:block">
             ⌘K
           </kbd>
         </div>
@@ -126,7 +139,7 @@ export function Header() {
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -6 }}
               transition={{ duration: 0.15 }}
-              className="absolute left-0 top-full z-20 mt-2 w-full rounded-2xl border border-white/10 bg-surface-card p-2 shadow-[0_8px_24px_rgba(0,0,0,0.28)]"
+              className="absolute left-0 top-full z-20 mt-2 w-full rounded-2xl border border-border bg-surface-card p-2 shadow-pop"
             >
               {!hasResults && (
                 <p className="px-3 py-4 text-center text-sm text-text-faint">Sonuç bulunamadı</p>
@@ -140,7 +153,7 @@ export function Header() {
                       key={r.id}
                       type="button"
                       onClick={() => goTo("/musteriler")}
-                      className="flex w-full flex-col rounded-xl px-3 py-2 text-left transition hover:bg-white/5"
+                      className="flex w-full flex-col rounded-xl px-3 py-2 text-left transition hover:bg-surface-subtle"
                     >
                       <span className="text-sm text-text-primary">{r.label}</span>
                       <span className="text-xs text-text-faint">{r.sublabel}</span>
@@ -157,7 +170,7 @@ export function Header() {
                       key={r.id}
                       type="button"
                       onClick={() => goTo("/personel")}
-                      className="flex w-full flex-col rounded-xl px-3 py-2 text-left transition hover:bg-white/5"
+                      className="flex w-full flex-col rounded-xl px-3 py-2 text-left transition hover:bg-surface-subtle"
                     >
                       <span className="text-sm text-text-primary">{r.label}</span>
                       <span className="text-xs text-text-faint">{r.sublabel}</span>
@@ -174,7 +187,7 @@ export function Header() {
                       key={r.id}
                       type="button"
                       onClick={() => goTo("/isler")}
-                      className="flex w-full flex-col rounded-xl px-3 py-2 text-left transition hover:bg-white/5"
+                      className="flex w-full flex-col rounded-xl px-3 py-2 text-left transition hover:bg-surface-subtle"
                     >
                       <span className="text-sm text-text-primary">{r.label}</span>
                       <span className="text-xs text-text-faint">{r.sublabel}</span>
@@ -192,11 +205,11 @@ export function Header() {
           type="button"
           aria-label="Bildirimler"
           onClick={() => setDrawerOpen(true)}
-          className="relative flex h-10 w-10 items-center justify-center rounded-2xl text-text-secondary transition hover:bg-white/5"
+          className="relative flex h-10 w-10 items-center justify-center rounded-2xl border border-border bg-surface-base text-text-secondary transition hover:border-border-strong hover:bg-surface-subtle hover:text-text-primary"
         >
           <Bell size={18} strokeWidth={1.75} />
           {unreadCount > 0 && (
-            <span className="absolute right-1.5 top-1.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-primary-redLight px-1 text-[10px] font-semibold text-white">
+            <span className="absolute right-1.5 top-1.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-danger-500 px-1 text-[10px] font-semibold text-white">
               {unreadCount > 99 ? "99+" : unreadCount}
             </span>
           )}
@@ -206,9 +219,9 @@ export function Header() {
           <button
             type="button"
             onClick={() => setProfileOpen((v) => !v)}
-            className="flex items-center gap-3 border-l border-white/10 pl-4 transition hover:opacity-80"
+            className="flex items-center gap-3 rounded-2xl border border-transparent px-2 py-1.5 transition hover:border-border hover:bg-surface-subtle"
           >
-            <div className="flex h-9 w-9 items-center justify-center rounded-full bg-primary-green/10 text-sm font-semibold text-primary-greenLight ring-2 ring-primary-gold/30">
+            <div className="flex h-9 w-9 items-center justify-center rounded-full bg-primary-600 text-sm font-semibold text-white">
               {user?.fullName?.[0]?.toUpperCase() ?? "?"}
             </div>
             <div className="hidden text-left sm:block">
@@ -225,10 +238,10 @@ export function Header() {
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -6 }}
                 transition={{ duration: 0.15 }}
-                className="absolute right-0 top-full z-20 mt-2 w-64 rounded-2xl border border-white/10 bg-surface-card p-4 shadow-[0_8px_24px_rgba(0,0,0,0.28)]"
+                className="absolute right-0 top-full z-20 mt-2 w-64 rounded-2xl border border-border bg-surface-card p-4 shadow-pop"
               >
                 <div className="flex items-center gap-3 pb-3">
-                  <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary-green/10 text-sm font-semibold text-primary-greenLight ring-2 ring-primary-gold/30">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary-600 text-sm font-semibold text-white">
                     {user?.fullName?.[0]?.toUpperCase() ?? "?"}
                   </div>
                   <div>
@@ -237,15 +250,15 @@ export function Header() {
                   </div>
                 </div>
 
-                <p className="border-t border-white/10 py-3 text-sm text-text-secondary">
+                <p className="border-t border-border py-3 text-sm text-text-secondary">
                   {greeting()}{user ? `, ${user.fullName.split(" ")[0]}` : ""} 👋
                 </p>
 
-                <div className="flex flex-col gap-1 border-t border-white/10 pt-3">
+                <div className="flex flex-col gap-1 border-t border-border pt-3">
                   <Link
                     href="/ayarlar"
                     onClick={() => setProfileOpen(false)}
-                    className="flex items-center gap-2.5 rounded-2xl px-3 py-2 text-sm text-text-secondary transition hover:bg-white/5 hover:text-text-primary"
+                    className="flex items-center gap-2.5 rounded-2xl px-3 py-2 text-sm text-text-secondary transition hover:bg-surface-subtle hover:text-text-primary"
                   >
                     <User size={15} strokeWidth={1.75} />
                     Profil
@@ -253,7 +266,7 @@ export function Header() {
                   <Link
                     href="/ayarlar"
                     onClick={() => setProfileOpen(false)}
-                    className="flex items-center gap-2.5 rounded-2xl px-3 py-2 text-sm text-text-secondary transition hover:bg-white/5 hover:text-text-primary"
+                    className="flex items-center gap-2.5 rounded-2xl px-3 py-2 text-sm text-text-secondary transition hover:bg-surface-subtle hover:text-text-primary"
                   >
                     <Settings size={15} strokeWidth={1.75} />
                     Ayarlar
@@ -261,7 +274,7 @@ export function Header() {
                   <button
                     type="button"
                     onClick={logout}
-                    className="flex items-center gap-2.5 rounded-2xl px-3 py-2 text-sm font-medium text-primary-redLight transition hover:bg-primary-redLight/10"
+                    className="flex items-center gap-2.5 rounded-2xl px-3 py-2 text-sm font-medium text-danger-500 transition hover:bg-danger-50"
                   >
                     <LogOut size={15} strokeWidth={1.75} />
                     Çıkış

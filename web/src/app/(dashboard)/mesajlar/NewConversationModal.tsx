@@ -32,7 +32,7 @@ export function NewConversationModal({ open, onClose, onSelect }: NewConversatio
 
   return (
     <Modal open={open} onClose={onClose} title="Yeni Konuşma">
-      {error && <p className="mb-3 rounded-2xl bg-primary-red/10 px-4 py-3 text-sm text-primary-redLight">{error}</p>}
+      {error && <p className="mb-3 rounded-2xl border border-danger-100 bg-danger-50 px-4 py-3 text-sm text-danger-500">{error}</p>}
 
       {loading ? (
         <p className="py-8 text-center text-sm text-text-faint">Yükleniyor...</p>
@@ -45,9 +45,9 @@ export function NewConversationModal({ open, onClose, onSelect }: NewConversatio
               <button
                 type="button"
                 onClick={() => onSelect(contact)}
-                className="flex w-full items-center gap-3 rounded-2xl px-3 py-2.5 text-left transition hover:bg-white/[0.03]"
+                className="flex w-full items-center gap-3 rounded-2xl px-3 py-2.5 text-left transition hover:bg-surface-subtle"
               >
-                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary-green text-xs font-semibold text-white">
+                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary-600 text-xs font-semibold text-white">
                   {contact.fullName
                     .trim()
                     .split(/\s+/)

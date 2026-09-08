@@ -26,7 +26,7 @@ export function ConfirmDialog({
     <Modal open={open} onClose={onClose} title={title}>
       <div className="flex flex-col gap-5">
         <div className="flex items-start gap-3">
-          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-primary-red/10 text-primary-redLight">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-danger-50 text-danger-500 ring-1 ring-danger-100">
             <AlertTriangle size={18} strokeWidth={1.75} />
           </div>
           <p className="text-sm text-text-secondary">{description}</p>
@@ -36,7 +36,7 @@ export function ConfirmDialog({
           <button
             type="button"
             onClick={onClose}
-            className="rounded-2xl px-4 py-2.5 text-sm font-medium text-text-secondary transition hover:bg-white/5"
+            className="rounded-2xl px-4 py-2.5 text-sm font-medium text-text-secondary transition hover:bg-surface-subtle"
           >
             Vazgeç
           </button>
@@ -44,7 +44,7 @@ export function ConfirmDialog({
             type="button"
             onClick={onConfirm}
             disabled={loading}
-            className="rounded-2xl bg-primary-red px-4 py-2.5 text-sm font-semibold text-white transition hover:opacity-90 disabled:opacity-60"
+            className="rounded-2xl bg-danger-500 px-4 py-2.5 text-sm font-semibold text-white shadow-card transition hover:bg-danger-600 disabled:opacity-60"
           >
             {loading ? "Siliniyor..." : confirmLabel}
           </button>

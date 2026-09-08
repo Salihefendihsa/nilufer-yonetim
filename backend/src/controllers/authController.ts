@@ -8,12 +8,14 @@ import { verifyRecaptcha } from "../lib/recaptcha";
 
 const SALT_ROUNDS = 10;
 
+// Herkese açık kayıt (requireAuth yok, routes/auth.ts:7) — role kasıtlı olarak
+// şemada yer almıyor. Gövdeden rol kabul edilirse kimliksiz bir istekle OWNER
+// hesabı açılabilir; bu uçtan doğan her hesap CUSTOMER'dır.
 const registerSchema = z.object({
   email: z.string().email(),
   password: z.string().min(8),
   fullName: z.string().min(1),
   phone: z.string().optional(),
-  role: z.enum(Role).optional(),
 });
 
 const loginSchema = z.object({
@@ -23,7 +25,7 @@ const loginSchema = z.object({
 });
 
 export async function register(req: Request, res: Response) {
-  const { email, password, fullName, phone, role } = registerSchema.parse(req.body);
+  const { email, password, fullName, phone } = registerSchema.parse(req.body);
 
   const existing = await prisma.user.findUnique({ where: { email } });
   if (existing) {
@@ -38,7 +40,7 @@ export async function register(req: Request, res: Response) {
       passwordHash,
       fullName,
       phone,
-      role: role ?? Role.CUSTOMER,
+      role: Role.CUSTOMER,
     },
   });
 

@@ -22,9 +22,9 @@ export function StarRating({ onRate, disabled }: StarRatingProps) {
           onMouseLeave={() => setHovered(0)}
           onClick={() => onRate(value)}
           aria-label={`${value} yıldız`}
-          className="text-white/20 transition hover:scale-110 disabled:opacity-50"
+          className="text-neutral-300 transition hover:scale-110 disabled:opacity-50"
         >
-          <Star size={20} strokeWidth={1.5} fill={value <= hovered ? "#5DA130" : "none"} className={value <= hovered ? "text-primary-greenLight" : ""} />
+          <Star size={20} strokeWidth={1.5} fill={value <= hovered ? "#B57F13" : "none"} className={value <= hovered ? "text-warning-500" : ""} />
         </button>
       ))}
     </div>

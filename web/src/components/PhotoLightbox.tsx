@@ -20,7 +20,7 @@ export function PhotoLightbox({ src, alt, onClose }: PhotoLightboxProps) {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          className="fixed inset-0 z-[60] flex items-center justify-center bg-black/80 px-6"
+          className="fixed inset-0 z-[60] flex items-center justify-center bg-ink/85 px-6"
           onClick={onClose}
         >
           <motion.div
@@ -37,7 +37,7 @@ export function PhotoLightbox({ src, alt, onClose }: PhotoLightboxProps) {
               type="button"
               onClick={onClose}
               aria-label="Kapat"
-              className="absolute -top-3 -right-3 flex h-9 w-9 items-center justify-center rounded-full bg-surface-card text-text-primary shadow-lg transition hover:opacity-90"
+              className="absolute -top-3 -right-3 flex h-9 w-9 items-center justify-center rounded-full border border-border bg-surface-card text-text-primary shadow-pop transition hover:bg-surface-subtle"
             >
               <X size={18} strokeWidth={1.75} />
             </button>
