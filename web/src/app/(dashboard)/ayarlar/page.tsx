@@ -13,6 +13,7 @@ import {
   Plus,
   Settings,
   Sparkles,
+  Target,
   Trash2,
   type LucideIcon,
 } from "lucide-react";
@@ -44,6 +45,7 @@ export default function SettingsPage() {
         {isOwner && (
           <>
             <CompanyInfoSection />
+            <TargetsSection />
             <div className="grid grid-cols-1 gap-6 xl:grid-cols-2">
               <ServiceTypesSection />
               <DistrictsSection />
@@ -264,6 +266,92 @@ function CompanyInfoSection() {
               disabled={saving}
               className="btn-primary"
             >
+              {saving ? "Kaydediliyor..." : "Kaydet"}
+            </button>
+          </div>
+        </form>
+      )}
+    </SectionCard>
+  );
+}
+
+/**
+ * Aylık hedefler yalnızca işletme sahibi tarafından yönetilir; müdür bunları
+ * /settings üzerinden değil, iş uçlarının yanıtındaki `monthlyTarget` /
+ * `monthlyRevenueTarget` alanları üzerinden yalnızca okuyabilir
+ * (bkz. backend/src/lib/targets.ts).
+ */
+const TARGET_FIELDS: { key: string; label: string; hint: string }[] = [
+  { key: "monthly_job_target", label: "Kişi Başı Aylık İş Hedefi", hint: "Boş bırakılırsa hedef göstergeleri gizlenir." },
+  { key: "monthly_revenue_target", label: "Aylık Ciro Hedefi (₺)", hint: "Boş bırakılırsa ciro hedefi çubuğu gösterilmez." },
+];
+
+function TargetsSection() {
+  const [form, setForm] = useState<SettingsMap>({});
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [saved, setSaved] = useState(false);
+
+  useEffect(() => {
+    api
+      .get<{ data: SettingsMap }>("/settings")
+      .then((res) => setForm(res.data))
+      .catch((err) => setError(err instanceof ApiError ? err.message : "Ayarlar yüklenemedi"))
+      .finally(() => setLoading(false));
+  }, []);
+
+  async function handleSubmit(e: FormEvent) {
+    e.preventDefault();
+    setSaving(true);
+    setError(null);
+    setSaved(false);
+    try {
+      const payload = Object.fromEntries(TARGET_FIELDS.map((f) => [f.key, (form[f.key] ?? "").trim()]));
+      const res = await api.patch<{ data: SettingsMap }>("/settings", payload);
+      setForm(res.data);
+      setSaved(true);
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : "Kaydedilemedi, tekrar deneyin");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <SectionCard
+      icon={Target}
+      title="Aylık Hedefler"
+      description="Panel ve performans ekranlarındaki hedef göstergeleri bu değerlerden hesaplanır."
+    >
+      {loading ? (
+        <p className="text-sm text-text-secondary">Yükleniyor...</p>
+      ) : (
+        <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+          {TARGET_FIELDS.map((field) => (
+            <div key={field.key} className="flex flex-col">
+              <label className="label">{field.label}</label>
+              <input
+                type="number"
+                min={0}
+                value={form[field.key] ?? ""}
+                onChange={(e) => setForm({ ...form, [field.key]: e.target.value })}
+                className="input"
+                placeholder="Tanımsız"
+              />
+              <p className="mt-1 text-xs text-text-faint">{field.hint}</p>
+            </div>
+          ))}
+
+          {error && <p className="rounded-2xl border border-danger-100 bg-danger-50 px-4 py-3 text-sm text-danger-500">{error}</p>}
+          {saved && !error && (
+            <p className="rounded-2xl border border-primary-100 bg-primary-50 px-4 py-3 text-sm font-medium text-primary-700">
+              Kaydedildi.
+            </p>
+          )}
+
+          <div className="mt-2 flex justify-end">
+            <button type="submit" disabled={saving} className="btn-primary">
               {saving ? "Kaydediliyor..." : "Kaydet"}
             </button>
           </div>

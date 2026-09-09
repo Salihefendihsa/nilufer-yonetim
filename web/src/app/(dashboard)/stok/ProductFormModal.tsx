@@ -10,9 +10,19 @@ interface ProductFormModalProps {
   onSaved: () => void;
 }
 
+const CATEGORY_OPTIONS: { value: string; label: string }[] = [
+  { value: "BIOCIDAL", label: "Kimyasal (Biyosidal)" },
+  { value: "CONSUMABLE", label: "Sarf Malzemesi (Kemirgen Yemi vb.)" },
+  { value: "EQUIPMENT", label: "Ekipman" },
+  { value: "DISINFECTANT", label: "Dezenfektan" },
+];
+
 export function ProductFormModal({ open, onClose, onSaved }: ProductFormModalProps) {
+  const [code, setCode] = useState("");
   const [name, setName] = useState("");
+  const [description, setDescription] = useState("");
   const [unit, setUnit] = useState("litre");
+  const [category, setCategory] = useState("BIOCIDAL");
   const [currentStock, setCurrentStock] = useState("0");
   const [criticalThreshold, setCriticalThreshold] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -20,8 +30,11 @@ export function ProductFormModal({ open, onClose, onSaved }: ProductFormModalPro
 
   useEffect(() => {
     if (open) {
+      setCode("");
       setName("");
+      setDescription("");
       setUnit("litre");
+      setCategory("BIOCIDAL");
       setCurrentStock("0");
       setCriticalThreshold("");
       setError(null);
@@ -35,8 +48,11 @@ export function ProductFormModal({ open, onClose, onSaved }: ProductFormModalPro
 
     try {
       await api.post("/products", {
+        code: code.trim() || undefined,
+        description: description.trim() || undefined,
         name,
         unit,
+        category,
         currentStock: Number(currentStock),
         criticalThreshold: Number(criticalThreshold),
       });
@@ -52,18 +68,41 @@ export function ProductFormModal({ open, onClose, onSaved }: ProductFormModalPro
   return (
     <Modal open={open} onClose={onClose} title="Yeni Ürün">
       <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-        <div className="flex flex-col gap-1.5">
-          <label className="text-sm font-medium text-text-secondary">Ürün Adı</label>
-          <input required value={name} onChange={(e) => setName(e.target.value)} className="input" placeholder="Örn. Deltamethrin" />
+        <div className="grid grid-cols-3 gap-3">
+          <div className="flex flex-col gap-1.5">
+            <label className="text-sm font-medium text-text-secondary">Ürün Kodu</label>
+            <input value={code} onChange={(e) => setCode(e.target.value)} className="input" placeholder="Örn. KM-1042" />
+          </div>
+          <div className="col-span-2 flex flex-col gap-1.5">
+            <label className="text-sm font-medium text-text-secondary">Ürün Adı</label>
+            <input required value={name} onChange={(e) => setName(e.target.value)} className="input" placeholder="Örn. Deltamethrin" />
+          </div>
         </div>
 
         <div className="flex flex-col gap-1.5">
-          <label className="text-sm font-medium text-text-secondary">Birim</label>
-          <select value={unit} onChange={(e) => setUnit(e.target.value)} className="input">
-            <option value="litre">Litre</option>
-            <option value="kg">Kg</option>
-            <option value="adet">Adet</option>
-          </select>
+          <label className="text-sm font-medium text-text-secondary">Açıklama (opsiyonel)</label>
+          <input value={description} onChange={(e) => setDescription(e.target.value)} className="input" placeholder="Kullanım alanı, doz notu vb." />
+        </div>
+
+        <div className="grid grid-cols-2 gap-3">
+          <div className="flex flex-col gap-1.5">
+            <label className="text-sm font-medium text-text-secondary">Birim</label>
+            <select value={unit} onChange={(e) => setUnit(e.target.value)} className="input">
+              <option value="litre">Litre</option>
+              <option value="kg">Kg</option>
+              <option value="adet">Adet</option>
+            </select>
+          </div>
+          <div className="flex flex-col gap-1.5">
+            <label className="text-sm font-medium text-text-secondary">Kategori</label>
+            <select value={category} onChange={(e) => setCategory(e.target.value)} className="input">
+              {CATEGORY_OPTIONS.map((opt) => (
+                <option key={opt.value} value={opt.value}>
+                  {opt.label}
+                </option>
+              ))}
+            </select>
+          </div>
         </div>
 
         <div className="grid grid-cols-2 gap-3">

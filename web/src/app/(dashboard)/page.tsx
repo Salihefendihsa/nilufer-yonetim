@@ -41,18 +41,12 @@ import { StarRating } from "@/components/StarRating";
 import { ActivityFeed } from "@/components/ActivityFeed";
 import { PhotoLightbox } from "@/components/PhotoLightbox";
 import { currencyFormatter, formatDateTime, todayIsoDate, toIsoDate } from "@/lib/format";
-import type { Job, JobReport, JobPhoto, JobStatus, Staff, Paginated, Customer, ActivityEvent, SystemHealth } from "@/lib/types";
+import type { Job, JobReport, JobPhoto, JobStatus, Staff, Paginated, Customer, ActivityEvent, SystemHealth, DashboardSummary, TeamSummary } from "@/lib/types";
 import { QuoteRequestModal } from "./QuoteRequestModal";
 import { JobReportModal } from "./JobReportModal";
 import { AdvanceRequestModal } from "./AdvanceRequestModal";
 
-interface DashboardSummary {
-  todaysJobsCount: number;
-  thisMonthPaymentsTotal: number;
-  newQuoteRequestsCount: number;
-  activeStaffCount: number;
-  completedJobsThisMonth: number;
-}
+
 
 const KPI_REFRESH_MS = 30000;
 
@@ -439,15 +433,29 @@ function ManagerDashboard() {
     load();
   }, []);
 
-  // Hizmet kırılımı bugünkü iş listesinden türetilir; ek istek yok.
-  const serviceRows = useMemo(() => {
-    const counts = new Map<string, number>();
-    for (const job of jobs) counts.set(job.serviceType, (counts.get(job.serviceType) ?? 0) + 1);
-    return Array.from(counts.entries())
-      .map(([label, value]) => ({ label, value }))
-      .sort((a, b) => b.value - a.value)
-      .slice(0, 6);
-  }, [jobs]);
+  // Durum ve hizmet kırılımı artık /dashboard/summary'den gelir — yalnızca
+  // yüklenen ilk 50 işten değil, günün TÜM işlerinden hesaplanır.
+  const serviceRows = useMemo(
+    () =>
+      (summary?.todaysServiceBreakdown ?? [])
+        .slice(0, 6)
+        .map((entry) => ({ label: entry.serviceType, value: entry.count })),
+    [summary]
+  );
+
+  const statusSegments = useMemo(
+    () =>
+      summary
+        ? (Object.keys(summary.todaysJobsByStatus) as JobStatus[])
+            .map((status) => ({
+              label: STATUS_TEXT[status],
+              count: summary.todaysJobsByStatus[status],
+              color: STATUS_COLORS[status],
+            }))
+            .filter((seg) => seg.count > 0)
+        : [],
+    [summary]
+  );
 
   return (
     <div className="flex flex-col gap-6">
@@ -477,23 +485,55 @@ function ManagerDashboard() {
           mono
         />
         <StatCard
-          label="Aktif personel"
-          value={summary ? String(summary.activeStaffCount) : "—"}
+          label="Sahadaki personel"
+          value={summary ? `${summary.staffOnJobCount}/${summary.activeStaffCount}` : "—"}
           icon={HardHat}
           accent="neutral"
           mono
+          progress={
+            summary && summary.activeStaffCount > 0
+              ? (summary.staffOnJobCount / summary.activeStaffCount) * 100
+              : undefined
+          }
+        />
+        <StatCard
+          label="Onay bekleyen saha raporu"
+          value={summary ? String(summary.pendingReportApprovals) : "—"}
+          icon={ClipboardCheck}
+          accent={summary && summary.pendingReportApprovals > 0 ? "gold" : "neutral"}
+          mono
+          hint="Bekleyen Onaylar ekranından onaylanır"
+        />
+        <StatCard
+          label="Tamamlama oranı (bu ay)"
+          value={
+            summary
+              ? summary.completionRateThisMonth === null
+                ? "Veri yok"
+                : `%${summary.completionRateThisMonth.toFixed(0)}`
+              : "—"
+          }
+          icon={Activity}
+          accent="green"
+          mono
+          progress={summary?.completionRateThisMonth ?? undefined}
+          hint="Tamamlanan / (tamamlanan + iptal)"
         />
       </div>
 
       {/* [Durum dağılımı şeridi] */}
-      <StatusStrip loading={loading} totalLabel={`Bugün ${jobs.length} iş`} segments={toStatusSegments(jobs)} />
+      <StatusStrip
+        loading={loading}
+        totalLabel={summary ? `Bugün ${summary.todaysJobsCount} iş` : undefined}
+        segments={statusSegments}
+      />
 
       {/* [Grafik] */}
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
         <ChartCard title="Bugünün Durum Dağılımı" icon={Activity} height={240}>
           <DonutChart
-            data={toStatusSegments(jobs).map((seg) => ({ name: seg.label, value: seg.count, color: seg.color }))}
-            centerValue={String(jobs.length)}
+            data={statusSegments.map((seg) => ({ name: seg.label, value: seg.count, color: seg.color }))}
+            centerValue={summary ? String(summary.todaysJobsCount) : "—"}
             centerLabel="bugünkü iş"
             emptyLabel={loading ? "Yükleniyor..." : "Bugün iş yok"}
           />
@@ -542,17 +582,22 @@ function TeamLeadDashboard() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [reassigningId, setReassigningId] = useState<string | null>(null);
+  const [summary, setSummary] = useState<TeamSummary | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
-      const [jobsRes, teamRes] = await Promise.all([
+      // Özet ve iş yükü artık sunucuda ekip kapsamıyla hesaplanıyor
+      // (/team/summary); şirket geneli /dashboard/summary TEAM_LEAD'e KAPALI.
+      const [jobsRes, teamRes, summaryRes] = await Promise.all([
         api.get<{ data: Job[] }>(`/jobs?date=${todayIsoDate()}&limit=50`),
         api.get<Paginated<Staff>>("/staff?limit=100"),
+        api.get<TeamSummary>("/team/summary"),
       ]);
       setJobs(jobsRes.data);
       setTeam(teamRes.data);
+      setSummary(summaryRes);
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "Veriler yüklenemedi");
     } finally {
@@ -578,17 +623,22 @@ function TeamLeadDashboard() {
 
   const staffNames = Object.fromEntries(team.map((s) => [s.id, s.user.fullName]));
 
-  // İş yükü çubukları mevcut jobs/team dizilerinden hesaplanır.
-  const teamLoadRows = useMemo(() => {
-    const counts = new Map<string, number>();
-    for (const job of jobs) {
-      if (!job.assignedStaffId) continue;
-      counts.set(job.assignedStaffId, (counts.get(job.assignedStaffId) ?? 0) + 1);
-    }
-    return Array.from(counts.entries())
-      .map(([staffId, value]) => ({ label: staffNames[staffId] ?? "Personel", value }))
-      .sort((a, b) => b.value - a.value);
-  }, [jobs, staffNames]);
+  // İş yükü sunucudan (ekip kapsamlı) gelir; kapasite tanımlıysa "3/6" olarak
+  // gösterilir, tanımlı değilse yalnızca iş sayısı yazılır.
+  const teamLoadRows = useMemo(
+    () =>
+      (summary?.workload ?? [])
+        .slice()
+        .sort((a, b) => b.todaysJobsCount - a.todaysJobsCount)
+        .map((entry) => ({
+          label: entry.fullName,
+          value: entry.todaysJobsCount,
+          meta: entry.dailyJobCapacity
+            ? `${entry.todaysJobsCount}/${entry.dailyJobCapacity}`
+            : `${entry.todaysJobsCount} iş`,
+        })),
+    [summary]
+  );
 
   return (
     <div className="flex flex-col gap-6">
@@ -601,20 +651,61 @@ function TeamLeadDashboard() {
       {error && <p className="rounded-2xl border border-danger-100 bg-danger-50 px-4 py-3 text-sm text-danger-500">{error}</p>}
 
       {/* [Özet kartlar] */}
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-        <StatCard label="Bugünkü iş" value={loading ? "—" : String(jobs.length)} icon={CalendarCheck} mono />
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <StatCard
+          label="Bugünkü iş"
+          value={loading || !summary ? "—" : String(summary.todaysJobsCount)}
+          icon={CalendarCheck}
+          mono
+          hint="Ekibe atanan"
+        />
         <StatCard
           label="Tamamlanan"
-          value={loading ? "—" : String(jobs.filter((j) => j.status === "COMPLETED").length)}
+          value={
+            loading || !summary
+              ? "—"
+              : `${summary.completedTodayCount} / ${summary.todaysJobsCount}`
+          }
           icon={CheckCircle2}
           mono
-          progress={jobs.length > 0 ? (jobs.filter((j) => j.status === "COMPLETED").length / jobs.length) * 100 : 0}
+          progress={summary?.completionRateToday ?? undefined}
+          hint={
+            summary?.completionRateToday !== null && summary?.completionRateToday !== undefined
+              ? `%${summary.completionRateToday.toFixed(0)}`
+              : undefined
+          }
         />
-        <StatCard label="Ekip mevcudu" value={loading ? "—" : String(team.length)} icon={Users2} accent="blue" mono />
+        <StatCard
+          label="Sahada aktif"
+          value={loading || !summary ? "—" : String(summary.activeTechnicianCount)}
+          icon={Users2}
+          accent="blue"
+          mono
+          hint={summary ? `${summary.teamSize} kişilik ekip` : undefined}
+        />
+        <StatCard
+          label="Ekip mevcudu"
+          value={loading || !summary ? "—" : String(summary.teamSize)}
+          icon={Users2}
+          accent="neutral"
+          mono
+        />
       </div>
 
-      {/* [Durum dağılımı şeridi] */}
-      <StatusStrip loading={loading} totalLabel={`${jobs.length} iş`} segments={toStatusSegments(jobs)} />
+      {/* [Durum dağılımı şeridi] — sunucudan gelen ekip kapsamlı kırılım. */}
+      <StatusStrip
+        loading={loading}
+        totalLabel={summary ? `${summary.todaysJobsCount} iş` : undefined}
+        segments={
+          summary
+            ? ALL_STATUSES.map((status) => ({
+                label: STATUS_TEXT[status],
+                count: summary.todaysJobsByStatus[status] ?? 0,
+                color: STATUS_COLORS[status],
+              }))
+            : []
+        }
+      />
 
       {/* [Ekip iş yükü] */}
       <ChartCard title="Ekip İş Yükü" description="Bugün kişi başına düşen iş" icon={Shuffle} height={200}>

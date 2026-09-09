@@ -10,14 +10,16 @@ import { EmptyState } from "@/components/EmptyState";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { api, ApiError, downloadFile } from "@/lib/api";
 import { formatDate, currencyFormatter } from "@/lib/format";
-import type { Customer, CustomerDetail, Paginated } from "@/lib/types";
+import type { Customer, CustomerListItem, Paginated } from "@/lib/types";
 import { CustomerFormModal } from "./CustomerFormModal";
 import { CustomerDetailPanel } from "./CustomerDetailPanel";
 
-interface CustomerRow extends Customer {
-  lastJobDate: string | null;
-  outstandingBalance: number;
-}
+/**
+ * Bakiye, iş sayısı ve son iş tarihi artık /customers yanıtında sunucu
+ * tarafında hesaplanıyor — eskiden her müşteri için ayrı bir detay isteği
+ * atılıyordu (N+1).
+ */
+type CustomerRow = CustomerListItem;
 
 export default function CustomersPage() {
   return (
@@ -34,6 +36,7 @@ function CustomersPageContent() {
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
+  const [sort, setSort] = useState<"newest" | "name" | "balance">("newest");
 
   const [formOpen, setFormOpen] = useState(false);
   const [editingCustomer, setEditingCustomer] = useState<Customer | null>(null);
@@ -45,30 +48,18 @@ function CustomersPageContent() {
     setLoading(true);
     setError(null);
     try {
-      const res = await api.get<Paginated<Customer>>(
-        `/customers?page=${page}&limit=20${search ? `&search=${encodeURIComponent(search)}` : ""}`
+      const res = await api.get<Paginated<CustomerRow>>(
+        `/customers?page=${page}&limit=20&sort=${sort}${search ? `&search=${encodeURIComponent(search)}` : ""}`
       );
 
-      const withDetails = await Promise.all(
-        res.data.map(async (customer) => {
-          try {
-            const detail = await api.get<CustomerDetail>(`/customers/${customer.id}`);
-            const lastJob = detail.jobs[0]?.scheduledAt ?? detail.jobs[0]?.createdAt ?? null;
-            return { ...customer, lastJobDate: lastJob, outstandingBalance: detail.outstandingBalance };
-          } catch {
-            return { ...customer, lastJobDate: null, outstandingBalance: 0 };
-          }
-        })
-      );
-
-      setRows(withDetails);
+      setRows(res.data);
       setTotalPages(res.pagination.totalPages);
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "Müşteriler yüklenemedi");
     } finally {
       setLoading(false);
     }
-  }, [page, search]);
+  }, [page, search, sort]);
 
   useEffect(() => {
     load();
@@ -110,6 +101,17 @@ function CustomersPageContent() {
         ),
     },
     { header: "Son İş", accessor: (row) => formatDate(row.lastJobDate) },
+    {
+      header: "Sözleşme",
+      accessor: (row) =>
+        row.activeContractCount > 0 ? (
+          <span className="rounded-full bg-primary-50 px-2 py-0.5 text-[11px] font-semibold text-primary-600">
+            {row.activeContractCount} aktif
+          </span>
+        ) : (
+          <span className="text-text-faint">—</span>
+        ),
+    },
     {
       header: "Bekleyen Bakiye",
       accessor: (row) => (
@@ -184,6 +186,33 @@ function CustomersPageContent() {
       />
 
       {error && <p className="rounded-2xl border border-danger-100 bg-danger-50 px-4 py-3 text-sm text-danger-500">{error}</p>}
+
+      {/* [Sıralama] — bakiyeye göre sıralama, sunucudan gelen bakiye alanını kullanır. */}
+      <div className="flex flex-wrap gap-2">
+        {(
+          [
+            { key: "newest", label: "En Yeni" },
+            { key: "name", label: "İsme Göre" },
+            { key: "balance", label: "Bakiyeye Göre" },
+          ] as const
+        ).map((option) => (
+          <button
+            key={option.key}
+            type="button"
+            onClick={() => {
+              setSort(option.key);
+              setPage(1);
+            }}
+            className={`rounded-full px-3.5 py-1.5 text-xs font-semibold transition ${
+              sort === option.key
+                ? "bg-primary-600 text-white"
+                : "border border-border bg-surface-base text-text-secondary hover:bg-surface-subtle"
+            }`}
+          >
+            {option.label}
+          </button>
+        ))}
+      </div>
 
       <Table
         columns={columns}

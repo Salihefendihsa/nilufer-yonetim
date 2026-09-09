@@ -3,7 +3,7 @@
 import { useEffect, useState, type FormEvent } from "react";
 import { Modal } from "@/components/Modal";
 import { api, ApiError } from "@/lib/api";
-import type { Customer } from "@/lib/types";
+import type { Customer, Paginated, Staff } from "@/lib/types";
 
 interface PaymentFormModalProps {
   open: boolean;
@@ -24,6 +24,9 @@ export function PaymentFormModal({ open, onClose, onSaved, customers }: PaymentF
   const [amount, setAmount] = useState("");
   const [paymentType, setPaymentType] = useState(PAYMENT_TYPES[0]);
   const [receiptUrl, setReceiptUrl] = useState("");
+  const [referenceNo, setReferenceNo] = useState("");
+  const [collectedByStaffId, setCollectedByStaffId] = useState("");
+  const [staffList, setStaffList] = useState<Staff[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
 
@@ -33,7 +36,14 @@ export function PaymentFormModal({ open, onClose, onSaved, customers }: PaymentF
       setAmount("");
       setPaymentType(PAYMENT_TYPES[0]);
       setReceiptUrl("");
+      setReferenceNo("");
+      setCollectedByStaffId("");
       setError(null);
+
+      api
+        .get<Paginated<Staff>>("/staff?limit=100")
+        .then((res) => setStaffList(res.data))
+        .catch(() => setStaffList([]));
     }
   }, [open]);
 
@@ -48,6 +58,8 @@ export function PaymentFormModal({ open, onClose, onSaved, customers }: PaymentF
         amount: Number(amount),
         paymentType,
         receiptUrl: receiptUrl || undefined,
+        referenceNo: referenceNo.trim() || undefined,
+        collectedByStaffId: collectedByStaffId || undefined,
       });
       onSaved();
       onClose();
@@ -89,6 +101,29 @@ export function PaymentFormModal({ open, onClose, onSaved, customers }: PaymentF
               </option>
             ))}
           </select>
+        </div>
+
+        <div className="grid grid-cols-2 gap-3">
+          <div className="flex flex-col gap-1.5">
+            <label className="text-sm font-medium text-text-secondary">Dekont/İşlem No (opsiyonel)</label>
+            <input
+              value={referenceNo}
+              onChange={(e) => setReferenceNo(e.target.value)}
+              className="input"
+              placeholder="Örn. TRX-90412"
+            />
+          </div>
+          <div className="flex flex-col gap-1.5">
+            <label className="text-sm font-medium text-text-secondary">Tahsil Eden (opsiyonel)</label>
+            <select value={collectedByStaffId} onChange={(e) => setCollectedByStaffId(e.target.value)} className="input">
+              <option value="">Ofis</option>
+              {staffList.map((s) => (
+                <option key={s.id} value={s.id}>
+                  {s.user.fullName}
+                </option>
+              ))}
+            </select>
+          </div>
         </div>
 
         <div className="flex flex-col gap-1.5">

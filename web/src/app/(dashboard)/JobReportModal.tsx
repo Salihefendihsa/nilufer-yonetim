@@ -14,10 +14,14 @@ interface JobReportModalProps {
   jobId: string | null;
 }
 
+interface UsedProductRow {
+  productId: string;
+  quantity: string;
+}
+
 export function JobReportModal({ open, onClose, onCompleted, jobId }: JobReportModalProps) {
   const [products, setProducts] = useState<Product[]>([]);
-  const [productId, setProductId] = useState("");
-  const [quantity, setQuantity] = useState("");
+  const [usedProducts, setUsedProducts] = useState<UsedProductRow[]>([{ productId: "", quantity: "" }]);
   const [dosage, setDosage] = useState("");
   const [note, setNote] = useState("");
   const [beforePhoto, setBeforePhoto] = useState<File | null>(null);
@@ -29,8 +33,7 @@ export function JobReportModal({ open, onClose, onCompleted, jobId }: JobReportM
 
   useEffect(() => {
     if (open) {
-      setProductId("");
-      setQuantity("");
+      setUsedProducts([{ productId: "", quantity: "" }]);
       setDosage("");
       setNote("");
       setBeforePhoto(null);
@@ -56,12 +59,23 @@ export function JobReportModal({ open, onClose, onCompleted, jobId }: JobReportM
     e.preventDefault();
     if (!jobId) return;
     setError(null);
+
+    const rows = usedProducts.filter((r) => r.productId);
+    const ids = rows.map((r) => r.productId);
+    if (new Set(ids).size !== ids.length) {
+      setError("Aynı ürün birden fazla kez seçilemez");
+      return;
+    }
+    if (rows.some((r) => !r.quantity || Number(r.quantity) <= 0)) {
+      setError("Seçilen her ürün için geçerli bir miktar girin");
+      return;
+    }
+
     setSaving(true);
 
     try {
       await api.post(`/jobs/${jobId}/report`, {
-        productId: productId || undefined,
-        quantity: productId && quantity ? Number(quantity) : undefined,
+        products: rows.map((r) => ({ productId: r.productId, quantity: Number(r.quantity) })),
         dosage,
         notes: note || undefined,
         signatureBase64: signature ?? undefined,
@@ -80,29 +94,72 @@ export function JobReportModal({ open, onClose, onCompleted, jobId }: JobReportM
     }
   }
 
-  const selectedProduct = products.find((p) => p.id === productId);
+  function updateRow(index: number, patch: Partial<UsedProductRow>) {
+    setUsedProducts((rows) => rows.map((r, i) => (i === index ? { ...r, ...patch } : r)));
+  }
+
+  function addRow() {
+    setUsedProducts((rows) => [...rows, { productId: "", quantity: "" }]);
+  }
+
+  function removeRow(index: number) {
+    setUsedProducts((rows) => rows.filter((_, i) => i !== index));
+  }
 
   return (
     <Modal open={open} onClose={onClose} title="İşi Tamamla">
       <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-        <div className="flex flex-col gap-1.5">
-          <label className="text-sm font-medium text-text-secondary">Kullanılan Ürün</label>
-          <select value={productId} onChange={(e) => setProductId(e.target.value)} className="input">
-            <option value="">Stoktan seçin (opsiyonel)</option>
-            {products.map((p) => (
-              <option key={p.id} value={p.id}>
-                {p.name} ({p.currentStock} {p.unit} kaldı)
-              </option>
-            ))}
-          </select>
+        <div className="flex flex-col gap-2">
+          <label className="text-sm font-medium text-text-secondary">Kullanılan Ürünler (Stoktan Düşüm)</label>
+          {usedProducts.map((row, i) => {
+            const selected = products.find((p) => p.id === row.productId);
+            return (
+              <div key={i} className="flex items-center gap-2">
+                <select
+                  value={row.productId}
+                  onChange={(e) => updateRow(i, { productId: e.target.value })}
+                  className="input flex-1"
+                >
+                  <option value="">Stoktan seçin (opsiyonel)</option>
+                  {products.map((p) => (
+                    <option key={p.id} value={p.id}>
+                      {p.name} ({p.currentStock} {p.unit} kaldı)
+                    </option>
+                  ))}
+                </select>
+                {row.productId && (
+                  <input
+                    required
+                    type="number"
+                    min={0}
+                    step="0.01"
+                    placeholder={selected?.unit ?? "Miktar"}
+                    value={row.quantity}
+                    onChange={(e) => updateRow(i, { quantity: e.target.value })}
+                    className="input w-28"
+                  />
+                )}
+                {usedProducts.length > 1 && (
+                  <button
+                    type="button"
+                    onClick={() => removeRow(i)}
+                    className="rounded-xl px-2 py-2 text-text-secondary hover:bg-surface-subtle"
+                    aria-label="Ürünü kaldır"
+                  >
+                    ✕
+                  </button>
+                )}
+              </div>
+            );
+          })}
+          <button
+            type="button"
+            onClick={addRow}
+            className="self-start text-sm font-semibold text-primary-600 hover:text-primary-700"
+          >
+            + Ürün Ekle
+          </button>
         </div>
-
-        {productId && (
-          <div className="flex flex-col gap-1.5">
-            <label className="text-sm font-medium text-text-secondary">Kullanılan Miktar {selectedProduct ? `(${selectedProduct.unit})` : ""}</label>
-            <input required type="number" min={0} step="0.01" value={quantity} onChange={(e) => setQuantity(e.target.value)} className="input" />
-          </div>
-        )}
 
         <div className="flex flex-col gap-1.5">
           <label className="text-sm font-medium text-text-secondary">Doz</label>

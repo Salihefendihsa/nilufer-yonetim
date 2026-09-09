@@ -52,10 +52,50 @@ export const NOTIFICATION_CATEGORIES: Record<NotificationCategory, NotificationC
 
 export const NOTIFICATION_CATEGORY_KEYS = Object.keys(NOTIFICATION_CATEGORIES) as NotificationCategory[];
 
+/**
+ * Arayüz kategorisi -> backend kategori anahtarı
+ * (backend/src/lib/notificationCategories.ts). Sunucu tarafı `Notification.type`
+ * üzerinden sınıflandırır; başlık metnine bakan `categorizeNotification`
+ * yalnızca `type` alanı boş olan ESKİ kayıtlar için yedek kalır.
+ */
+export const CATEGORY_API_KEY: Record<NotificationCategory, string> = {
+  isler: "job",
+  odemeler: "payment",
+  mesajlar: "message",
+  uyarilar: "alert",
+};
+
 export function categorizeNotification(title: string): NotificationCategory {
   const t = title.toLowerCase();
   if (t.includes("mesaj")) return "mesajlar";
   if (t.includes("tahsilat") || t.includes("ödeme") || t.includes("avans")) return "odemeler";
   if (t.includes("iş")) return "isler";
   return "uyarilar";
+}
+
+/**
+ * Bildirimdeki relatedType/relatedId'yi ilgili ekrana yönlendiren bir yola
+ * çevirir (backend/src/lib/notify.ts:NotificationLink ile birebir). Hedef
+ * sayfa kendi API çağrısını kendi yetki/kapsam kurallarıyla yapar — burada
+ * ekstra bir erişim kontrolü GEREKMEZ, mevcut kontrol korunur.
+ *
+ * Not: Şu an ilgili LİSTE ekranına yönlendirir (ör. /isler), kaydı otomatik
+ * seçip vurgulamaz — bu daha ince bir iyileştirme olarak açık bırakılmıştır.
+ */
+export function getNotificationHref(n: { relatedType: string | null; relatedId: string | null }): string | null {
+  if (!n.relatedType) return null;
+  switch (n.relatedType) {
+    case "Job":
+      return "/isler";
+    case "Product":
+      return "/stok";
+    case "AdvanceRequest":
+      return "/bekleyen-onaylar";
+    case "QuoteRequest":
+      return "/bekleyen-onaylar";
+    case "Conversation":
+      return "/mesajlar";
+    default:
+      return null;
+  }
 }

@@ -1,16 +1,17 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Eye, MailOpen, MessageCircle, Plus, Send, Users2 } from "lucide-react";
+import { Eye, MailOpen, Megaphone, MessageCircle, Plus, Send, Users2 } from "lucide-react";
 import { EmptyState } from "@/components/EmptyState";
 import { PageHeader } from "@/components/PageHeader";
 import { StatCard } from "@/components/StatCard";
 import { DayDivider, MessageBubble } from "@/components/MessageBubble";
-import { api, ApiError } from "@/lib/api";
+import { api, ApiError, resolveUploadUrl } from "@/lib/api";
 import { useAuth } from "@/lib/AuthProvider";
 import { ROLE_LABELS, type Role } from "@/lib/auth";
 import type { ConversationSummary, AllConversationSummary, MessageItem, Paginated, AvailableContact } from "@/lib/types";
 import { NewConversationModal } from "./NewConversationModal";
+import { BroadcastModal } from "./BroadcastModal";
 
 type ViewMode = "mine" | "all";
 
@@ -63,6 +64,10 @@ function initials(name: string): string {
 export default function MessagesPage() {
   const { user } = useAuth();
   const isOwner = user?.role === "OWNER";
+  // Toplu duyuru, doğrudan ekibi olan roller içindir (backend: /conversations/broadcast
+  // OWNER/MANAGER/TEAM_LEAD; ekibi yoksa 400 döner).
+  const canBroadcast =
+    user?.role === "TEAM_LEAD" || user?.role === "OWNER" || user?.role === "MANAGER";
   const [mode, setMode] = useState<ViewMode>("mine");
   const [conversations, setConversations] = useState<ConversationSummary[]>([]);
   const [allConversations, setAllConversations] = useState<AllConversationSummary[]>([]);
@@ -74,6 +79,7 @@ export default function MessagesPage() {
   const [sending, setSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [newConversationOpen, setNewConversationOpen] = useState(false);
+  const [broadcastOpen, setBroadcastOpen] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const loadConversations = useCallback(async () => {
@@ -229,6 +235,16 @@ export default function MessagesPage() {
         }
         actions={
           <>
+            {canBroadcast && (
+              <button
+                type="button"
+                onClick={() => setBroadcastOpen(true)}
+                className="flex items-center gap-2 rounded-2xl border border-border bg-surface-base px-4 py-2.5 text-sm font-medium text-text-secondary transition hover:border-border-strong hover:bg-surface-subtle hover:text-text-primary"
+              >
+                <Megaphone size={16} strokeWidth={1.75} />
+                Ekibime Duyuru
+              </button>
+            )}
             {isOwner && (
               <div className="flex gap-1 rounded-2xl border border-border bg-surface-card p-1 shadow-card">
                 <button
@@ -467,6 +483,11 @@ export default function MessagesPage() {
                           }
                           read={!!entry.message.readAt}
                           senderName={isObserving ? observerNames[entry.message.senderId] : undefined}
+                          attachmentUrl={
+                            entry.message.attachmentUrl
+                              ? resolveUploadUrl(entry.message.attachmentUrl)
+                              : null
+                          }
                         />
                       )
                     )}
@@ -505,6 +526,8 @@ export default function MessagesPage() {
           )}
         </div>
       </div>
+
+      <BroadcastModal open={broadcastOpen} onClose={() => setBroadcastOpen(false)} onSent={loadConversations} />
 
       <NewConversationModal
         open={newConversationOpen}

@@ -10,19 +10,15 @@ import { Table, type Column } from "@/components/Table";
 import { EmptyState } from "@/components/EmptyState";
 import { api, ApiError, downloadFile } from "@/lib/api";
 import { currencyFormatter, formatDate } from "@/lib/format";
-import type { Customer, Payment, Paginated, AdvanceRequest, RevenueTrendPoint } from "@/lib/types";
+import type {
+  Customer,
+  Payment,
+  Paginated,
+  AdvanceRequest,
+  RevenueTrendPoint,
+  PaymentsSummary,
+} from "@/lib/types";
 import { PaymentFormModal } from "./PaymentFormModal";
-
-interface PaymentsSummary {
-  thisMonthTotal: number;
-  thisMonthPaymentCount: number;
-  allTimeTotal: number;
-  totalOutstandingBalance: number;
-  pendingAdvancesTotal: number;
-  pendingAdvancesCount: number;
-  netProfitThisMonth?: number;
-  profitMargin?: number | null;
-}
 
 const PAYMENT_TYPE_LABELS: Record<string, string> = {
   CASH: "Nakit",
@@ -93,33 +89,39 @@ function PaymentsPageContent() {
 
   const customerNames = Object.fromEntries(customers.map((c) => [c.id, c.fullName]));
 
-  // Grafik verileri mevcut yanıtlardan türetilir; ayrı bir uç nokta çağrılmaz.
-  const monthOverMonth = useMemo(() => {
-    const last = revenue[revenue.length - 1]?.total ?? 0;
-    const previous = revenue[revenue.length - 2]?.total ?? 0;
-    return previous > 0 ? ((last - previous) / previous) * 100 : 0;
-  }, [revenue]);
-
-  const paymentTypeSlices = useMemo(() => {
-    const counts = new Map<string, number>();
-    for (const p of payments) {
-      counts.set(p.paymentType, (counts.get(p.paymentType) ?? 0) + 1);
-    }
-    return Array.from(counts.entries()).map(([type, value]) => ({
-      name: PAYMENT_TYPE_LABELS[type] ?? type,
-      value,
-    }));
-  }, [payments]);
+  // Tür dağılımı ve aya göre değişim artık /payments/summary'den gelir —
+  // yalnızca görüntülenen sayfadaki kayıtlardan değil, ayın tamamından hesaplanır.
+  const paymentTypeSlices = useMemo(
+    () =>
+      (summary?.paymentTypeBreakdown ?? []).map((entry) => ({
+        name: PAYMENT_TYPE_LABELS[entry.paymentType] ?? entry.paymentType,
+        value: entry.total,
+      })),
+    [summary]
+  );
 
   const columns: Column<Payment>[] = [
     {
       header: "Müşteri",
       isPrimary: true,
-      avatarLabel: (row) => customerNames[row.customerId] ?? "Müşteri",
-      accessor: (row) => <span className="font-medium text-text-primary">{customerNames[row.customerId] ?? "Müşteri"}</span>,
+      avatarLabel: (row) => row.customer?.fullName ?? customerNames[row.customerId] ?? "Müşteri",
+      accessor: (row) => (
+        <span className="font-medium text-text-primary">
+          {row.customer?.fullName ?? customerNames[row.customerId] ?? "Müşteri"}
+        </span>
+      ),
     },
     { header: "Tutar", accessor: (row) => <span className="font-medium text-text-primary">{currencyFormatter.format(row.amount)}</span> },
     { header: "Tür", accessor: (row) => PAYMENT_TYPE_LABELS[row.paymentType] ?? row.paymentType },
+    {
+      header: "Dekont No",
+      accessor: (row) =>
+        row.referenceNo ? <span className="font-mono text-xs">{row.referenceNo}</span> : <span className="text-text-faint">—</span>,
+    },
+    {
+      header: "Tahsil Eden",
+      accessor: (row) => row.collectedByStaff?.user.fullName ?? <span className="text-text-faint">—</span>,
+    },
     { header: "Tarih", accessor: (row) => formatDate(row.createdAt) },
     {
       header: "Makbuz",
@@ -173,7 +175,17 @@ function PaymentsPageContent() {
           value={summary ? currencyFormatter.format(summary.thisMonthTotal) : "—"}
           icon={Wallet}
           mono
-          trend={{ value: monthOverMonth, label: "geçen aya göre" }}
+          trend={
+            summary?.monthOverMonthChangePercent != null
+              ? { value: summary.monthOverMonthChangePercent, label: "geçen aya göre" }
+              : undefined
+          }
+          progress={summary?.revenueTargetCompletionPercent ?? undefined}
+          hint={
+            summary?.monthlyRevenueTarget
+              ? `Hedef ${currencyFormatter.format(summary.monthlyRevenueTarget)}`
+              : undefined
+          }
         />
         <StatCard
           label="Bu ay işlem sayısı"
@@ -221,11 +233,11 @@ function PaymentsPageContent() {
           />
         </ChartCard>
 
-        <ChartCard title="Ödeme Türü Dağılımı" description="Bu sayfadaki tahsilatlar" icon={Receipt} height={240}>
+        <ChartCard title="Ödeme Türü Dağılımı" description="Bu ayın tüm tahsilatları" icon={Receipt} height={240}>
           <DonutChart
             data={paymentTypeSlices}
-            centerValue={loading ? "—" : String(payments.length)}
-            centerLabel="tahsilat"
+            centerValue={loading || !summary ? "—" : currencyFormatter.format(summary.thisMonthTotal)}
+            centerLabel="bu ay"
             emptyLabel={loading ? "Yükleniyor..." : "Veri yok"}
           />
         </ChartCard>

@@ -52,7 +52,7 @@ const NAV_ITEMS: NavItem[] = [
   { href: "/musteriler", label: "Müşteriler", icon: Users, roles: ["OWNER", "MANAGER"], group: "operasyon" },
   { href: "/personel", label: "Personel", icon: HardHat, roles: ["OWNER", "MANAGER"], group: "operasyon" },
   { href: "/performans", label: "Performans", icon: Trophy, roles: ["OWNER", "MANAGER", "TEAM_LEAD"], group: "operasyon" },
-  { href: "/stok", label: "Stok", icon: Boxes, roles: ["OWNER", "MANAGER"], group: "operasyon" },
+  { href: "/stok", label: "Stok", icon: Boxes, roles: ["OWNER", "MANAGER", "TEAM_LEAD"], group: "operasyon" },
   { href: "/isler", label: "İşler", icon: Wrench, roles: ["OWNER", "MANAGER", "TEAM_LEAD", "STAFF", "CUSTOMER"], group: "operasyon" },
   { href: "/sozlesmeler", label: "Sözleşmeler", icon: FileSignature, roles: ["OWNER", "MANAGER"], group: "finans" },
   { href: "/teklifler", label: "Teklifler", icon: FileText, roles: ["OWNER", "MANAGER"], group: "finans" },

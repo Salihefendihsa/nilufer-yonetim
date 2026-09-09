@@ -10,6 +10,8 @@ interface MessageBubbleProps {
   read?: boolean;
   /** Gözlemci modunda gönderenin adı balonun üstünde gösterilir. */
   senderName?: string;
+  /** Saha fotoğrafı eki — tam URL (api.resolveUploadUrl ile çözülmüş). */
+  attachmentUrl?: string | null;
 }
 
 /**
@@ -17,7 +19,7 @@ interface MessageBubbleProps {
  * karşı tarafınkiler solda surface-subtle zemin + kenarlık; her iki tarafta da
  * dış köşe yuvarlak, sohbet tarafındaki köşe sivri (klasik sohbet kuyruğu etkisi).
  */
-export function MessageBubble({ content, time, mine, read, senderName }: MessageBubbleProps) {
+export function MessageBubble({ content, time, mine, read, senderName, attachmentUrl }: MessageBubbleProps) {
   return (
     <div className={`flex ${mine ? "justify-end" : "justify-start"}`}>
       <div className={`flex max-w-[75%] flex-col ${mine ? "items-end" : "items-start"}`}>
@@ -30,6 +32,14 @@ export function MessageBubble({ content, time, mine, read, senderName }: Message
               : "rounded-bl-md border border-border bg-surface-subtle text-text-primary"
           }`}
         >
+          {attachmentUrl && (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={attachmentUrl}
+              alt="Saha fotoğrafı"
+              className="mb-2 max-h-64 w-full rounded-xl object-cover"
+            />
+          )}
           <p className="whitespace-pre-wrap break-words">{content}</p>
           <span className={`mt-1 flex items-center justify-end gap-1 ${mine ? "text-white/70" : "text-text-faint"}`}>
             <span className="font-mono text-[10px]">{time}</span>

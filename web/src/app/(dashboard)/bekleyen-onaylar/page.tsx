@@ -1,7 +1,17 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { ClipboardCheck, Inbox, HandCoins, FileSignature, Check, X, ArrowRightCircle, AlertTriangle } from "lucide-react";
+import {
+  ClipboardCheck,
+  Inbox,
+  HandCoins,
+  FileSignature,
+  Check,
+  X,
+  ArrowRightCircle,
+  AlertTriangle,
+  ClipboardList,
+} from "lucide-react";
 import { RequireRole } from "@/components/RequireRole";
 import { EmptyState } from "@/components/EmptyState";
 import { PageHeader } from "@/components/PageHeader";
@@ -9,13 +19,20 @@ import { StatCard } from "@/components/StatCard";
 import { StatusStrip } from "@/components/StatusStrip";
 import { api, ApiError } from "@/lib/api";
 import { formatDate, currencyFormatter } from "@/lib/format";
-import type { QuoteRequest, AdvanceRequest, Contract, Customer, Paginated } from "@/lib/types";
+import { formatDateTime } from "@/lib/format";
+import type { QuoteRequest, AdvanceRequest, Contract, Customer, Job, Paginated } from "@/lib/types";
+
+/** /jobs?pendingReportApproval=true yanıtında onaysız rapor özeti gömülü gelir. */
+interface JobWithPendingReport extends Job {
+  jobReports?: { id: string; createdAt: string; dosage: string; notes: string | null }[];
+}
 
 /** Onay kuyruğundaki üç kalem türünün ortak renk/etiket eşlemesi. */
 const QUEUE_COLORS = {
   contract: "#B57F13",
   advance: "#3D8A4E",
   quote: "#1F6FA8",
+  report: "#5A6B5E",
 } as const;
 
 /** Bitişine 7 günden az kalan sözleşme "acil" sayılır ve kırmızı kodlanır. */
@@ -33,6 +50,7 @@ function ApprovalQueueContent() {
   const [quotes, setQuotes] = useState<QuoteRequest[]>([]);
   const [advances, setAdvances] = useState<AdvanceRequest[]>([]);
   const [expiringContracts, setExpiringContracts] = useState<(Contract & { customer: Customer })[]>([]);
+  const [pendingReports, setPendingReports] = useState<JobWithPendingReport[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
@@ -43,16 +61,18 @@ function ApprovalQueueContent() {
     try {
       // allSettled: bu üç kalemden biri yetki/ağ hatası verirse sayfanın tamamı
       // çökmesin, yalnızca o kalem boş listeyle gösterilsin.
-      const [quotesRes, advancesRes, expiringRes] = await Promise.allSettled([
+      const [quotesRes, advancesRes, expiringRes, reportsRes] = await Promise.allSettled([
         api.get<Paginated<QuoteRequest>>("/quotes?status=NEW&limit=50"),
         api.get<Paginated<AdvanceRequest>>("/advances?status=PENDING&limit=50"),
         api.get<{ data: (Contract & { customer: Customer })[] }>("/contracts/expiring"),
+        api.get<Paginated<JobWithPendingReport>>("/jobs?pendingReportApproval=true&limit=50"),
       ]);
       setQuotes(quotesRes.status === "fulfilled" ? quotesRes.value.data : []);
       setAdvances(advancesRes.status === "fulfilled" ? advancesRes.value.data : []);
       setExpiringContracts(expiringRes.status === "fulfilled" ? expiringRes.value.data : []);
+      setPendingReports(reportsRes.status === "fulfilled" ? reportsRes.value.data : []);
 
-      const firstError = [quotesRes, advancesRes, expiringRes].find((r) => r.status === "rejected");
+      const firstError = [quotesRes, advancesRes, expiringRes, reportsRes].find((r) => r.status === "rejected");
       if (firstError && firstError.status === "rejected") {
         const reason = firstError.reason;
         setError(reason instanceof ApiError ? reason.message : "Kuyruğun bir kısmı yüklenemedi");
@@ -104,7 +124,20 @@ function ApprovalQueueContent() {
     }
   }
 
-  const total = quotes.length + advances.length + expiringContracts.length;
+  /** Saha raporunu onaylar (POST /jobs/:id/report/approve). */
+  async function handleReportApprove(jobId: string) {
+    setBusyId(jobId);
+    try {
+      await api.post(`/jobs/${jobId}/report/approve`, {});
+      load();
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : "Rapor onaylanamadı");
+    } finally {
+      setBusyId(null);
+    }
+  }
+
+  const total = quotes.length + advances.length + expiringContracts.length + pendingReports.length;
 
   const daysLeftOf = (contract: Contract) =>
     Math.max(0, Math.ceil((new Date(contract.endDate).getTime() - Date.now()) / (1000 * 60 * 60 * 24)));
@@ -156,6 +189,14 @@ function ApprovalQueueContent() {
           hint={advances.length > 0 ? `Toplam ${currencyFormatter.format(advanceTotal)}` : undefined}
         />
         <StatCard
+          label="Saha raporu onayı"
+          value={loading ? "—" : String(pendingReports.length)}
+          icon={ClipboardList}
+          accent="neutral"
+          mono
+          hint="Personelin gönderdiği, onay bekleyen raporlar"
+        />
+        <StatCard
           label="Bitmek üzere sözleşme"
           value={loading ? "—" : String(expiringContracts.length)}
           icon={FileSignature}
@@ -173,6 +214,7 @@ function ApprovalQueueContent() {
           { label: "sözleşme", count: expiringContracts.length, color: QUEUE_COLORS.contract },
           { label: "avans", count: advances.length, color: QUEUE_COLORS.advance },
           { label: "teklif", count: quotes.length, color: QUEUE_COLORS.quote },
+          { label: "saha raporu", count: pendingReports.length, color: QUEUE_COLORS.report },
         ]}
         action={
           urgency.urgent > 0 ? (
@@ -195,6 +237,40 @@ function ApprovalQueueContent() {
         </div>
       ) : (
         <div className="flex flex-col gap-3">
+          {pendingReports.map((job) => (
+            <div
+              key={job.id}
+              className="flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-border border-l-4 bg-surface-card p-5 shadow-card transition hover:shadow-cardHover"
+              style={{ borderLeftColor: QUEUE_COLORS.report }}
+            >
+              <div className="flex items-start gap-3">
+                <span className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-surface-subtle text-text-secondary ring-1 ring-border">
+                  <ClipboardList size={16} strokeWidth={1.75} />
+                </span>
+                <div>
+                  <p className="text-2xs font-semibold uppercase tracking-wide text-text-secondary">Saha Raporu</p>
+                  <p className="mt-0.5 font-medium text-text-primary">
+                    {job.customer?.fullName ?? "Müşteri"} · {job.serviceType}
+                  </p>
+                  <p className="text-sm text-text-secondary">
+                    {job.assignedStaff?.user.fullName ?? "Personel"}
+                    {job.jobReports?.[0] ? ` · ${formatDateTime(job.jobReports[0].createdAt)}` : ""}
+                    {job.jobReports?.[0]?.dosage ? ` · Doz: ${job.jobReports[0].dosage}` : ""}
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                disabled={busyId === job.id}
+                onClick={() => handleReportApprove(job.id)}
+                className="flex items-center gap-1.5 rounded-xl bg-primary-600 px-4 py-2 text-sm font-semibold text-white shadow-card transition hover:bg-primary-700 disabled:opacity-50"
+              >
+                <Check size={15} strokeWidth={2} />
+                Raporu Onayla
+              </button>
+            </div>
+          ))}
+
           {expiringContracts.map((contract) => {
             const daysLeft = daysLeftOf(contract);
             const urgent = daysLeft <= URGENT_DAY_THRESHOLD;

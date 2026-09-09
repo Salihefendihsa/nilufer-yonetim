@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
+import { useRouter } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
 import { X, Search, CheckCheck, Bell } from "lucide-react";
 import { api } from "@/lib/api";
@@ -9,6 +10,7 @@ import {
   NOTIFICATION_CATEGORIES,
   NOTIFICATION_CATEGORY_KEYS,
   categorizeNotification,
+  getNotificationHref,
   type NotificationCategory,
 } from "@/lib/notifications";
 import type { AppNotification } from "@/lib/types";
@@ -33,6 +35,7 @@ function formatTime(value: string): string {
 }
 
 export function NotificationDrawer({ open, onClose, onChanged }: NotificationDrawerProps) {
+  const router = useRouter();
   const [notifications, setNotifications] = useState<AppNotification[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
@@ -77,6 +80,15 @@ export function NotificationDrawer({ open, onClose, onChanged }: NotificationDra
       onChanged();
     } catch {
       // best-effort
+    }
+  }
+
+  function handleItemClick(n: AppNotification) {
+    handleMarkOneRead(n.id);
+    const href = getNotificationHref(n);
+    if (href) {
+      onClose();
+      router.push(href);
     }
   }
 
@@ -168,7 +180,7 @@ export function NotificationDrawer({ open, onClose, onChanged }: NotificationDra
                       <li key={n.id}>
                         <button
                           type="button"
-                          onClick={() => handleMarkOneRead(n.id)}
+                          onClick={() => handleItemClick(n)}
                           className="flex w-full items-start gap-3 px-5 py-4 text-left transition hover:bg-primary-50/60"
                         >
                           <span className={`mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full ring-1 ${cat.iconClass}`}>

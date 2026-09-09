@@ -22,6 +22,7 @@ export function JobFormModal({ open, onClose, onSaved, customers, staff }: JobFo
   const [serviceTypeSelect, setServiceTypeSelect] = useState("");
   const [serviceTypeOther, setServiceTypeOther] = useState("");
   const [scheduledAt, setScheduledAt] = useState("");
+  const [scheduledEndAt, setScheduledEndAt] = useState("");
   const [notes, setNotes] = useState("");
   const [price, setPrice] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -34,6 +35,7 @@ export function JobFormModal({ open, onClose, onSaved, customers, staff }: JobFo
       setServiceTypeSelect("");
       setServiceTypeOther("");
       setScheduledAt("");
+      setScheduledEndAt("");
       setNotes("");
       setPrice("");
       setError(null);
@@ -57,6 +59,7 @@ export function JobFormModal({ open, onClose, onSaved, customers, staff }: JobFo
         assignedStaffId: assignedStaffId || undefined,
         serviceType,
         scheduledAt: scheduledAt ? new Date(scheduledAt).toISOString() : undefined,
+        scheduledEndAt: scheduledEndAt ? new Date(scheduledEndAt).toISOString() : undefined,
         notes: notes || undefined,
         price: price ? Number(price) : undefined,
       });
@@ -127,14 +130,27 @@ export function JobFormModal({ open, onClose, onSaved, customers, staff }: JobFo
           )}
         </div>
 
-        <div className="flex flex-col gap-1.5">
-          <label className="text-sm font-medium text-text-secondary">Tarih ve Saat (opsiyonel)</label>
-          <input
-            type="datetime-local"
-            value={scheduledAt}
-            onChange={(e) => setScheduledAt(e.target.value)}
-            className="input"
-          />
+        {/* Randevu penceresi — Stitch Müdür → İşler kartlarındaki "09:00 – 11:00". */}
+        <div className="grid grid-cols-2 gap-3">
+          <div className="flex flex-col gap-1.5">
+            <label className="text-sm font-medium text-text-secondary">Başlangıç (opsiyonel)</label>
+            <input
+              type="datetime-local"
+              value={scheduledAt}
+              onChange={(e) => setScheduledAt(e.target.value)}
+              className="input"
+            />
+          </div>
+          <div className="flex flex-col gap-1.5">
+            <label className="text-sm font-medium text-text-secondary">Tahmini Bitiş (opsiyonel)</label>
+            <input
+              type="datetime-local"
+              value={scheduledEndAt}
+              min={scheduledAt || undefined}
+              onChange={(e) => setScheduledEndAt(e.target.value)}
+              className="input"
+            />
+          </div>
         </div>
 
         <div className="flex flex-col gap-1.5">

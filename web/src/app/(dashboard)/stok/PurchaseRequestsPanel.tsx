@@ -1,0 +1,126 @@
+"use client";
+
+import { useCallback, useEffect, useState } from "react";
+import { ShoppingCart, Check, X } from "lucide-react";
+import { api, ApiError } from "@/lib/api";
+import { formatDateTime, decimalValue } from "@/lib/format";
+import type { Paginated, StockPurchaseRequest } from "@/lib/types";
+
+const STATUS_LABELS: Record<StockPurchaseRequest["status"], { label: string; className: string }> = {
+  PENDING: { label: "Sipariş Bekliyor", className: "border-warning-100 bg-warning-50 text-warning-600" },
+  RECEIVED: { label: "Mal Kabul Edildi", className: "border-success-100 bg-success-50 text-success-600" },
+  CANCELLED: { label: "İptal", className: "border-border bg-surface-subtle text-text-secondary" },
+};
+
+/**
+ * Bekleyen satın alma talepleri. Mal kabulü stoğu artırır ve bir StockMovement(IN)
+ * kaydı oluşturur — bu yüzden onaydan sonra ürün listesi de yenilenir (onChanged).
+ */
+export function PurchaseRequestsPanel({ onChanged }: { onChanged: () => void }) {
+  const [requests, setRequests] = useState<StockPurchaseRequest[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [busyId, setBusyId] = useState<string | null>(null);
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const res = await api.get<Paginated<StockPurchaseRequest>>("/products/purchase-requests?status=PENDING&limit=20");
+      setRequests(res.data);
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : "Talepler yüklenemedi");
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    load();
+  }, [load]);
+
+  async function resolve(id: string, status: "RECEIVED" | "CANCELLED") {
+    setBusyId(id);
+    setError(null);
+    try {
+      await api.patch(`/products/purchase-requests/${id}`, { status });
+      await load();
+      onChanged();
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : "İşlem tamamlanamadı");
+    } finally {
+      setBusyId(null);
+    }
+  }
+
+  return (
+    <section className="rounded-3xl border border-border bg-surface-base p-5 shadow-card">
+      <header className="mb-4 flex items-center gap-2">
+        <ShoppingCart size={16} strokeWidth={1.75} className="text-text-secondary" />
+        <h2 className="text-sm font-semibold text-text-primary">Bekleyen Satın Alma Talepleri</h2>
+        {!loading && (
+          <span className="rounded-full bg-surface-subtle px-2 py-0.5 text-[11px] font-semibold text-text-secondary">
+            {requests.length}
+          </span>
+        )}
+      </header>
+
+      {error && (
+        <p className="mb-3 rounded-2xl border border-danger-100 bg-danger-50 px-4 py-3 text-sm text-danger-500">{error}</p>
+      )}
+
+      {loading ? (
+        <p className="text-sm text-text-secondary">Yükleniyor...</p>
+      ) : requests.length === 0 ? (
+        <p className="text-sm text-text-secondary">Bekleyen satın alma talebi yok.</p>
+      ) : (
+        <ul className="flex flex-col gap-2">
+          {requests.map((request) => (
+            <li
+              key={request.id}
+              className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-border bg-surface-subtle px-4 py-3"
+            >
+              <div className="min-w-0">
+                <p className="truncate text-sm font-medium text-text-primary">
+                  {request.product?.name ?? "Ürün"}{" "}
+                  <span className="font-mono text-xs text-text-secondary">
+                    +{decimalValue(request.quantity)} {request.product?.unit ?? ""}
+                  </span>
+                </p>
+                <p className="text-xs text-text-secondary">
+                  {request.requestedBy?.fullName ?? "—"} · {formatDateTime(request.createdAt)}
+                  {request.note ? ` · ${request.note}` : ""}
+                </p>
+              </div>
+              <div className="flex items-center gap-2">
+                <span
+                  className={`rounded-full border px-2.5 py-1 text-[11px] font-semibold ${STATUS_LABELS[request.status].className}`}
+                >
+                  {STATUS_LABELS[request.status].label}
+                </span>
+                <button
+                  type="button"
+                  disabled={busyId === request.id}
+                  onClick={() => resolve(request.id, "RECEIVED")}
+                  className="flex items-center gap-1.5 rounded-xl bg-primary-600 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-primary-700 disabled:opacity-60"
+                >
+                  <Check size={13} strokeWidth={2} />
+                  Mal Kabul
+                </button>
+                <button
+                  type="button"
+                  disabled={busyId === request.id}
+                  onClick={() => resolve(request.id, "CANCELLED")}
+                  className="flex items-center gap-1.5 rounded-xl border border-border bg-surface-base px-3 py-1.5 text-xs font-medium text-text-secondary transition hover:bg-surface-subtle disabled:opacity-60"
+                >
+                  <X size={13} strokeWidth={2} />
+                  İptal
+                </button>
+              </div>
+            </li>
+          ))}
+        </ul>
+      )}
+    </section>
+  );
+}

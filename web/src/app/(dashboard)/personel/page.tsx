@@ -1,7 +1,21 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Plus, HardHat, Pencil, Trash2, CalendarCheck, ShieldCheck, FileBadge, Users2, Briefcase, Coffee } from "lucide-react";
+import {
+  Plus,
+  HardHat,
+  Pencil,
+  Trash2,
+  CalendarCheck,
+  ShieldCheck,
+  FileBadge,
+  Users2,
+  Briefcase,
+  Coffee,
+  Truck,
+  Star,
+  AlertTriangle,
+} from "lucide-react";
 import { RequireRole } from "@/components/RequireRole";
 import { PageHeader } from "@/components/PageHeader";
 import { StatusStrip } from "@/components/StatusStrip";
@@ -10,14 +24,21 @@ import { EmptyState } from "@/components/EmptyState";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { api, ApiError } from "@/lib/api";
 import { useAuth } from "@/lib/AuthProvider";
-import { todayIsoDate } from "@/lib/format";
 import type { Staff, Paginated } from "@/lib/types";
 import { StaffFormModal } from "./StaffFormModal";
 import { PermissionsModal } from "./PermissionsModal";
 import { CertificationsModal } from "./CertificationsModal";
 
+/**
+ * Bugünkü iş sayısı, biten sertifika sayısı ve ortalama puan artık /staff
+ * yanıtında sunucu tarafında hesaplanıyor — eskiden personel başına ayrı bir
+ * /jobs isteği atılıyordu (N+1).
+ */
 interface StaffRow extends Staff {
   todaysJobsCount: number;
+  expiringCertificationCount: number;
+  averageRating: number | null;
+  ratedJobsCount: number;
 }
 
 export default function StaffPage() {
@@ -47,20 +68,15 @@ function StaffPageContent() {
     try {
       const res = await api.get<Paginated<Staff>>("/staff?limit=100");
 
-      const withCounts = await Promise.all(
-        res.data.map(async (staff) => {
-          try {
-            const jobsRes = await api.get<Paginated<unknown>>(
-              `/jobs?staffId=${staff.id}&date=${todayIsoDate()}&limit=1`
-            );
-            return { ...staff, todaysJobsCount: jobsRes.pagination.total };
-          } catch {
-            return { ...staff, todaysJobsCount: 0 };
-          }
-        })
+      setRows(
+        res.data.map((staff) => ({
+          ...staff,
+          todaysJobsCount: staff.todaysJobsCount ?? 0,
+          expiringCertificationCount: staff.expiringCertificationCount ?? 0,
+          averageRating: staff.averageRating ?? null,
+          ratedJobsCount: staff.ratedJobsCount ?? 0,
+        }))
       );
-
-      setRows(withCounts);
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "Personel listesi yüklenemedi");
     } finally {
@@ -170,9 +186,30 @@ function StaffPageContent() {
                 <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-primary-600 text-lg font-semibold text-white">
                   {staff.user.fullName[0]?.toUpperCase() ?? "?"}
                 </div>
-                <div>
+                <div className="min-w-0">
                   <p className="font-medium text-text-primary">{staff.user.fullName}</p>
                   <p className="text-sm text-text-secondary">{staff.position}</p>
+                  {staff.vehiclePlate && (
+                    <p className="flex items-center gap-1 text-xs text-text-faint">
+                      <Truck size={11} strokeWidth={1.75} />
+                      <span className="font-mono">{staff.vehiclePlate}</span>
+                    </p>
+                  )}
+                </div>
+                <div className="ml-auto flex flex-col items-end gap-1">
+                  {staff.averageRating !== null && (
+                    <span className="inline-flex items-center gap-1 rounded-full bg-warning-50 px-2 py-0.5 text-[11px] font-semibold text-warning-600">
+                      <Star size={10} strokeWidth={2} />
+                      {staff.averageRating.toFixed(1)}
+                      <span className="font-normal text-text-faint">({staff.ratedJobsCount})</span>
+                    </span>
+                  )}
+                  {staff.expiringCertificationCount > 0 && (
+                    <span className="inline-flex items-center gap-1 rounded-full bg-danger-50 px-2 py-0.5 text-[11px] font-semibold text-danger-500">
+                      <AlertTriangle size={10} strokeWidth={2} />
+                      {staff.expiringCertificationCount} belge
+                    </span>
+                  )}
                 </div>
               </div>
 
@@ -188,12 +225,23 @@ function StaffPageContent() {
                 )}
                 <p className="text-sm text-text-secondary">
                   Bugün <span className="font-semibold text-text-primary">{staff.todaysJobsCount}</span> iş
+                  {staff.dailyJobCapacity ? (
+                    <span className="text-text-faint"> / {staff.dailyJobCapacity} kapasite</span>
+                  ) : null}
                 </p>
                 <span className="ml-auto h-1.5 w-16 overflow-hidden rounded-full bg-surface-muted">
-                  <span
-                    className="block h-full rounded-full bg-primary-500"
-                    style={{ width: `${Math.min(100, staff.todaysJobsCount * 25)}%` }}
-                  />
+                  {/* Kapasite tanımlıysa doluluk gerçek kapasiteye göre; tanımlı
+                      değilse çubuk gösterilmez (uydurma bir üst sınır kullanılmaz). */}
+                  {staff.dailyJobCapacity ? (
+                    <span
+                      className={`block h-full rounded-full ${
+                        staff.todaysJobsCount > staff.dailyJobCapacity ? "bg-danger-500" : "bg-primary-500"
+                      }`}
+                      style={{
+                        width: `${Math.min(100, (staff.todaysJobsCount / staff.dailyJobCapacity) * 100)}%`,
+                      }}
+                    />
+                  ) : null}
                 </span>
               </div>
 

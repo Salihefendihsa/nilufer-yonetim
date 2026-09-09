@@ -1,4 +1,13 @@
-export type JobStatus = "PENDING" | "SCHEDULED" | "COMPLETED" | "CANCELLED";
+/**
+ * Prisma `Decimal` alanları JSON'a **string** olarak serileşir
+ * (`"currentStock": "-8"`), `Int`/`Float` alanları ise sayı olarak gelir.
+ * Sayısal karşılaştırma yapmadan önce `decimalValue()` (bkz. lib/format.ts)
+ * ile dönüştürün — ham `<=` karşılaştırması string sıralaması yapar ve
+ * `"13" <= "4"` gibi yanlış sonuç verir.
+ */
+export type ApiDecimal = number | string;
+
+export type JobStatus = "PENDING" | "SCHEDULED" | "IN_PROGRESS" | "COMPLETED" | "CANCELLED";
 
 export interface Customer {
   id: string;
@@ -18,6 +27,7 @@ export interface Job {
   serviceType: string;
   status: JobStatus;
   scheduledAt: string | null;
+  startedAt: string | null;
   completedAt: string | null;
   notes: string | null;
   price: number | null;
@@ -25,6 +35,10 @@ export interface Job {
   ratingComment: string | null;
   createdAt: string;
   calendarLink: string | null;
+  sequenceNo: number;
+  scheduledEndAt: string | null;
+  cancelledAt: string | null;
+  cancellationReason: string | null;
   /** Liste/detay yanıtına gömülü — ayrıca /customers veya /staff çağırmaya gerek bırakmaz. */
   customer?: { fullName: string };
   assignedStaff?: { user: { fullName: string } } | null;
@@ -36,7 +50,11 @@ export interface Payment {
   amount: number;
   paymentType: string;
   receiptUrl: string | null;
+  referenceNo: string | null;
+  collectedByStaffId: string | null;
   createdAt: string;
+  customer?: { id: string; fullName: string };
+  collectedByStaff?: { id: string; user: { fullName: string } } | null;
 }
 
 export interface Contract {
@@ -46,10 +64,23 @@ export interface Contract {
   endDate: string;
   durationMonths: number;
   status: string;
+  serviceType: string | null;
+  amount: number | null;
   pdfUrl: string | null;
-  recurrenceType: "MONTHLY" | "QUARTERLY" | null;
+  recurrenceType: RecurrenceType | null;
   nextGenerationDate: string | null;
   createdAt: string;
+  customer?: { id: string; fullName: string; district: string | null };
+}
+
+export interface ContractsSummary {
+  byStatus: Record<string, number>;
+  totalCount: number;
+  activeCount: number;
+  expiringIn30DaysCount: number;
+  /** Periyodu aylığa normalize edilmiş tekrarlayan gelir. */
+  monthlyRecurringRevenue: number;
+  activeContractValueTotal: number;
 }
 
 export interface JobReport {
@@ -64,6 +95,16 @@ export interface JobReport {
   signatureUrl: string | null;
   pdfUrl: string | null;
   createdAt: string;
+  approvedAt: string | null;
+  approvedByUserId: string | null;
+  approvedBy?: { fullName: string } | null;
+}
+
+export interface CustomerListItem extends Customer {
+  jobCount: number;
+  lastJobDate: string | null;
+  activeContractCount: number;
+  outstandingBalance: number;
 }
 
 export interface CustomerDetail extends Customer {
@@ -87,14 +128,25 @@ export interface UnlinkedUser {
   fullName: string;
 }
 
+export type StaffStatus = "AVAILABLE" | "ON_JOB" | "ON_BREAK" | "ON_LEAVE" | "OFFLINE";
+
 export interface Staff {
   id: string;
   userId: string;
   position: string;
   salaryBase: number;
   supervisorId: string | null;
+  status: StaffStatus;
+  statusUntil: string | null;
   createdAt: string;
   user: StaffUser;
+  vehiclePlate: string | null;
+  dailyJobCapacity: number | null;
+  /** Liste yanıtında sunucu tarafında hesaplanır (personel başına ek istek yok). */
+  todaysJobsCount?: number;
+  expiringCertificationCount?: number;
+  averageRating?: number | null;
+  ratedJobsCount?: number;
 }
 
 export interface StaffDetail extends Staff {
@@ -122,8 +174,30 @@ export interface QuoteRequest {
   serviceType: string;
   address: string | null;
   district: string | null;
+  amount: number | null;
   status: string;
+  note: string | null;
+  surveyAt: string | null;
+  convertedAt: string | null;
   createdAt: string;
+}
+
+/** GET /quotes/:id/history — yalnızca bu teklife ait denetim kayıtları. */
+export interface QuoteHistoryEntry {
+  id: string;
+  action: string;
+  detail: string | null;
+  createdAt: string;
+  actor: { fullName: string };
+}
+
+export interface QuotesSummary {
+  byStatus: Record<string, number>;
+  totalCount: number;
+  openAmountTotal: number;
+  convertedAmountTotal: number;
+  /** CONVERTED / (CONVERTED + REJECTED); hiç sonuçlanmamışsa null. */
+  conversionRate: number | null;
 }
 
 export interface ConversationParticipant {
@@ -139,6 +213,9 @@ export interface MessageItem {
   content: string;
   readAt: string | null;
   createdAt: string;
+  /** Saha fotoğrafı eki (göreli /uploads yolu). */
+  attachmentUrl: string | null;
+  attachmentType: string | null;
 }
 
 export interface ConversationSummary {
@@ -170,6 +247,9 @@ export interface AppNotification {
   userId: string;
   title: string;
   body: string | null;
+  type: string | null;
+  relatedType: string | null;
+  relatedId: string | null;
   readAt: string | null;
   createdAt: string;
 }
@@ -201,23 +281,86 @@ export interface SystemHealth {
   emailConfigured: boolean;
 }
 
-export interface Product {
+export type ProductCategory = "BIOCIDAL" | "CONSUMABLE" | "EQUIPMENT" | "DISINFECTANT";
+
+export type StockMovementType = "IN" | "OUT";
+
+export interface StockMovement {
   id: string;
-  name: string;
-  unit: string;
-  currentStock: number;
-  criticalThreshold: number;
+  productId: string;
+  type: StockMovementType;
+  quantity: ApiDecimal;
+  note: string | null;
   createdAt: string;
 }
 
-export type RecurrenceType = "MONTHLY" | "QUARTERLY";
+export interface Product {
+  id: string;
+  code: string | null;
+  name: string;
+  unit: string;
+  description: string | null;
+  category: ProductCategory;
+  currentStock: ApiDecimal;
+  criticalThreshold: ApiDecimal;
+  createdAt: string;
+  /** Liste yanıtında sunucu tarafında eklenir. */
+  lastMovement?: Pick<StockMovement, "type" | "quantity" | "note" | "createdAt"> | null;
+  pendingPurchaseQuantity?: number;
+}
+
+export type PurchaseRequestStatus = "PENDING" | "RECEIVED" | "CANCELLED";
+
+export interface StockPurchaseRequest {
+  id: string;
+  productId: string;
+  quantity: ApiDecimal;
+  status: PurchaseRequestStatus;
+  note: string | null;
+  requestedByUserId: string;
+  receivedAt: string | null;
+  receivedByUserId: string | null;
+  createdAt: string;
+  product?: { id: string; name: string; unit: string; code: string | null };
+  requestedBy?: { fullName: string };
+}
+
+export type RecurrenceType = "MONTHLY" | "QUARTERLY" | "SEMIANNUAL" | "ANNUAL";
+
+export type LeaderboardPeriod = "this_month" | "last_month" | "this_year";
 
 export interface StaffLeaderboardEntry {
   staffId: string;
   fullName: string;
   position: string;
   completedJobsThisMonth: number;
+  completedJobsLastMonth: number;
+  /** Seçili döneme ait tamamlanan iş sayısı. */
+  completedJobsInPeriod: number;
+  completedJobsPreviousPeriod: number;
   averageRating: number | null;
+  ratedJobsCount: number;
+  /**
+   * Zamanında tamamlama oranı. Kural: `scheduledEndAt` varsa ona göre, yoksa
+   * `scheduledAt` ile aynı gün. Planı olmayan iş ölçüme dahil edilmez;
+   * ölçülebilir iş yoksa null döner.
+   */
+  onTimeRate: number | null;
+  onTimeMeasuredJobs: number;
+  /** Aylık iş hedefi tanımlı değilse null. */
+  targetCompletionPercent: number | null;
+}
+
+export interface StaffLeaderboardSummary {
+  totalCompletedThisMonth: number;
+  totalCompletedLastMonth: number;
+  totalCompletedInPeriod: number;
+  totalCompletedPreviousPeriod: number;
+  staffCount: number;
+  averageRating: number | null;
+  ratedJobsCount: number;
+  onTimeRate: number | null;
+  jobsPerStaff: number;
 }
 
 export interface SearchResults {
@@ -303,6 +446,84 @@ export interface NotificationPreference {
   emailEnabled: boolean;
   dailyDigestEnabled: boolean;
   updatedAt: string;
+}
+
+export interface DashboardSummary {
+  todaysJobsCount: number;
+  thisMonthPaymentsTotal: number;
+  newQuoteRequestsCount: number;
+  activeStaffCount: number;
+  completedJobsThisMonth: number;
+  todaysJobsByStatus: Record<JobStatus, number>;
+  todaysServiceBreakdown: { serviceType: string; count: number }[];
+  staffByStatus: Record<StaffStatus, number>;
+  staffOnJobCount: number;
+  completedJobsLastMonth: number;
+  cancelledJobsThisMonth: number;
+  /** tamamlanan / (tamamlanan + iptal); hiç sonuçlanan iş yoksa null. */
+  completionRateThisMonth: number | null;
+  pendingReportApprovals: number;
+}
+
+export interface PaymentsSummary {
+  thisMonthTotal: number;
+  thisMonthPaymentCount: number;
+  allTimeTotal: number;
+  totalOutstandingBalance: number;
+  pendingAdvancesTotal: number;
+  pendingAdvancesCount: number;
+  lastMonthTotal: number;
+  monthOverMonthChangePercent: number | null;
+  paymentTypeBreakdown: { paymentType: string; total: number; count: number }[];
+  /** OWNER ayarlarından gelir; tanımsızsa null (varsayılan uydurulmaz). */
+  monthlyRevenueTarget: number | null;
+  revenueTargetCompletionPercent: number | null;
+  /** Yalnızca OWNER veya view_finance yetkisi olanlara döner. */
+  netProfitThisMonth?: number;
+  profitMargin?: number | null;
+}
+
+/** GET /team/summary — şef ana sayfası (yalnızca doğrudan ekip kapsamı). */
+export interface TeamSummary {
+  teamSize: number;
+  todaysJobsCount: number;
+  todaysJobsByStatus: Record<JobStatus, number>;
+  completedTodayCount: number;
+  /** Bugün hiç iş yoksa null — "%0" uydurulmaz. */
+  completionRateToday: number | null;
+  activeTechnicianCount: number;
+  staffByStatus: Record<StaffStatus, number>;
+  workload: TeamWorkloadEntry[];
+}
+
+export interface TeamWorkloadEntry {
+  staffId: string;
+  fullName: string;
+  position: string;
+  status: StaffStatus;
+  vehiclePlate: string | null;
+  /** Tanımlı değilse doluluk yüzdesi gösterilmez. */
+  dailyJobCapacity: number | null;
+  todaysJobsCount: number;
+}
+
+/** GET /team/calendar — aylık yoğunluk + kapasite. */
+export interface TeamCalendar {
+  month: string;
+  days: { date: string; jobCount: number }[];
+  /** Ekip üyelerinin `dailyJobCapacity` toplamı; hiçbiri tanımlı değilse null. */
+  dailyCapacity: number | null;
+  today: { jobCount: number; capacity: number | null };
+  thisWeek: { jobCount: number; capacity: number | null };
+  busiestDay: { date: string; jobCount: number } | null;
+}
+
+/** GET /notifications/summary */
+export interface NotificationSummary {
+  total: number;
+  unread: number;
+  today: number;
+  byCategory: Record<string, number>;
 }
 
 export interface Pagination {

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { Trophy, Target, Star, Users2, Award } from "lucide-react";
+import { Trophy, Target, Star, Users2, Award, TrendingUp, Timer } from "lucide-react";
 import { RequireRole } from "@/components/RequireRole";
 import { EmptyState } from "@/components/EmptyState";
 import { PageHeader } from "@/components/PageHeader";
@@ -9,7 +9,13 @@ import { StatCard } from "@/components/StatCard";
 import { ChartCard, RankBars, SimpleBarChart } from "@/components/ChartCard";
 import { Table, type Column } from "@/components/Table";
 import { api, ApiError } from "@/lib/api";
-import type { StaffLeaderboardEntry } from "@/lib/types";
+import type { StaffLeaderboardEntry, StaffLeaderboardSummary, LeaderboardPeriod } from "@/lib/types";
+
+const PERIOD_LABELS: Record<LeaderboardPeriod, string> = {
+  this_month: "Bu Ay",
+  last_month: "Geçen Ay",
+  this_year: "Bu Yıl",
+};
 
 const MEDALS = ["🥇", "🥈", "🥉"];
 const PODIUM_TONES = [
@@ -28,34 +34,46 @@ export default function PerformancePage() {
 
 function PerformancePageContent() {
   const [entries, setEntries] = useState<StaffLeaderboardEntry[]>([]);
+  const [summary, setSummary] = useState<StaffLeaderboardSummary | null>(null);
+  const [monthlyTarget, setMonthlyTarget] = useState<number | null>(null);
+  const [period, setPeriod] = useState<LeaderboardPeriod>("this_month");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     setLoading(true);
+    setError(null);
     api
-      .get<{ data: StaffLeaderboardEntry[] }>("/staff/leaderboard")
-      .then((res) => setEntries(res.data))
+      .get<{ data: StaffLeaderboardEntry[]; summary: StaffLeaderboardSummary; monthlyTarget: number | null }>(
+        `/staff/leaderboard?period=${period}`
+      )
+      .then((res) => {
+        setEntries(res.data);
+        setSummary(res.summary);
+        setMonthlyTarget(res.monthlyTarget);
+      })
       .catch((err) => setError(err instanceof ApiError ? err.message : "Liderlik tablosu yüklenemedi"))
       .finally(() => setLoading(false));
-  }, []);
+  }, [period]);
 
   const topThree = entries.slice(0, 3);
 
-  // Özet metrikler tek listeden türetiliyor — ek API çağrısı yok.
-  const stats = useMemo(() => {
-    const totalJobs = entries.reduce((sum, e) => sum + e.completedJobsThisMonth, 0);
-    const rated = entries.filter((e) => e.averageRating !== null);
-    const avgRating = rated.length > 0 ? rated.reduce((s, e) => s + (e.averageRating ?? 0), 0) / rated.length : null;
-    const avgPerStaff = entries.length > 0 ? totalJobs / entries.length : 0;
-    return { totalJobs, avgRating, avgPerStaff, staffCount: entries.length };
-  }, [entries]);
+  // Özet artık sunucudan gelir (ortalama puan, puanlanan iş sayısı ve geçen ay
+  // dahil); yanıt gelmeden önce kartlar "—" gösterir.
+  const periodOverPeriod = useMemo(() => {
+    if (!summary || summary.totalCompletedPreviousPeriod === 0) return null;
+    return (
+      ((summary.totalCompletedInPeriod - summary.totalCompletedPreviousPeriod) /
+        summary.totalCompletedPreviousPeriod) *
+      100
+    );
+  }, [summary]);
 
   const chartData = useMemo(
     () =>
       entries.slice(0, 8).map((e) => ({
         name: e.fullName.split(" ")[0],
-        jobs: e.completedJobsThisMonth,
+        jobs: e.completedJobsInPeriod,
       })),
     [entries]
   );
@@ -86,17 +104,56 @@ function PerformancePageContent() {
       header: "Tamamlanan İş",
       accessor: (row) => (
         <span className="inline-flex items-center gap-2">
-          <span className="font-mono font-semibold text-text-primary">{row.completedJobsThisMonth}</span>
+          <span className="font-mono font-semibold text-text-primary">{row.completedJobsInPeriod}</span>
           <span className="h-1.5 w-16 overflow-hidden rounded-full bg-surface-muted">
             <span
               className="block h-full rounded-full bg-primary-500"
               style={{
-                width: `${(row.completedJobsThisMonth / Math.max(1, entries[0]?.completedJobsThisMonth ?? 1)) * 100}%`,
+                width: `${(row.completedJobsInPeriod / Math.max(1, entries[0]?.completedJobsInPeriod ?? 1)) * 100}%`,
               }}
             />
           </span>
         </span>
       ),
+    },
+    {
+      header: "Önceki Dönem",
+      accessor: (row) => (
+        <span className="font-mono text-text-secondary">{row.completedJobsPreviousPeriod}</span>
+      ),
+    },
+    {
+      header: "Zamanında",
+      accessor: (row) =>
+        row.onTimeRate === null ? (
+          <span className="text-text-faint">—</span>
+        ) : (
+          <span
+            className={`rounded-full px-2 py-0.5 text-xs font-semibold ${
+              row.onTimeRate >= 90 ? "bg-success-50 text-success-500" : "bg-warning-50 text-warning-600"
+            }`}
+            title={`${row.onTimeMeasuredJobs} planlı iş üzerinden`}
+          >
+            %{row.onTimeRate.toFixed(0)}
+          </span>
+        ),
+    },
+    {
+      header: "Hedef",
+      accessor: (row) =>
+        row.targetCompletionPercent === null ? (
+          <span className="text-text-faint">—</span>
+        ) : (
+          <span
+            className={`rounded-full px-2 py-0.5 text-xs font-semibold ${
+              row.targetCompletionPercent >= 100
+                ? "bg-success-50 text-success-500"
+                : "bg-warning-50 text-warning-600"
+            }`}
+          >
+            %{row.targetCompletionPercent.toFixed(0)}
+          </span>
+        ),
     },
     {
       header: "Ortalama Puan",
@@ -105,6 +162,7 @@ function PerformancePageContent() {
           <span className="inline-flex items-center gap-1 rounded-full bg-warning-50 px-2 py-0.5 text-xs font-semibold text-warning-600">
             <Star size={12} strokeWidth={2} className="fill-current" />
             {row.averageRating.toFixed(1)}
+            <span className="font-normal text-text-faint">({row.ratedJobsCount})</span>
           </span>
         ) : (
           <span className="text-text-faint">—</span>
@@ -122,25 +180,89 @@ function PerformancePageContent() {
 
       {error && <p className="rounded-2xl border border-danger-100 bg-danger-50 px-4 py-3 text-sm text-danger-500">{error}</p>}
 
+      {/* [Dönem seçici] — Stitch Şef → Ekip Performansı: Bu Ay / Geçen Ay / Bu Yıl */}
+      <div className="flex flex-wrap gap-2">
+        {(Object.keys(PERIOD_LABELS) as LeaderboardPeriod[]).map((key) => (
+          <button
+            key={key}
+            type="button"
+            onClick={() => setPeriod(key)}
+            className={`rounded-full px-3.5 py-1.5 text-xs font-semibold transition ${
+              period === key
+                ? "bg-primary-600 text-white"
+                : "border border-border bg-surface-base text-text-secondary hover:bg-surface-subtle"
+            }`}
+          >
+            {PERIOD_LABELS[key]}
+          </button>
+        ))}
+      </div>
+
       {/* [Özet kartlar] */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <StatCard label="Tamamlanan iş (bu ay)" value={loading ? "—" : String(stats.totalJobs)} icon={Target} mono />
+        <StatCard
+          label={`Tamamlanan iş (${PERIOD_LABELS[period].toLowerCase()})`}
+          value={loading || !summary ? "—" : String(summary.totalCompletedInPeriod)}
+          icon={Target}
+          mono
+          trend={
+            periodOverPeriod !== null
+              ? { value: periodOverPeriod, label: "önceki döneme göre" }
+              : undefined
+          }
+        />
         <StatCard
           label="Ortalama müşteri puanı"
-          value={loading || stats.avgRating === null ? "—" : stats.avgRating.toFixed(1)}
+          value={loading || !summary || summary.averageRating === null ? "—" : summary.averageRating.toFixed(1)}
           icon={Star}
           accent="gold"
-          hint="5 üzerinden"
-          progress={stats.avgRating ? (stats.avgRating / 5) * 100 : 0}
+          hint={summary?.ratedJobsCount ? `${summary.ratedJobsCount} puanlanmış iş` : "5 üzerinden"}
+          progress={summary?.averageRating ? (summary.averageRating / 5) * 100 : 0}
         />
-        <StatCard label="Aktif personel" value={loading ? "—" : String(stats.staffCount)} icon={Users2} accent="blue" mono />
         <StatCard
-          label="Kişi başı ortalama iş"
-          value={loading ? "—" : stats.avgPerStaff.toFixed(1)}
-          icon={Award}
-          accent="neutral"
+          label="Aktif personel"
+          value={loading || !summary ? "—" : String(summary.staffCount)}
+          icon={Users2}
+          accent="blue"
           mono
         />
+        {/* Aylık iş hedefi işletme sahibi tarafından tanımlanır; tanımlı
+            değilse hedef kartı yerine kişi başı ortalama gösterilir. */}
+        <StatCard
+          label="Zamanında tamamlama"
+          value={
+            loading || !summary || summary.onTimeRate === null
+              ? "—"
+              : `%${summary.onTimeRate.toFixed(0)}`
+          }
+          icon={Timer}
+          accent="green"
+          mono
+          progress={summary?.onTimeRate ?? undefined}
+          hint="Randevu penceresinde biten işler"
+        />
+        {monthlyTarget ? (
+          <StatCard
+            label="Hedef gerçekleşme"
+            value={
+              loading || !summary
+                ? "—"
+                : `%${((summary.totalCompletedThisMonth / (monthlyTarget * Math.max(1, summary.staffCount))) * 100).toFixed(0)}`
+            }
+            icon={TrendingUp}
+            accent="green"
+            mono
+            hint={`Kişi başı aylık hedef: ${monthlyTarget}`}
+          />
+        ) : (
+          <StatCard
+            label="Kişi başı ortalama iş"
+            value={loading || !summary ? "—" : summary.jobsPerStaff.toFixed(1)}
+            icon={Award}
+            accent="neutral"
+            mono
+          />
+        )}
       </div>
 
       {!loading && entries.length === 0 && !error && (
@@ -158,7 +280,7 @@ function PerformancePageContent() {
               <span className="text-4xl">{MEDALS[i]}</span>
               <p className="text-base font-semibold text-text-primary">{entry.fullName}</p>
               <p className="text-xs text-text-secondary">{entry.position}</p>
-              <p className="mt-2 font-mono text-3xl font-bold text-primary-700">{entry.completedJobsThisMonth}</p>
+              <p className="mt-2 font-mono text-3xl font-bold text-primary-700">{entry.completedJobsInPeriod}</p>
               <p className="text-xs text-text-faint">tamamlanan iş</p>
               {entry.averageRating !== null && (
                 <span className="mt-1 inline-flex items-center gap-1 rounded-full bg-surface-base/80 px-2.5 py-1 text-xs font-semibold text-warning-600">

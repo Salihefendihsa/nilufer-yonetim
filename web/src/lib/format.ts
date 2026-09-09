@@ -26,3 +26,13 @@ export function toIsoDate(date: Date): string {
 export function todayIsoDate(): string {
   return toIsoDate(new Date());
 }
+
+/**
+ * Prisma `Decimal` alanları API'den string olarak gelir (bkz. types.ts:ApiDecimal).
+ * Sayısal karşılaştırma/aritmetik öncesi bundan geçirin.
+ */
+export function decimalValue(value: number | string | null | undefined): number {
+  if (value === null || value === undefined) return 0;
+  const n = typeof value === "number" ? value : Number(value);
+  return Number.isFinite(n) ? n : 0;
+}

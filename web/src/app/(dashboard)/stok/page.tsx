@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Plus, PackagePlus, Boxes, Trash2, AlertTriangle, PackageCheck, Layers } from "lucide-react";
+import { Plus, PackagePlus, Boxes, Trash2, AlertTriangle, PackageCheck, Layers, ShoppingCart, History, ClipboardList } from "lucide-react";
 import { RequireRole } from "@/components/RequireRole";
 import { PageHeader } from "@/components/PageHeader";
 import { StatCard } from "@/components/StatCard";
@@ -11,28 +11,62 @@ import { Table, type Column } from "@/components/Table";
 import { EmptyState } from "@/components/EmptyState";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { api, ApiError } from "@/lib/api";
-import type { Product, Paginated } from "@/lib/types";
+import { useAuth } from "@/lib/AuthProvider";
+import type { Product, ProductCategory, Paginated } from "@/lib/types";
+import { formatDateTime, decimalValue } from "@/lib/format";
 import { ProductFormModal } from "./ProductFormModal";
 import { RestockModal } from "./RestockModal";
+import { PurchaseRequestModal } from "./PurchaseRequestModal";
+import { PurchaseRequestsPanel } from "./PurchaseRequestsPanel";
+import { MovementsModal } from "./MovementsModal";
+import { StockCountModal } from "./StockCountModal";
+
+const CATEGORY_LABELS: Record<ProductCategory, string> = {
+  BIOCIDAL: "Kimyasal",
+  CONSUMABLE: "Sarf Malzemesi",
+  EQUIPMENT: "Ekipman",
+  DISINFECTANT: "Dezenfektan",
+};
+const CATEGORY_FILTERS: { key: ProductCategory | "ALL"; label: string }[] = [
+  { key: "ALL", label: "Tüm Kalemler" },
+  { key: "BIOCIDAL", label: "Kimyasallar" },
+  { key: "CONSUMABLE", label: "Sarf Malzemesi" },
+  { key: "EQUIPMENT", label: "Ekipman & Parça" },
+  { key: "DISINFECTANT", label: "Dezenfektan" },
+];
 
 export default function StockPage() {
   return (
-    <RequireRole roles={["OWNER", "MANAGER"]}>
+    // Şef stok sayfasını SALT OKUNUR görür; tek yazma aksiyonu "Satın Alma
+    // Talebi"dir (backend: POST /products/:id/purchase-requests TEAM_LEAD'e
+    // açık, listeleme/mal kabul/iptal OWNER-MANAGER'da kalır).
+    <RequireRole roles={["OWNER", "MANAGER", "TEAM_LEAD"]}>
       <StockPageContent />
     </RequireRole>
   );
 }
 
 function StockPageContent() {
+  const { user } = useAuth();
+  /** Ürün ekleme/silme, stok girişi, sayım, hareket geçmişi ve talep kuyruğu
+   *  backend'de OWNER/MANAGER'a kısıtlı — şefe hiç gösterilmez. */
+  const canManage = user?.role === "OWNER" || user?.role === "MANAGER";
+
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [search, setSearch] = useState("");
+  const [category, setCategory] = useState<ProductCategory | "ALL">("ALL");
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
 
   const [formOpen, setFormOpen] = useState(false);
   const [restockTarget, setRestockTarget] = useState<Product | null>(null);
+  const [purchaseTarget, setPurchaseTarget] = useState<Product | null>(null);
+  const [movementsTarget, setMovementsTarget] = useState<Product | null>(null);
+  const [countTarget, setCountTarget] = useState<Product | null>(null);
+  // Mal kabulü stoğu değiştirdiği için panelin de yenilenmesi gerekir.
+  const [purchaseRefreshKey, setPurchaseRefreshKey] = useState(0);
   const [deleteTarget, setDeleteTarget] = useState<Product | null>(null);
   const [deleting, setDeleting] = useState(false);
 
@@ -40,8 +74,9 @@ function StockPageContent() {
     setLoading(true);
     setError(null);
     try {
+      const categoryQuery = category === "ALL" ? "" : `&category=${category}`;
       const res = await api.get<Paginated<Product>>(
-        `/products?page=${page}&limit=20${search ? `&search=${encodeURIComponent(search)}` : ""}`
+        `/products?page=${page}&limit=20${search ? `&search=${encodeURIComponent(search)}` : ""}${categoryQuery}`
       );
       setProducts(res.data);
       setTotalPages(res.pagination.totalPages);
@@ -50,7 +85,7 @@ function StockPageContent() {
     } finally {
       setLoading(false);
     }
-  }, [page, search]);
+  }, [page, search, category]);
 
   useEffect(() => {
     load();
@@ -72,7 +107,7 @@ function StockPageContent() {
 
   // Kart, şerit ve grafik aynı ürün listesinden hesaplanır — ek istek yok.
   const stock = useMemo(() => {
-    const critical = products.filter((p) => Number(p.currentStock) <= Number(p.criticalThreshold)).length;
+    const critical = products.filter((p) => decimalValue(p.currentStock) <= decimalValue(p.criticalThreshold)).length;
     return { critical, healthy: products.length - critical };
   }, [products]);
 
@@ -80,11 +115,11 @@ function StockPageContent() {
     () =>
       products
         .slice()
-        .sort((a, b) => Number(a.currentStock) - Number(b.currentStock))
+        .sort((a, b) => decimalValue(a.currentStock) - decimalValue(b.currentStock))
         .slice(0, 8)
         .map((p) => ({
           label: p.name,
-          value: Number(p.currentStock),
+          value: decimalValue(p.currentStock),
           meta: `${p.currentStock} ${p.unit}`,
         })),
     [products]
@@ -95,12 +130,23 @@ function StockPageContent() {
       header: "Ürün",
       isPrimary: true,
       avatarLabel: (row) => row.name,
-      accessor: (row) => <span className="font-medium text-text-primary">{row.name}</span>,
+      accessor: (row) => (
+        <span className="flex flex-col">
+          <span className="font-medium text-text-primary">{row.name}</span>
+          {(row.code || row.description) && (
+            <span className="text-xs text-text-secondary">
+              {row.code ? <span className="font-mono">{row.code}</span> : null}
+              {row.code && row.description ? " · " : ""}
+              {row.description ?? ""}
+            </span>
+          )}
+        </span>
+      ),
     },
     {
       header: "Mevcut Stok",
       accessor: (row) => {
-        const critical = row.currentStock <= row.criticalThreshold;
+        const critical = decimalValue(row.currentStock) <= decimalValue(row.criticalThreshold);
         return (
           <span className="flex items-center gap-2">
             <span className={critical ? "font-semibold text-danger-500" : "text-text-primary"}>
@@ -116,12 +162,76 @@ function StockPageContent() {
         );
       },
     },
+    {
+      header: "Kategori",
+      accessor: (row) => (
+        <span className="rounded-full bg-surface-subtle px-2.5 py-1 text-xs font-medium text-text-secondary">
+          {CATEGORY_LABELS[row.category]}
+        </span>
+      ),
+    },
     { header: "Kritik Seviye", accessor: (row) => `${row.criticalThreshold} ${row.unit}` },
+    {
+      header: "Son Hareket",
+      accessor: (row) =>
+        row.lastMovement ? (
+          <span className="flex flex-col text-xs">
+            <span className={row.lastMovement.type === "IN" ? "text-success-500" : "text-danger-500"}>
+              {row.lastMovement.type === "IN" ? "+" : "−"}
+              {decimalValue(row.lastMovement.quantity)} {row.unit}
+            </span>
+            <span className="text-text-secondary">{formatDateTime(row.lastMovement.createdAt)}</span>
+          </span>
+        ) : (
+          <span className="text-xs text-text-secondary">Hareket yok</span>
+        ),
+    },
+    {
+      header: "Sipariş Bekleyen",
+      accessor: (row) =>
+        row.pendingPurchaseQuantity ? (
+          <span className="inline-flex items-center gap-1 rounded-full border border-info-100 bg-info-50 px-2 py-0.5 text-[11px] font-semibold text-info-500">
+            <ShoppingCart size={11} strokeWidth={2} />
+            {row.pendingPurchaseQuantity} {row.unit}
+          </span>
+        ) : (
+          <span className="text-xs text-text-secondary">—</span>
+        ),
+    },
     {
       header: "",
       className: "text-right",
       accessor: (row) => (
         <div className="flex justify-end gap-2">
+          {canManage && (
+          <button
+            type="button"
+            onClick={() => setMovementsTarget(row)}
+            className="flex items-center gap-1.5 rounded-xl border border-border bg-surface-base px-3 py-1.5 text-xs font-medium text-text-secondary transition hover:border-border-strong hover:bg-surface-subtle hover:text-text-primary"
+          >
+            <History size={13} strokeWidth={1.75} />
+            Hareketler
+          </button>
+          )}
+          {canManage && (
+          <button
+            type="button"
+            onClick={() => setCountTarget(row)}
+            className="flex items-center gap-1.5 rounded-xl border border-border bg-surface-base px-3 py-1.5 text-xs font-medium text-text-secondary transition hover:border-border-strong hover:bg-surface-subtle hover:text-text-primary"
+          >
+            <ClipboardList size={13} strokeWidth={1.75} />
+            Fiili Sayım Gir
+          </button>
+          )}
+          <button
+            type="button"
+            onClick={() => setPurchaseTarget(row)}
+            className="flex items-center gap-1.5 rounded-xl border border-border bg-surface-base px-3 py-1.5 text-xs font-medium text-text-secondary transition hover:border-border-strong hover:bg-surface-subtle hover:text-text-primary"
+          >
+            <ShoppingCart size={13} strokeWidth={1.75} />
+            Satın Alma Talebi
+          </button>
+          {canManage && (
           <button
             type="button"
             onClick={() => setRestockTarget(row)}
@@ -130,6 +240,8 @@ function StockPageContent() {
             <PackagePlus size={13} strokeWidth={1.75} />
             Stok Ekle
           </button>
+          )}
+          {canManage && (
           <button
             type="button"
             onClick={() => setDeleteTarget(row)}
@@ -137,6 +249,7 @@ function StockPageContent() {
           >
             <Trash2 size={13} strokeWidth={1.75} />
           </button>
+          )}
         </div>
       ),
     },
@@ -147,16 +260,22 @@ function StockPageContent() {
       <PageHeader
         icon={Boxes}
         title="Stok"
-        description="İlaç ve ekipman stoğunuzu buradan takip edin."
+        description={
+          canManage
+            ? "İlaç ve ekipman stoğunuzu buradan takip edin."
+            : "Stok durumunu görüntüleyebilir ve takviye talebi açabilirsiniz; talebi yönetim sonuçlandırır."
+        }
         actions={
-          <button
-            type="button"
-            onClick={() => setFormOpen(true)}
-            className="flex items-center gap-2 rounded-2xl bg-primary-600 px-4 py-2.5 text-sm font-semibold text-white shadow-card transition hover:bg-primary-700"
-          >
-            <Plus size={16} strokeWidth={2} />
-            Yeni Ürün
-          </button>
+          canManage ? (
+            <button
+              type="button"
+              onClick={() => setFormOpen(true)}
+              className="flex items-center gap-2 rounded-2xl bg-primary-600 px-4 py-2.5 text-sm font-semibold text-white shadow-card transition hover:bg-primary-700"
+            >
+              <Plus size={16} strokeWidth={2} />
+              Yeni Ürün
+            </button>
+          ) : undefined
         }
       />
 
@@ -197,6 +316,27 @@ function StockPageContent() {
 
       {error && <p className="rounded-2xl border border-danger-100 bg-danger-50 px-4 py-3 text-sm text-danger-500">{error}</p>}
 
+      {/* [Kategori filtresi] */}
+      <div className="flex flex-wrap gap-2">
+        {CATEGORY_FILTERS.map((f) => (
+          <button
+            key={f.key}
+            type="button"
+            onClick={() => {
+              setCategory(f.key);
+              setPage(1);
+            }}
+            className={`rounded-full px-3.5 py-1.5 text-xs font-semibold transition ${
+              category === f.key
+                ? "bg-primary-600 text-white"
+                : "border border-border bg-surface-base text-text-secondary hover:bg-surface-subtle"
+            }`}
+          >
+            {f.label}
+          </button>
+        ))}
+      </div>
+
       <Table
         columns={columns}
         data={products}
@@ -216,14 +356,32 @@ function StockPageContent() {
             icon={Boxes}
             title="Henüz ürün yok"
             description="İlk ürününüzü ekleyerek stok takibine başlayın."
-            actionLabel="Yeni Ürün"
-            onAction={() => setFormOpen(true)}
+            actionLabel={canManage ? "Yeni Ürün" : undefined}
+            onAction={canManage ? () => setFormOpen(true) : undefined}
           />
         }
       />
 
+      {canManage && <PurchaseRequestsPanel key={purchaseRefreshKey} onChanged={load} />}
+
       <ProductFormModal open={formOpen} onClose={() => setFormOpen(false)} onSaved={load} />
       <RestockModal open={!!restockTarget} onClose={() => setRestockTarget(null)} onSaved={load} product={restockTarget} />
+      <PurchaseRequestModal
+        open={!!purchaseTarget}
+        onClose={() => setPurchaseTarget(null)}
+        onSaved={() => {
+          load();
+          setPurchaseRefreshKey((k) => k + 1);
+        }}
+        product={purchaseTarget}
+      />
+      <MovementsModal open={!!movementsTarget} onClose={() => setMovementsTarget(null)} product={movementsTarget} />
+      <StockCountModal
+        open={!!countTarget}
+        onClose={() => setCountTarget(null)}
+        onSaved={load}
+        product={countTarget}
+      />
 
       <ConfirmDialog
         open={!!deleteTarget}

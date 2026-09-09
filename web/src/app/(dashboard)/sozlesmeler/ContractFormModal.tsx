@@ -20,11 +20,13 @@ const STATUS_LABELS: Record<string, string> = {
   CANCELLED: "İptal Edildi",
 };
 
-const RECURRENCE_OPTIONS = ["", "MONTHLY", "QUARTERLY"];
+const RECURRENCE_OPTIONS = ["", "MONTHLY", "QUARTERLY", "SEMIANNUAL", "ANNUAL"];
 const RECURRENCE_LABELS: Record<string, string> = {
   "": "Yok",
   MONTHLY: "Aylık",
   QUARTERLY: "3 Aylık",
+  SEMIANNUAL: "6 Aylık",
+  ANNUAL: "Yıllık",
 };
 
 export function ContractFormModal({ open, onClose, onSaved, customers }: ContractFormModalProps) {
@@ -35,6 +37,7 @@ export function ContractFormModal({ open, onClose, onSaved, customers }: Contrac
   const [status, setStatus] = useState(STATUS_OPTIONS[0]);
   const [serviceType, setServiceType] = useState("");
   const [recurrenceType, setRecurrenceType] = useState("");
+  const [amount, setAmount] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
 
@@ -47,6 +50,7 @@ export function ContractFormModal({ open, onClose, onSaved, customers }: Contrac
       setStatus(STATUS_OPTIONS[0]);
       setServiceType("");
       setRecurrenceType("");
+      setAmount("");
       setError(null);
     }
   }, [open]);
@@ -65,6 +69,7 @@ export function ContractFormModal({ open, onClose, onSaved, customers }: Contrac
         status,
         serviceType: serviceType || undefined,
         recurrenceType: recurrenceType || null,
+        amount: amount ? Number(amount) : undefined,
       });
       onSaved();
       onClose();
@@ -124,6 +129,19 @@ export function ContractFormModal({ open, onClose, onSaved, customers }: Contrac
               </option>
             ))}
           </select>
+        </div>
+
+        <div className="flex flex-col gap-1.5">
+          <label className="text-sm font-medium text-text-secondary">Dönem Ücreti (₺, opsiyonel)</label>
+          <input
+            type="number"
+            min={0}
+            step="0.01"
+            value={amount}
+            onChange={(e) => setAmount(e.target.value)}
+            className="input"
+            placeholder="Örn. 4250"
+          />
         </div>
 
         <div className="flex flex-col gap-1.5">

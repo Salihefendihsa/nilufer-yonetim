@@ -25,6 +25,8 @@ export function StaffFormModal({ open, onClose, onSaved, staff }: StaffFormModal
   const [position, setPosition] = useState("");
   const [salaryBase, setSalaryBase] = useState("");
   const [supervisorId, setSupervisorId] = useState("");
+  const [vehiclePlate, setVehiclePlate] = useState("");
+  const [dailyJobCapacity, setDailyJobCapacity] = useState("");
   const [unlinkedUsers, setUnlinkedUsers] = useState<UnlinkedUser[]>([]);
   const [teamLeads, setTeamLeads] = useState<Staff[]>([]);
   const [usersLoading, setUsersLoading] = useState(false);
@@ -38,6 +40,8 @@ export function StaffFormModal({ open, onClose, onSaved, staff }: StaffFormModal
       setPosition(staff?.position ?? "");
       setSalaryBase(staff ? String(staff.salaryBase) : "");
       setSupervisorId(staff?.supervisorId ?? "");
+      setVehiclePlate(staff?.vehiclePlate ?? "");
+      setDailyJobCapacity(staff?.dailyJobCapacity != null ? String(staff.dailyJobCapacity) : "");
       setError(null);
 
       api
@@ -78,9 +82,18 @@ export function StaffFormModal({ open, onClose, onSaved, staff }: StaffFormModal
           position,
           salaryBase: Number(salaryBase),
           supervisorId: supervisorId || null,
+          vehiclePlate: vehiclePlate.trim() || null,
+          dailyJobCapacity: dailyJobCapacity ? Number(dailyJobCapacity) : null,
         });
       } else {
-        await api.post("/staff", { userId, position, salaryBase: Number(salaryBase), supervisorId: supervisorId || undefined });
+        await api.post("/staff", {
+          userId,
+          position,
+          salaryBase: Number(salaryBase),
+          supervisorId: supervisorId || undefined,
+          vehiclePlate: vehiclePlate.trim() || undefined,
+          dailyJobCapacity: dailyJobCapacity ? Number(dailyJobCapacity) : undefined,
+        });
       }
       onSaved();
       onClose();
@@ -153,6 +166,30 @@ export function StaffFormModal({ open, onClose, onSaved, staff }: StaffFormModal
             onChange={(e) => setSalaryBase(e.target.value)}
             className="input"
           />
+        </div>
+
+        <div className="grid grid-cols-2 gap-3">
+          <div className="flex flex-col gap-1.5">
+            <label className="text-sm font-medium text-text-secondary">Araç Plakası (opsiyonel)</label>
+            <input
+              value={vehiclePlate}
+              onChange={(e) => setVehiclePlate(e.target.value)}
+              className="input"
+              placeholder="16 ABC 123"
+            />
+          </div>
+          <div className="flex flex-col gap-1.5">
+            <label className="text-sm font-medium text-text-secondary">Günlük İş Kapasitesi</label>
+            <input
+              type="number"
+              min={1}
+              value={dailyJobCapacity}
+              onChange={(e) => setDailyJobCapacity(e.target.value)}
+              className="input"
+              placeholder="Örn. 6"
+            />
+            <p className="text-xs text-text-faint">Boş bırakılırsa doluluk yüzdesi gösterilmez.</p>
+          </div>
         </div>
 
         <div className="flex flex-col gap-1.5">
