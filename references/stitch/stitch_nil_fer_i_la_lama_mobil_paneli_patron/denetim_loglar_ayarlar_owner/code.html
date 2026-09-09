@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+
+<html lang="tr"><head><meta charset="utf-8"/><meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" name="viewport"/><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;family=Plus+Jakarta+Sans:wght@600;700;800&amp;display=swap" rel="stylesheet"/><link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/><style>@layer base{html,body{width:100vw;margin:0;padding:0;background-color:#ebfeee;}body{overscroll-behavior:none;}.pb-safe{padding-bottom:env(safe-area-inset-bottom,0px);}.pt-safe{padding-top:env(safe-area-inset-top,0px);}main>:first-child{margin-top:0!important;}main>:last-child{margin-bottom:0!important;}}::-webkit-scrollbar{display:none;}.material-symbols-outlined{font-variation-settings:'FILL' 0,'wght' 400,'GRAD' 0,'opsz' 24;}</style><script src="https://cdn.tailwindcss.com"></script><script id="tailwind-config">tailwind.config = { darkMode: "class", theme: { extend: { "colors": { "on-secondary": "#ffffff", "primary-fixed": "#a4f5ae", "on-primary-fixed": "#002109", "inverse-primary": "#89d894", "error-container": "#ffdad6", "outline-variant": "#bfc9bc", "on-tertiary": "#ffffff", "on-primary": "#ffffff", "surface-container-highest": "#d5e7d7", "tertiary-fixed": "#cee5ff", "primary-fixed-dim": "#89d894", "on-tertiary-container": "#fdfcff", "primary": "#186a32", "on-secondary-fixed-variant": "#2b4e30", "secondary-fixed-dim": "#a9d1a8", "surface-dim": "#ccdfcf", "secondary-fixed": "#c4edc3", "on-tertiary-fixed-variant": "#004a76", "surface-container-low": "#e6f8e8", "secondary": "#436746", "inverse-on-surface": "#e3f6e5", "on-error-container": "#93000a", "tertiary-container": "#2e79b3", "surface-container-high": "#daeddd", "surface-container": "#e0f3e2", "inverse-surface": "#243429", "outline": "#707a6e", "background": "#ebfeee", "on-primary-container": "#f7fff3", "on-surface-variant": "#40493f", "on-surface": "#0f1f15", "surface-tint": "#1c6c34", "surface-container-lowest": "#ffffff", "on-tertiary-fixed": "#001d33", "error": "#ba1a1a", "on-secondary-fixed": "#002108", "secondary-container": "#c4edc3", "on-background": "#0f1f15", "surface-bright": "#ebfeee", "on-secondary-container": "#496d4b", "tertiary-fixed-dim": "#97cbff", "surface": "#ebfeee", "on-error": "#ffffff", "surface-variant": "#d5e7d7", "primary-container": "#368348", "on-primary-fixed-variant": "#005321", "tertiary": "#006098" }, "borderRadius": { "DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px" }, "spacing": { "nav-floating-height": "4.25rem", "space-2xs": "0.25rem", "space-xs": "0.5rem", "space-md": "1rem", "margin-mobile": "1rem", "space-2xl": "2rem", "space-lg": "1.25rem", "space-sm": "0.75rem", "gutter-mobile": "1rem", "space-xl": "1.5rem" }, "fontFamily": { "body-md": ["Inter"], "label-md": ["Inter"], "title-md": ["Plus Jakarta Sans"], "headline-sm": ["Plus Jakarta Sans"], "body-lg": ["Inter"], "label-sm": ["Inter"], "kpi-unit": ["Inter"], "headline-md": ["Plus Jakarta Sans"], "headline-lg": ["Plus Jakarta Sans"], "body-sm": ["Inter"], "headline-xl": ["Plus Jakarta Sans"], "kpi-stat": ["Plus Jakarta Sans"] }, "fontSize": { "body-md": ["14px", { "lineHeight": "20px", "letterSpacing": "0", "fontWeight": "400" }], "label-md": ["12px", { "lineHeight": "16px", "letterSpacing": "0.02em", "fontWeight": "600" }], "title-md": ["16px", { "lineHeight": "22px", "letterSpacing": "-0.005em", "fontWeight": "600" }], "headline-sm": ["18px", { "lineHeight": "24px", "letterSpacing": "0", "fontWeight": "600" }], "body-lg": ["16px", { "lineHeight": "24px", "letterSpacing": "0", "fontWeight": "400" }], "label-sm": ["11px", { "lineHeight": "14px", "letterSpacing": "0.04em", "fontWeight": "600" }], "kpi-unit": ["12px", { "lineHeight": "16px", "letterSpacing": "0.01em", "fontWeight": "500" }], "headline-md": ["20px", { "lineHeight": "28px", "letterSpacing": "-0.01em", "fontWeight": "600" }], "headline-lg": ["26px", { "lineHeight": "34px", "letterSpacing": "-0.015em", "fontWeight": "700" }], "body-sm": ["13px", { "lineHeight": "18px", "letterSpacing": "0", "fontWeight": "400" }], "headline-xl": ["32px", { "lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "700" }], "kpi-stat": ["28px", { "lineHeight": "32px", "letterSpacing": "-0.03em", "fontWeight": "800" }] } } } };</script></head><body class="bg-surface text-on-surface font-body-md text-body-md flex flex-col min-h-screen"><header class="fixed top-0 w-full z-50 pt-safe bg-surface/80 backdrop-blur-xl shadow-[0_1px_8px_rgba(0,0,0,0.04)]"><div class="h-16 px-margin-mobile flex items-center justify-between"><div class="flex items-center gap-space-sm"><a aria-label="Geri Dön" class="w-10 h-10 -ml-2 rounded-full flex items-center justify-center text-on-surface hover:bg-surface-container active:bg-surface-container-high transition-colors" data-path="ana-sayfa" href="#"><span class="material-symbols-outlined text-[24px]">arrow_back</span></a><img alt="Nilüfer İlaçlama Logo" class="h-7 w-auto object-contain" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAEpdryzZnplcZz2a8fnWaX_C2w8DBfrfJslvHehUpCdoJy-tPB4vUrxOj_edzrbTdSEt-bz1gHU4FR9h2Qmc8SsYuY9T58hWPIULQU8CHJtPSW6w3FIDT7Aty0f0uf_QZ5AusF5Y5J3fs8mycxyiarF4eqkBREDw2xcPUPZ41H4N1vAnUXxJPJ-bUe0Mv7Kse_pkqK8lMsYpIR-Y_5UyEer_4Ow8edvuij0v0pVD_pqMvHf3J2EJ_v"/><div class="flex flex-col"><span class="font-headline-sm text-headline-sm text-on-surface font-bold leading-tight">Nilüfer İlaçlama</span><span class="font-label-sm text-label-sm text-on-surface-variant leading-none">Bekleyen Onaylar</span></div></div><div class="flex items-center gap-space-xs"><div class="w-9 h-9 rounded-full bg-primary flex items-center justify-center"><span class="material-symbols-outlined text-on-primary text-[18px]">person</span></div></div></div></header><main class="flex-1 flex flex-col relative w-full pt-16 pb-[6rem] bg-surface"><div class="flex flex-col w-full">
+<!-- Owner Profile Context Banner -->
+<div class="px-margin-mobile pt-space-xs pb-space-sm flex flex-col gap-space-xs">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-space-xs">
+<div class="w-8 h-8 rounded-full bg-primary-container flex items-center justify-center text-on-primary">
+<span class="material-symbols-outlined text-[18px]">verified_user</span>
+</div>
+<div>
+<h1 class="font-headline-sm text-headline-sm text-on-surface font-bold">Yönetici Paneli</h1>
+<p class="font-label-sm text-label-sm text-on-surface-variant">Sistem Ayarları, Denetim Logları &amp; Güvenlik</p>
+</div>
+</div>
+<span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-secondary-container text-on-secondary-container font-label-sm text-label-sm font-bold shadow-sm">
+<span class="w-1.5 h-1.5 rounded-full bg-primary animate-ping"></span>
+        OWNER / Yetkili
+      </span>
+</div>
+</div>
+<!-- Segmented Tab Navigation -->
+<div class="px-margin-mobile mb-space-md">
+<div class="grid grid-cols-2 p-1 bg-surface-container-high rounded-xl gap-1" id="panelTabs">
+<button class="flex items-center justify-center gap-1.5 py-2.5 rounded-lg bg-surface-container-lowest text-primary font-title-md text-title-md font-bold shadow-sm transition-all" id="tabLogsBtn" onclick="switchTab('logs')" type="button">
+<span class="material-symbols-outlined text-[18px]" style="font-variation-settings: 'FILL' 1;">security</span>
+        Denetim Logları
+      </button>
+<button class="flex items-center justify-center gap-1.5 py-2.5 rounded-lg text-on-surface-variant font-title-md text-title-md font-medium hover:text-on-surface transition-all" id="tabSettingsBtn" onclick="switchTab('settings')" type="button">
+<span class="material-symbols-outlined text-[18px]">tune</span>
+        Sistem Ayarları
+      </button>
+</div>
+</div>
+<!-- VIEW 1: AUDIT TRAIL LOGS -->
+<div class="flex flex-col w-full px-margin-mobile gap-space-md" id="logsView">
+<!-- 4 Quick Operational Metrics Grid -->
+<div class="grid grid-cols-2 gap-space-xs">
+<!-- Card 1 -->
+<div class="bg-surface-container-lowest rounded-xl p-space-sm flex flex-col justify-between shadow-sm">
+<div class="flex items-center justify-between">
+<span class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">Toplam Log</span>
+<div class="w-7 h-7 rounded-lg bg-surface-container flex items-center justify-center text-primary">
+<span class="material-symbols-outlined text-[16px]">database</span>
+</div>
+</div>
+<div class="mt-space-xs">
+<div class="font-headline-md text-headline-md text-on-surface font-extrabold tracking-tight">1.842</div>
+<span class="font-kpi-unit text-kpi-unit text-secondary font-medium">Kayıt / Arşivlendi</span>
+</div>
+</div>
+<!-- Card 2 -->
+<div class="bg-surface-container-lowest rounded-xl p-space-sm flex flex-col justify-between shadow-sm">
+<div class="flex items-center justify-between">
+<span class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">Bugünkü İşlem</span>
+<div class="w-7 h-7 rounded-lg bg-surface-container-low flex items-center justify-center text-primary">
+<span class="material-symbols-outlined text-[16px]">bolt</span>
+</div>
+</div>
+<div class="mt-space-xs">
+<div class="font-headline-md text-headline-md text-on-surface font-extrabold tracking-tight">46</div>
+<span class="font-kpi-unit text-kpi-unit text-primary-container font-medium">+14 son 2 saat</span>
+</div>
+</div>
+<!-- Card 3 -->
+<div class="bg-surface-container-lowest rounded-xl p-space-sm flex flex-col justify-between shadow-sm">
+<div class="flex items-center justify-between">
+<span class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">Aktif Yönetici</span>
+<div class="w-7 h-7 rounded-lg bg-surface-container flex items-center justify-center text-secondary">
+<span class="material-symbols-outlined text-[16px]">badge</span>
+</div>
+</div>
+<div class="mt-space-xs">
+<div class="font-headline-md text-headline-md text-on-surface font-extrabold tracking-tight">3</div>
+<span class="font-kpi-unit text-kpi-unit text-on-surface-variant font-medium">Panelde aktif</span>
+</div>
+</div>
+<!-- Card 4 -->
+<div class="bg-surface-container-lowest rounded-xl p-space-sm flex flex-col justify-between shadow-sm">
+<div class="flex items-center justify-between">
+<span class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">Kritik Olay</span>
+<div class="w-7 h-7 rounded-lg bg-secondary-container flex items-center justify-center text-primary">
+<span class="material-symbols-outlined text-[16px]">check_circle</span>
+</div>
+</div>
+<div class="mt-space-xs">
+<div class="font-headline-md text-headline-md text-primary font-extrabold tracking-tight">0</div>
+<span class="font-kpi-unit text-kpi-unit text-primary font-semibold">Temiz / Hatasız</span>
+</div>
+</div>
+</div>
+<!-- Live Telemetry Status Bar -->
+<div class="flex items-center justify-between p-3 rounded-xl bg-surface-container-low shadow-sm">
+<div class="flex items-center gap-2">
+<span class="relative flex h-2.5 w-2.5">
+<span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
+<span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-primary"></span>
+</span>
+<span class="font-label-md text-label-md text-on-surface font-semibold">Canlı Denetim İzi (Tam Akış)</span>
+</div>
+<span class="font-label-sm text-label-sm text-on-surface-variant bg-surface-container-lowest px-2 py-0.5 rounded-full">Anlık Senkronize</span>
+</div>
+<!-- Audit Timeline -->
+<div class="bg-surface-container-lowest rounded-2xl p-space-md shadow-sm">
+<div class="relative pl-6 space-y-6 before:content-[''] before:absolute before:left-2.5 before:top-2 before:bottom-2 before:w-[2px] before:bg-surface-container-highest">
+<!-- Timeline Item 1 -->
+<div class="relative group">
+<div class="absolute -left-[29px] top-0 w-6 h-6 rounded-full bg-primary-container text-on-primary flex items-center justify-center ring-4 ring-surface-container-lowest">
+<span class="material-symbols-outlined text-[14px]">inventory_2</span>
+</div>
+<div class="flex flex-col bg-surface-container-low/60 rounded-xl p-3">
+<div class="flex items-center justify-between">
+<span class="font-label-sm text-label-sm text-primary font-bold">14:32</span>
+<span class="font-label-sm text-label-sm text-on-surface-variant">Saha Teknisyeni</span>
+</div>
+<div class="font-title-md text-title-md text-on-surface font-semibold mt-0.5">Serkan Yılmaz</div>
+<div class="inline-flex items-center gap-1 text-on-surface font-body-sm text-body-sm mt-1">
+<span class="font-semibold text-primary">Stok Çıkışı Yaptı</span>
+<span class="text-outline">·</span>
+<span class="text-on-surface-variant">Deltamethrin 50 EC 2L düşüldü</span>
+</div>
+<div class="mt-2 flex items-center gap-2">
+<span class="px-2 py-0.5 rounded bg-surface-container-high text-on-surface-variant font-label-sm text-label-sm font-medium">İş #İS-4092</span>
+<span class="font-label-sm text-label-sm text-secondary">Depo 1 (Nilüfer)</span>
+</div>
+</div>
+</div>
+<!-- Timeline Item 2 -->
+<div class="relative group">
+<div class="absolute -left-[29px] top-0 w-6 h-6 rounded-full bg-tertiary-container text-on-tertiary flex items-center justify-center ring-4 ring-surface-container-lowest">
+<span class="material-symbols-outlined text-[14px]">request_quote</span>
+</div>
+<div class="flex flex-col bg-surface-container-low/60 rounded-xl p-3">
+<div class="flex items-center justify-between">
+<span class="font-label-sm text-label-sm text-tertiary font-bold">13:15</span>
+<span class="font-label-sm text-label-sm text-on-surface-variant">Yönetim Masası</span>
+</div>
+<div class="font-title-md text-title-md text-on-surface font-semibold mt-0.5">Selin Vural</div>
+<div class="inline-flex items-center gap-1 text-on-surface font-body-sm text-body-sm mt-1 flex-wrap">
+<span class="font-semibold text-tertiary">Teklif Onayladı &amp; Gönderdi</span>
+<span class="text-outline">·</span>
+<span class="text-on-surface-variant">Uludağ İçecek A.Ş. ₺32.000 Taslak</span>
+</div>
+<div class="mt-2 flex items-center gap-2">
+<span class="px-2 py-0.5 rounded bg-tertiary-fixed text-on-tertiary-fixed-variant font-label-sm text-label-sm font-medium">B2B Yıllık Sözleşme</span>
+<span class="font-label-sm text-label-sm text-tertiary font-medium">PDF İmzalandı</span>
+</div>
+</div>
+</div>
+<!-- Timeline Item 3 -->
+<div class="relative group">
+<div class="absolute -left-[29px] top-0 w-6 h-6 rounded-full bg-secondary text-on-secondary flex items-center justify-center ring-4 ring-surface-container-lowest">
+<span class="material-symbols-outlined text-[14px]">person_pin_circle</span>
+</div>
+<div class="flex flex-col bg-surface-container-low/60 rounded-xl p-3">
+<div class="flex items-center justify-between">
+<span class="font-label-sm text-label-sm text-secondary font-bold">11:20</span>
+<span class="font-label-sm text-label-sm text-on-surface-variant">Operasyon Şefi</span>
+</div>
+<div class="font-title-md text-title-md text-on-surface font-semibold mt-0.5">Ahmet Demir</div>
+<div class="inline-flex items-center gap-1 text-on-surface font-body-sm text-body-sm mt-1">
+<span class="font-semibold text-on-surface">Teknisyen Görevlendirmesi</span>
+</div>
+<p class="font-body-sm text-body-sm text-on-surface-variant mt-0.5">Görükle Öğrenci Yurdu kemirgen istasyon kontrolüne Murat Kaya atandı.</p>
+</div>
+</div>
+<!-- Timeline Item 4 -->
+<div class="relative group">
+<div class="absolute -left-[29px] top-0 w-6 h-6 rounded-full bg-surface-variant text-on-surface-variant flex items-center justify-center ring-4 ring-surface-container-lowest">
+<span class="material-symbols-outlined text-[14px]">schedule</span>
+</div>
+<div class="flex flex-col bg-surface-container-low/60 rounded-xl p-3">
+<div class="flex items-center justify-between">
+<span class="font-label-sm text-label-sm text-outline font-bold">09:40</span>
+<span class="font-label-sm text-label-sm text-on-surface-variant">Otomatik Servis</span>
+</div>
+<div class="font-title-md text-title-md text-on-surface font-semibold mt-0.5">Sistem Cron (Daemon)</div>
+<div class="font-body-sm text-body-sm text-on-surface-variant mt-1">
+<span class="font-semibold text-on-surface">Periyodik Sözleşme Hatırlatması</span>
+              — Özkan Unlu Mamulleri için SMS ve E-posta tetiklendi.
+            </div>
+</div>
+</div>
+<!-- Timeline Item 5 -->
+<div class="relative group">
+<div class="absolute -left-[29px] top-0 w-6 h-6 rounded-full bg-primary text-on-primary flex items-center justify-center ring-4 ring-surface-container-lowest">
+<span class="material-symbols-outlined text-[14px]">draw</span>
+</div>
+<div class="flex flex-col bg-surface-container-low/60 rounded-xl p-3">
+<div class="flex items-center justify-between">
+<span class="font-label-sm text-label-sm text-primary font-bold">Dün 18:15</span>
+<span class="font-label-sm text-label-sm text-on-surface-variant">Takım Lideri</span>
+</div>
+<div class="font-title-md text-title-md text-on-surface font-semibold mt-0.5">Emre Aksoy</div>
+<div class="font-body-sm text-body-sm text-on-surface-variant mt-1">
+<span class="font-semibold text-primary">Dijital Rapor &amp; İmza Kaydedildi</span>
+              — #RAP-904 müşteri ıslak e-imzası doğrulandı ve buluta mühürlendi.
+            </div>
+</div>
+</div>
+</div>
+<!-- Load More / Export Logs Action -->
+<div class="mt-space-md pt-space-sm flex items-center justify-between">
+<button class="w-full py-2.5 rounded-xl bg-surface-container text-on-surface font-label-md text-label-md font-semibold flex items-center justify-center gap-2 active:bg-surface-container-high transition-colors" type="button">
+<span class="material-symbols-outlined text-[18px]">history</span>
+          Geçmiş Kayıtları Yükle (24 Saat Öncesi)
+        </button>
+</div>
+</div>
+</div>
+<!-- VIEW 2: FIRM & SYSTEM SETTINGS -->
+<div class="hidden flex flex-col w-full px-margin-mobile gap-space-md" id="settingsView">
+<!-- Card 1: Notification & Alarm Preferences -->
+<div class="bg-surface-container-lowest rounded-2xl p-space-md shadow-sm flex flex-col gap-space-md">
+<div class="flex items-center gap-space-xs">
+<div class="w-9 h-9 rounded-xl bg-secondary-container flex items-center justify-center text-primary">
+<span class="material-symbols-outlined text-[20px]">notifications_active</span>
+</div>
+<div>
+<h2 class="font-title-md text-title-md text-on-surface font-bold">Bildirim &amp; Alarm Tercihleri</h2>
+<p class="font-body-sm text-body-sm text-on-surface-variant">Saha personeli ve yönetici anlık uyarıları</p>
+</div>
+</div>
+<div class="space-y-3">
+<!-- Toggle Item 1 -->
+<div class="flex items-center justify-between p-3 rounded-xl bg-surface-container-low">
+<div class="flex flex-col pr-3">
+<span class="font-title-md text-title-md text-on-surface font-semibold">Kritik Stok SMS Bildirimi</span>
+<span class="font-body-sm text-body-sm text-on-surface-variant">Kimyasal rezervi %15 altına düştüğünde OWNER'a SMS ilet</span>
+</div>
+<button aria-pressed="true" class="w-12 h-7 rounded-full bg-primary relative transition-colors focus:outline-none flex-shrink-0" onclick="toggleSwitch(this)" type="button">
+<span class="block w-5 h-5 rounded-full bg-surface-container-lowest shadow-sm transform translate-x-6 transition-transform"></span>
+</button>
+</div>
+<!-- Toggle Item 2 -->
+<div class="flex items-center justify-between p-3 rounded-xl bg-surface-container-low">
+<div class="flex flex-col pr-3">
+<span class="font-title-md text-title-md text-on-surface font-semibold">Geciken Sözleşme Uyarısı</span>
+<span class="font-body-sm text-body-sm text-on-surface-variant">Vadesi 7 gün kalan kurumsal sözleşmeleri otomatik işaretle</span>
+</div>
+<button aria-pressed="true" class="w-12 h-7 rounded-full bg-primary relative transition-colors focus:outline-none flex-shrink-0" onclick="toggleSwitch(this)" type="button">
+<span class="block w-5 h-5 rounded-full bg-surface-container-lowest shadow-sm transform translate-x-6 transition-transform"></span>
+</button>
+</div>
+<!-- Toggle Item 3 -->
+<div class="flex items-center justify-between p-3 rounded-xl bg-surface-container-low">
+<div class="flex flex-col pr-3">
+<span class="font-title-md text-title-md text-on-surface font-semibold">Otomatik Müşteri Faturası</span>
+<span class="font-body-sm text-body-sm text-on-surface-variant">Servis imzası tamamlandığında e-fatura taslağını oluştur</span>
+</div>
+<button aria-pressed="true" class="w-12 h-7 rounded-full bg-primary relative transition-colors focus:outline-none flex-shrink-0" onclick="toggleSwitch(this)" type="button">
+<span class="block w-5 h-5 rounded-full bg-surface-container-lowest shadow-sm transform translate-x-6 transition-transform"></span>
+</button>
+</div>
+</div>
+</div>
+<!-- Card 2: Biocidal License & Company Details -->
+<div class="bg-surface-container-lowest rounded-2xl p-space-md shadow-sm flex flex-col gap-space-md">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-space-xs">
+<div class="w-9 h-9 rounded-xl bg-surface-container flex items-center justify-center text-primary">
+<span class="material-symbols-outlined text-[20px]">verified</span>
+</div>
+<div>
+<h2 class="font-title-md text-title-md text-on-surface font-bold">Biyosidal Ruhsat &amp; Firma</h2>
+<p class="font-body-sm text-body-sm text-on-surface-variant">Sağlık Bakanlığı &amp; Resmi Yetkiler</p>
+</div>
+</div>
+<button class="px-3 py-1.5 rounded-lg bg-surface-container text-primary font-label-md text-label-md font-semibold flex items-center gap-1 active:bg-surface-container-high transition-colors" type="button">
+<span class="material-symbols-outlined text-[16px]">edit</span>
+          Düzenle
+        </button>
+</div>
+<div class="p-3.5 rounded-xl bg-surface-container-low flex flex-col gap-2.5">
+<div class="flex items-start justify-between">
+<div class="flex flex-col">
+<span class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">Kayıtlı Ticari Unvan</span>
+<span class="font-title-md text-title-md text-on-surface font-bold">Nilüfer Çevre Sağlığı ve İlaçlama Ltd. Şti.</span>
+</div>
+<span class="px-2 py-0.5 rounded-full bg-primary text-on-primary font-label-sm text-label-sm font-semibold">Aktif</span>
+</div>
+<div class="grid grid-cols-2 gap-2 pt-2">
+<div class="flex flex-col">
+<span class="font-label-sm text-label-sm text-on-surface-variant">Ruhsat Belge No</span>
+<span class="font-title-md text-title-md text-on-surface font-semibold">BYS-16-4820</span>
+</div>
+<div class="flex flex-col">
+<span class="font-label-sm text-label-sm text-on-surface-variant">Geçerlilik Süresi</span>
+<span class="font-title-md text-title-md text-primary font-semibold">Ekim 2027</span>
+</div>
+</div>
+<div class="pt-2 flex items-center gap-1.5 text-on-surface-variant font-body-sm text-body-sm">
+<span class="material-symbols-outlined text-[16px] text-primary">location_on</span>
+          Nilüfer OSB Mh., Erguvan Cd. No:14/A, Nilüfer / Bursa
+        </div>
+</div>
+</div>
+<!-- Card 3: Danger Zone -->
+<div class="bg-error-container/40 rounded-2xl p-space-md shadow-sm flex flex-col gap-space-md">
+<div class="flex items-center gap-space-xs">
+<div class="w-9 h-9 rounded-xl bg-error text-on-error flex items-center justify-center">
+<span class="material-symbols-outlined text-[20px]">warning</span>
+</div>
+<div>
+<h2 class="font-title-md text-title-md text-on-surface font-bold">Tehlikeli Bölge (Danger Zone)</h2>
+<p class="font-body-sm text-body-sm text-on-surface-variant">Geri alınamaz sistem &amp; denetim işlemleri</p>
+</div>
+</div>
+<div class="p-3.5 rounded-xl bg-surface-container-lowest flex flex-col gap-3">
+<div class="flex items-start justify-between">
+<div class="flex flex-col">
+<span class="font-title-md text-title-md text-on-surface font-bold">Yedek Al &amp; Veritabanı Arşivle</span>
+<span class="font-body-sm text-body-sm text-on-surface-variant">Son yedek: Bugün 04:00 (Bulut Senkronu Başarılı)</span>
+</div>
+<div class="w-8 h-8 rounded-full bg-surface-container-low flex items-center justify-center text-primary">
+<span class="material-symbols-outlined text-[18px]">cloud_done</span>
+</div>
+</div>
+<p class="font-body-sm text-body-sm text-on-surface-variant">
+          90 günden eski denetim loglarını sıkıştırarak salt-okunur soğuk depolama arşivine aktarır. Operasyonel kayıtlar etkilenmez.
+        </p>
+<div class="pt-1">
+<button class="w-full py-3 rounded-xl bg-error text-on-error font-title-md text-title-md font-bold flex items-center justify-center gap-2 active:opacity-90 shadow-sm transition-all" onclick="confirmArchive()" type="button">
+<span class="material-symbols-outlined text-[20px]">archive</span>
+            Sistem Loglarını Arşivle
+          </button>
+</div>
+</div>
+</div>
+</div>
+</div>
+<script>
+  function switchTab(target) {
+    const logsTabBtn = document.getElementById('tabLogsBtn');
+    const settingsTabBtn = document.getElementById('tabSettingsBtn');
+    const logsView = document.getElementById('logsView');
+    const settingsView = document.getElementById('settingsView');
+
+    if (target === 'logs') {
+      logsView.classList.remove('hidden');
+      settingsView.classList.add('hidden');
+
+      logsTabBtn.className = 'flex items-center justify-center gap-1.5 py-2.5 rounded-lg bg-surface-container-lowest text-primary font-title-md text-title-md font-bold shadow-sm transition-all';
+      settingsTabBtn.className = 'flex items-center justify-center gap-1.5 py-2.5 rounded-lg text-on-surface-variant font-title-md text-title-md font-medium hover:text-on-surface transition-all';
+    } else {
+      logsView.classList.add('hidden');
+      settingsView.classList.remove('hidden');
+
+      settingsTabBtn.className = 'flex items-center justify-center gap-1.5 py-2.5 rounded-lg bg-surface-container-lowest text-primary font-title-md text-title-md font-bold shadow-sm transition-all';
+      logsTabBtn.className = 'flex items-center justify-center gap-1.5 py-2.5 rounded-lg text-on-surface-variant font-title-md text-title-md font-medium hover:text-on-surface transition-all';
+    }
+  }
+
+  function toggleSwitch(btn) {
+    const circle = btn.querySelector('span');
+    const isChecked = circle.classList.contains('translate-x-6');
+
+    if (isChecked) {
+      circle.classList.remove('translate-x-6');
+      circle.classList.add('translate-x-1');
+      btn.classList.remove('bg-primary');
+      btn.classList.add('bg-outline-variant');
+      btn.setAttribute('aria-pressed', 'false');
+    } else {
+      circle.classList.remove('translate-x-1');
+      circle.classList.add('translate-x-6');
+      btn.classList.remove('bg-outline-variant');
+      btn.classList.add('bg-primary');
+      btn.setAttribute('aria-pressed', 'true');
+    }
+  }
+
+  function confirmArchive() {
+    if (confirm('90 günden eski denetim kayıtları arşive taşınacaktır. Onaylıyor musunuz?')) {
+      alert('Sistem logları başarıyla arşivlendi ve şifrelenmiş depolamaya aktarıldı.');
+    }
+  }
+</script></main><div class="fixed bottom-0 w-full z-50 pointer-events-none pb-safe"><div class="relative px-margin-mobile pb-space-sm"><nav class="pointer-events-auto h-[68px] w-full bg-surface-container-lowest/95 backdrop-blur-xl rounded-full shadow-[0_8px_24px_rgba(22,33,26,0.08),0_2px_6px_rgba(22,33,26,0.04)] flex items-center justify-between px-space-xs relative" data-active-classes="text-primary font-bold"><a class="flex-1 min-w-[52px] min-h-[44px] flex flex-col items-center justify-center gap-0.5 text-on-surface-variant hover:text-on-surface transition-colors" data-path="ana-sayfa" href="#"><span class="material-symbols-outlined text-[22px]">dashboard</span><span class="font-label-sm text-label-sm">Ana Sayfa</span></a><a class="flex-1 min-w-[52px] min-h-[44px] flex flex-col items-center justify-center gap-0.5 text-on-surface-variant hover:text-on-surface transition-colors" data-path="isler" href="#"><span class="material-symbols-outlined text-[22px]">assignment</span><span class="font-label-sm text-label-sm">İşler</span></a><div class="w-14 flex items-center justify-center"><a aria-label="Yeni İşlem / Servis Başlat" class="absolute -top-3 left-1/2 -translate-x-1/2 w-14 h-14 rounded-full bg-primary-container text-on-primary shadow-[0_8px_20px_rgba(47,82,51,0.35),0_2px_6px_rgba(47,82,51,0.20)] flex items-center justify-center hover:bg-primary transition-colors" data-path="yeni-islem" href="#"><span class="material-symbols-outlined text-[26px]">build</span></a></div><a class="flex-1 min-w-[52px] min-h-[44px] flex flex-col items-center justify-center gap-0.5 text-on-surface-variant hover:text-on-surface transition-colors relative" data-path="onaylar-bildirimler" href="#"><div class="relative"><span class="material-symbols-outlined text-[22px]">verified_user</span><span class="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full bg-error ring-2 ring-surface-container-lowest"></span></div><span class="font-label-sm text-label-sm">Onaylar</span></a><a class="flex-1 min-w-[52px] min-h-[44px] flex flex-col items-center justify-center gap-0.5 text-on-surface-variant hover:text-on-surface transition-colors" data-path="mesajlar" href="#"><span class="material-symbols-outlined text-[22px]">chat_bubble</span><span class="font-label-sm text-label-sm">Mesajlar</span></a></nav></div></div></body></html>

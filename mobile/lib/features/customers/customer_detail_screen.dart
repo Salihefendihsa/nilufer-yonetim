@@ -1,0 +1,351 @@
+import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
+import 'package:provider/provider.dart';
+import 'package:url_launcher/url_launcher.dart';
+
+import '../../auth/auth_provider.dart';
+import '../../core/api_client.dart';
+import '../../models/customer.dart';
+import '../../models/user.dart';
+import '../../theme/app_colors.dart';
+import '../../widgets/state_views.dart';
+import '../jobs/job_detail_screen.dart';
+import 'customers_api.dart';
+import 'customer_form_screen.dart';
+
+final _currency = NumberFormat.currency(
+  locale: 'tr_TR',
+  symbol: '₺',
+  decimalDigits: 0,
+);
+final _dateFormat = DateFormat('d MMM yyyy', 'tr_TR');
+
+/// backend/src/controllers/customersController.ts:getCustomer ile aynı veriyi
+/// tek çağrıda çeker; STAFF için `payments`/`outstandingBalance` backend
+/// tarafından zaten çıkarılmıştır — burada rolü tekrar kontrol ETMİYORUZ,
+/// backend'in gönderdiği alanların varlığına göre gösteriyoruz (tek doğruluk
+/// kaynağı backend kalsın diye).
+class CustomerDetailScreen extends StatefulWidget {
+  final String customerId;
+  const CustomerDetailScreen({super.key, required this.customerId});
+
+  @override
+  State<CustomerDetailScreen> createState() => _CustomerDetailScreenState();
+}
+
+class _CustomerDetailScreenState extends State<CustomerDetailScreen>
+    with SingleTickerProviderStateMixin {
+  final _api = CustomersApi();
+  late final TabController _tabController;
+  CustomerDetail? _customer;
+  bool _loading = true;
+  String? _error;
+  bool _changed = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _tabController = TabController(length: 3, vsync: this);
+    _load();
+  }
+
+  @override
+  void dispose() {
+    _tabController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _load() async {
+    setState(() {
+      _loading = true;
+      _error = null;
+    });
+    try {
+      final c = await _api.getById(widget.customerId);
+      setState(() => _customer = c);
+    } catch (e) {
+      setState(
+        () => _error = e is ApiException ? e.message : 'Müşteri yüklenemedi',
+      );
+    } finally {
+      setState(() => _loading = false);
+    }
+  }
+
+  bool get _canManage {
+    final role = context.read<AuthProvider>().user?.role;
+    return role == AppRole.owner || role == AppRole.manager;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, result) {
+        if (didPop) return;
+        Navigator.of(context).pop(_changed);
+      },
+      child: Scaffold(
+        backgroundColor: AppColors.surfacePage,
+        appBar: AppBar(
+          title: Text(_customer?.fullName ?? 'Müşteri'),
+          actions: [
+            if (_canManage && _customer != null)
+              IconButton(
+                icon: const Icon(Icons.edit_rounded),
+                onPressed: () async {
+                  final updated = await Navigator.of(context).push<bool>(
+                    MaterialPageRoute(
+                      builder: (_) => CustomerFormScreen(existing: _customer),
+                    ),
+                  );
+                  if (updated == true) {
+                    _changed = true;
+                    _load();
+                  }
+                },
+              ),
+          ],
+        ),
+        body: _buildBody(),
+      ),
+    );
+  }
+
+  Widget _buildBody() {
+    if (_loading) return const LoadingView();
+    if (_error != null) return ErrorRetryView(message: _error!, onRetry: _load);
+    final c = _customer!;
+
+    final hasFinance = c.outstandingBalance != null;
+
+    return Column(
+      children: [
+        Container(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _InfoRow(icon: Icons.phone_rounded, text: c.phone),
+              if (c.email != null)
+                _InfoRow(icon: Icons.mail_outline_rounded, text: c.email!),
+              if (c.address != null)
+                _InfoRow(icon: Icons.location_on_outlined, text: c.address!),
+              if (hasFinance) ...[
+                const SizedBox(height: 10),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 8,
+                  ),
+                  decoration: BoxDecoration(
+                    color: (c.outstandingBalance ?? 0) > 0
+                        ? AppColors.danger50
+                        : AppColors.success50,
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Text(
+                    'Bakiye: ${_currency.format(c.outstandingBalance)}',
+                    style: TextStyle(
+                      fontWeight: FontWeight.w700,
+                      color: (c.outstandingBalance ?? 0) > 0
+                          ? AppColors.danger600
+                          : AppColors.success600,
+                    ),
+                  ),
+                ),
+              ],
+            ],
+          ),
+        ),
+        TabBar(
+          controller: _tabController,
+          labelColor: AppColors.primary700,
+          unselectedLabelColor: AppColors.textSecondary,
+          indicatorColor: AppColors.primary600,
+          tabs: [
+            Tab(text: 'İşler (${c.jobs.length})'),
+            Tab(text: 'Sözleşmeler (${c.contracts.length})'),
+            if (hasFinance)
+              Tab(text: 'Ödemeler (${c.payments.length})')
+            else
+              const Tab(text: 'Ödemeler'),
+          ],
+        ),
+        Expanded(
+          child: TabBarView(
+            controller: _tabController,
+            children: [
+              _JobsTab(jobs: c.jobs),
+              _ContractsTab(contracts: c.contracts),
+              hasFinance
+                  ? _PaymentsTab(payments: c.payments)
+                  : const EmptyStateView(
+                      title: 'Finansal veriler görünmüyor',
+                      subtitle: 'Bu bilgiler yalnızca yönetim rolüne açıktır.',
+                      icon: Icons.lock_outline_rounded,
+                    ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _InfoRow extends StatelessWidget {
+  final IconData icon;
+  final String text;
+  const _InfoRow({required this.icon, required this.text});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 4),
+      child: Row(
+        children: [
+          Icon(icon, size: 15, color: AppColors.textFaint),
+          const SizedBox(width: 6),
+          Expanded(
+            child: Text(
+              text,
+              style: const TextStyle(
+                fontSize: 13,
+                color: AppColors.textSecondary,
+              ),
+            ),
+          ),
+          if (icon == Icons.phone_rounded)
+            IconButton(
+              icon: const Icon(
+                Icons.call_rounded,
+                size: 18,
+                color: AppColors.primary600,
+              ),
+              onPressed: () => launchUrl(Uri.parse('tel:$text')),
+              visualDensity: VisualDensity.compact,
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+class _JobsTab extends StatelessWidget {
+  final List<dynamic> jobs;
+  const _JobsTab({required this.jobs});
+
+  @override
+  Widget build(BuildContext context) {
+    if (jobs.isEmpty)
+      return const EmptyStateView(
+        title: 'Henüz iş yok',
+        icon: Icons.assignment_outlined,
+      );
+    return ListView.separated(
+      padding: const EdgeInsets.all(16),
+      itemCount: jobs.length,
+      separatorBuilder: (_, __) => const SizedBox(height: 8),
+      itemBuilder: (context, i) {
+        final j = jobs[i] as Map<String, dynamic>;
+        return ListTile(
+          tileColor: AppColors.surfaceCard,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(14),
+            side: const BorderSide(color: AppColors.borderDefault),
+          ),
+          title: Text(
+            j['serviceType'] as String? ?? '',
+            style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13.5),
+          ),
+          subtitle: Text(
+            j['status'] as String? ?? '',
+            style: const TextStyle(fontSize: 12),
+          ),
+          onTap: () => Navigator.of(context).push(
+            MaterialPageRoute(
+              builder: (_) => JobDetailScreen(jobId: j['id'] as String),
+            ),
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _ContractsTab extends StatelessWidget {
+  final List<dynamic> contracts;
+  const _ContractsTab({required this.contracts});
+
+  @override
+  Widget build(BuildContext context) {
+    if (contracts.isEmpty)
+      return const EmptyStateView(
+        title: 'Sözleşme yok',
+        icon: Icons.description_outlined,
+      );
+    return ListView.separated(
+      padding: const EdgeInsets.all(16),
+      itemCount: contracts.length,
+      separatorBuilder: (_, __) => const SizedBox(height: 8),
+      itemBuilder: (context, i) {
+        final c = contracts[i] as Map<String, dynamic>;
+        final amount = (c['amount'] as num?)?.toDouble();
+        return ListTile(
+          tileColor: AppColors.surfaceCard,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(14),
+            side: const BorderSide(color: AppColors.borderDefault),
+          ),
+          title: Text(
+            c['serviceType'] as String? ?? c['status'] as String? ?? '',
+            style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13.5),
+          ),
+          subtitle: Text(
+            amount != null
+                ? '${_currency.format(amount)} · ${c['status']}'
+                : c['status'] as String? ?? '',
+            style: const TextStyle(fontSize: 12),
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _PaymentsTab extends StatelessWidget {
+  final List<dynamic> payments;
+  const _PaymentsTab({required this.payments});
+
+  @override
+  Widget build(BuildContext context) {
+    if (payments.isEmpty)
+      return const EmptyStateView(
+        title: 'Ödeme yok',
+        icon: Icons.payments_outlined,
+      );
+    return ListView.separated(
+      padding: const EdgeInsets.all(16),
+      itemCount: payments.length,
+      separatorBuilder: (_, __) => const SizedBox(height: 8),
+      itemBuilder: (context, i) {
+        final p = payments[i] as Map<String, dynamic>;
+        return ListTile(
+          tileColor: AppColors.surfaceCard,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(14),
+            side: const BorderSide(color: AppColors.borderDefault),
+          ),
+          title: Text(
+            _currency.format((p['amount'] as num).toDouble()),
+            style: const TextStyle(fontWeight: FontWeight.w700),
+          ),
+          subtitle: Text(
+            '${p['paymentType']} · ${_dateFormat.format(DateTime.parse(p['createdAt'] as String))}',
+            style: const TextStyle(fontSize: 12),
+          ),
+        );
+      },
+    );
+  }
+}

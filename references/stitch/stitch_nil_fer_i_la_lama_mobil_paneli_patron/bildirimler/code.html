@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+
+<html lang="tr"><head><meta charset="utf-8"/><meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" name="viewport"/><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;family=Plus+Jakarta+Sans:wght@600;700;800&amp;display=swap" rel="stylesheet"/><link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/><style>@layer base{html,body{width:100vw;margin:0;padding:0;background-color:#ebfeee;}body{overscroll-behavior:none;}.pb-safe{padding-bottom:env(safe-area-inset-bottom,0px);}.pt-safe{padding-top:env(safe-area-inset-top,0px);}main>:first-child{margin-top:0!important;}main>:last-child{margin-bottom:0!important;}}::-webkit-scrollbar{display:none;}.material-symbols-outlined{font-variation-settings:'FILL' 0,'wght' 400,'GRAD' 0,'opsz' 24;}</style><script src="https://cdn.tailwindcss.com"></script><script id="tailwind-config">tailwind.config = { darkMode: "class", theme: { extend: { "colors": { "on-secondary": "#ffffff", "primary-fixed": "#a4f5ae", "on-primary-fixed": "#002109", "inverse-primary": "#89d894", "error-container": "#ffdad6", "outline-variant": "#bfc9bc", "on-tertiary": "#ffffff", "on-primary": "#ffffff", "surface-container-highest": "#d5e7d7", "tertiary-fixed": "#cee5ff", "primary-fixed-dim": "#89d894", "on-tertiary-container": "#fdfcff", "primary": "#186a32", "on-secondary-fixed-variant": "#2b4e30", "secondary-fixed-dim": "#a9d1a8", "surface-dim": "#ccdfcf", "secondary-fixed": "#c4edc3", "on-tertiary-fixed-variant": "#004a76", "surface-container-low": "#e6f8e8", "secondary": "#436746", "inverse-on-surface": "#e3f6e5", "on-error-container": "#93000a", "tertiary-container": "#2e79b3", "surface-container-high": "#daeddd", "surface-container": "#e0f3e2", "inverse-surface": "#243429", "outline": "#707a6e", "background": "#ebfeee", "on-primary-container": "#f7fff3", "on-surface-variant": "#40493f", "on-surface": "#0f1f15", "surface-tint": "#1c6c34", "surface-container-lowest": "#ffffff", "on-tertiary-fixed": "#001d33", "error": "ba1a1a", "on-secondary-fixed": "#002108", "secondary-container": "#c4edc3", "on-background": "#0f1f15", "surface-bright": "#ebfeee", "on-secondary-container": "#496d4b", "tertiary-fixed-dim": "#97cbff", "surface": "#ebfeee", "on-error": "#ffffff", "surface-variant": "#d5e7d7", "primary-container": "#368348", "on-primary-fixed-variant": "#005321", "tertiary": "#006098" }, "borderRadius": { "DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px" }, "spacing": { "nav-floating-height": "4.25rem", "space-2xs": "0.25rem", "space-xs": "0.5rem", "space-md": "1rem", "margin-mobile": "1rem", "space-2xl": "2rem", "space-lg": "1.25rem", "space-sm": "0.75rem", "gutter-mobile": "1rem", "space-xl": "1.5rem" }, "fontFamily": { "body-md": ["Inter"], "label-md": ["Inter"], "title-md": ["Plus Jakarta Sans"], "headline-sm": ["Plus Jakarta Sans"], "body-lg": ["Inter"], "label-sm": ["Inter"], "kpi-unit": ["Inter"], "headline-md": ["Plus Jakarta Sans"], "headline-lg": ["Plus Jakarta Sans"], "body-sm": ["Inter"], "headline-xl": ["Plus Jakarta Sans"], "kpi-stat": ["Plus Jakarta Sans"] }, "fontSize": { "body-md": ["14px", { "lineHeight": "20px", "letterSpacing": "0", "fontWeight": "400" }], "label-md": ["12px", { "lineHeight": "16px", "letterSpacing": "0.02em", "fontWeight": "600" }], "title-md": ["16px", { "lineHeight": "22px", "letterSpacing": "-0.005em", "fontWeight": "600" }], "headline-sm": ["18px", { "lineHeight": "24px", "letterSpacing": "0", "fontWeight": "600" }], "body-lg": ["16px", { "lineHeight": "24px", "letterSpacing": "0", "fontWeight": "400" }], "label-sm": ["11px", { "lineHeight": "14px", "letterSpacing": "0.04em", "fontWeight": "600" }], "kpi-unit": ["12px", { "lineHeight": "16px", "letterSpacing": "0.01em", "fontWeight": "500" }], "headline-md": ["20px", { "lineHeight": "28px", "letterSpacing": "-0.01em", "fontWeight": "600" }], "headline-lg": ["26px", { "lineHeight": "34px", "letterSpacing": "-0.015em", "fontWeight": "700" }], "body-sm": ["13px", { "lineHeight": "18px", "letterSpacing": "0", "fontWeight": "400" }], "headline-xl": ["32px", { "lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "700" }], "kpi-stat": ["28px", { "lineHeight": "32px", "letterSpacing": "-0.03em", "fontWeight": "800" }] } } } };</script><style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head><body class="bg-surface text-on-surface font-body-md text-body-md flex flex-col min-h-screen"><header class="fixed top-0 w-full z-50 pt-safe bg-surface/80 backdrop-blur-xl shadow-[0_1px_8px_rgba(0,0,0,0.04)]"><div class="h-16 px-margin-mobile flex items-center justify-between"><div class="flex items-center gap-space-sm"><img alt="Nilüfer İlaçlama Logo" class="h-8 w-auto object-contain" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAEpdryzZnplcZz2a8fnWaX_C2w8DBfrfJslvHehUpCdoJy-tPB4vUrxOj_edzrbTdSEt-bz1gHU4FR9h2Qmc8SsYuY9T58hWPIULQU8CHJtPSW6w3FIDT7Aty0f0uf_QZ5AusF5Y5J3fs8mycxyiarF4eqkBREDw2xcPUPZ41H4N1vAnUXxJPJ-bUe0Mv7Kse_pkqK8lMsYpIR-Y_5UyEer_4Ow8edvuij0v0pVD_pqMvHf3J2EJ_v"/><div class="flex flex-col"><span class="font-headline-sm text-headline-sm text-on-surface font-bold leading-tight">Nilüfer İlaçlama</span><span class="font-label-sm text-label-sm text-on-surface-variant leading-none">Bildirimler</span></div></div><div class="w-8 h-8 rounded-full bg-primary flex items-center justify-center"><span class="material-symbols-outlined text-on-primary text-[18px]">person</span></div></div></header><main class="flex-1 flex flex-col relative w-full pt-16 pb-[6rem] bg-surface"><div class="flex flex-col w-full px-margin-mobile gap-space-md">
+<!-- Interactive & Action Bar -->
+<div class="flex items-center justify-between pt-space-xs">
+<div class="flex items-center gap-space-xs">
+<button aria-label="Geri Dön" class="w-9 h-9 rounded-full bg-surface-container flex items-center justify-center text-on-surface hover:bg-surface-container-high transition-colors">
+<span class="material-symbols-outlined text-[20px]">arrow_back</span>
+</button>
+<div class="flex flex-col">
+<span class="font-headline-md text-headline-md text-on-surface font-bold tracking-tight">Bildirimler</span>
+<span class="font-label-sm text-label-sm text-secondary">Canlı saha bildirim akışı</span>
+</div>
+</div>
+<button class="flex items-center gap-1 text-primary hover:text-primary-container px-2.5 py-1.5 rounded-full bg-surface-container transition-all active:scale-95" id="mark-all-btn">
+<span class="material-symbols-outlined text-[16px]">done_all</span>
+<span class="font-label-md text-label-md">Tümünü Oku</span>
+</button>
+</div>
+<!-- 3 Stat Summary Cards -->
+<div class="grid grid-cols-3 gap-space-xs">
+<div class="bg-surface-container-lowest rounded-xl p-space-sm shadow-sm flex flex-col justify-between">
+<div class="flex items-center justify-between text-on-surface-variant">
+<span class="font-label-sm text-label-sm uppercase tracking-wider font-semibold">Toplam</span>
+<span class="material-symbols-outlined text-[16px] text-outline">inbox</span>
+</div>
+<div class="mt-2 flex items-baseline gap-1">
+<span class="font-kpi-stat text-kpi-stat text-on-surface">28</span>
+<span class="font-kpi-unit text-kpi-unit text-on-surface-variant">kayıt</span>
+</div>
+</div>
+<div class="bg-surface-container-lowest rounded-xl p-space-sm shadow-sm flex flex-col justify-between relative overflow-hidden">
+<div class="flex items-center justify-between">
+<span class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider font-semibold">Okunmamış</span>
+<span class="relative flex h-2.5 w-2.5">
+<span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-error opacity-75"></span>
+<span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-error"></span>
+</span>
+</div>
+<div class="mt-2 flex items-baseline gap-1">
+<span class="font-kpi-stat text-kpi-stat text-error font-extrabold" id="unread-count-pill">4</span>
+<span class="font-label-sm text-label-sm px-1.5 py-0.5 rounded-full bg-error-container text-on-error-container font-semibold">Yeni</span>
+</div>
+</div>
+<div class="bg-surface-container-lowest rounded-xl p-space-sm shadow-sm flex flex-col justify-between">
+<div class="flex items-center justify-between text-on-surface-variant">
+<span class="font-label-sm text-label-sm uppercase tracking-wider font-semibold">Bugün</span>
+<span class="material-symbols-outlined text-[16px] text-primary">calendar_today</span>
+</div>
+<div class="mt-2 flex items-baseline gap-1">
+<span class="font-kpi-stat text-kpi-stat text-primary font-extrabold">11</span>
+<span class="font-label-sm text-label-sm px-1.5 py-0.5 rounded-full bg-surface-container-low text-primary font-semibold">Canlı</span>
+</div>
+</div>
+</div>
+<!-- Horizontal Filter Chips -->
+<div class="w-full -mx-margin-mobile px-margin-mobile overflow-x-auto scrollbar-none flex items-center gap-space-xs pt-1 pb-1">
+<button class="filter-chip shrink-0 px-3.5 py-2 rounded-full font-label-md text-label-md flex items-center gap-1.5 bg-primary text-on-primary shadow-sm transition-all" data-filter="all">
+<span class="material-symbols-outlined text-[17px]">clear_all</span>
+<span>Tümü (28)</span>
+</button>
+<button class="filter-chip shrink-0 px-3.5 py-2 rounded-full font-label-md text-label-md flex items-center gap-1.5 bg-surface-container-lowest text-on-surface hover:bg-surface-container shadow-sm transition-all" data-filter="is">
+<span class="material-symbols-outlined text-[17px] text-primary">build</span>
+<span>İş (12)</span>
+</button>
+<button class="filter-chip shrink-0 px-3.5 py-2 rounded-full font-label-md text-label-md flex items-center gap-1.5 bg-surface-container-lowest text-on-surface hover:bg-surface-container shadow-sm transition-all" data-filter="odeme">
+<span class="material-symbols-outlined text-[17px] text-secondary">account_balance_wallet</span>
+<span>Ödeme (6)</span>
+</button>
+<button class="filter-chip shrink-0 px-3.5 py-2 rounded-full font-label-md text-label-md flex items-center gap-1.5 bg-surface-container-lowest text-on-surface hover:bg-surface-container shadow-sm transition-all" data-filter="mesaj">
+<span class="material-symbols-outlined text-[17px] text-tertiary">chat</span>
+<span>Mesaj (7)</span>
+</button>
+<button class="filter-chip shrink-0 px-3.5 py-2 rounded-full font-label-md text-label-md flex items-center gap-1.5 bg-surface-container-lowest text-on-surface hover:bg-surface-container shadow-sm transition-all" data-filter="uyari">
+<span class="material-symbols-outlined text-[17px] text-error">warning</span>
+<span>Uyarı (3)</span>
+</button>
+</div>
+<!-- Distribution Chart Card -->
+<div class="bg-surface-container-lowest rounded-xl p-space-md shadow-sm">
+<div class="flex items-center justify-between mb-space-sm">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-primary text-[20px]">pie_chart</span>
+<span class="font-title-md text-title-md text-on-surface font-bold">Bildirim Türü Dağılımı</span>
+</div>
+<span class="font-label-sm text-label-sm text-on-surface-variant bg-surface-container-high px-2 py-0.5 rounded-full">Haftalık</span>
+</div>
+<div class="flex items-center gap-4">
+<!-- Donut SVG -->
+<div class="relative w-28 h-28 shrink-0 flex items-center justify-center">
+<svg class="w-28 h-28 -rotate-90" viewbox="0 0 42 42">
+<!-- Background track -->
+<circle cx="21" cy="21" fill="transparent" r="15.91549430918954" stroke="#ebfeee" stroke-width="5.5"></circle>
+<!-- Segment 1: İş (%43) -->
+<circle cx="21" cy="21" fill="transparent" r="15.91549430918954" stroke="#186a32" stroke-dasharray="43 57" stroke-dashoffset="0" stroke-width="5.5"></circle>
+<!-- Segment 2: Mesaj (%25) -->
+<circle cx="21" cy="21" fill="transparent" r="15.91549430918954" stroke="#006098" stroke-dasharray="25 75" stroke-dashoffset="-43" stroke-width="5.5"></circle>
+<!-- Segment 3: Ödeme (%21) -->
+<circle cx="21" cy="21" fill="transparent" r="15.91549430918954" stroke="#436746" stroke-dasharray="21 79" stroke-dashoffset="-68" stroke-width="5.5"></circle>
+<!-- Segment 4: Uyarı (%11) -->
+<circle cx="21" cy="21" fill="transparent" r="15.91549430918954" stroke="#ba1a1a" stroke-dasharray="11 89" stroke-dashoffset="-89" stroke-width="5.5"></circle>
+</svg>
+<div class="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+<span class="font-headline-md text-headline-md text-on-surface font-extrabold leading-none">28</span>
+<span class="font-label-sm text-label-sm text-outline leading-tight">Toplam</span>
+</div>
+</div>
+<!-- Legend Grid -->
+<div class="flex-1 grid grid-cols-2 gap-x-2 gap-y-2">
+<div class="flex items-center gap-2 p-1.5 rounded-lg bg-surface-container-low">
+<span class="w-2.5 h-2.5 rounded-full bg-primary shrink-0"></span>
+<div class="flex flex-col min-w-0">
+<span class="font-label-sm text-label-sm text-on-surface font-semibold truncate">İş (12)</span>
+<span class="font-label-sm text-label-sm text-secondary">%43 Pay</span>
+</div>
+</div>
+<div class="flex items-center gap-2 p-1.5 rounded-lg bg-surface-container-low">
+<span class="w-2.5 h-2.5 rounded-full bg-tertiary shrink-0"></span>
+<div class="flex flex-col min-w-0">
+<span class="font-label-sm text-label-sm text-on-surface font-semibold truncate">Mesaj (7)</span>
+<span class="font-label-sm text-label-sm text-on-surface-variant">%25 Pay</span>
+</div>
+</div>
+<div class="flex items-center gap-2 p-1.5 rounded-lg bg-surface-container-low">
+<span class="w-2.5 h-2.5 rounded-full bg-secondary shrink-0"></span>
+<div class="flex flex-col min-w-0">
+<span class="font-label-sm text-label-sm text-on-surface font-semibold truncate">Ödeme (6)</span>
+<span class="font-label-sm text-label-sm text-on-surface-variant">%21 Pay</span>
+</div>
+</div>
+<div class="flex items-center gap-2 p-1.5 rounded-lg bg-surface-container-low">
+<span class="w-2.5 h-2.5 rounded-full bg-error shrink-0"></span>
+<div class="flex flex-col min-w-0">
+<span class="font-label-sm text-label-sm text-on-surface font-semibold truncate">Uyarı (3)</span>
+<span class="font-label-sm text-label-sm text-on-surface-variant">%11 Pay</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Notification List Section Header -->
+<div class="flex items-center justify-between pt-1">
+<div class="flex items-center gap-1.5">
+<span class="font-title-md text-title-md text-on-surface font-bold">Hareketler</span>
+<span class="w-2 h-2 rounded-full bg-primary"></span>
+</div>
+<span class="font-label-sm text-label-sm text-on-surface-variant">Bugün &amp; Son 24 Saat</span>
+</div>
+<!-- Notifications Cards Container -->
+<div class="flex flex-col gap-space-xs pb-space-lg" id="notification-list">
+<!-- Card 1: Unread İş -->
+<div class="notif-item relative bg-surface-container-low rounded-xl p-space-md shadow-sm transition-transform active:scale-[0.99] flex gap-space-sm overflow-hidden" data-category="is">
+<div class="absolute left-0 top-0 bottom-0 w-1.5 bg-primary rounded-l-xl"></div>
+<div class="w-10 h-10 rounded-xl bg-primary-fixed flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined text-primary text-[20px]">handyman</span>
+</div>
+<div class="flex-1 min-w-0">
+<div class="flex items-center justify-between gap-1 mb-1">
+<span class="font-title-md text-title-md font-bold text-on-surface truncate">Yeni İş Atandı: Nilüfer OSB Depo</span>
+<span class="shrink-0 px-2 py-0.5 rounded-full bg-primary text-on-primary font-label-sm text-label-sm font-semibold">YENİ</span>
+</div>
+<p class="font-body-md text-body-md text-on-surface-variant line-clamp-2 leading-snug">
+          Yarın 09:30 için Ekip 2 görevlendirildi. İlaçlama formu ve malzeme listesi hazırlandı.
+        </p>
+<div class="flex items-center gap-2 mt-2">
+<span class="material-symbols-outlined text-[14px] text-outline">schedule</span>
+<span class="font-label-sm text-label-sm text-on-surface-variant">12 dk önce</span>
+<span class="w-1 h-1 rounded-full bg-outline-variant"></span>
+<span class="font-label-sm text-label-sm text-primary font-medium">Bölge: Organize Sanayi</span>
+</div>
+</div>
+</div>
+<!-- Card 2: Unread Uyarı -->
+<div class="notif-item relative bg-surface-container-low rounded-xl p-space-md shadow-sm transition-transform active:scale-[0.99] flex gap-space-sm overflow-hidden" data-category="uyari">
+<div class="absolute left-0 top-0 bottom-0 w-1.5 bg-error rounded-l-xl"></div>
+<div class="w-10 h-10 rounded-xl bg-error-container flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined text-error text-[20px]">warning</span>
+</div>
+<div class="flex-1 min-w-0">
+<div class="flex items-center justify-between gap-1 mb-1">
+<span class="font-title-md text-title-md font-bold text-on-surface truncate">Kritik Stok Uyarısı: Deltamethrin %2.5</span>
+<span class="shrink-0 px-2 py-0.5 rounded-full bg-error text-on-error font-label-sm text-label-sm font-semibold">KRİTİK</span>
+</div>
+<p class="font-body-md text-body-md text-on-surface-variant line-clamp-2 leading-snug">
+          Depo stok seviyesi 4 litreye düştü (Kritik sınır: 10L). Acil tedarik talebi oluşturulmalıdır.
+        </p>
+<div class="flex items-center gap-2 mt-2">
+<span class="material-symbols-outlined text-[14px] text-outline">schedule</span>
+<span class="font-label-sm text-label-sm text-on-surface-variant">34 dk önce</span>
+<span class="w-1 h-1 rounded-full bg-outline-variant"></span>
+<span class="font-label-sm text-label-sm text-error font-semibold">Merkez Depo Tank A-4</span>
+</div>
+</div>
+</div>
+<!-- Card 3: Unread Ödeme -->
+<div class="notif-item relative bg-surface-container-low rounded-xl p-space-md shadow-sm transition-transform active:scale-[0.99] flex gap-space-sm overflow-hidden" data-category="odeme">
+<div class="absolute left-0 top-0 bottom-0 w-1.5 bg-primary rounded-l-xl"></div>
+<div class="w-10 h-10 rounded-xl bg-secondary-fixed flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined text-secondary text-[20px]">payments</span>
+</div>
+<div class="flex-1 min-w-0">
+<div class="flex items-center justify-between gap-1 mb-1">
+<span class="font-title-md text-title-md font-bold text-on-surface truncate">Tahsilat Alındı: ₺4.250</span>
+<span class="shrink-0 px-2 py-0.5 rounded-full bg-surface-container-highest text-on-surface font-label-sm text-label-sm font-medium">POS</span>
+</div>
+<p class="font-body-md text-body-md text-on-surface-variant line-clamp-2 leading-snug">
+          Bursa Modern Sitesi Yönetimi sözleşme taksiti kredi kartı ile ödendi.
+        </p>
+<div class="flex items-center gap-2 mt-2">
+<span class="material-symbols-outlined text-[14px] text-outline">schedule</span>
+<span class="font-label-sm text-label-sm text-on-surface-variant">1 saat önce</span>
+<span class="w-1 h-1 rounded-full bg-outline-variant"></span>
+<span class="font-label-sm text-label-sm text-secondary font-medium">Dekont #TR-9821</span>
+</div>
+</div>
+</div>
+<!-- Card 4: Unread Mesaj -->
+<div class="notif-item relative bg-surface-container-low rounded-xl p-space-md shadow-sm transition-transform active:scale-[0.99] flex gap-space-sm overflow-hidden" data-category="mesaj">
+<div class="absolute left-0 top-0 bottom-0 w-1.5 bg-primary rounded-l-xl"></div>
+<div class="w-10 h-10 rounded-xl bg-tertiary-fixed flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined text-tertiary text-[20px]">chat_bubble</span>
+</div>
+<div class="flex-1 min-w-0">
+<div class="flex items-center justify-between gap-1 mb-1">
+<span class="font-title-md text-title-md font-bold text-on-surface truncate">Serkan Yılmaz (Saha Teknisyeni)</span>
+<span class="shrink-0 w-2 h-2 rounded-full bg-tertiary"></span>
+</div>
+<p class="font-body-md text-body-md text-on-surface-variant line-clamp-2 leading-snug">
+          "Botanik Park görevindeyim, ek ULV solüsyonu gerekiyor. Depodan sevkiyat yapılabilir mi?"
+        </p>
+<div class="flex items-center gap-2 mt-2">
+<span class="material-symbols-outlined text-[14px] text-outline">schedule</span>
+<span class="font-label-sm text-label-sm text-on-surface-variant">2 saat önce</span>
+<span class="w-1 h-1 rounded-full bg-outline-variant"></span>
+<span class="font-label-sm text-label-sm text-tertiary font-medium">Hızlı Yanıtla</span>
+</div>
+</div>
+</div>
+<!-- Card 5: Read İş -->
+<div class="notif-item bg-surface-container-lowest rounded-xl p-space-md shadow-sm transition-transform active:scale-[0.99] flex gap-space-sm" data-category="is">
+<div class="w-10 h-10 rounded-xl bg-surface-container-high flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined text-primary text-[20px]">check_circle</span>
+</div>
+<div class="flex-1 min-w-0">
+<div class="flex items-center justify-between gap-1 mb-1">
+<span class="font-title-md text-title-md text-on-surface truncate">Görev Tamamlandı: Özkan Unlu Mamulleri</span>
+<span class="material-symbols-outlined text-[18px] text-outline">done</span>
+</div>
+<p class="font-body-md text-body-md text-on-surface-variant line-clamp-2 leading-snug">
+          İşlem raporu müşteri kaşesi ve dijital imza ile sisteme yüklendi. Periyodik kontrol takvimi güncellendi.
+        </p>
+<div class="flex items-center gap-2 mt-2">
+<span class="material-symbols-outlined text-[14px] text-outline">schedule</span>
+<span class="font-label-sm text-label-sm text-on-surface-variant">Bugün 13:45</span>
+<span class="w-1 h-1 rounded-full bg-outline-variant"></span>
+<span class="font-label-sm text-label-sm text-secondary">Rapor #OZK-44</span>
+</div>
+</div>
+</div>
+<!-- Card 6: Read Ödeme -->
+<div class="notif-item bg-surface-container-lowest rounded-xl p-space-md shadow-sm transition-transform active:scale-[0.99] flex gap-space-sm" data-category="odeme">
+<div class="w-10 h-10 rounded-xl bg-surface-container-high flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined text-secondary text-[20px]">receipt_long</span>
+</div>
+<div class="flex-1 min-w-0">
+<div class="flex items-center justify-between gap-1 mb-1">
+<span class="font-title-md text-title-md text-on-surface truncate">Fatura Kesildi: E-Arşiv #NIL2026-081</span>
+<span class="material-symbols-outlined text-[18px] text-outline">done</span>
+</div>
+<p class="font-body-md text-body-md text-on-surface-variant line-clamp-2 leading-snug">
+          Görükle Öğrenci Yurdu için ₺4.500 tutarlı kurumsal e-fatura e-posta ile muhasebeye iletildi.
+        </p>
+<div class="flex items-center gap-2 mt-2">
+<span class="material-symbols-outlined text-[14px] text-outline">schedule</span>
+<span class="font-label-sm text-label-sm text-on-surface-variant">Bugün 11:20</span>
+<span class="w-1 h-1 rounded-full bg-outline-variant"></span>
+<span class="font-label-sm text-label-sm text-secondary">E-Posta Onaylandı</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+<script>
+  (function() {
+    const filterButtons = document.querySelectorAll('.filter-chip');
+    const notifItems = document.querySelectorAll('.notif-item');
+    const markAllBtn = document.getElementById('mark-all-btn');
+    const unreadCountPill = document.getElementById('unread-count-pill');
+
+    // Filter Chips logic
+    filterButtons.forEach(btn => {
+      btn.addEventListener('click', () => {
+        // Reset styles
+        filterButtons.forEach(b => {
+          b.classList.remove('bg-primary', 'text-on-primary');
+          b.classList.add('bg-surface-container-lowest', 'text-on-surface');
+        });
+
+        // Set active style
+        btn.classList.remove('bg-surface-container-lowest', 'text-on-surface');
+        btn.classList.add('bg-primary', 'text-on-primary');
+
+        const filter = btn.getAttribute('data-filter');
+        notifItems.forEach(item => {
+          if (filter === 'all' || item.getAttribute('data-category') === filter) {
+            item.style.display = 'flex';
+          } else {
+            item.style.display = 'none';
+          }
+        });
+      });
+    });
+
+    // Mark all as read micro-interaction
+    markAllBtn.addEventListener('click', () => {
+      const unreadCards = document.querySelectorAll('.notif-item.bg-surface-container-low');
+      unreadCards.forEach(card => {
+        card.classList.remove('bg-surface-container-low');
+        card.classList.add('bg-surface-container-lowest');
+        const stripe = card.querySelector('.absolute.left-0');
+        if (stripe) stripe.remove();
+        const badge = card.querySelector('.bg-primary.text-on-primary.font-label-sm, .bg-error.text-on-error.font-label-sm');
+        if (badge) badge.remove();
+      });
+
+      if (unreadCountPill) {
+        unreadCountPill.textContent = '0';
+        unreadCountPill.classList.remove('text-error');
+        unreadCountPill.classList.add('text-outline');
+      }
+
+      markAllBtn.innerHTML = '<span class="material-symbols-outlined text-[16px]">done</span><span class="font-label-md text-label-md">Okundu</span>';
+      markAllBtn.classList.add('opacity-60', 'pointer-events-none');
+    });
+  })();
+</script></main><div class="fixed bottom-0 w-full z-50 pointer-events-none pb-safe"><div class="relative px-margin-mobile pb-space-sm"><nav class="pointer-events-auto h-[68px] w-full bg-surface-container-lowest/95 backdrop-blur-xl rounded-full shadow-[0_8px_24px_rgba(22,33,26,0.08),0_2px_6px_rgba(22,33,26,0.04)] flex items-center justify-between px-space-xs relative" data-active-classes="text-primary font-bold"><a class="flex-1 min-w-[52px] min-h-[44px] flex flex-col items-center justify-center gap-0.5 text-on-surface-variant hover:text-on-surface transition-colors" data-path="ana-sayfa" href="#"><span class="material-symbols-outlined text-[22px]">dashboard</span><span class="font-label-sm text-label-sm">Ana Sayfa</span></a><a class="flex-1 min-w-[52px] min-h-[44px] flex flex-col items-center justify-center gap-0.5 text-on-surface-variant hover:text-on-surface transition-colors" data-path="isler" href="#"><span class="material-symbols-outlined text-[22px]">assignment</span><span class="font-label-sm text-label-sm">İşler</span></a><div class="w-14 flex items-center justify-center"><a class="absolute -top-3 left-1/2 -translate-x-1/2 w-14 h-14 rounded-full bg-primary-container text-on-primary shadow-[0_8px_20px_rgba(47,82,51,0.35),0_2px_6px_rgba(47,82,51,0.20)] flex items-center justify-center hover:bg-primary transition-colors" data-path="yeni-islem" href="#"><span class="material-symbols-outlined text-[26px]">build</span></a></div><a aria-current="page" class="flex-1 min-w-[52px] min-h-[44px] flex flex-col items-center justify-center gap-0.5 transition-colors relative text-primary font-bold" data-path="bildirimler" href="#"><div class="relative"><span class="material-symbols-outlined text-[22px]">notifications</span><span class="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full bg-error ring-2 ring-surface-container-lowest"></span></div><span class="font-label-sm text-label-sm">Bildirimler</span></a><a class="flex-1 min-w-[52px] min-h-[44px] flex flex-col items-center justify-center gap-0.5 text-on-surface-variant hover:text-on-surface transition-colors" data-path="mesajlar" href="#"><span class="material-symbols-outlined text-[22px]">chat_bubble</span><span class="font-label-sm text-label-sm">Mesajlar</span></a></nav></div></div></body></html>

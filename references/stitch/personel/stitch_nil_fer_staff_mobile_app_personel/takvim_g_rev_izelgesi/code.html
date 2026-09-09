@@ -1,0 +1,451 @@
+<!DOCTYPE html>
+
+<html lang="tr"><head><meta charset="utf-8"/><meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" name="viewport"/><link href="https://fonts.googleapis.com" rel="preconnect"/><link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/><link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/><link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/><script src="https://cdn.tailwindcss.com"></script><script id="tailwind-config">tailwind.config = { darkMode: "class", theme: { extend: { colors: { "on-primary-fixed": "#002109", "background": "#ebfeee", "secondary-container": "#c4edc3", "tertiary-container": "#6f7672", "inverse-surface": "#243429", "inverse-on-surface": "#e3f6e5", "secondary-fixed": "#c4edc3", "on-tertiary": "#ffffff", "on-error-container": "#93000a", "on-background": "#0f1f15", "error-container": "#ffdad6", "on-primary-fixed-variant": "#005321", "surface-container-lowest": "#ffffff", "surface-bright": "#ebfeee", "surface-dim": "#ccdfcf", "secondary-fixed-dim": "#a9d1a8", "surface-container": "#e0f3e2", "on-secondary-fixed": "#002108", "on-surface": "#0f1f15", "surface-container-highest": "#d5e7d7", "surface-tint": "#1c6c34", "surface-variant": "#d5e7d7", "outline": "#707a6e", "tertiary-fixed": "#dde4de", "surface": "#ebfeee", "surface-container-low": "#e6f8e8", "primary-container": "#368348", "on-primary-container": "#f7fff3", "on-error": "#ffffff", "on-tertiary-fixed": "#161d1a", "surface-container-high": "#daeddd", "tertiary": "#565e59", "on-primary": "#ffffff", "primary-fixed-dim": "#89d894", "on-tertiary-container": "#f7fef8", "secondary": "#436746", "error": "#ba1a1a", "on-tertiary-fixed-variant": "#414844", "tertiary-fixed-dim": "#c1c8c3", "on-secondary-fixed-variant": "#2b4e30", "on-secondary-container": "#496d4b", "primary-fixed": "#a4f5ae", "on-surface-variant": "#40493f", "primary": "#186a32", "inverse-primary": "#89d894", "on-secondary": "#ffffff", "outline-variant": "#bfc9bc" }, borderRadius: { "DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px" }, spacing: { "space-xs": "0.5rem", "space-lg": "1.25rem", "space-3xl": "2.5rem", "space-sm": "0.75rem", "space-md": "1rem", "card-padding": "1.125rem", "space-xl": "1.5rem", "screen-edge": "1rem", "space-2xl": "2rem", "touch-target-min": "3rem", "space-2xs": "0.25rem" }, fontFamily: { "label-lg": ["Plus Jakarta Sans"], "label-sm": ["Plus Jakarta Sans"], "body-sm": ["Plus Jakarta Sans"], "headline-sm": ["Plus Jakarta Sans"], "label-md": ["Plus Jakarta Sans"], "body-md": ["Plus Jakarta Sans"], "body-lg": ["Plus Jakarta Sans"], "headline-md": ["Plus Jakarta Sans"], "headline-lg": ["Plus Jakarta Sans"] }, fontSize: { "label-lg": ["14px", { "lineHeight": "20px", "letterSpacing": "0.01em", "fontWeight": "600" }], "label-sm": ["11px", { "lineHeight": "14px", "letterSpacing": "0.03em", "fontWeight": "600" }], "body-sm": ["13px", { "lineHeight": "18px", "letterSpacing": "0em", "fontWeight": "400" }], "headline-sm": ["18px", { "lineHeight": "24px", "letterSpacing": "-0.01em", "fontWeight": "600" }], "label-md": ["12px", { "lineHeight": "16px", "letterSpacing": "0.02em", "fontWeight": "600" }], "body-md": ["14px", { "lineHeight": "20px", "letterSpacing": "0em", "fontWeight": "400" }], "body-lg": ["16px", { "lineHeight": "24px", "letterSpacing": "-0.005em", "fontWeight": "500" }], "headline-md": ["20px", { "lineHeight": "28px", "letterSpacing": "-0.015em", "fontWeight": "700" }], "headline-lg": ["24px", { "lineHeight": "32px", "letterSpacing": "-0.02em", "fontWeight": "700" }] } } } };</script><style>@layer base{html,body{width:100vw;margin:0;padding:0;}body{overscroll-behavior:none;}.pb-safe{padding-bottom:env(safe-area-inset-bottom,0px);}.pt-safe{padding-top:env(safe-area-inset-top,0px);}main>:first-child{margin-top:0!important;}main>:last-child{margin-bottom:0!important;}}::-webkit-scrollbar{display:none;}#drawer-overlay{opacity:0;pointer-events:none;transition:opacity 0.25s ease-in-out;}#drawer-panel{transform:translateX(-100%);transition:transform 0.25s cubic-bezier(0.16,1,0.3,1);}#drawer-toggle:checked~#drawer-overlay{opacity:1;pointer-events:auto;}#drawer-toggle:checked~#drawer-panel{transform:translateX(0);}</style></head><body class="bg-surface font-body-md text-body-md text-on-surface flex flex-col min-h-screen relative selection:bg-secondary-container"><input class="hidden" id="drawer-toggle" type="checkbox"/><header class="fixed top-0 inset-x-0 z-40 bg-surface/85 backdrop-blur-xl shadow-[0_1px_8px_rgba(0,0,0,0.04)] pt-safe"><div class="h-16 px-screen-edge flex items-center justify-between"><label class="w-11 h-11 rounded-lg flex items-center justify-center text-on-surface hover:bg-surface-container active:bg-surface-container-high transition-colors cursor-pointer" for="drawer-toggle"><span class="material-symbols-outlined text-[24px]">menu</span></label><div class="flex flex-col items-center justify-center text-center px-space-xs"><span class="font-label-sm text-label-sm text-primary uppercase tracking-wider">Nilüfer İlaçlama</span><h1 class="font-headline-sm text-headline-sm text-on-surface leading-tight truncate max-w-[190px]">Takvim</h1></div><div class="flex items-center gap-space-xs"><a class="relative w-11 h-11 rounded-lg flex items-center justify-center text-on-surface hover:bg-surface-container active:bg-surface-container-high transition-colors" data-path="bildirimler" href="#"><span class="material-symbols-outlined text-[24px]">notifications</span><span class="absolute top-2 right-2 w-4 h-4 rounded-full bg-error text-on-error font-label-sm text-[10px] leading-none flex items-center justify-center font-bold">1</span></a><div class="w-8 h-8 rounded-full bg-surface-container-lowest flex items-center justify-center text-primary font-headline-sm text-[13px] font-bold shadow-[0_1px_4px_rgba(0,0,0,0.08)]">AK</div></div></div></header><main class="flex flex-col relative w-full pt-16 pb-24 bg-surface min-h-screen"><div class="flex flex-col w-full gap-space-md px-screen-edge pb-space-2xl">
+<!-- Staff Personal Identifier Chip & Month Bar -->
+<section class="flex flex-col gap-space-sm pt-space-xs">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-space-xs bg-surface-container-low px-3 py-1.5 rounded-full shadow-sm">
+<span class="w-2.5 h-2.5 rounded-full bg-primary animate-pulse"></span>
+<span class="font-label-md text-label-md text-on-surface">Ali Kaya • Saha Görevleri</span>
+</div>
+<div class="flex items-center gap-1 bg-surface-container-high px-2.5 py-1 rounded-full">
+<span class="material-symbols-outlined text-[16px] text-primary" style="font-variation-settings: 'FILL' 1;">verified</span>
+<span class="font-label-sm text-label-sm text-primary font-bold">Kişisel Takvim</span>
+</div>
+</div>
+<!-- Month Selector with Arrows & Summary Chips -->
+<div class="bg-surface-container-lowest rounded-xl p-card-padding shadow-sm flex flex-col gap-space-sm">
+<div class="flex items-center justify-between">
+<button aria-label="Önceki Ay" class="w-10 h-10 rounded-lg bg-surface-container hover:bg-surface-container-high active:scale-95 transition flex items-center justify-center text-on-surface" id="prev-month-btn" type="button">
+<span class="material-symbols-outlined text-[20px]">chevron_left</span>
+</button>
+<div class="flex items-center gap-space-xs cursor-pointer">
+<span class="material-symbols-outlined text-primary text-[20px]">calendar_month</span>
+<span class="font-headline-sm text-headline-sm text-on-surface tracking-tight">Ekim 2024</span>
+</div>
+<button aria-label="Sonraki Ay" class="w-10 h-10 rounded-lg bg-surface-container hover:bg-surface-container-high active:scale-95 transition flex items-center justify-center text-on-surface" id="next-month-btn" type="button">
+<span class="material-symbols-outlined text-[20px]">chevron_right</span>
+</button>
+</div>
+<!-- Month Overview Quick Chips -->
+<div class="flex items-center gap-space-xs">
+<div class="flex-1 bg-surface-container-low px-3 py-2 rounded-lg flex items-center justify-between">
+<span class="font-label-sm text-label-sm text-on-surface-variant">Bu Ay</span>
+<span class="font-label-lg text-label-lg text-primary font-bold">32 İş</span>
+</div>
+<div class="flex-1 bg-secondary-container px-3 py-2 rounded-lg flex items-center justify-between">
+<span class="font-label-sm text-label-sm text-on-secondary-container">Tamamlanan</span>
+<span class="font-label-lg text-label-lg text-primary font-bold">24 Görev</span>
+</div>
+</div>
+</div>
+</section>
+<!-- 3 Stat Cards in a Row -->
+<section class="grid grid-cols-3 gap-space-xs">
+<!-- Card 1: Today's Jobs -->
+<div class="bg-surface-container-lowest p-3 rounded-xl shadow-sm flex flex-col justify-between relative overflow-hidden">
+<div class="w-7 h-7 rounded-lg bg-secondary-container flex items-center justify-center text-primary mb-1">
+<span class="material-symbols-outlined text-[18px]">event</span>
+</div>
+<div>
+<span class="font-label-sm text-label-sm text-on-surface-variant block leading-tight">Bugün</span>
+<span class="font-headline-sm text-headline-sm text-on-surface font-bold">4 İş</span>
+</div>
+<div class="mt-1 flex items-center text-primary font-label-sm text-[10px]">
+<span class="material-symbols-outlined text-[13px] mr-0.5">near_me</span> Aktif rota
+      </div>
+</div>
+<!-- Card 2: This Week's Jobs -->
+<div class="bg-surface-container-lowest p-3 rounded-xl shadow-sm flex flex-col justify-between relative overflow-hidden">
+<div class="w-7 h-7 rounded-lg bg-surface-container-high flex items-center justify-center text-secondary mb-1">
+<span class="material-symbols-outlined text-[18px]">schedule</span>
+</div>
+<div>
+<span class="font-label-sm text-label-sm text-on-surface-variant block leading-tight">Bu Hafta</span>
+<span class="font-headline-sm text-headline-sm text-on-surface font-bold">18 İş</span>
+</div>
+<div class="mt-1 flex items-center text-secondary font-label-sm text-[10px]">
+<span class="material-symbols-outlined text-[13px] mr-0.5">trending_up</span> Planlı
+      </div>
+</div>
+<!-- Card 3: Completion Ring -->
+<div class="bg-surface-container-lowest p-3 rounded-xl shadow-sm flex flex-col justify-between items-center text-center">
+<div class="relative w-10 h-10 flex items-center justify-center">
+<svg class="w-10 h-10 transform -rotate-90" viewbox="0 0 36 36">
+<path class="text-surface-container-high" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="currentColor" stroke-width="3.5"></path>
+<path class="text-primary" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="currentColor" stroke-dasharray="75, 100" stroke-linecap="round" stroke-width="3.5"></path>
+</svg>
+<span class="absolute font-label-sm text-[10px] font-bold text-primary">75%</span>
+</div>
+<div class="w-full mt-1">
+<span class="font-label-sm text-label-sm text-on-surface-variant block truncate">Başarı</span>
+<span class="font-label-sm text-[10px] text-primary font-bold truncate">24 / 32 Bitti</span>
+</div>
+</div>
+</section>
+<!-- Heatmap Monthly Calendar Grid -->
+<section class="bg-surface-container-lowest rounded-xl p-card-padding shadow-sm flex flex-col gap-space-xs">
+<!-- Days of Week Header -->
+<div class="grid grid-cols-7 text-center font-label-sm text-label-sm text-on-surface-variant font-bold pb-1">
+<span>Pzt</span>
+<span>Sal</span>
+<span>Çar</span>
+<span>Per</span>
+<span>Cum</span>
+<span>Cmt</span>
+<span>Paz</span>
+</div>
+<!-- Calendar Grid (October 2024, starts on Tuesday Oct 1) -->
+<div class="grid grid-cols-7 gap-1.5 text-center text-body-sm font-label-sm">
+<!-- Empty day prior to Oct 1 (Monday Sep 30) -->
+<div class="h-9 flex items-center justify-center text-outline-variant font-normal opacity-40">30</div>
+<!-- Days with heat density classes:
+           0 jobs: bg-surface-container-low text-on-surface
+           1-2 jobs: bg-secondary-container text-on-secondary-container
+           3-5 jobs: bg-primary-container text-on-primary-container
+           Selected (Oct 18): bg-primary text-on-primary font-bold shadow-md
+      -->
+<!-- 1 -->
+<button class="h-9 rounded-lg bg-surface-container-low text-on-surface flex flex-col items-center justify-center active:scale-90 transition" type="button">
+<span>1</span>
+</button>
+<!-- 2 (1 job) -->
+<button class="h-9 rounded-lg bg-secondary-container text-on-secondary-container flex flex-col items-center justify-center active:scale-90 transition" type="button">
+<span class="font-semibold">2</span>
+<span class="w-1 h-1 rounded-full bg-primary"></span>
+</button>
+<!-- 3 (3 jobs) -->
+<button class="h-9 rounded-lg bg-primary-container text-on-primary-container flex flex-col items-center justify-center active:scale-90 transition" type="button">
+<span class="font-semibold">3</span>
+<span class="w-1 h-1 rounded-full bg-surface-container-lowest"></span>
+</button>
+<!-- 4 (2 jobs) -->
+<button class="h-9 rounded-lg bg-secondary-container text-on-secondary-container flex flex-col items-center justify-center active:scale-90 transition" type="button">
+<span class="font-semibold">4</span>
+<span class="w-1 h-1 rounded-full bg-primary"></span>
+</button>
+<!-- 5 (Weekend - 0 jobs) -->
+<button class="h-9 rounded-lg bg-surface-container-low text-on-surface-variant flex flex-col items-center justify-center opacity-75" type="button">
+<span>5</span>
+</button>
+<!-- 6 (Weekend - 0 jobs) -->
+<button class="h-9 rounded-lg bg-surface-container-low text-on-surface-variant flex flex-col items-center justify-center opacity-75" type="button">
+<span>6</span>
+</button>
+<!-- Week 2 -->
+<!-- 7 (2 jobs) -->
+<button class="h-9 rounded-lg bg-secondary-container text-on-secondary-container flex flex-col items-center justify-center active:scale-90 transition" type="button">
+<span class="font-semibold">7</span>
+<span class="w-1 h-1 rounded-full bg-primary"></span>
+</button>
+<!-- 8 (4 jobs) -->
+<button class="h-9 rounded-lg bg-primary-container text-on-primary-container flex flex-col items-center justify-center active:scale-90 transition" type="button">
+<span class="font-semibold">8</span>
+<span class="w-1 h-1 rounded-full bg-surface-container-lowest"></span>
+</button>
+<!-- 9 (1 job) -->
+<button class="h-9 rounded-lg bg-secondary-container text-on-secondary-container flex flex-col items-center justify-center active:scale-90 transition" type="button">
+<span class="font-semibold">9</span>
+<span class="w-1 h-1 rounded-full bg-primary"></span>
+</button>
+<!-- 10 (3 jobs) -->
+<button class="h-9 rounded-lg bg-primary-container text-on-primary-container flex flex-col items-center justify-center active:scale-90 transition" type="button">
+<span class="font-semibold">10</span>
+<span class="w-1 h-1 rounded-full bg-surface-container-lowest"></span>
+</button>
+<!-- 11 (2 jobs) -->
+<button class="h-9 rounded-lg bg-secondary-container text-on-secondary-container flex flex-col items-center justify-center active:scale-90 transition" type="button">
+<span class="font-semibold">11</span>
+<span class="w-1 h-1 rounded-full bg-primary"></span>
+</button>
+<!-- 12 -->
+<button class="h-9 rounded-lg bg-surface-container-low text-on-surface-variant flex flex-col items-center justify-center opacity-75" type="button">
+<span>12</span>
+</button>
+<!-- 13 -->
+<button class="h-9 rounded-lg bg-surface-container-low text-on-surface-variant flex flex-col items-center justify-center opacity-75" type="button">
+<span>13</span>
+</button>
+<!-- Week 3 -->
+<!-- 14 (1 job) -->
+<button class="h-9 rounded-lg bg-secondary-container text-on-secondary-container flex flex-col items-center justify-center active:scale-90 transition" type="button">
+<span class="font-semibold">14</span>
+<span class="w-1 h-1 rounded-full bg-primary"></span>
+</button>
+<!-- 15 (3 jobs) -->
+<button class="h-9 rounded-lg bg-primary-container text-on-primary-container flex flex-col items-center justify-center active:scale-90 transition" type="button">
+<span class="font-semibold">15</span>
+<span class="w-1 h-1 rounded-full bg-surface-container-lowest"></span>
+</button>
+<!-- 16 (2 jobs) -->
+<button class="h-9 rounded-lg bg-secondary-container text-on-secondary-container flex flex-col items-center justify-center active:scale-90 transition" type="button">
+<span class="font-semibold">16</span>
+<span class="w-1 h-1 rounded-full bg-primary"></span>
+</button>
+<!-- 17 (3 jobs) -->
+<button class="h-9 rounded-lg bg-primary-container text-on-primary-container flex flex-col items-center justify-center active:scale-90 transition" type="button">
+<span class="font-semibold">17</span>
+<span class="w-1 h-1 rounded-full bg-surface-container-lowest"></span>
+</button>
+<!-- 18 (TODAY & SELECTED: 4 Jobs, Solid Primary Green) -->
+<button class="h-9 rounded-lg bg-primary text-on-primary font-bold flex flex-col items-center justify-center shadow-md scale-105 active:scale-95 transition relative" type="button">
+<span class="text-on-primary">18</span>
+<span class="w-1.5 h-1.5 rounded-full bg-primary-fixed"></span>
+</button>
+<!-- 19 -->
+<button class="h-9 rounded-lg bg-surface-container-low text-on-surface-variant flex flex-col items-center justify-center opacity-75" type="button">
+<span>19</span>
+</button>
+<!-- 20 -->
+<button class="h-9 rounded-lg bg-surface-container-low text-on-surface-variant flex flex-col items-center justify-center opacity-75" type="button">
+<span>20</span>
+</button>
+<!-- Week 4 -->
+<!-- 21 (2 jobs) -->
+<button class="h-9 rounded-lg bg-secondary-container text-on-secondary-container flex flex-col items-center justify-center active:scale-90 transition" type="button">
+<span>21</span>
+</button>
+<!-- 22 (1 job) -->
+<button class="h-9 rounded-lg bg-secondary-container text-on-secondary-container flex flex-col items-center justify-center active:scale-90 transition" type="button">
+<span>22</span>
+</button>
+<!-- 23 (4 jobs) -->
+<button class="h-9 rounded-lg bg-primary-container text-on-primary-container flex flex-col items-center justify-center active:scale-90 transition" type="button">
+<span>23</span>
+</button>
+<!-- 24 (2 jobs) -->
+<button class="h-9 rounded-lg bg-secondary-container text-on-secondary-container flex flex-col items-center justify-center active:scale-90 transition" type="button">
+<span>24</span>
+</button>
+<!-- 25 (3 jobs) -->
+<button class="h-9 rounded-lg bg-primary-container text-on-primary-container flex flex-col items-center justify-center active:scale-90 transition" type="button">
+<span>25</span>
+</button>
+<!-- 26 -->
+<button class="h-9 rounded-lg bg-surface-container-low text-on-surface-variant flex flex-col items-center justify-center opacity-75" type="button">
+<span>26</span>
+</button>
+<!-- 27 -->
+<button class="h-9 rounded-lg bg-surface-container-low text-on-surface-variant flex flex-col items-center justify-center opacity-75" type="button">
+<span>27</span>
+</button>
+<!-- Week 5 -->
+<!-- 28 (1 job) -->
+<button class="h-9 rounded-lg bg-secondary-container text-on-secondary-container flex flex-col items-center justify-center active:scale-90 transition" type="button">
+<span>28</span>
+</button>
+<!-- 29 (Resmi Tatil / 0 job) -->
+<button class="h-9 rounded-lg bg-surface-container-low text-error flex flex-col items-center justify-center active:scale-90 transition" type="button">
+<span class="font-bold">29</span>
+</button>
+<!-- 30 (2 jobs) -->
+<button class="h-9 rounded-lg bg-secondary-container text-on-secondary-container flex flex-col items-center justify-center active:scale-90 transition" type="button">
+<span>30</span>
+</button>
+<!-- 31 (2 jobs) -->
+<button class="h-9 rounded-lg bg-secondary-container text-on-secondary-container flex flex-col items-center justify-center active:scale-90 transition" type="button">
+<span>31</span>
+</button>
+<!-- Next month placeholders -->
+<div class="h-9 flex items-center justify-center text-outline-variant font-normal opacity-40">1</div>
+<div class="h-9 flex items-center justify-center text-outline-variant font-normal opacity-40">2</div>
+<div class="h-9 flex items-center justify-center text-outline-variant font-normal opacity-40">3</div>
+</div>
+<!-- Heatmap Legend Bar -->
+<div class="flex items-center justify-between pt-space-xs mt-1 bg-surface-container-low p-2 rounded-lg text-[11px] text-on-surface-variant font-label-sm">
+<span class="flex items-center gap-1">
+<span class="w-3 h-3 rounded bg-surface-container-high inline-block"></span> 0 İş
+      </span>
+<span class="flex items-center gap-1">
+<span class="w-3 h-3 rounded bg-secondary-container inline-block"></span> 1-2 İş
+      </span>
+<span class="flex items-center gap-1">
+<span class="w-3 h-3 rounded bg-primary-container inline-block"></span> 3-5 İş
+      </span>
+<span class="flex items-center gap-1 font-bold text-primary">
+<span class="w-3 h-3 rounded bg-primary inline-block"></span> Seçili Gün
+      </span>
+</div>
+</section>
+<!-- Selected Day's Job List Header -->
+<section class="flex items-center justify-between mt-1">
+<div class="flex items-center gap-space-xs">
+<div class="w-3 h-3 rounded-full bg-primary"></div>
+<h2 class="font-headline-sm text-headline-sm text-on-surface">18 Ekim Cuma (Bugün) - 4 İş</h2>
+</div>
+<span class="font-label-sm text-label-sm text-on-surface-variant bg-surface-container-high px-2 py-0.5 rounded-full">Saha Rotalı</span>
+</section>
+<!-- Job 1: 09:30 - Completed -->
+<article class="bg-surface-container-lowest rounded-xl p-card-padding shadow-sm flex flex-col gap-space-xs relative overflow-hidden transition-all hover:shadow-md">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-space-xs">
+<span class="font-headline-sm text-headline-sm text-primary font-bold">09:30</span>
+<span class="font-label-sm text-label-sm text-on-surface-variant bg-surface-container px-2 py-0.5 rounded-md">#NLF-4821</span>
+</div>
+<!-- Tamamlandı badge -->
+<div class="bg-secondary-container text-on-secondary-container font-label-md text-label-md px-3 py-1 rounded-full flex items-center gap-1 font-semibold shadow-xs">
+<span class="material-symbols-outlined text-[16px] text-primary" style="font-variation-settings: 'FILL' 1;">check_circle</span>
+<span>Tamamlandı</span>
+</div>
+</div>
+<div>
+<h3 class="font-headline-sm text-headline-sm text-on-surface font-semibold">Nilüfer Park Konutları</h3>
+<p class="font-body-sm text-body-sm text-on-surface-variant flex items-center gap-1 mt-0.5">
+<span class="material-symbols-outlined text-[16px] text-outline">location_on</span>
+        İhsaniye Mah. Barış Sk. No:14, Blok B, Nilüfer
+      </p>
+</div>
+<div class="flex items-center justify-between pt-1">
+<div class="flex items-center gap-space-xs">
+<span class="bg-surface-container text-on-surface font-label-sm text-label-sm px-2.5 py-1 rounded-lg">
+          Periyodik İlaçlama
+        </span>
+<span class="bg-surface-container-low text-on-surface-variant font-label-sm text-[11px] px-2 py-1 rounded-lg">
+          Hamamböceği &amp; Karınca
+        </span>
+</div>
+<a class="text-primary font-label-sm text-label-sm flex items-center gap-0.5 hover:underline font-bold" data-path="isler" href="#">
+        Rapor <span class="material-symbols-outlined text-[14px]">arrow_forward</span>
+</a>
+</div>
+</article>
+<!-- Job 2: 13:00 - In Progress (Highlighted visual anchor) -->
+<article class="bg-surface-container-lowest rounded-xl p-card-padding shadow-md flex flex-col gap-space-xs relative overflow-hidden bg-gradient-to-r from-surface-container-low/40 via-surface-container-lowest to-surface-container-lowest">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-space-xs">
+<span class="font-headline-sm text-headline-sm text-primary font-bold">13:00</span>
+<span class="font-label-sm text-label-sm text-on-surface-variant bg-surface-container px-2 py-0.5 rounded-md">#NLF-4824</span>
+</div>
+<!-- Devam Ediyor badge -->
+<div class="bg-secondary-fixed text-on-secondary-fixed-variant font-label-md text-label-md px-3 py-1 rounded-full flex items-center gap-1 font-semibold animate-pulse shadow-xs">
+<span class="material-symbols-outlined text-[16px] text-primary" style="font-variation-settings: 'FILL' 1;">play_circle</span>
+<span>Devam Ediyor</span>
+</div>
+</div>
+<div>
+<h3 class="font-headline-sm text-headline-sm text-on-surface font-semibold">Yeşil Çınar Fırın &amp; Unlu Mamüller</h3>
+<p class="font-body-sm text-body-sm text-on-surface-variant flex items-center gap-1 mt-0.5">
+<span class="material-symbols-outlined text-[16px] text-outline">location_on</span>
+        Fethiye Mah. Fatih Sultan Mehmet Blv. No:82/A
+      </p>
+</div>
+<!-- Active Job Quick Controls -->
+<div class="bg-surface-container-low rounded-lg p-2.5 flex items-center justify-between">
+<div class="flex flex-col">
+<span class="font-label-sm text-[11px] text-on-surface-variant">Uygulama Tipi</span>
+<span class="font-label-lg text-label-lg text-primary font-bold">Hamamböceği &amp; Jel İlaçlama</span>
+</div>
+<div class="flex items-center gap-space-xs">
+<a aria-label="Müşteriyi Ara" class="w-9 h-9 rounded-lg bg-surface-container-lowest flex items-center justify-center text-primary shadow-xs hover:bg-surface-container transition" href="tel:+905321112233">
+<span class="material-symbols-outlined text-[18px]">call</span>
+</a>
+<a aria-label="Yol Tarifi" class="w-9 h-9 rounded-lg bg-surface-container-lowest flex items-center justify-center text-secondary shadow-xs hover:bg-surface-container transition" data-path="harita" href="#">
+<span class="material-symbols-outlined text-[18px]">directions</span>
+</a>
+</div>
+</div>
+<div class="flex items-center justify-between pt-0.5">
+<span class="font-label-sm text-label-sm text-on-surface-variant">Başlama: 13:10 • Kalan: 20 dk</span>
+<a class="h-8 px-3 rounded-lg bg-primary text-on-primary font-label-sm text-label-sm font-semibold flex items-center gap-1 shadow-xs hover:bg-primary-container transition" data-path="hizli-islem" href="#">
+<span>Forma Git</span>
+<span class="material-symbols-outlined text-[14px]">chevron_right</span>
+</a>
+</div>
+</article>
+<!-- Job 3: 16:00 - Pending / Next Route -->
+<article class="bg-surface-container-lowest rounded-xl p-card-padding shadow-sm flex flex-col gap-space-xs relative overflow-hidden transition-all hover:shadow-md">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-space-xs">
+<span class="font-headline-sm text-headline-sm text-on-surface font-bold">16:00</span>
+<span class="font-label-sm text-label-sm text-on-surface-variant bg-surface-container px-2 py-0.5 rounded-md">#NLF-4828</span>
+</div>
+<!-- Bekliyor badge -->
+<div class="bg-surface-container-high text-tertiary font-label-md text-label-md px-3 py-1 rounded-full flex items-center gap-1 font-semibold">
+<span class="material-symbols-outlined text-[16px]">schedule</span>
+<span>Bekliyor</span>
+</div>
+</div>
+<div>
+<h3 class="font-headline-sm text-headline-sm text-on-surface font-semibold">Ataevler Sitesi Yönetimi</h3>
+<p class="font-body-sm text-body-sm text-on-surface-variant flex items-center gap-1 mt-0.5">
+<span class="material-symbols-outlined text-[16px] text-outline">location_on</span>
+        Ataevler Mah. Nenehatun Cd. No:45, Nilüfer
+      </p>
+</div>
+<div class="flex items-center justify-between pt-1">
+<div class="flex items-center gap-space-xs">
+<span class="bg-surface-container text-on-surface font-label-sm text-label-sm px-2.5 py-1 rounded-lg">
+          Bahçe ULV İlaçlama
+        </span>
+<span class="bg-surface-container-low text-on-surface-variant font-label-sm text-[11px] px-2 py-1 rounded-lg">
+          Sivrisinek &amp; Kene
+        </span>
+</div>
+<span class="font-label-sm text-label-sm text-on-surface-variant">Sıradaki Görev</span>
+</div>
+</article>
+<!-- Job 4: 18:15 - Scheduled -->
+<article class="bg-surface-container-lowest rounded-xl p-card-padding shadow-sm flex flex-col gap-space-xs relative overflow-hidden transition-all hover:shadow-md">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-space-xs">
+<span class="font-headline-sm text-headline-sm text-on-surface font-bold">18:15</span>
+<span class="font-label-sm text-label-sm text-on-surface-variant bg-surface-container px-2 py-0.5 rounded-md">#NLF-4830</span>
+</div>
+<!-- Planlandı badge (light green) -->
+<div class="bg-surface-container-low text-primary font-label-md text-label-md px-3 py-1 rounded-full flex items-center gap-1 font-semibold">
+<span class="material-symbols-outlined text-[16px]">event_note</span>
+<span>Planlandı</span>
+</div>
+</div>
+<div>
+<h3 class="font-headline-sm text-headline-sm text-on-surface font-semibold">Özlüce Eczanesi</h3>
+<p class="font-body-sm text-body-sm text-on-surface-variant flex items-center gap-1 mt-0.5">
+<span class="material-symbols-outlined text-[16px] text-outline">location_on</span>
+        29 Ekim Mah. Ahmet Taner Kışlalı Blv. No:19/B
+      </p>
+</div>
+<div class="flex items-center justify-between pt-1">
+<div class="flex items-center gap-space-xs">
+<span class="bg-surface-container text-on-surface font-label-sm text-label-sm px-2.5 py-1 rounded-lg">
+          Rutin Kontrol &amp; Jel
+        </span>
+<span class="bg-surface-container-low text-on-surface-variant font-label-sm text-[11px] px-2 py-1 rounded-lg">
+          Kemirgen İstasyon
+        </span>
+</div>
+<span class="font-label-sm text-label-sm text-secondary font-semibold">Günün Son Görevi</span>
+</div>
+</article>
+<!-- Route Optimization Banner / Encouragement -->
+<div class="bg-surface-container rounded-xl p-card-padding flex items-center gap-space-md shadow-xs mt-1">
+<div class="w-10 h-10 rounded-full bg-secondary-container flex items-center justify-center text-primary shrink-0">
+<span class="material-symbols-outlined text-[22px]">route</span>
+</div>
+<div class="flex flex-col">
+<span class="font-label-lg text-label-lg text-on-surface font-bold">Optimize Rota Hazır</span>
+<span class="font-body-sm text-body-sm text-on-surface-variant">Kalan 3 görev arasındaki toplam sürüş mesafesi 14.2 km.</span>
+</div>
+</div>
+</div>
+<script>
+  (function () {
+    // Dynamic month selector micro-interaction
+    const prevBtn = document.getElementById('prev-month-btn');
+    const nextBtn = document.getElementById('next-month-btn');
+
+    if (prevBtn) {
+      prevBtn.addEventListener('click', function () {
+        this.classList.add('scale-90');
+        setTimeout(() => this.classList.remove('scale-90'), 150);
+      });
+    }
+
+    if (nextBtn) {
+      nextBtn.addEventListener('click', function () {
+        this.classList.add('scale-90');
+        setTimeout(() => this.classList.remove('scale-90'), 150);
+      });
+    }
+  })();
+</script></main><label class="fixed inset-0 z-50 bg-inverse-surface/40 backdrop-blur-sm" for="drawer-toggle" id="drawer-overlay"></label><aside class="fixed top-0 bottom-0 left-0 z-50 w-[84%] max-w-[320px] bg-surface-container-lowest flex flex-col shadow-[0_4px_24px_rgba(0,0,0,0.12)]" id="drawer-panel"><div class="bg-gradient-to-br from-secondary to-primary p-space-lg pt-[calc(env(safe-area-inset-top,0px)+1.25rem)] text-on-primary flex flex-col gap-space-sm"><div class="flex items-center justify-between"><div class="w-14 h-14 rounded-full bg-surface-container-lowest flex items-center justify-center text-primary font-headline-md text-headline-md font-bold shadow-[0_2px_8px_rgba(0,0,0,0.15)]">AK</div><label class="w-10 h-10 rounded-lg flex items-center justify-center text-on-primary/80 hover:text-on-primary hover:bg-on-primary/10 active:bg-on-primary/20 cursor-pointer" for="drawer-toggle"><span class="material-symbols-outlined text-[22px]">close</span></label></div><div class="flex flex-col"><span class="font-headline-md text-headline-md text-on-primary">Ali Kaya</span><div class="mt-space-2xs"><span class="inline-flex items-center px-space-xs py-0.5 rounded-full bg-surface-container-lowest/20 backdrop-blur-md text-on-primary font-label-sm text-label-sm font-semibold">Personel</span></div></div></div><nav class="flex-1 overflow-y-auto py-space-sm flex flex-col" data-active-classes="bg-surface-container text-primary font-semibold relative before:content-[''] before:absolute before:left-0 before:top-0 before:bottom-0 before:w-1.5 before:bg-primary"><a class="flex items-center gap-space-md px-space-lg h-12 text-on-surface hover:bg-surface-container-low transition-colors" data-path="ana-sayfa" href="#"><span class="material-symbols-outlined text-[22px]">home</span><span class="font-body-md text-body-md">Ana Sayfa</span></a><a aria-current="page" class="flex items-center gap-space-md px-space-lg h-12 transition-colors bg-surface-container text-primary font-semibold relative before:content-[''] before:absolute before:left-0 before:top-0 before:bottom-0 before:w-1.5 before:bg-primary" data-path="takvim" href="#"><span class="material-symbols-outlined text-[22px]">calendar_today</span><span class="font-body-md text-body-md">Takvim</span></a><a class="flex items-center gap-space-md px-space-lg h-12 text-on-surface hover:bg-surface-container-low transition-colors" data-path="bildirimler" href="#"><span class="material-symbols-outlined text-[22px]">notifications</span><span class="font-body-md text-body-md">Bildirimler</span></a><a class="flex items-center gap-space-md px-space-lg h-12 text-on-surface hover:bg-surface-container-low transition-colors" data-path="mesajlar" href="#"><span class="material-symbols-outlined text-[22px]">chat</span><span class="font-body-md text-body-md">Mesajlar</span></a><a class="flex items-center gap-space-md px-space-lg h-12 text-on-surface hover:bg-surface-container-low transition-colors" data-path="isler" href="#"><span class="material-symbols-outlined text-[22px]">build</span><span class="font-body-md text-body-md">İşler</span></a><a class="flex items-center gap-space-md px-space-lg h-12 text-on-surface hover:bg-surface-container-low transition-colors" data-path="ayarlar" href="#"><span class="material-symbols-outlined text-[22px]">settings</span><span class="font-body-md text-body-md">Ayarlar</span></a></nav><div class="p-space-md pb-[calc(env(safe-area-inset-bottom,0px)+1rem)]"><a class="flex items-center justify-center gap-space-xs w-full h-11 rounded-lg bg-error-container text-error hover:bg-error-container/80 active:opacity-90 font-label-lg text-label-lg transition-colors" data-path="giris-yap" href="#"><span class="material-symbols-outlined text-[20px]">logout</span><span>Çıkış Yap</span></a></div></aside><nav class="fixed bottom-0 inset-x-0 z-40 pb-safe bg-surface/90 backdrop-blur-xl shadow-[0_-2px_12px_rgba(0,0,0,0.04)]" data-active-classes="text-primary font-bold"><div class="relative flex items-center justify-between h-16 px-space-xs"><a class="flex-1 flex flex-col items-center justify-center h-full text-on-surface-variant hover:text-on-surface transition-colors" data-path="ana-sayfa" href="#"><span class="material-symbols-outlined text-[22px]">home</span><span class="font-label-sm text-[10px] mt-0.5">Ana Sayfa</span></a><a class="flex-1 flex flex-col items-center justify-center h-full text-on-surface-variant hover:text-on-surface transition-colors" data-path="isler" href="#"><span class="material-symbols-outlined text-[22px]">build</span><span class="font-label-sm text-[10px] mt-0.5">İşler</span></a><div class="flex-1 flex items-center justify-center relative"><a class="absolute -top-6 w-14 h-14 rounded-full bg-primary text-on-primary flex items-center justify-center shadow-[0_8px_20px_rgba(24,106,50,0.35)] active:scale-95 transition-transform hover:bg-primary-container" data-path="hizli-islem" href="#"><span class="material-symbols-outlined text-[28px]">qr_code_scanner</span></a></div><a class="flex-1 flex flex-col items-center justify-center h-full text-on-surface-variant hover:text-on-surface transition-colors" data-path="bildirimler" href="#"><span class="material-symbols-outlined text-[22px]">notifications</span><span class="font-label-sm text-[10px] mt-0.5">Bildirimler</span></a><a class="flex-1 flex flex-col items-center justify-center h-full text-on-surface-variant hover:text-on-surface transition-colors" data-path="mesajlar" href="#"><span class="material-symbols-outlined text-[22px]">chat</span><span class="font-label-sm text-[10px] mt-0.5">Mesajlar</span></a></div></nav></body></html>

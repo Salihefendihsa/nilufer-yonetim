@@ -1,0 +1,487 @@
+<!DOCTYPE html>
+
+<html lang="tr"><head><meta charset="utf-8"/><meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" name="viewport"/><title>Nilüfer İlaçlama</title><link href="https://fonts.googleapis.com" rel="preconnect"/><link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=Plus+Jakarta+Sans:wght@500;600;700;800&amp;display=swap" rel="stylesheet"/><link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/><style>@layer base{html,body{width:100vw;margin:0;padding:0;background-color:#f0fdf1;}body{overscroll-behavior:none;}.pb-safe{padding-bottom:env(safe-area-inset-bottom,0px);}.pt-safe{padding-top:env(safe-area-inset-top,0px);}main>:first-child{margin-top:0!important;}main>:last-child{margin-bottom:0!important;}}::-webkit-scrollbar{display:none;}#drawer-backdrop{transition:opacity 0.3s cubic-bezier(0.4,0,0.2,1);pointer-events:none;opacity:0;}#drawer-panel{transition:transform 0.3s cubic-bezier(0.4,0,0.2,1);transform:translateX(-100%);}#drawer-toggle:checked ~ #drawer-backdrop{pointer-events:auto;opacity:1;}#drawer-toggle:checked ~ #drawer-panel{transform:translateX(0);}</style><script src="https://cdn.tailwindcss.com"></script><script id="tailwind-config">tailwind.config = { darkMode: "class", theme: { extend: { "colors": { "on-secondary": "#ffffff", "on-secondary-fixed-variant": "#2b4e30", "surface": "#f0fdf1", "on-tertiary-container": "#f7fef8", "on-background": "#131e17", "error-container": "#ffdad6", "surface-dim": "#d0ddd2", "secondary-container": "#c4edc3", "on-tertiary-fixed": "#161d1a", "inverse-primary": "#89d894", "surface-variant": "#d9e6da", "surface-container": "#e4f1e6", "outline": "#707a6e", "on-primary": "#ffffff", "on-surface": "#131e17", "primary": "#186a32", "on-surface-variant": "#40493f", "surface-container-low": "#eaf7eb", "tertiary": "#565e59", "secondary": "#436746", "secondary-fixed-dim": "#a9d1a8", "tertiary-container": "#6f7672", "on-tertiary": "#ffffff", "surface-bright": "#f0fdf1", "error": "#ba1a1a", "on-secondary-container": "#496d4b", "surface-container-highest": "#d9e6da", "on-error": "#ffffff", "surface-container-lowest": "#ffffff", "primary-container": "#368348", "inverse-surface": "#28332b", "primary-fixed-dim": "#89d894", "secondary-fixed": "#c4edc3", "tertiary-fixed": "#dde4de", "outline-variant": "#bfc9bc", "on-primary-fixed": "#002109", "on-secondary-fixed": "#002108", "surface-container-high": "#deece0", "background": "#f0fdf1", "tertiary-fixed-dim": "#c1c8c3", "primary-fixed": "#a4f5ae", "on-primary-container": "#f7fff3", "inverse-on-surface": "#e7f4e8", "on-tertiary-fixed-variant": "#414844", "surface-tint": "#1c6c34", "on-error-container": "#93000a", "on-primary-fixed-variant": "#005321" }, "borderRadius": { "DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px" }, "spacing": { "space-2xs": "0.25rem", "space-sm": "0.75rem", "space-xs": "0.5rem", "bottom-bar-clearance": "5.5rem", "screen-edge-padding": "1rem", "space-md": "1rem", "space-2xl": "2rem", "space-3xl": "2.5rem", "space-xl": "1.5rem", "space-lg": "1.25rem", "card-internal-padding": "1.125rem" }, "fontFamily": { "body-lg": ["Plus Jakarta Sans"], "headline-lg": ["Plus Jakarta Sans"], "headline-xl": ["Plus Jakarta Sans"], "body-sm": ["Plus Jakarta Sans"], "headline-md": ["Plus Jakarta Sans"], "label-lg": ["Inter"], "label-sm": ["Inter"], "metric-display": ["Plus Jakarta Sans"], "body-md": ["Plus Jakarta Sans"], "label-md": ["Inter"] }, "fontSize": { "body-lg": ["16px", { "lineHeight": "24px", "fontWeight": "400" }], "headline-lg": ["22px", { "lineHeight": "28px", "letterSpacing": "-0.01em", "fontWeight": "700" }], "headline-xl": ["28px", { "lineHeight": "36px", "letterSpacing": "-0.02em", "fontWeight": "700" }], "body-sm": ["13px", { "lineHeight": "18px", "fontWeight": "400" }], "headline-md": ["18px", { "lineHeight": "24px", "fontWeight": "600" }], "label-lg": ["14px", { "lineHeight": "20px", "letterSpacing": "0.01em", "fontWeight": "600" }], "label-sm": ["11px", { "lineHeight": "14px", "letterSpacing": "0.04em", "fontWeight": "700" }], "metric-display": ["32px", { "lineHeight": "38px", "letterSpacing": "-0.03em", "fontWeight": "800" }], "body-md": ["14px", { "lineHeight": "20px", "fontWeight": "400" }], "label-md": ["12px", { "lineHeight": "16px", "letterSpacing": "0.02em", "fontWeight": "600" }] } } } }</script><style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head><body class="bg-surface font-body-md text-on-surface flex flex-col min-h-screen relative selection:bg-secondary-container selection:text-on-secondary-container"><input class="hidden peer" id="drawer-toggle" type="checkbox"/><header class="fixed top-0 w-full z-40 bg-surface/80 backdrop-blur-xl shadow-[0_1px_8px_rgba(0,0,0,0.04)] pt-safe"><div class="h-16 px-space-md flex items-center justify-between gap-space-xs"><div class="flex items-center gap-space-xs"><label aria-label="Menüyü Aç" class="w-11 h-11 flex items-center justify-center rounded-xl text-on-surface hover:bg-surface-container active:bg-surface-container-high transition-colors cursor-pointer" for="drawer-toggle"><span class="material-symbols-outlined text-[24px]">menu</span></label><img alt="Nilüfer İlaçlama Logo" class="h-8 w-auto object-contain" src="https://lh3.googleusercontent.com/aida/AEtjO1W4j1_iT3SMF9HCfqq88fDlqA0YXgynUfP2YbklThBd60XUpyZBP_k5Bph1XWu-rlHhLcmlJAkFrQJxf6GXQ4WzESZExNr2GXGs5C9Mm6pb0rmH7sINeT2NA2gqwciMSBlT-avuLi3cc2Bzi74fV9pZqXnUaJtS1G78xvklScazC4tVf9bNQ7dXC9D4gO0MsALIAAdp-uuhn3NJVCuDm6FJ8XGRvuTPLpamw0EUoE431ZgrFTiP6xZqeD8"/></div><div class="flex flex-col items-center justify-center flex-1 px-space-xs text-center"><span class="font-label-sm text-label-sm uppercase tracking-wider text-primary">Nilüfer İlaçlama</span><h1 class="font-headline-md text-headline-md text-on-surface line-clamp-1">Staff</h1></div><div class="flex items-center gap-space-2xs"><a aria-label="Bildirimler" class="w-11 h-11 relative flex items-center justify-center rounded-xl text-on-surface hover:bg-surface-container active:bg-surface-container-high transition-colors" data-path="notifications" href="#"><span class="material-symbols-outlined text-[22px]">notifications</span><span class="absolute top-2 right-2 min-w-[18px] h-[18px] px-1 bg-error text-on-error font-label-sm text-[10px] leading-tight rounded-full flex items-center justify-center font-bold">3</span></a><div class="w-8 h-8 rounded-full bg-primary flex items-center justify-center"><span class="material-symbols-outlined text-on-primary text-[18px]">person</span></div></div></div></header><main class="flex-1 flex flex-col relative w-full pt-16 pb-bottom-bar-clearance bg-surface"><div class="flex flex-col w-full pb-6 space-y-space-md">
+<!-- Dynamic Operational Pulse Banner -->
+<div class="px-space-md pt-space-xs">
+<div class="relative overflow-hidden rounded-xl bg-gradient-to-r from-primary via-primary-container to-secondary p-space-card text-on-primary shadow-[0_8px_20px_-4px_rgba(24,106,50,0.28)]">
+<div class="absolute -right-6 -bottom-6 w-32 h-32 rounded-full bg-surface-container-lowest/10 blur-xl pointer-events-none"></div>
+<div class="relative z-10 flex items-center justify-between">
+<div class="space-y-1">
+<div class="flex items-center gap-1.5">
+<span class="inline-block w-2 h-2 rounded-full bg-primary-fixed animate-ping"></span>
+<span class="font-label-sm text-label-sm uppercase tracking-wider text-primary-fixed">Saha Senkronizasyonu Aktif</span>
+</div>
+<h2 class="font-headline-md text-headline-md text-on-primary">Genel Saha Takvimi</h2>
+<p class="font-body-sm text-body-sm text-on-primary/80">Nilüfer &amp; Osmangazi bölgesi 8 saha ekibi canlı çizelgesi</p>
+</div>
+<button aria-label="Takvim Filtreleri" class="w-10 h-10 rounded-xl bg-on-primary/15 hover:bg-on-primary/25 active:scale-95 transition-all flex items-center justify-center text-on-primary" type="button">
+<span class="material-symbols-outlined text-[20px]">tune</span>
+</button>
+</div>
+</div>
+</div>
+<!-- Month Navigation Header & Today Pill -->
+<div class="px-space-md">
+<div class="bg-surface-container-lowest rounded-xl p-space-sm shadow-[0_4px_16px_-2px_rgba(47,82,51,0.05)] flex items-center justify-between">
+<div class="flex items-center gap-1">
+<button aria-label="Önceki Ay" class="w-10 h-10 rounded-xl bg-surface-container-low hover:bg-surface-container text-on-surface flex items-center justify-center active:scale-90 transition-transform" id="prev-month-btn" type="button">
+<span class="material-symbols-outlined text-[20px]">chevron_left</span>
+</button>
+<button aria-label="Sonraki Ay" class="w-10 h-10 rounded-xl bg-surface-container-low hover:bg-surface-container text-on-surface flex items-center justify-center active:scale-90 transition-transform" id="next-month-btn" type="button">
+<span class="material-symbols-outlined text-[20px]">chevron_right</span>
+</button>
+<div class="pl-2">
+<span class="font-headline-md text-headline-md text-on-surface font-bold tracking-tight" id="calendar-title">Ekim 2024</span>
+<span class="block font-label-sm text-label-sm text-on-surface-variant font-medium">Nilüfer Merkez Şube</span>
+</div>
+</div>
+<div class="flex items-center gap-2">
+<button class="px-3.5 h-9 rounded-xl bg-secondary-container hover:bg-surface-container-high text-on-secondary-container font-label-sm text-label-sm font-bold flex items-center gap-1.5 transition-all shadow-sm active:scale-95" id="jump-today-btn" type="button">
+<span class="material-symbols-outlined text-[16px] text-primary" style="font-variation-settings: 'FILL' 1;">today</span>
+<span>Bugün</span>
+</button>
+</div>
+</div>
+</div>
+<!-- 4 Stat Cards (2x2 Grid) -->
+<div class="px-space-md grid grid-cols-2 gap-space-sm">
+<!-- Card 1: Bugünkü Saha Randevuları -->
+<div class="bg-surface-container-lowest rounded-xl p-space-card shadow-[0_4px_16px_-2px_rgba(47,82,51,0.05)] flex flex-col justify-between">
+<div class="flex items-center justify-between mb-2">
+<span class="w-8 h-8 rounded-lg bg-surface-container flex items-center justify-center text-primary">
+<span class="material-symbols-outlined text-[18px]">calendar_today</span>
+</span>
+<span class="px-2 py-0.5 rounded-full bg-secondary-container font-label-sm text-label-sm text-on-secondary-container font-bold">+3 yeni</span>
+</div>
+<div>
+<span class="font-metric-display text-metric-display text-on-surface font-extrabold tracking-tight">14 İş</span>
+<p class="font-body-sm text-body-sm text-on-surface-variant line-clamp-1 mt-0.5">Bugünkü Randevular</p>
+</div>
+</div>
+<!-- Card 2: Bu Haftalık Plan -->
+<div class="bg-surface-container-lowest rounded-xl p-space-card shadow-[0_4px_16px_-2px_rgba(47,82,51,0.05)] flex flex-col justify-between">
+<div class="flex items-center justify-between mb-2">
+<span class="w-8 h-8 rounded-lg bg-surface-container-high flex items-center justify-center text-secondary">
+<span class="material-symbols-outlined text-[18px]">schedule</span>
+</span>
+<span class="px-2 py-0.5 rounded-full bg-surface-container-low font-label-sm text-label-sm text-on-surface-variant font-medium">Hafta 42</span>
+</div>
+<div>
+<span class="font-metric-display text-metric-display text-on-surface font-extrabold tracking-tight">68 İş</span>
+<p class="font-body-sm text-body-sm text-on-surface-variant line-clamp-1 mt-0.5">Haftalık Saha Planı</p>
+</div>
+</div>
+<!-- Card 3: Zamanında Tamamlama Oranı (Inline SVG Progress Ring) -->
+<div class="bg-surface-container-lowest rounded-xl p-space-card shadow-[0_4px_16px_-2px_rgba(47,82,51,0.05)] flex items-center justify-between">
+<div class="space-y-0.5 pr-2">
+<span class="font-metric-display text-metric-display text-on-surface font-extrabold tracking-tight">%88</span>
+<p class="font-body-sm text-body-sm text-on-surface-variant line-clamp-2">Zamanında Tamamlama</p>
+</div>
+<div class="relative w-12 h-12 flex-shrink-0 flex items-center justify-center">
+<svg class="w-12 h-12 transform -rotate-90" viewbox="0 0 36 36">
+<path class="text-surface-container-high" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="currentColor" stroke-width="3.5"></path>
+<path class="text-primary" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="currentColor" stroke-dasharray="88, 100" stroke-linecap="round" stroke-width="3.5"></path>
+</svg>
+<span class="material-symbols-outlined absolute text-[16px] text-primary">verified</span>
+</div>
+</div>
+<!-- Card 4: Haftanın En Yoğun Günü -->
+<div class="bg-surface-container-lowest rounded-xl p-space-card shadow-[0_4px_16px_-2px_rgba(47,82,51,0.05)] flex flex-col justify-between">
+<div class="flex items-center justify-between mb-2">
+<span class="w-8 h-8 rounded-lg bg-surface-container flex items-center justify-center text-primary">
+<span class="material-symbols-outlined text-[18px]">local_fire_department</span>
+</span>
+<span class="px-2 py-0.5 rounded-full bg-primary-fixed text-on-primary-fixed font-label-sm text-label-sm font-bold">18 İş</span>
+</div>
+<div>
+<span class="font-headline-lg text-headline-lg text-on-surface font-bold tracking-tight">Çarşamba</span>
+<p class="font-body-sm text-body-sm text-on-surface-variant line-clamp-1 mt-0.5">En Yoğun Gün</p>
+</div>
+</div>
+</div>
+<!-- Monthly Calendar Grid Section -->
+<div class="px-space-md">
+<div class="bg-surface-container-lowest rounded-2xl p-space-md shadow-[0_4px_16px_-2px_rgba(47,82,51,0.05)] space-y-space-sm">
+<!-- Weekday Labels -->
+<div class="grid grid-cols-7 text-center font-label-sm text-label-sm text-on-surface-variant font-bold tracking-wider">
+<span>Pzt</span>
+<span>Sal</span>
+<span>Çar</span>
+<span>Per</span>
+<span>Cum</span>
+<span class="text-secondary">Cmt</span>
+<span class="text-secondary">Paz</span>
+</div>
+<!-- Calendar Days Grid (Ekim 2024 starts on Tuesday) -->
+<div class="grid grid-cols-7 gap-1.5 text-center font-label-md text-label-md select-none" id="calendar-days-container">
+<!-- Sept padding: 30 -->
+<div class="h-10 rounded-xl flex flex-col items-center justify-center text-on-surface-variant/40 bg-surface-container-low/40">
+<span class="text-[12px]">30</span>
+</div>
+<!-- Ekim Days 1 to 31 -->
+<!-- 1: Light (1-2 jobs) -->
+<button class="cal-day h-10 rounded-xl flex flex-col items-center justify-center bg-[#DCFCE7] text-[#15803D] hover:scale-105 active:scale-95 transition-transform" data-count="2" data-day="1" type="button">
+<span class="font-bold text-[13px]">1</span>
+<span class="w-1.5 h-1.5 rounded-full bg-[#15803D]"></span>
+</button>
+<!-- 2: Medium (3-5 jobs) -->
+<button class="cal-day h-10 rounded-xl flex flex-col items-center justify-center bg-[#86EFAC] text-[#14532D] hover:scale-105 active:scale-95 transition-transform" data-count="4" data-day="2" type="button">
+<span class="font-bold text-[13px]">2</span>
+<span class="w-1.5 h-1.5 rounded-full bg-[#14532D]"></span>
+</button>
+<!-- 3: Light -->
+<button class="cal-day h-10 rounded-xl flex flex-col items-center justify-center bg-[#DCFCE7] text-[#15803D] hover:scale-105 active:scale-95 transition-transform" data-count="2" data-day="3" type="button">
+<span class="font-bold text-[13px]">3</span>
+<span class="w-1.5 h-1.5 rounded-full bg-[#15803D]"></span>
+</button>
+<!-- 4: Medium -->
+<button class="cal-day h-10 rounded-xl flex flex-col items-center justify-center bg-[#86EFAC] text-[#14532D] hover:scale-105 active:scale-95 transition-transform" data-count="5" data-day="4" type="button">
+<span class="font-bold text-[13px]">4</span>
+<span class="w-1.5 h-1.5 rounded-full bg-[#14532D]"></span>
+</button>
+<!-- 5: Weekend Light -->
+<button class="cal-day h-10 rounded-xl flex flex-col items-center justify-center bg-[#DCFCE7] text-[#15803D] hover:scale-105 active:scale-95 transition-transform" data-count="1" data-day="5" type="button">
+<span class="font-bold text-[13px]">5</span>
+<span class="w-1 h-1 rounded-full bg-[#15803D]"></span>
+</button>
+<!-- 6: Empty/Rest -->
+<button class="cal-day h-10 rounded-xl flex flex-col items-center justify-center bg-surface-container-low text-on-surface-variant hover:scale-105 active:scale-95 transition-transform" data-count="0" data-day="6" type="button">
+<span class="text-[13px]">6</span>
+</button>
+<!-- 7: Medium -->
+<button class="cal-day h-10 rounded-xl flex flex-col items-center justify-center bg-[#86EFAC] text-[#14532D] hover:scale-105 active:scale-95 transition-transform" data-count="5" data-day="7" type="button">
+<span class="font-bold text-[13px]">7</span>
+<span class="w-1.5 h-1.5 rounded-full bg-[#14532D]"></span>
+</button>
+<!-- 8: Solid Dense -->
+<button class="cal-day h-10 rounded-xl flex flex-col items-center justify-center bg-[#4ADE80] text-[#052e16] hover:scale-105 active:scale-95 transition-transform" data-count="8" data-day="8" type="button">
+<span class="font-bold text-[13px]">8</span>
+<span class="w-1.5 h-1.5 rounded-full bg-[#052e16]"></span>
+</button>
+<!-- 9: Dense (Wednesday Peak 18) -->
+<button class="cal-day h-10 rounded-xl flex flex-col items-center justify-center bg-primary text-on-primary hover:scale-105 active:scale-95 transition-transform" data-count="18" data-day="9" type="button">
+<span class="font-bold text-[13px]">9</span>
+<span class="w-1.5 h-1.5 rounded-full bg-primary-fixed"></span>
+</button>
+<!-- 10: Medium -->
+<button class="cal-day h-10 rounded-xl flex flex-col items-center justify-center bg-[#86EFAC] text-[#14532D] hover:scale-105 active:scale-95 transition-transform" data-count="4" data-day="10" type="button">
+<span class="font-bold text-[13px]">10</span>
+<span class="w-1.5 h-1.5 rounded-full bg-[#14532D]"></span>
+</button>
+<!-- 11: Dense -->
+<button class="cal-day h-10 rounded-xl flex flex-col items-center justify-center bg-[#22C55E] text-white hover:scale-105 active:scale-95 transition-transform" data-count="9" data-day="11" type="button">
+<span class="font-bold text-[13px]">11</span>
+<span class="w-1.5 h-1.5 rounded-full bg-white"></span>
+</button>
+<!-- 12: Light -->
+<button class="cal-day h-10 rounded-xl flex flex-col items-center justify-center bg-[#DCFCE7] text-[#15803D] hover:scale-105 active:scale-95 transition-transform" data-count="2" data-day="12" type="button">
+<span class="font-bold text-[13px]">12</span>
+<span class="w-1.5 h-1.5 rounded-full bg-[#15803D]"></span>
+</button>
+<!-- 13: Empty -->
+<button class="cal-day h-10 rounded-xl flex flex-col items-center justify-center bg-surface-container-low text-on-surface-variant hover:scale-105 active:scale-95 transition-transform" data-count="0" data-day="13" type="button">
+<span class="text-[13px]">13</span>
+</button>
+<!-- 14: Selected Date (Solid Green with White Text + Shadow Elevation) -->
+<button class="cal-day h-10 rounded-xl flex flex-col items-center justify-center bg-primary text-on-primary ring-2 ring-primary-fixed shadow-md scale-105 font-bold" data-count="14" data-day="14" type="button">
+<span class="text-[14px]">14</span>
+<span class="w-1.5 h-1.5 rounded-full bg-primary-fixed"></span>
+</button>
+<!-- 15: Today Marked with Bold Ring (e.g., 15th) -->
+<button class="cal-day h-10 rounded-xl flex flex-col items-center justify-center bg-[#86EFAC] text-[#14532D] ring-2 ring-primary hover:scale-105 active:scale-95 transition-transform" data-count="6" data-day="15" type="button">
+<span class="font-bold text-[13px]">15</span>
+<span class="w-1.5 h-1.5 rounded-full bg-primary"></span>
+</button>
+<!-- 16: Dense Peak -->
+<button class="cal-day h-10 rounded-xl flex flex-col items-center justify-center bg-primary text-on-primary hover:scale-105 active:scale-95 transition-transform" data-count="17" data-day="16" type="button">
+<span class="font-bold text-[13px]">16</span>
+<span class="w-1.5 h-1.5 rounded-full bg-primary-fixed"></span>
+</button>
+<!-- 17: Medium -->
+<button class="cal-day h-10 rounded-xl flex flex-col items-center justify-center bg-[#86EFAC] text-[#14532D] hover:scale-105 active:scale-95 transition-transform" data-count="4" data-day="17" type="button">
+<span class="font-bold text-[13px]">17</span>
+<span class="w-1.5 h-1.5 rounded-full bg-[#14532D]"></span>
+</button>
+<!-- 18: Dense -->
+<button class="cal-day h-10 rounded-xl flex flex-col items-center justify-center bg-[#22C55E] text-white hover:scale-105 active:scale-95 transition-transform" data-count="11" data-day="18" type="button">
+<span class="font-bold text-[13px]">18</span>
+<span class="w-1.5 h-1.5 rounded-full bg-white"></span>
+</button>
+<!-- 19: Light -->
+<button class="cal-day h-10 rounded-xl flex flex-col items-center justify-center bg-[#DCFCE7] text-[#15803D] hover:scale-105 active:scale-95 transition-transform" data-count="3" data-day="19" type="button">
+<span class="font-bold text-[13px]">19</span>
+<span class="w-1.5 h-1.5 rounded-full bg-[#15803D]"></span>
+</button>
+<!-- 20: Empty -->
+<button class="cal-day h-10 rounded-xl flex flex-col items-center justify-center bg-surface-container-low text-on-surface-variant hover:scale-105 active:scale-95 transition-transform" data-count="0" data-day="20" type="button">
+<span class="text-[13px]">20</span>
+</button>
+<!-- 21 to 31 -->
+<button class="cal-day h-10 rounded-xl flex flex-col items-center justify-center bg-[#86EFAC] text-[#14532D] hover:scale-105 active:scale-95 transition-transform" data-count="5" data-day="21" type="button">
+<span class="font-bold text-[13px]">21</span>
+<span class="w-1.5 h-1.5 rounded-full bg-[#14532D]"></span>
+</button>
+<button class="cal-day h-10 rounded-xl flex flex-col items-center justify-center bg-[#4ADE80] text-[#052e16] hover:scale-105 active:scale-95 transition-transform" data-count="7" data-day="22" type="button">
+<span class="font-bold text-[13px]">22</span>
+<span class="w-1.5 h-1.5 rounded-full bg-[#052e16]"></span>
+</button>
+<button class="cal-day h-10 rounded-xl flex flex-col items-center justify-center bg-primary text-on-primary hover:scale-105 active:scale-95 transition-transform" data-count="15" data-day="23" type="button">
+<span class="font-bold text-[13px]">23</span>
+<span class="w-1.5 h-1.5 rounded-full bg-primary-fixed"></span>
+</button>
+<button class="cal-day h-10 rounded-xl flex flex-col items-center justify-center bg-[#86EFAC] text-[#14532D] hover:scale-105 active:scale-95 transition-transform" data-count="4" data-day="24" type="button">
+<span class="font-bold text-[13px]">24</span>
+<span class="w-1.5 h-1.5 rounded-full bg-[#14532D]"></span>
+</button>
+<button class="cal-day h-10 rounded-xl flex flex-col items-center justify-center bg-[#22C55E] text-white hover:scale-105 active:scale-95 transition-transform" data-count="8" data-day="25" type="button">
+<span class="font-bold text-[13px]">25</span>
+<span class="w-1.5 h-1.5 rounded-full bg-white"></span>
+</button>
+<button class="cal-day h-10 rounded-xl flex flex-col items-center justify-center bg-[#DCFCE7] text-[#15803D] hover:scale-105 active:scale-95 transition-transform" data-count="2" data-day="26" type="button">
+<span class="font-bold text-[13px]">26</span>
+<span class="w-1.5 h-1.5 rounded-full bg-[#15803D]"></span>
+</button>
+<button class="cal-day h-10 rounded-xl flex flex-col items-center justify-center bg-surface-container-low text-on-surface-variant hover:scale-105 active:scale-95 transition-transform" data-count="0" data-day="27" type="button">
+<span class="text-[13px]">27</span>
+</button>
+<button class="cal-day h-10 rounded-xl flex flex-col items-center justify-center bg-[#86EFAC] text-[#14532D] hover:scale-105 active:scale-95 transition-transform" data-count="4" data-day="28" type="button">
+<span class="font-bold text-[13px]">28</span>
+<span class="w-1.5 h-1.5 rounded-full bg-[#14532D]"></span>
+</button>
+<button class="cal-day h-10 rounded-xl flex flex-col items-center justify-center bg-[#4ADE80] text-[#052e16] hover:scale-105 active:scale-95 transition-transform" data-count="6" data-day="29" type="button">
+<span class="font-bold text-[13px]">29</span>
+<span class="w-1.5 h-1.5 rounded-full bg-[#052e16]"></span>
+</button>
+<button class="cal-day h-10 rounded-xl flex flex-col items-center justify-center bg-[#86EFAC] text-[#14532D] hover:scale-105 active:scale-95 transition-transform" data-count="5" data-day="30" type="button">
+<span class="font-bold text-[13px]">30</span>
+<span class="w-1.5 h-1.5 rounded-full bg-[#14532D]"></span>
+</button>
+<button class="cal-day h-10 rounded-xl flex flex-col items-center justify-center bg-[#22C55E] text-white hover:scale-105 active:scale-95 transition-transform" data-count="9" data-day="31" type="button">
+<span class="font-bold text-[13px]">31</span>
+<span class="w-1.5 h-1.5 rounded-full bg-white"></span>
+</button>
+<!-- Nov padding: 1, 2, 3 -->
+<div class="h-10 rounded-xl flex flex-col items-center justify-center text-on-surface-variant/40 bg-surface-container-low/40">
+<span class="text-[12px]">1</span>
+</div>
+<div class="h-10 rounded-xl flex flex-col items-center justify-center text-on-surface-variant/40 bg-surface-container-low/40">
+<span class="text-[12px]">2</span>
+</div>
+<div class="h-10 rounded-xl flex flex-col items-center justify-center text-on-surface-variant/40 bg-surface-container-low/40">
+<span class="text-[12px]">3</span>
+</div>
+</div>
+<!-- Heatmap Legend Strip -->
+<div class="pt-space-xs flex items-center justify-between font-label-sm text-label-sm text-on-surface-variant">
+<span class="flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px]">speed</span>
+<span>İş Yoğunluğu:</span>
+</span>
+<div class="flex items-center gap-1.5">
+<span>Az (1-2)</span>
+<div class="flex items-center gap-1">
+<span class="w-3.5 h-3.5 rounded bg-[#DCFCE7]" title="1-2 Randevu"></span>
+<span class="w-3.5 h-3.5 rounded bg-[#86EFAC]" title="3-5 Randevu"></span>
+<span class="w-3.5 h-3.5 rounded bg-[#4ADE80]" title="6-8 Randevu"></span>
+<span class="w-3.5 h-3.5 rounded bg-[#22C55E]" title="9-12 Randevu"></span>
+<span class="w-3.5 h-3.5 rounded bg-primary" title="13+ Yoğun"></span>
+</div>
+<span class="font-bold text-primary">Yoğun (13+)</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Selected Day's Schedule Header -->
+<div class="px-space-md pt-space-xs flex items-center justify-between">
+<div class="flex items-center gap-2">
+<span class="w-2.5 h-2.5 rounded-full bg-primary"></span>
+<h3 class="font-headline-md text-headline-md text-on-surface font-bold">14 Ekim Pazartesi</h3>
+<span class="px-2 py-0.5 rounded-full bg-primary/10 text-primary font-label-sm text-label-sm font-bold">14 İş</span>
+</div>
+<div class="flex items-center gap-1">
+<button aria-label="Rotayı Haritada Gör" class="text-primary font-label-sm text-label-sm font-bold flex items-center gap-0.5 hover:underline" type="button">
+<span class="material-symbols-outlined text-[16px]">map</span>
+<span>Harita</span>
+</button>
+</div>
+</div>
+<!-- Selected Day's Detailed Job Cards -->
+<div class="px-space-md space-y-space-sm">
+<!-- Job 1: Tamamlandı -->
+<div class="bg-surface-container-lowest rounded-2xl p-space-card shadow-[0_4px_16px_-2px_rgba(47,82,51,0.05)] space-y-space-xs">
+<div class="flex items-center justify-between gap-2">
+<div class="flex items-center gap-2 min-w-0">
+<span class="w-10 h-10 rounded-xl bg-surface-container flex items-center justify-center text-primary font-bold font-label-md">
+            09:30
+          </span>
+<div class="min-w-0">
+<h4 class="font-headline-md text-headline-md text-on-surface truncate">Bursa Plaza AVM</h4>
+<div class="flex items-center gap-1 text-on-surface-variant font-body-sm text-body-sm">
+<span class="material-symbols-outlined text-[14px]">location_on</span>
+<span class="truncate">Odunluk Mah. Akademi Cad. No:12</span>
+</div>
+</div>
+</div>
+<span class="flex-shrink-0 px-2.5 py-1 rounded-full bg-[#DCFCE7] text-[#15803D] font-label-sm text-label-sm font-bold uppercase tracking-wider">
+          Tamamlandı
+        </span>
+</div>
+<div class="bg-surface-container-low rounded-xl p-space-xs flex items-center justify-between font-label-sm text-label-sm">
+<div class="flex items-center gap-2">
+<img class="w-6 h-6 rounded-full object-cover" data-alt="Close up portrait photograph of Ahmet Yılmaz, male pest control field team leader smiling professionally in high-visibility dark green safety apparel in Turkey with daytime outdoor lighting." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAcgvmkv14eIpVfls2KLQFgaLvDVzj4achbw0sKptlTbzJlK7QxUl5Nc_uDh3ucHj78dPyoI42aGStiOLtNBWTCYAi8HEIZEK-NeS0YjNwHo1GOnmLW11x-mgeiVUiP3QJrUSGCfIzQZ-tY4zHnYGKWqS66qQxkcS0BpoQOBgh-uIhaQTtl3dHit5AYbFkzwXvq6ucC9PUppXs4FkYsHlsd8pFtGqJRLi8ddNUPsmiR-DUbbk0v6KBU"/>
+<span class="font-bold text-on-surface">Ahmet Yılmaz</span>
+<span class="px-1.5 py-0.5 rounded bg-surface-container text-on-surface-variant font-medium text-[10px]">Ekip Lideri</span>
+</div>
+<div class="flex items-center gap-1 text-on-surface-variant">
+<span class="material-symbols-outlined text-[15px] text-primary">pest_control</span>
+<span>Haşere Kontrolü</span>
+</div>
+</div>
+</div>
+<!-- Job 2: Devam Ediyor -->
+<div class="bg-surface-container-lowest rounded-2xl p-space-card shadow-[0_4px_16px_-2px_rgba(47,82,51,0.05)] space-y-space-xs">
+<div class="flex items-center justify-between gap-2">
+<div class="flex items-center gap-2 min-w-0">
+<span class="w-10 h-10 rounded-xl bg-surface-container-high flex items-center justify-center text-primary font-bold font-label-md">
+            11:00
+          </span>
+<div class="min-w-0">
+<h4 class="font-headline-md text-headline-md text-on-surface truncate">Nilüfer Konakları</h4>
+<div class="flex items-center gap-1 text-on-surface-variant font-body-sm text-body-sm">
+<span class="material-symbols-outlined text-[14px]">location_on</span>
+<span class="truncate">Ataevler Mah. Barış Sk. Blok A-B</span>
+</div>
+</div>
+</div>
+<span class="flex-shrink-0 px-2.5 py-1 rounded-full bg-[#FEF3C7] text-[#B57F13] font-label-sm text-label-sm font-bold uppercase tracking-wider flex items-center gap-1">
+<span class="w-1.5 h-1.5 rounded-full bg-[#B57F13] animate-pulse"></span>
+          Devam Ediyor
+        </span>
+</div>
+<div class="bg-surface-container-low rounded-xl p-space-xs flex items-center justify-between font-label-sm text-label-sm">
+<div class="flex items-center gap-2">
+<img class="w-6 h-6 rounded-full object-cover" data-alt="Professional headshot portrait of Serkan Demir, certified technician wearing branded biohazard inspection cap and green Nilüfer polo shirt against clean workshop background." src="https://lh3.googleusercontent.com/aida-public/AB6AXuALt11kKpYgklZfjm7O9W6DySdu38NP87Q2YMIbHkQDaHYyJXHiOcTn6OdwUg-3OqTHjSoLOQJxUFrj69gja6kPg0Z5bhCXPh1-0poTkZo1Ij6bYThJfsn63UmQ8CNfod5L-uZjtisJEAoTCREnrTxCE__TvB04vyVNUoAb_zZtWYQsa8MYHBkd1dEahgrAiNs56pfWXCgoXufla0DrosvpEWK34sJY507d1Cm8bLM6i3C-VoIkFaf6"/>
+<span class="font-bold text-on-surface">Serkan Demir</span>
+<span class="px-1.5 py-0.5 rounded bg-surface-container text-on-surface-variant font-medium text-[10px]">Teknisyen</span>
+</div>
+<div class="flex items-center gap-1 text-on-surface-variant">
+<span class="material-symbols-outlined text-[15px] text-primary">20mp</span>
+<span>Kemirgen İstasyon Kontrol</span>
+</div>
+</div>
+</div>
+<!-- Job 3: Planlandı -->
+<div class="bg-surface-container-lowest rounded-2xl p-space-card shadow-[0_4px_16px_-2px_rgba(47,82,51,0.05)] space-y-space-xs">
+<div class="flex items-center justify-between gap-2">
+<div class="flex items-center gap-2 min-w-0">
+<span class="w-10 h-10 rounded-xl bg-surface-container-low flex items-center justify-center text-on-surface font-bold font-label-md">
+            14:15
+          </span>
+<div class="min-w-0">
+<h4 class="font-headline-md text-headline-md text-on-surface truncate">Yeşilova Gurme Restoran</h4>
+<div class="flex items-center gap-1 text-on-surface-variant font-body-sm text-body-sm">
+<span class="material-symbols-outlined text-[14px]">location_on</span>
+<span class="truncate">Fethiye Mah. Sanayi Cad. No:88</span>
+</div>
+</div>
+</div>
+<span class="flex-shrink-0 px-2.5 py-1 rounded-full bg-[#E0F2FE] text-[#1F6FA8] font-label-sm text-label-sm font-bold uppercase tracking-wider">
+          Planlandı
+        </span>
+</div>
+<div class="bg-surface-container-low rounded-xl p-space-xs flex items-center justify-between font-label-sm text-label-sm">
+<div class="flex items-center gap-2">
+<img class="w-6 h-6 rounded-full object-cover" data-alt="Headshot photo of Caner Yıldız, field specialist in dark green utility uniform holding a clipboard ready for industrial sanitization duties in Bursa Turkey." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCl7DkUkPgvwUxEJ_K0-yRgqlS7GtYWyyh9sXI_dE7hL6EkQOPjbnCXzONcLVH3dKFRzgTuOUmv7roxG1m4mTDwQSbUYFaLIgFpnrtFFmSxY4-A3XOy2hCzSa0FkoIiFEEeZAsz6QuTy7clxlhLclgfXH2AAMSlslx_kg0EPnwJ5t-ortIOG1TclUtXI5VMB8QVYYW1l7fzPSeev1zuBK4n-QMujdOAHDzExrqN0MCqFk2CbW56sDrD"/>
+<span class="font-bold text-on-surface">Caner Yıldız</span>
+<span class="px-1.5 py-0.5 rounded bg-surface-container text-on-surface-variant font-medium text-[10px]">Uzman</span>
+</div>
+<div class="flex items-center gap-1 text-on-surface-variant">
+<span class="material-symbols-outlined text-[15px] text-primary">sanitizer</span>
+<span>Periyodik Mutfak İlaçlama</span>
+</div>
+</div>
+</div>
+<!-- Job 4: Planlandı -->
+<div class="bg-surface-container-lowest rounded-2xl p-space-card shadow-[0_4px_16px_-2px_rgba(47,82,51,0.05)] space-y-space-xs">
+<div class="flex items-center justify-between gap-2">
+<div class="flex items-center gap-2 min-w-0">
+<span class="w-10 h-10 rounded-xl bg-surface-container-low flex items-center justify-center text-on-surface font-bold font-label-md">
+            16:30
+          </span>
+<div class="min-w-0">
+<h4 class="font-headline-md text-headline-md text-on-surface truncate">Balat Villaları</h4>
+<div class="flex items-center gap-1 text-on-surface-variant font-body-sm text-body-sm">
+<span class="material-symbols-outlined text-[14px]">location_on</span>
+<span class="truncate">Balat Mah. Çamlık Yolu Sitesi No:4</span>
+</div>
+</div>
+</div>
+<span class="flex-shrink-0 px-2.5 py-1 rounded-full bg-[#E0F2FE] text-[#1F6FA8] font-label-sm text-label-sm font-bold uppercase tracking-wider">
+          Planlandı
+        </span>
+</div>
+<div class="bg-surface-container-low rounded-xl p-space-xs flex items-center justify-between font-label-sm text-label-sm">
+<div class="flex items-center gap-2">
+<img class="w-6 h-6 rounded-full object-cover" data-alt="Portrait photo of Burak Erdem, senior garden fumigation technician wearing protective visor and Nilüfer environmental services green safety attire outdoor." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBs5SD6MPThhGXZdbZwhR8DHxazeHPD7Eqn2KqoftGXsMtao2wIJHoM_xXuemCwq94aBLYC86heb0YjReJBM33MA_3QUix8zFc-hoxmpih2400T3OQLmrVVg5oFmDCLPqfQF-gg_zSfMiZjwEskIuvuCFftMvdDwybazJ-1IBTrlinfd8MqXnujMBeDsZaI_A2Lnd-jFrMzm_5G9YYEgzAf1jMBwO9ME7lFOPCmmHfpgfqwMG6YbATb"/>
+<span class="font-bold text-on-surface">Burak Erdem</span>
+<span class="px-1.5 py-0.5 rounded bg-surface-container text-on-surface-variant font-medium text-[10px]">Kıdemli Teknisyen</span>
+</div>
+<div class="flex items-center gap-1 text-on-surface-variant">
+<span class="material-symbols-outlined text-[15px] text-primary">yard</span>
+<span>Bahçe İlaçlama</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Operational Team Fast Action Dock -->
+<div class="px-space-md pt-space-xs">
+<div class="p-space-card rounded-2xl bg-surface-container-low flex items-center justify-between">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded-xl bg-primary text-on-primary flex items-center justify-center">
+<span class="material-symbols-outlined text-[22px]">hub</span>
+</div>
+<div>
+<span class="font-label-lg text-label-lg text-on-surface font-bold">Kapasite Yönetimi</span>
+<p class="font-body-sm text-body-sm text-on-surface-variant">Bugün %92 doluluk · 2 acil slot müsait</p>
+</div>
+</div>
+<button class="px-3 py-2 rounded-xl bg-primary text-on-primary font-label-sm text-label-sm font-bold shadow-sm active:scale-95 transition-all" type="button">
+        Ekip Ata
+      </button>
+</div>
+</div>
+</div>
+<script>
+  document.addEventListener('DOMContentLoaded', () => {
+    const dayButtons = document.querySelectorAll('.cal-day');
+    const todayBtn = document.getElementById('jump-today-btn');
+
+    dayButtons.forEach(btn => {
+      btn.addEventListener('click', () => {
+        dayButtons.forEach(b => {
+          b.classList.remove('ring-2', 'ring-primary-fixed', 'shadow-md', 'scale-105');
+          if (b.getAttribute('data-day') === '15') {
+            b.classList.add('ring-2', 'ring-primary');
+          }
+        });
+        btn.classList.add('ring-2', 'ring-primary-fixed', 'shadow-md', 'scale-105');
+      });
+    });
+
+    if (todayBtn) {
+      todayBtn.addEventListener('click', () => {
+        const day15 = document.querySelector('[data-day="15"]');
+        if (day15) {
+          day15.click();
+          day15.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }
+      });
+    }
+  });
+</script></main><div class="fixed bottom-0 w-full z-40 px-space-md pb-safe pointer-events-none mb-space-xs"><nav class="pointer-events-auto max-w-[390px] mx-auto bg-surface-container-lowest/95 backdrop-blur-xl rounded-full shadow-[0_12px_28px_-6px_rgba(24,106,50,0.18),0_4px_10px_-2px_rgba(19,30,23,0.06)] px-space-sm h-16 flex items-center justify-between relative" data-active-classes="text-primary font-bold"><a class="flex-1 flex flex-col items-center justify-center h-full text-on-surface-variant hover:text-primary transition-all group" data-path="dashboard" href="#"><span class="material-symbols-outlined text-[22px] group-hover:scale-110 transition-transform">home</span><span class="font-label-sm text-label-sm mt-0.5">Ana Sayfa</span><span class="w-1 h-1 rounded-full bg-primary mt-0.5 opacity-0 group-hover:opacity-100 transition-opacity"></span></a><a class="flex-1 flex flex-col items-center justify-center h-full text-on-surface-variant hover:text-primary transition-all group" data-path="jobs" href="#"><span class="material-symbols-outlined text-[22px] group-hover:scale-110 transition-transform">handyman</span><span class="font-label-sm text-label-sm mt-0.5">İşler</span><span class="w-1 h-1 rounded-full bg-primary mt-0.5 opacity-0 group-hover:opacity-100 transition-opacity"></span></a><div class="relative flex items-center justify-center w-14 -mt-7"><a aria-label="Hızlı İş Oluştur" class="w-14 h-14 rounded-full bg-primary text-on-primary flex items-center justify-center shadow-[0_8px_20px_-4px_rgba(24,106,50,0.45),0_2px_6px_0_rgba(24,106,50,0.20)] hover:bg-primary-container active:scale-95 transition-all" data-path="new-job" href="#"><span class="material-symbols-outlined text-[28px]">add</span></a></div><a class="flex-1 flex flex-col items-center justify-center h-full text-on-surface-variant hover:text-primary transition-all group" data-path="notifications" href="#"><span class="material-symbols-outlined text-[22px] group-hover:scale-110 transition-transform">notifications</span><span class="font-label-sm text-label-sm mt-0.5">Bildirimler</span><span class="w-1 h-1 rounded-full bg-primary mt-0.5 opacity-0 group-hover:opacity-100 transition-opacity"></span></a><a class="flex-1 flex flex-col items-center justify-center h-full text-on-surface-variant hover:text-primary transition-all group" data-path="messages" href="#"><span class="material-symbols-outlined text-[22px] group-hover:scale-110 transition-transform">chat_bubble</span><span class="font-label-sm text-label-sm mt-0.5">Mesajlar</span><span class="w-1 h-1 rounded-full bg-primary mt-0.5 opacity-0 group-hover:opacity-100 transition-opacity"></span></a></nav></div><label class="fixed inset-0 bg-inverse-surface/40 backdrop-blur-sm z-50 cursor-pointer" for="drawer-toggle" id="drawer-backdrop"></label><aside class="fixed top-0 bottom-0 left-0 w-[310px] max-w-[85vw] bg-surface-container-lowest z-50 flex flex-col shadow-[8px_0_32px_0_rgba(19,30,23,0.16)] rounded-r-3xl overflow-hidden" id="drawer-panel"><div class="bg-gradient-to-br from-primary via-primary-container to-secondary p-space-lg pt-safe text-on-primary flex flex-col gap-space-md"><div class="flex items-center justify-between"><div class="w-14 h-14 rounded-full bg-on-primary/15 backdrop-blur-md flex items-center justify-center shadow-inner"><span class="font-headline-md text-headline-md font-bold tracking-tight text-on-primary">AY</span></div><label class="w-11 h-11 flex items-center justify-center rounded-xl bg-on-primary/10 hover:bg-on-primary/20 text-on-primary cursor-pointer transition-colors" for="drawer-toggle"><span class="material-symbols-outlined text-[22px]">close</span></label></div><div><div class="flex items-center gap-space-xs"><span class="font-headline-md text-headline-md font-bold text-on-primary">Ayşe Yılmaz</span><span class="px-2 py-0.5 rounded-full bg-on-primary/20 backdrop-blur-md font-label-sm text-label-sm font-semibold uppercase tracking-wider text-on-primary">Müdür</span></div><span class="font-body-sm text-body-sm text-on-primary/80 mt-0.5 block">Nilüfer Şubesi Operasyon Sorumlusu</span></div></div><div class="flex-1 overflow-y-auto px-space-md py-space-sm space-y-space-md"><div class="space-y-space-2xs"><span class="font-label-sm text-label-sm uppercase tracking-wider text-on-surface-variant/70 px-space-sm font-semibold">Genel</span><div class="flex flex-col gap-0.5"><a class="flex items-center gap-space-sm px-space-sm h-11 rounded-xl text-on-surface hover:bg-surface-container-low active:bg-surface-container transition-colors" data-path="dashboard" href="#"><span class="material-symbols-outlined text-primary text-[20px]">dashboard</span><span class="font-label-lg text-label-lg">Ana Sayfa</span></a><a class="flex items-center gap-space-sm px-space-sm h-11 rounded-xl text-on-surface hover:bg-surface-container-low active:bg-surface-container transition-colors" data-path="calendar" href="#"><span class="material-symbols-outlined text-primary text-[20px]">calendar_month</span><span class="font-label-lg text-label-lg">Takvim</span></a><a class="flex items-center justify-between px-space-sm h-11 rounded-xl text-on-surface hover:bg-surface-container-low active:bg-surface-container transition-colors" data-path="notifications" href="#"><div class="flex items-center gap-space-sm"><span class="material-symbols-outlined text-primary text-[20px]">notifications</span><span class="font-label-lg text-label-lg">Bildirimler</span></div><span class="px-2 py-0.5 rounded-full bg-error-container text-on-error-container font-label-sm text-label-sm font-bold">3</span></a><a class="flex items-center gap-space-sm px-space-sm h-11 rounded-xl text-on-surface hover:bg-surface-container-low active:bg-surface-container transition-colors" data-path="messages" href="#"><span class="material-symbols-outlined text-primary text-[20px]">chat_bubble</span><span class="font-label-lg text-label-lg">Mesajlar</span></a></div></div><div class="space-y-space-2xs"><span class="font-label-sm text-label-sm uppercase tracking-wider text-on-surface-variant/70 px-space-sm font-semibold">Operasyon</span><div class="flex flex-col gap-0.5"><a class="flex items-center justify-between px-space-sm h-11 rounded-xl text-on-surface hover:bg-surface-container-low active:bg-surface-container transition-colors" data-path="pending-approvals" href="#"><div class="flex items-center gap-space-sm"><span class="material-symbols-outlined text-primary text-[20px]">assignment_turned_in</span><span class="font-label-lg text-label-lg">Bekleyen Onaylar</span></div><span class="px-2 py-0.5 rounded-full bg-secondary-container text-on-secondary-container font-label-sm text-label-sm font-bold">5</span></a><a class="flex items-center gap-space-sm px-space-sm h-11 rounded-xl text-on-surface hover:bg-surface-container-low active:bg-surface-container transition-colors" data-path="customers" href="#"><span class="material-symbols-outlined text-primary text-[20px]">groups</span><span class="font-label-lg text-label-lg">Müşteriler</span></a><a class="flex items-center gap-space-sm px-space-sm h-11 rounded-xl text-on-surface hover:bg-surface-container-low active:bg-surface-container transition-colors" data-path="staff" href="#"><span class="material-symbols-outlined text-primary text-[20px]">badge</span><span class="font-label-lg text-label-lg">Personel</span></a><a class="flex items-center gap-space-sm px-space-sm h-11 rounded-xl text-on-surface hover:bg-surface-container-low active:bg-surface-container transition-colors" data-path="performance" href="#"><span class="material-symbols-outlined text-primary text-[20px]">trending_up</span><span class="font-label-lg text-label-lg">Performans</span></a><a class="flex items-center gap-space-sm px-space-sm h-11 rounded-xl text-on-surface hover:bg-surface-container-low active:bg-surface-container transition-colors" data-path="inventory" href="#"><span class="material-symbols-outlined text-primary text-[20px]">inventory_2</span><span class="font-label-lg text-label-lg">Stok</span></a><a class="flex items-center gap-space-sm px-space-sm h-11 rounded-xl text-on-surface hover:bg-surface-container-low active:bg-surface-container transition-colors" data-path="jobs" href="#"><span class="material-symbols-outlined text-primary text-[20px]">handyman</span><span class="font-label-lg text-label-lg">İşler</span></a></div></div><div class="space-y-space-2xs"><span class="font-label-sm text-label-sm uppercase tracking-wider text-on-surface-variant/70 px-space-sm font-semibold">Finans</span><div class="flex flex-col gap-0.5"><a class="flex items-center gap-space-sm px-space-sm h-11 rounded-xl text-on-surface hover:bg-surface-container-low active:bg-surface-container transition-colors" data-path="contracts" href="#"><span class="material-symbols-outlined text-primary text-[20px]">description</span><span class="font-label-lg text-label-lg">Sözleşmeler</span></a><a class="flex items-center gap-space-sm px-space-sm h-11 rounded-xl text-on-surface hover:bg-surface-container-low active:bg-surface-container transition-colors" data-path="proposals" href="#"><span class="material-symbols-outlined text-primary text-[20px]">request_quote</span><span class="font-label-lg text-label-lg">Teklifler</span></a><a class="flex items-center gap-space-sm px-space-sm h-11 rounded-xl text-on-surface hover:bg-surface-container-low active:bg-surface-container transition-colors" data-path="finance" href="#"><span class="material-symbols-outlined text-primary text-[20px]">payments</span><span class="font-label-lg text-label-lg">Para</span></a><a class="flex items-center gap-space-sm px-space-sm h-11 rounded-xl text-on-surface hover:bg-surface-container-low active:bg-surface-container transition-colors" data-path="reports" href="#"><span class="material-symbols-outlined text-primary text-[20px]">bar_chart</span><span class="font-label-lg text-label-lg">Raporlar</span></a></div></div><div class="pt-space-xs"><a class="flex items-center gap-space-sm px-space-sm h-11 rounded-xl text-on-surface hover:bg-surface-container-low active:bg-surface-container transition-colors" data-path="settings" href="#"><span class="material-symbols-outlined text-primary text-[20px]">settings</span><span class="font-label-lg text-label-lg">Ayarlar</span></a></div></div><div class="p-space-md pb-safe bg-surface-container-lowest"><a class="w-full h-12 flex items-center justify-center gap-space-xs rounded-xl bg-error-container/60 hover:bg-error-container text-error transition-colors font-label-lg text-label-lg" data-path="logout" href="#"><span class="material-symbols-outlined text-[20px]">logout</span><span>Çıkış Yap</span></a></div></aside></body></html>

@@ -1,0 +1,194 @@
+import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
+
+import '../../core/api_client.dart';
+import '../../models/product.dart';
+import '../../theme/app_colors.dart';
+import '../../widgets/state_views.dart';
+import 'stock_api.dart';
+
+final _dateFormat = DateFormat('d MMM, HH:mm', 'tr_TR');
+
+/// Bekleyen satın alma (ikmal) talepleri. "Mal Kabul" işlemi stoğu artırır ve
+/// bir StockMovement(IN) kaydı oluşturur; backend bunu tek transaction içinde
+/// ve iyimser kilitle yapar, böylece iki kez basıldığında stok iki kez artmaz
+/// (backend/src/controllers/productsController.ts:updatePurchaseRequest).
+class PurchaseRequestsScreen extends StatefulWidget {
+  const PurchaseRequestsScreen({super.key});
+
+  @override
+  State<PurchaseRequestsScreen> createState() => _PurchaseRequestsScreenState();
+}
+
+class _PurchaseRequestsScreenState extends State<PurchaseRequestsScreen> {
+  final _api = StockApi();
+  List<StockPurchaseRequest> _requests = [];
+  bool _loading = true;
+  String? _error;
+  String? _busyId;
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  Future<void> _load() async {
+    setState(() {
+      _loading = true;
+      _error = null;
+    });
+    try {
+      final data = await _api.pendingPurchaseRequests();
+      if (!mounted) return;
+      setState(() {
+        _requests = data;
+        _loading = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _error = e is ApiException ? e.message : 'Talepler yüklenemedi';
+        _loading = false;
+      });
+    }
+  }
+
+  Future<void> _resolve(StockPurchaseRequest r, String status) async {
+    setState(() => _busyId = r.id);
+    try {
+      await _api.resolvePurchaseRequest(r.id, status);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              status == 'RECEIVED'
+                  ? 'Mal kabul edildi, stok güncellendi'
+                  : 'Talep iptal edildi',
+            ),
+          ),
+        );
+      }
+      _load();
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(e is ApiException ? e.message : 'İşlem başarısız'),
+          ),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _busyId = null);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: AppColors.surfacePage,
+      appBar: AppBar(
+        title: Text(
+          'Satın Alma Talepleri'
+          '${_requests.isNotEmpty ? ' (${_requests.length})' : ''}',
+        ),
+      ),
+      body: _loading
+          ? const LoadingView()
+          : _error != null
+          ? ErrorRetryView(message: _error!, onRetry: _load)
+          : _requests.isEmpty
+          ? const EmptyStateView(
+              title: 'Bekleyen talep yok',
+              icon: Icons.shopping_cart_outlined,
+            )
+          : RefreshIndicator(
+              onRefresh: _load,
+              color: AppColors.primary600,
+              child: ListView.separated(
+                padding: const EdgeInsets.all(16),
+                itemCount: _requests.length,
+                separatorBuilder: (_, _) => const SizedBox(height: 8),
+                itemBuilder: (context, i) {
+                  final r = _requests[i];
+                  final busy = _busyId == r.id;
+                  return Container(
+                    padding: const EdgeInsets.all(14),
+                    decoration: BoxDecoration(
+                      color: AppColors.surfaceCard,
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: AppColors.borderDefault),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Expanded(
+                              child: Text(
+                                r.productName ?? 'Ürün',
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.w700,
+                                  fontSize: 14,
+                                ),
+                              ),
+                            ),
+                            Text(
+                              '+${r.quantity.toStringAsFixed(1)} '
+                              '${r.productUnit ?? ''}',
+                              style: const TextStyle(
+                                fontWeight: FontWeight.w700,
+                                color: AppColors.info600,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          [
+                            r.requestedByName ?? '—',
+                            _dateFormat.format(DateTime.parse(r.createdAt)),
+                            if (r.note != null && r.note!.isNotEmpty) r.note!,
+                          ].join(' · '),
+                          style: const TextStyle(
+                            fontSize: 11.5,
+                            color: AppColors.textSecondary,
+                          ),
+                        ),
+                        const SizedBox(height: 10),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: OutlinedButton(
+                                onPressed: busy
+                                    ? null
+                                    : () => _resolve(r, 'CANCELLED'),
+                                style: OutlinedButton.styleFrom(
+                                  foregroundColor: AppColors.danger600,
+                                ),
+                                child: const Text('İptal'),
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: ElevatedButton(
+                                onPressed: busy
+                                    ? null
+                                    : () => _resolve(r, 'RECEIVED'),
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: AppColors.success600,
+                                ),
+                                child: Text(busy ? 'İşleniyor...' : 'Mal Kabul'),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  );
+                },
+              ),
+            ),
+    );
+  }
+}

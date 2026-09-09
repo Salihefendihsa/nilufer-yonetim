@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+
+<html lang="tr"><head><meta charset="utf-8"/><meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" name="viewport"/><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;family=Plus+Jakarta+Sans:wght@600;700;800&amp;display=swap" rel="stylesheet"/><link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/><style>@layer base{html,body{width:100vw;margin:0;padding:0;background-color:#ebfeee;}body{overscroll-behavior:none;}.pb-safe{padding-bottom:env(safe-area-inset-bottom,0px);}.pt-safe{padding-top:env(safe-area-inset-top,0px);}main>:first-child{margin-top:0!important;}main>:last-child{margin-bottom:0!important;}}::-webkit-scrollbar{display:none;}.material-symbols-outlined{font-variation-settings:'FILL' 0,'wght' 400,'GRAD' 0,'opsz' 24;}</style><script src="https://cdn.tailwindcss.com"></script><script id="tailwind-config">tailwind.config = { darkMode: "class", theme: { extend: { "colors": { "secondary-fixed": "#c4edc3", "on-primary": "#ffffff", "tertiary-fixed": "#cee5ff", "surface-container-high": "#daeddd", "on-tertiary": "#ffffff", "tertiary-container": "#2e79b3", "on-secondary-fixed": "#002108", "surface-variant": "#d5e7d7", "on-background": "#0f1f15", "surface-container-low": "#e6f8e8", "on-error": "#ffffff", "outline-variant": "#bfc9bc", "secondary-container": "#c4edc3", "on-surface": "#0f1f15", "inverse-on-surface": "#e3f6e5", "error": "#ba1a1a", "surface-container": "#e0f3e2", "tertiary": "#006098", "on-secondary": "#ffffff", "on-tertiary-fixed": "#001d33", "surface-container-highest": "#d5e7d7", "on-error-container": "#93000a", "secondary": "#436746", "primary": "#186a32", "on-surface-variant": "#40493f", "surface-bright": "#ebfeee", "on-tertiary-container": "#fdfcff", "inverse-primary": "#89d894", "on-primary-container": "#f7fff3", "on-primary-fixed-variant": "#005321", "surface-container-lowest": "#ffffff", "primary-fixed-dim": "#89d894", "tertiary-fixed-dim": "#97cbff", "on-secondary-container": "#496d4b", "surface-tint": "#1c6c34", "primary-fixed": "#a4f5ae", "inverse-surface": "#243429", "background": "#ebfeee", "error-container": "#ffdad6", "on-primary-fixed": "#002109", "on-secondary-fixed-variant": "#2b4e30", "on-tertiary-fixed-variant": "#004a76", "surface-dim": "#ccdfcf", "surface": "#ebfeee", "secondary-fixed-dim": "#a9d1a8", "outline": "#707a6e", "primary-container": "#368348" }, "borderRadius": { "DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px" }, "spacing": { "margin-mobile": "1rem", "space-xs": "0.5rem", "space-sm": "0.75rem", "space-xl": "1.5rem", "space-md": "1rem", "space-2xs": "0.25rem", "space-2xl": "2rem", "space-lg": "1.25rem", "gutter-mobile": "1rem", "nav-floating-height": "4.25rem" }, "fontFamily": { "label-sm": ["Inter"], "body-md": ["Inter"], "headline-xl": ["Plus Jakarta Sans"], "label-md": ["Inter"], "kpi-stat": ["Plus Jakarta Sans"], "body-lg": ["Inter"], "title-md": ["Plus Jakarta Sans"], "kpi-unit": ["Inter"], "headline-lg": ["Plus Jakarta Sans"], "body-sm": ["Inter"], "headline-sm": ["Plus Jakarta Sans"], "headline-md": ["Plus Jakarta Sans"] }, "fontSize": { "label-sm": ["11px", { "lineHeight": "14px", "letterSpacing": "0.04em", "fontWeight": "600" }], "body-md": ["14px", { "lineHeight": "20px", "letterSpacing": "0", "fontWeight": "400" }], "headline-xl": ["32px", { "lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "700" }], "label-md": ["12px", { "lineHeight": "16px", "letterSpacing": "0.02em", "fontWeight": "600" }], "kpi-stat": ["28px", { "lineHeight": "32px", "letterSpacing": "-0.03em", "fontWeight": "800" }], "body-lg": ["16px", { "lineHeight": "24px", "letterSpacing": "0", "fontWeight": "400" }], "title-md": ["16px", { "lineHeight": "22px", "letterSpacing": "-0.005em", "fontWeight": "600" }], "kpi-unit": ["12px", { "lineHeight": "16px", "letterSpacing": "0.01em", "fontWeight": "500" }], "headline-lg": ["26px", { "lineHeight": "34px", "letterSpacing": "-0.015em", "fontWeight": "700" }], "body-sm": ["13px", { "lineHeight": "18px", "letterSpacing": "0", "fontWeight": "400" }], "headline-sm": ["18px", { "lineHeight": "24px", "letterSpacing": "0", "fontWeight": "600" }], "headline-md": ["20px", { "lineHeight": "28px", "letterSpacing": "-0.01em", "fontWeight": "600" }] } } } };</script></head><body class="bg-surface text-on-surface font-body-md text-body-md flex flex-col min-h-screen"><header class="fixed top-0 w-full z-50 pt-safe bg-surface/80 backdrop-blur-xl shadow-[0_1px_8px_rgba(0,0,0,0.04)]"><div class="h-16 px-margin-mobile flex items-center justify-between"><div class="flex items-center gap-space-sm"><button aria-label="Menüyü Aç" class="w-10 h-10 -ml-2 rounded-full flex items-center justify-center text-on-surface hover:bg-surface-container transition-colors" onclick="const d=document.getElementById('side-drawer');const b=document.getElementById('drawer-backdrop');d.classList.toggle('-translate-x-full');b.classList.toggle('hidden');" type="button"><span class="material-symbols-outlined text-[24px]">menu</span></button><img alt="Nilüfer İlaçlama Logo" class="h-7 w-auto object-contain" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAEpdryzZnplcZz2a8fnWaX_C2w8DBfrfJslvHehUpCdoJy-tPB4vUrxOj_edzrbTdSEt-bz1gHU4FR9h2Qmc8SsYuY9T58hWPIULQU8CHJtPSW6w3FIDT7Aty0f0uf_QZ5AusF5Y5J3fs8mycxyiarF4eqkBREDw2xcPUPZ41H4N1vAnUXxJPJ-bUe0Mv7Kse_pkqK8lMsYpIR-Y_5UyEer_4Ow8edvuij0v0pVD_pqMvHf3J2EJ_v"/><div class="flex flex-col"><span class="font-headline-sm text-headline-sm text-on-surface font-bold leading-tight">Bekleyen Onaylar</span><span class="font-label-sm text-label-sm text-on-surface-variant leading-none">Nilüfer İlaçlama</span></div></div><div class="flex items-center gap-space-xs"><a aria-label="Bekleyen Onaylar" class="w-9 h-9 rounded-full bg-surface-container flex items-center justify-center text-on-surface hover:bg-surface-container-high transition-colors relative" data-path="bekleyen-onaylar" href="#"><span class="material-symbols-outlined text-[20px]">verified_user</span><span class="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-error ring-2 ring-surface"></span></a><a aria-label="Yönetici Profili" class="w-9 h-9 rounded-full bg-primary flex items-center justify-center text-on-primary hover:bg-primary-container transition-colors" data-path="yonetici-paneli" href="#"><span class="material-symbols-outlined text-[18px]">admin_panel_settings</span></a></div></div></header><div class="fixed inset-0 z-50 bg-inverse-surface/40 backdrop-blur-sm hidden transition-opacity" id="drawer-backdrop" onclick="document.getElementById('side-drawer').classList.add('-translate-x-full');this.classList.add('hidden');"></div><aside class="fixed top-0 left-0 h-full w-[84%] max-w-[320px] z-50 bg-surface-container-lowest shadow-[0_8px_32px_rgba(22,33,26,0.18)] flex flex-col transform -translate-x-full transition-transform duration-300 ease-in-out pt-safe pb-safe" id="side-drawer"><div class="p-space-lg flex items-center justify-between border-b border-surface-container-high/60"><div class="flex items-center gap-space-sm"><img alt="Logo" class="h-7 w-auto" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAEpdryzZnplcZz2a8fnWaX_C2w8DBfrfJslvHehUpCdoJy-tPB4vUrxOj_edzrbTdSEt-bz1gHU4FR9h2Qmc8SsYuY9T58hWPIULQU8CHJtPSW6w3FIDT7Aty0f0uf_QZ5AusF5Y5J3fs8mycxyiarF4eqkBREDw2xcPUPZ41H4N1vAnUXxJPJ-bUe0Mv7Kse_pkqK8lMsYpIR-Y_5UyEer_4Ow8edvuij0v0pVD_pqMvHf3J2EJ_v"/><div class="flex flex-col"><span class="font-headline-sm text-headline-sm text-on-surface font-bold">Yönetim Modülü</span><span class="font-label-sm text-label-sm text-primary font-semibold">Faz 3 Operasyon</span></div></div><button class="w-9 h-9 rounded-full flex items-center justify-center text-on-surface-variant hover:bg-surface-container transition-colors" onclick="document.getElementById('side-drawer').classList.add('-translate-x-full');document.getElementById('drawer-backdrop').classList.add('hidden');" type="button"><span class="material-symbols-outlined text-[22px]">close</span></button></div><div class="flex-1 overflow-y-auto px-space-md py-space-sm space-y-space-md"><div class="space-y-1"><span class="px-space-sm font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider font-bold">Yönetim &amp; Faz 3</span><a class="flex items-center justify-between px-space-sm py-2.5 rounded-lg text-on-surface-variant hover:bg-surface-container hover:text-primary transition-colors" data-path="bekleyen-onaylar" href="#"><div class="flex items-center gap-space-sm"><span class="material-symbols-outlined text-[20px]">rule_folder</span><span class="font-body-md text-body-md font-medium">Bekleyen Onaylar</span></div><span class="px-2 py-0.5 rounded-full bg-error-container text-on-error-container font-label-sm text-label-sm font-bold">5</span></a><a class="flex items-center gap-space-sm px-space-sm py-2.5 rounded-lg text-on-surface-variant hover:bg-surface-container hover:text-primary transition-colors" data-path="teklifler" href="#"><span class="material-symbols-outlined text-[20px]">request_quote</span><span class="font-body-md text-body-md font-medium">Teklifler</span></a><a class="flex items-center gap-space-sm px-space-sm py-2.5 rounded-lg text-on-surface-variant hover:bg-surface-container hover:text-primary transition-colors" data-path="sozlesmeler" href="#"><span class="material-symbols-outlined text-[20px]">description</span><span class="font-body-md text-body-md font-medium">Sözleşmeler</span></a><a class="flex items-center gap-space-sm px-space-sm py-2.5 rounded-lg text-on-surface-variant hover:bg-surface-container hover:text-primary transition-colors" data-path="yonetici-paneli" href="#"><span class="material-symbols-outlined text-[20px]">admin_panel_settings</span><span class="font-body-md text-body-md font-medium">Yönetici Paneli</span></a><a class="flex items-center gap-space-sm px-space-sm py-2.5 rounded-lg text-on-surface-variant hover:bg-surface-container hover:text-primary transition-colors" data-path="denetim-raporlari" href="#"><span class="material-symbols-outlined text-[20px]">fact_check</span><span class="font-body-md text-body-md font-medium">Denetim &amp; Raporlar</span></a></div><div class="space-y-1"><span class="px-space-sm font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider font-bold">Saha &amp; Kaynaklar</span><a class="flex items-center gap-space-sm px-space-sm py-2.5 rounded-lg text-on-surface-variant hover:bg-surface-container hover:text-primary transition-colors" data-path="stok" href="#"><span class="material-symbols-outlined text-[20px]">inventory_2</span><span class="font-body-md text-body-md font-medium">Stok Yönetimi</span></a><a class="flex items-center gap-space-sm px-space-sm py-2.5 rounded-lg text-on-surface-variant hover:bg-surface-container hover:text-primary transition-colors" data-path="personel" href="#"><span class="material-symbols-outlined text-[20px]">badge</span><span class="font-body-md text-body-md font-medium">Personel Ekibi</span></a><a class="flex items-center gap-space-sm px-space-sm py-2.5 rounded-lg text-on-surface-variant hover:bg-surface-container hover:text-primary transition-colors" data-path="takvim" href="#"><span class="material-symbols-outlined text-[20px]">calendar_month</span><span class="font-body-md text-body-md font-medium">Operasyon Takvimi</span></a><a class="flex items-center gap-space-sm px-space-sm py-2.5 rounded-lg text-on-surface-variant hover:bg-surface-container hover:text-primary transition-colors" data-path="musteriler" href="#"><span class="material-symbols-outlined text-[20px]">groups</span><span class="font-body-md text-body-md font-medium">Müşteriler Portföyü</span></a></div></div><div class="p-space-md border-t border-surface-container-high/60"><div class="flex items-center gap-space-sm p-space-sm rounded-xl bg-surface-container-low"><div class="w-9 h-9 rounded-full bg-primary flex items-center justify-center text-on-primary font-bold">NL</div><div class="flex flex-col min-w-0"><span class="font-title-md text-title-md truncate text-on-surface">Operasyon Müdürü</span><span class="font-label-sm text-label-sm text-on-surface-variant">Sistem Yetkilisi</span></div></div></div></aside><main class="flex-1 flex flex-col relative w-full pt-16 pb-[6rem] bg-surface"><div class="flex flex-col w-full pb-8">
+<!-- Top Operational Banner & Control Header -->
+<div class="px-margin-mobile pt-2 pb-space-sm flex items-center justify-between">
+<div class="flex flex-col">
+<div class="flex items-center gap-1.5">
+<span class="inline-block w-2.5 h-2.5 rounded-full bg-error animate-pulse"></span>
+<h1 class="font-headline-sm text-headline-sm font-bold text-on-surface tracking-tight">Bekleyen Onaylar</h1>
+</div>
+<p class="font-body-sm text-body-sm text-on-surface-variant font-medium mt-0.5">Operasyon ve Finans Onay Masası</p>
+</div>
+<button aria-label="Filtrele" class="w-10 h-10 rounded-xl bg-surface-container-low text-on-surface flex items-center justify-center hover:bg-surface-container-high transition-all shadow-sm active:scale-95" type="button">
+<span class="material-symbols-outlined text-[20px] text-primary">tune</span>
+</button>
+</div>
+<!-- 2x2 Tactical KPI Grid -->
+<div class="px-margin-mobile grid grid-cols-2 gap-2.5 mb-3.5">
+<!-- Stat 1: Toplam Bekleyen -->
+<div class="bg-surface-container-lowest p-3.5 rounded-[18px] shadow-sm flex flex-col justify-between relative overflow-hidden">
+<div class="flex items-center justify-between mb-1.5">
+<span class="font-label-sm text-label-sm text-on-surface-variant font-medium">Toplam Bekleyen</span>
+<span class="px-1.5 py-0.5 rounded-full bg-error/15 text-error font-label-sm text-label-sm font-bold tracking-tight flex items-center gap-0.5">
+<span class="w-1.5 h-1.5 rounded-full bg-error"></span>
+          3 Acil
+        </span>
+</div>
+<div class="flex items-baseline gap-1 mt-0.5">
+<span class="font-kpi-stat text-kpi-stat text-on-surface font-extrabold tracking-tight">7</span>
+<span class="font-kpi-unit text-kpi-unit text-on-surface-variant font-semibold">Onay</span>
+</div>
+<div class="mt-2 pt-2 border-t-0 bg-surface-container-low/60 -mx-3.5 -mb-3.5 px-3.5 py-1.5 flex items-center justify-between">
+<span class="font-label-sm text-[10px] text-on-surface-variant leading-none">Aksiyon bekliyor</span>
+<span class="material-symbols-outlined text-[14px] text-primary">priority_high</span>
+</div>
+</div>
+<!-- Stat 2: Bekleyen Teklif -->
+<div class="bg-surface-container-lowest p-3.5 rounded-[18px] shadow-sm flex flex-col justify-between relative overflow-hidden">
+<div class="flex items-center justify-between mb-1.5">
+<span class="font-label-sm text-label-sm text-on-surface-variant font-medium">Bekleyen Teklif</span>
+<span class="w-2 h-2 rounded-full bg-tertiary"></span>
+</div>
+<div class="flex items-baseline gap-1 mt-0.5">
+<span class="font-kpi-stat text-kpi-stat text-tertiary font-extrabold tracking-tight">3</span>
+<span class="font-kpi-unit text-kpi-unit text-on-surface-variant font-semibold">Teklif</span>
+</div>
+<div class="mt-2 pt-2 bg-tertiary-fixed/40 -mx-3.5 -mb-3.5 px-3.5 py-1.5">
+<p class="font-label-sm text-[10px] text-on-tertiary-fixed-variant truncate font-semibold">Toplam ₺34.500 hacim</p>
+</div>
+</div>
+<!-- Stat 3: Avans Talebi -->
+<div class="bg-surface-container-lowest p-3.5 rounded-[18px] shadow-sm flex flex-col justify-between relative overflow-hidden">
+<div class="flex items-center justify-between mb-1.5">
+<span class="font-label-sm text-label-sm text-on-surface-variant font-medium">Avans Talebi</span>
+<span class="w-2 h-2 rounded-full bg-secondary"></span>
+</div>
+<div class="flex items-baseline gap-1 mt-0.5">
+<span class="font-kpi-stat text-kpi-stat text-on-surface font-extrabold tracking-tight">2</span>
+<span class="font-kpi-unit text-kpi-unit text-on-surface-variant font-semibold">Talep</span>
+</div>
+<div class="mt-2 pt-2 bg-secondary-fixed/50 -mx-3.5 -mb-3.5 px-3.5 py-1.5">
+<p class="font-label-sm text-[10px] text-on-secondary-fixed-variant truncate font-semibold">₺8.500 toplam avans</p>
+</div>
+</div>
+<!-- Stat 4: Biten Sözleşme -->
+<div class="bg-surface-container-lowest p-3.5 rounded-[18px] shadow-sm flex flex-col justify-between relative overflow-hidden">
+<div class="flex items-center justify-between mb-1.5">
+<span class="font-label-sm text-label-sm text-on-surface-variant font-medium">Biten Sözleşme</span>
+<span class="w-2 h-2 rounded-full bg-error"></span>
+</div>
+<div class="flex items-baseline gap-1 mt-0.5">
+<span class="font-kpi-stat text-kpi-stat text-error font-extrabold tracking-tight">2</span>
+<span class="font-kpi-unit text-kpi-unit text-on-surface-variant font-semibold">Firma</span>
+</div>
+<div class="mt-2 pt-2 bg-error-container/70 -mx-3.5 -mb-3.5 px-3.5 py-1.5">
+<p class="font-label-sm text-[10px] text-on-error-container truncate font-bold">Yenileme Yaklaştı</p>
+</div>
+</div>
+</div>
+<!-- Segmented Distribution Strip -->
+<div class="px-margin-mobile mb-4">
+<div class="bg-surface-container-lowest p-3 rounded-[16px] shadow-sm">
+<div class="flex items-center justify-between text-label-sm font-label-sm mb-2">
+<span class="text-on-surface font-semibold flex items-center gap-1.5">
+<span class="material-symbols-outlined text-[15px] text-primary">pie_chart</span>
+          Onay Havuzu Dağılımı
+        </span>
+<span class="text-on-surface-variant font-medium">7 Görev</span>
+</div>
+<!-- Multi-segmented Progress Track -->
+<div class="w-full h-2.5 bg-surface-container-high rounded-full overflow-hidden flex gap-0.5 p-0.5">
+<div class="h-full bg-tertiary rounded-full transition-all duration-500" style="width: 43%;" title="Teklifler: %43"></div>
+<div class="h-full bg-secondary-container rounded-full transition-all duration-500" style="width: 29%;" title="Avanslar: %29"></div>
+<div class="h-full bg-error rounded-full transition-all duration-500" style="width: 28%;" title="Sözleşmeler: %28"></div>
+</div>
+<!-- Legend -->
+<div class="flex items-center justify-between mt-2 pt-1 text-label-sm font-label-sm">
+<div class="flex items-center gap-1.5">
+<span class="w-2 h-2 rounded-full bg-tertiary"></span>
+<span class="text-on-surface-variant font-medium">Teklif <strong class="text-on-surface font-bold">%43</strong></span>
+</div>
+<div class="flex items-center gap-1.5">
+<span class="w-2 h-2 rounded-full bg-secondary-container"></span>
+<span class="text-on-surface-variant font-medium">Avans <strong class="text-on-surface font-bold">%29</strong></span>
+</div>
+<div class="flex items-center gap-1.5">
+<span class="w-2 h-2 rounded-full bg-error"></span>
+<span class="text-on-surface-variant font-medium">Sözleşme <strong class="text-on-surface font-bold">%28</strong></span>
+</div>
+</div>
+</div>
+</div>
+<!-- Filter Pills / Segment Controls -->
+<div class="px-margin-mobile mb-3.5 overflow-x-auto no-scrollbar">
+<div class="flex items-center gap-2 min-w-max pb-0.5">
+<button class="px-3.5 py-1.5 rounded-full bg-primary text-on-primary font-label-sm text-label-sm font-bold shadow-sm flex items-center gap-1.5" type="button">
+<span>Tümü</span>
+<span class="w-4 h-4 rounded-full bg-on-primary/20 text-on-primary flex items-center justify-center text-[10px]">7</span>
+</button>
+<button class="px-3.5 py-1.5 rounded-full bg-surface-container-low text-on-surface-variant hover:bg-surface-container font-label-sm text-label-sm font-medium transition-colors flex items-center gap-1.5" type="button">
+<span>Teklifler</span>
+<span class="w-4 h-4 rounded-full bg-surface-variant text-on-surface-variant flex items-center justify-center text-[10px]">3</span>
+</button>
+<button class="px-3.5 py-1.5 rounded-full bg-surface-container-low text-on-surface-variant hover:bg-surface-container font-label-sm text-label-sm font-medium transition-colors flex items-center gap-1.5" type="button">
+<span>Avanslar</span>
+<span class="w-4 h-4 rounded-full bg-surface-variant text-on-surface-variant flex items-center justify-center text-[10px]">2</span>
+</button>
+<button class="px-3.5 py-1.5 rounded-full bg-surface-container-low text-on-surface-variant hover:bg-surface-container font-label-sm text-label-sm font-medium transition-colors flex items-center gap-1.5" type="button">
+<span>Sözleşmeler</span>
+<span class="w-4 h-4 rounded-full bg-surface-variant text-on-surface-variant flex items-center justify-center text-[10px]">2</span>
+</button>
+</div>
+</div>
+<!-- Cards List -->
+<div class="px-margin-mobile flex flex-col gap-3.5">
+<!-- CARD 1: Teklif (Blue Left Accent) -->
+<div class="bg-surface-container-lowest rounded-[18px] shadow-sm overflow-hidden flex relative">
+<div class="w-1.5 shrink-0 bg-[#1F6FA8]"></div>
+<div class="p-space-md flex-1 flex flex-col min-w-0">
+<div class="flex items-start justify-between gap-2 mb-2">
+<div class="flex items-center gap-2 min-w-0">
+<div class="w-8 h-8 rounded-xl bg-tertiary-fixed flex items-center justify-center text-on-tertiary-fixed shrink-0">
+<span class="material-symbols-outlined text-[18px]">domain</span>
+</div>
+<div class="min-w-0">
+<h2 class="font-title-md text-title-md font-bold text-on-surface truncate leading-tight">Nilüfer Plaza İş Merkezi Yönetimi</h2>
+<span class="font-label-sm text-label-sm text-on-surface-variant flex items-center gap-1 mt-0.5">
+<span class="material-symbols-outlined text-[13px] text-tertiary">location_on</span>
+                Nilüfer / Odunluk Mah.
+              </span>
+</div>
+</div>
+<span class="px-2 py-0.5 rounded-full bg-primary/10 text-primary font-label-sm text-[11px] font-bold shrink-0">
+            Yeni Teklif
+          </span>
+</div>
+<!-- Meta Details -->
+<div class="bg-surface-container-low/60 rounded-xl p-2.5 mb-3 flex flex-col gap-1.5">
+<div class="flex items-center justify-between text-body-sm font-body-sm">
+<span class="text-on-surface-variant flex items-center gap-1.5 text-xs">
+<span class="material-symbols-outlined text-[14px]">call</span>
+              0224 443 18 90
+            </span>
+<span class="font-title-md text-title-md font-extrabold text-on-surface">₺14.200 <span class="font-label-sm text-[11px] font-semibold text-on-surface-variant">+ KDV</span></span>
+</div>
+<div class="flex flex-wrap gap-1 mt-0.5">
+<span class="px-2 py-0.5 rounded-md bg-surface-container-high text-on-surface font-label-sm text-[10px] font-medium">Ticari Plaza</span>
+<span class="px-2 py-0.5 rounded-md bg-surface-container-high text-on-surface font-label-sm text-[10px] font-medium">ULV Sisleme + Dezenfeksiyon</span>
+</div>
+</div>
+<!-- Action Button -->
+<button class="w-full h-11 rounded-xl bg-primary text-on-primary font-title-md text-body-md font-bold shadow-sm hover:bg-primary-container active:scale-[0.99] transition-all flex items-center justify-center gap-1.5" type="button">
+<span class="material-symbols-outlined text-[18px]">verified</span>
+          Teklife Dönüştür &amp; Onayla
+        </button>
+</div>
+</div>
+<!-- CARD 2: Avans Talebi (Amber Left Accent) -->
+<div class="bg-surface-container-lowest rounded-[18px] shadow-sm overflow-hidden flex relative">
+<div class="w-1.5 shrink-0 bg-[#B57F13]"></div>
+<div class="p-space-md flex-1 flex flex-col min-w-0">
+<div class="flex items-start justify-between gap-2 mb-2">
+<div class="flex items-center gap-2 min-w-0">
+<div class="w-9 h-9 rounded-full bg-secondary-fixed text-on-secondary-fixed flex items-center justify-center font-bold text-xs shrink-0 shadow-sm">
+              SY
+            </div>
+<div class="min-w-0">
+<div class="flex items-center gap-1.5">
+<h2 class="font-title-md text-title-md font-bold text-on-surface truncate leading-tight">Serkan Yılmaz</h2>
+<span class="px-1.5 py-0.2 rounded bg-secondary-fixed/60 text-on-secondary-fixed-variant font-label-sm text-[10px] font-bold">Avans</span>
+</div>
+<span class="font-label-sm text-label-sm text-on-surface-variant block mt-0.5">Saha Teknisyeni (1. Ekip)</span>
+</div>
+</div>
+<div class="text-right shrink-0">
+<span class="font-kpi-stat text-[20px] leading-tight font-extrabold text-on-surface block">₺4.500</span>
+<span class="font-label-sm text-[10px] text-on-surface-variant font-medium">Talep Tutarı</span>
+</div>
+</div>
+<!-- Justification text -->
+<div class="bg-surface-container-low/70 rounded-xl p-2.5 mb-3">
+<div class="flex items-start gap-1.5">
+<span class="material-symbols-outlined text-[16px] text-[#B57F13] shrink-0 mt-0.5">receipt_long</span>
+<p class="font-body-sm text-body-sm text-on-surface-variant leading-snug">
+              Bursa dışı İnegöl sanayi tesisi ULV görevi araç yakıt ve saha ekipman gideri avansı.
+            </p>
+</div>
+</div>
+<!-- Split Action Buttons -->
+<div class="grid grid-cols-2 gap-2.5">
+<button class="h-10 rounded-xl bg-error-container text-on-error-container font-title-md text-body-md font-bold hover:bg-error hover:text-on-error active:scale-[0.98] transition-all flex items-center justify-center gap-1" type="button">
+<span class="material-symbols-outlined text-[18px]">close</span>
+            Reddet
+          </button>
+<button class="h-10 rounded-xl bg-primary text-on-primary font-title-md text-body-md font-bold shadow-sm hover:bg-primary-container active:scale-[0.98] transition-all flex items-center justify-center gap-1" type="button">
+<span class="material-symbols-outlined text-[18px]">check</span>
+            Onayla
+          </button>
+</div>
+</div>
+</div>
+<!-- CARD 3: Sözleşme Yenileme (Red Left Accent) -->
+<div class="bg-surface-container-lowest rounded-[18px] shadow-sm overflow-hidden flex relative">
+<div class="w-1.5 shrink-0 bg-[#C0392B]"></div>
+<div class="p-space-md flex-1 flex flex-col min-w-0">
+<div class="flex items-start justify-between gap-2 mb-2">
+<div class="flex items-center gap-2 min-w-0">
+<div class="w-8 h-8 rounded-xl bg-error-container text-on-error-container flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined text-[18px]">bakery_dining</span>
+</div>
+<div class="min-w-0">
+<h2 class="font-title-md text-title-md font-bold text-on-surface truncate leading-tight">Özkan Unlu Mamulleri &amp; Fırın</h2>
+<span class="font-label-sm text-label-sm text-on-surface-variant block mt-0.5">Yıllık HACCP Kemirgen &amp; Haşere Kontrolü</span>
+</div>
+</div>
+<span class="px-2 py-0.5 rounded-full bg-error text-on-error font-label-sm text-[10px] font-bold tracking-tight shrink-0 flex items-center gap-1 shadow-sm">
+<span class="material-symbols-outlined text-[12px]">schedule</span>
+            3 Gün Kaldı
+          </span>
+</div>
+<!-- Contract Details -->
+<div class="bg-surface-container-low/60 rounded-xl p-2.5 mb-3 flex items-center justify-between">
+<div class="flex flex-col">
+<span class="font-label-sm text-[10px] text-on-surface-variant uppercase font-semibold">Bitiş Tarihi</span>
+<span class="font-title-md text-body-md font-bold text-error flex items-center gap-1">
+<span class="material-symbols-outlined text-[15px]">event_busy</span>
+              21 Eylül 2026
+            </span>
+</div>
+<div class="text-right">
+<span class="font-label-sm text-[10px] text-on-surface-variant uppercase font-semibold">Sözleşme Bedeli</span>
+<span class="font-title-md text-title-md font-extrabold text-on-surface block">₺42.000 <span class="text-xs font-normal text-on-surface-variant">/ Yıl</span></span>
+</div>
+</div>
+<!-- Side-by-Side Operational Buttons -->
+<div class="flex items-center gap-2">
+<button class="flex-1 h-10 rounded-xl bg-primary text-on-primary font-title-md text-body-md font-bold shadow-sm hover:bg-primary-container active:scale-[0.98] transition-all flex items-center justify-center gap-1.5" type="button">
+<span class="material-symbols-outlined text-[17px]">send</span>
+            Yenileme Teklifi Gönder
+          </button>
+<button class="w-20 h-10 rounded-xl bg-surface-container-high text-on-surface font-title-md text-body-md font-semibold hover:bg-surface-variant active:scale-[0.98] transition-all flex items-center justify-center" type="button">
+            İncele
+          </button>
+</div>
+</div>
+</div>
+<!-- CARD 4: Teklif - Bursa Botanik Bahçe Kafe -->
+<div class="bg-surface-container-lowest rounded-[18px] shadow-sm overflow-hidden flex relative">
+<div class="w-1.5 shrink-0 bg-[#1F6FA8]"></div>
+<div class="p-space-md flex-1 flex flex-col min-w-0">
+<div class="flex items-start justify-between gap-2 mb-2">
+<div class="flex items-center gap-2 min-w-0">
+<div class="w-8 h-8 rounded-xl bg-tertiary-fixed flex items-center justify-center text-on-tertiary-fixed shrink-0">
+<span class="material-symbols-outlined text-[18px]">local_cafe</span>
+</div>
+<div class="min-w-0">
+<h2 class="font-title-md text-title-md font-bold text-on-surface truncate leading-tight">Bursa Botanik Bahçe Kafe</h2>
+<span class="font-label-sm text-label-sm text-on-surface-variant flex items-center gap-1 mt-0.5">
+<span class="material-symbols-outlined text-[13px] text-tertiary">location_on</span>
+                Osmangazi
+              </span>
+</div>
+</div>
+<span class="px-2 py-0.5 rounded-full bg-surface-container-high text-on-surface font-label-sm text-[11px] font-semibold shrink-0">
+            İnceleme Bekliyor
+          </span>
+</div>
+<!-- Meta Details -->
+<div class="bg-surface-container-low/60 rounded-xl p-2.5 mb-3 flex items-center justify-between">
+<div class="flex flex-wrap gap-1 max-w-[65%]">
+<span class="px-2 py-0.5 rounded-md bg-surface-container-high text-on-surface font-label-sm text-[10px] font-medium">Açık Alan</span>
+<span class="px-2 py-0.5 rounded-md bg-surface-container-high text-on-surface font-label-sm text-[10px] font-medium">Larvasit &amp; Karasinek</span>
+</div>
+<div class="text-right">
+<span class="font-title-md text-title-md font-extrabold text-on-surface">₺6.800</span>
+</div>
+</div>
+<!-- Action Button -->
+<button class="w-full h-10 rounded-xl bg-primary text-on-primary font-title-md text-body-md font-bold shadow-sm hover:bg-primary-container active:scale-[0.99] transition-all flex items-center justify-center gap-1.5" type="button">
+<span class="material-symbols-outlined text-[18px]">post_add</span>
+          Teklife Dönüştür
+        </button>
+</div>
+</div>
+</div>
+<!-- Micro Interaction Toast Feedback Container -->
+<div class="fixed bottom-24 left-1/2 -translate-x-1/2 bg-inverse-surface text-inverse-on-surface px-4 py-2.5 rounded-full font-label-sm text-label-sm shadow-xl flex items-center gap-2 opacity-0 pointer-events-none transition-all duration-300 z-50" id="action-toast">
+<span class="material-symbols-outlined text-[18px] text-inverse-primary">check_circle</span>
+<span id="toast-text">İşlem başarıyla tamamlandı.</span>
+</div>
+</div>
+<script>
+  // Simple micro-interaction for button taps
+  document.querySelectorAll('button').forEach(btn => {
+    btn.addEventListener('click', function(e) {
+      const text = this.innerText.trim();
+      if (text.includes('Onay') || text.includes('Teklif') || text.includes('Reddet')) {
+        const toast = document.getElementById('action-toast');
+        const toastText = document.getElementById('toast-text');
+        if (toast && toastText) {
+          toastText.textContent = text + ' talebi işlendi';
+          toast.classList.remove('opacity-0', 'pointer-events-none');
+          toast.classList.add('opacity-100');
+          setTimeout(() => {
+            toast.classList.remove('opacity-100');
+            toast.classList.add('opacity-0', 'pointer-events-none');
+          }, 2200);
+        }
+      }
+    });
+  });
+</script></main><div class="fixed bottom-0 w-full z-50 pointer-events-none pb-safe"><div class="relative px-margin-mobile pb-space-sm"><nav class="pointer-events-auto h-[68px] w-full bg-surface-container-lowest/95 backdrop-blur-xl rounded-full shadow-[0_8px_24px_rgba(22,33,26,0.08),0_2px_6px_rgba(22,33,26,0.04)] flex items-center justify-between px-space-xs relative" data-active-classes="text-primary font-bold"><a class="flex-1 min-w-[52px] min-h-[44px] flex flex-col items-center justify-center gap-0.5 text-on-surface-variant hover:text-on-surface transition-colors" data-path="ana-sayfa" href="#"><span class="material-symbols-outlined text-[22px]">dashboard</span><span class="font-label-sm text-label-sm">Ana Sayfa</span></a><a class="flex-1 min-w-[52px] min-h-[44px] flex flex-col items-center justify-center gap-0.5 text-on-surface-variant hover:text-on-surface transition-colors" data-path="isler" href="#"><span class="material-symbols-outlined text-[22px]">assignment</span><span class="font-label-sm text-label-sm">İşler</span></a><div class="w-14 flex items-center justify-center"><a class="absolute -top-3 left-1/2 -translate-x-1/2 w-14 h-14 rounded-full bg-primary-container text-on-primary shadow-[0_8px_20px_rgba(47,82,51,0.35),0_2px_6px_rgba(47,82,51,0.20)] flex items-center justify-center hover:bg-primary transition-colors" data-path="yeni-islem" href="#"><span class="material-symbols-outlined text-[26px]">build</span></a></div><a aria-current="page" class="flex-1 min-w-[52px] min-h-[44px] flex flex-col items-center justify-center gap-0.5 transition-colors relative text-primary font-bold" data-path="bekleyen-onaylar" href="#"><div class="relative"><span class="material-symbols-outlined text-[22px]">rule_folder</span><span class="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full bg-error ring-2 ring-surface-container-lowest"></span></div><span class="font-label-sm text-label-sm">Onaylar</span></a><a class="flex-1 min-w-[52px] min-h-[44px] flex flex-col items-center justify-center gap-0.5 text-on-surface-variant hover:text-on-surface transition-colors" data-path="mesajlar" href="#"><span class="material-symbols-outlined text-[22px]">chat_bubble</span><span class="font-label-sm text-label-sm">Mesajlar</span></a></nav></div></div></body></html>

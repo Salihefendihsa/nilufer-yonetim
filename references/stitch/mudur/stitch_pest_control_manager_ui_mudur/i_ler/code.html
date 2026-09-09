@@ -1,0 +1,611 @@
+<!DOCTYPE html>
+
+<html lang="tr"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" name="viewport"/>
+<title>İşler | Nilüfer İlaçlama - Müdür Paneli</title>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=Plus+Jakarta+Sans:wght@500;600;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          colors: {
+            "primary": "#3D8A4E",
+            "primary-dark": "#2F5233",
+            "primary-light": "#E8F5EB",
+            "status-pending": "#B57F13",
+            "status-pending-bg": "#FEF8E7",
+            "status-planned": "#3D8A4E",
+            "status-planned-bg": "#E8F5EB",
+            "status-completed": "#2F5233",
+            "status-completed-bg": "#E2EFE4",
+            "status-canceled": "#C0392B",
+            "status-canceled-bg": "#FDEDEC",
+            "bg-main": "#F4F7F4",
+            "surface-white": "#FFFFFF",
+            "text-main": "#19241B",
+            "text-muted": "#5F6E62",
+            "border-light": "#E0E8E1"
+          },
+          fontFamily: {
+            sans: ["Plus Jakarta Sans", "sans-serif"],
+            inter: ["Inter", "sans-serif"]
+          }
+        }
+      }
+    }
+  </script>
+<style>
+    @layer base {
+      html, body {
+        width: 100vw;
+        margin: 0;
+        padding: 0;
+        background-color: #F4F7F4;
+        font-family: 'Plus Jakarta Sans', sans-serif;
+        color: #19241B;
+        -webkit-tap-highlight-color: transparent;
+      }
+      body {
+        overscroll-behavior-y: none;
+      }
+      .pb-safe {
+        padding-bottom: env(safe-area-inset-bottom, 0px);
+      }
+      .pt-safe {
+        padding-top: env(safe-area-inset-top, 0px);
+      }
+    }
+    .no-scrollbar::-webkit-scrollbar {
+      display: none;
+    }
+    .no-scrollbar {
+      -ms-overflow-style: none;
+      scrollbar-width: none;
+    }
+    #drawer-backdrop {
+      transition: opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      pointer-events: none;
+      opacity: 0;
+    }
+    #drawer-panel {
+      transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      transform: translateX(-100%);
+    }
+    #drawer-toggle:checked ~ #drawer-backdrop {
+      pointer-events: auto;
+      opacity: 1;
+    }
+    #drawer-toggle:checked ~ #drawer-panel {
+      transform: translateX(0);
+    }
+  </style>
+</head>
+<body class="bg-bg-main text-text-main flex flex-col min-h-screen relative selection:bg-[#E8F5EB] selection:text-[#2F5233]">
+<input class="hidden peer" id="drawer-toggle" type="checkbox"/>
+<!-- ÜST BAR (HEADER) -->
+<header class="fixed top-0 inset-x-0 z-40 bg-surface-white/95 backdrop-blur-md border-b border-border-light pt-safe shadow-[0_2px_10px_rgba(0,0,0,0.03)]">
+<div class="h-16 px-4 flex items-center justify-between gap-2 max-w-lg mx-auto">
+<!-- Hamburger Menü Butonu -->
+<label aria-label="Menüyü Aç" class="w-10 h-10 -ml-1 flex items-center justify-center rounded-xl text-text-main hover:bg-[#EAEFEA] active:scale-95 transition-all cursor-pointer" for="drawer-toggle">
+<span class="material-symbols-outlined text-[26px]">menu</span>
+</label>
+<!-- Başlık Bölümü -->
+<div class="flex flex-col items-center justify-center text-center">
+<span class="text-[11px] font-inter font-bold tracking-[0.08em] text-primary uppercase leading-tight">NİLÜFER İLAÇLAMA</span>
+<h1 class="text-[18px] font-extrabold text-text-main leading-tight tracking-tight">İşler</h1>
+</div>
+<!-- Sağ Butonlar: Filtre + Harita/Takvim Toggle & Profil -->
+<div class="flex items-center gap-1.5 -mr-1">
+<button aria-label="Filtrele" class="w-9 h-9 flex items-center justify-center rounded-xl bg-bg-main hover:bg-[#E4ECE5] text-text-muted active:scale-95 transition-all">
+<span class="material-symbols-outlined text-[20px]">filter_list</span>
+</button>
+<button aria-label="Takvim / Harita Görünümü" class="w-9 h-9 flex items-center justify-center rounded-xl bg-bg-main hover:bg-[#E4ECE5] text-text-muted active:scale-95 transition-all">
+<span class="material-symbols-outlined text-[20px]">calendar_month</span>
+</button>
+<div class="w-8 h-8 rounded-full bg-primary flex items-center justify-center text-white font-bold text-xs ring-2 ring-[#E8F5EB] ml-0.5 shadow-sm">
+          AY
+        </div>
+</div>
+</div>
+</header>
+<!-- ANA İÇERİK ALANI -->
+<main class="flex-1 flex flex-col w-full max-w-lg mx-auto pt-[72px] pb-28 px-4 space-y-4">
+<!-- 1. DURUM ÖZET ŞERİDİ (STATUS SUMMARY STRIP) -->
+<section class="bg-surface-white rounded-2xl p-3.5 shadow-sm border border-border-light/80">
+<div class="flex items-center justify-between text-xs font-semibold overflow-x-auto no-scrollbar gap-2 px-1">
+<div class="flex items-center gap-1.5 shrink-0">
+<span class="w-2.5 h-2.5 rounded-full bg-[#B57F13] ring-4 ring-amber-100"></span>
+<span class="text-text-main"><b class="font-bold">12</b> Bekliyor</span>
+</div>
+<span class="text-gray-300 font-bold">·</span>
+<div class="flex items-center gap-1.5 shrink-0">
+<span class="w-2.5 h-2.5 rounded-full bg-[#3D8A4E] ring-4 ring-emerald-100"></span>
+<span class="text-text-main"><b class="font-bold">8</b> Planlandı</span>
+</div>
+<span class="text-gray-300 font-bold">·</span>
+<div class="flex items-center gap-1.5 shrink-0">
+<span class="w-2.5 h-2.5 rounded-full bg-[#2F5233] ring-4 ring-green-200"></span>
+<span class="text-text-main"><b class="font-bold">45</b> Tamamlandı</span>
+</div>
+<span class="text-gray-300 font-bold">·</span>
+<div class="flex items-center gap-1.5 shrink-0">
+<span class="w-2.5 h-2.5 rounded-full bg-[#C0392B] ring-4 ring-red-100"></span>
+<span class="text-text-main"><b class="font-bold">2</b> İptal</span>
+</div>
+</div>
+</section>
+<!-- 2. ARAMA VE BARKOD ÇUBUĞU -->
+<div class="relative w-full">
+<div class="flex items-center w-full bg-surface-white rounded-2xl border border-border-light shadow-sm px-3.5 h-12 gap-2.5 focus-within:ring-2 focus-within:ring-primary/40 focus-within:border-primary transition-all">
+<span class="material-symbols-outlined text-text-muted text-[22px] shrink-0">search</span>
+<input class="w-full bg-transparent text-[13.5px] text-text-main placeholder:text-gray-400 focus:outline-none min-w-0" placeholder="İş ID (#NLF-...), Barkod veya Müşteri ara..." type="text"/>
+<button aria-label="Barkod Tara" class="h-8 w-8 rounded-xl bg-bg-main hover:bg-[#E6EFE7] text-primary flex items-center justify-center shrink-0 transition-colors" type="button">
+<span class="material-symbols-outlined text-[19px]">barcode_scanner</span>
+</button>
+</div>
+</div>
+<!-- 3. FİLTRE ÇİPLERİ (CANLI SAYAÇLI) -->
+<div class="flex items-center gap-2 overflow-x-auto no-scrollbar py-0.5 -mx-4 px-4">
+<button class="filter-pill shrink-0 flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-bold bg-[#2F5233] text-white shadow-sm transition-all" data-status="all">
+<span>Tümü</span>
+<span class="px-1.5 py-0.5 rounded-full bg-white/20 text-white text-[10px] font-bold">67</span>
+</button>
+<button class="filter-pill shrink-0 flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-semibold bg-surface-white text-text-main border border-border-light hover:bg-gray-50 shadow-sm transition-all" data-status="pending">
+<span class="w-2 h-2 rounded-full bg-[#B57F13]"></span>
+<span>Bekliyor</span>
+<span class="px-1.5 py-0.5 rounded-full bg-[#FEF8E7] text-[#B57F13] text-[10px] font-bold">12</span>
+</button>
+<button class="filter-pill shrink-0 flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-semibold bg-surface-white text-text-main border border-border-light hover:bg-gray-50 shadow-sm transition-all" data-status="scheduled">
+<span class="w-2 h-2 rounded-full bg-[#3D8A4E]"></span>
+<span>Planlandı</span>
+<span class="px-1.5 py-0.5 rounded-full bg-[#E8F5EB] text-[#3D8A4E] text-[10px] font-bold">8</span>
+</button>
+<button class="filter-pill shrink-0 flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-semibold bg-surface-white text-text-main border border-border-light hover:bg-gray-50 shadow-sm transition-all" data-status="completed">
+<span class="w-2 h-2 rounded-full bg-[#2F5233]"></span>
+<span>Tamamlandı</span>
+<span class="px-1.5 py-0.5 rounded-full bg-[#E2EFE4] text-[#2F5233] text-[10px] font-bold">45</span>
+</button>
+<button class="filter-pill shrink-0 flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-semibold bg-surface-white text-text-main border border-border-light hover:bg-gray-50 shadow-sm transition-all" data-status="canceled">
+<span class="w-2 h-2 rounded-full bg-[#C0392B]"></span>
+<span>İptal</span>
+<span class="px-1.5 py-0.5 rounded-full bg-[#FDEDEC] text-[#C0392B] text-[10px] font-bold">2</span>
+</button>
+</div>
+<!-- 4. İŞ KARTLARI LİSTESİ -->
+<div class="flex flex-col space-y-3.5 pt-1">
+<!-- KART 1: TAMAMLANDI - BURSA PLAZA AVM (GENİŞLETİLMİŞ RAPOR DETAYI) -->
+<article class="bg-surface-white rounded-[18px] shadow-[0_3px_12px_rgba(47,82,51,0.08)] border border-border-light relative overflow-hidden border-l-[5px] border-l-[#2F5233]">
+<div class="p-4 space-y-3">
+<!-- Üst Satır: ID, Şube ve Durum Rozeti -->
+<div class="flex items-start justify-between gap-2">
+<div class="min-w-0">
+<div class="flex items-center gap-1.5 mb-1">
+<span class="text-xs font-bold text-primary-dark tracking-wide">#NLF-4819</span>
+<span class="text-gray-300">·</span>
+<span class="text-xs font-medium text-text-muted flex items-center gap-0.5">
+<span class="material-symbols-outlined text-[14px]">location_on</span> Osmangazi Şube
+                </span>
+</div>
+<h2 class="text-[17px] font-bold text-text-main leading-snug">Bursa Plaza AVM</h2>
+<p class="text-xs text-text-muted mt-0.5">Haşere &amp; Genel Dezenfeksiyon Operasyonu</p>
+</div>
+<span class="shrink-0 px-2.5 py-1 rounded-full text-[11px] font-extrabold uppercase tracking-wider bg-[#E2EFE4] text-[#2F5233] border border-[#2F5233]/20">
+              TAMAMLANDI
+            </span>
+</div>
+<!-- Operasyon Bilgi Şeridi: Randevu, Teknisyen, Tutar ve Puan -->
+<div class="grid grid-cols-2 gap-2 p-2.5 bg-bg-main rounded-xl border border-border-light/60">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-primary text-[18px]">schedule</span>
+<div>
+<span class="text-[10px] uppercase font-bold text-text-muted block leading-none">Randevu Saati</span>
+<span class="text-xs font-bold text-text-main">Bugün 09:30 - 11:00</span>
+</div>
+</div>
+<div class="flex items-center gap-2">
+<div class="w-6 h-6 rounded-full bg-[#E2EFE4] text-[#2F5233] font-bold text-[10px] flex items-center justify-center shrink-0">MK</div>
+<div class="min-w-0">
+<span class="text-[10px] uppercase font-bold text-text-muted block leading-none">Atanan Teknisyen</span>
+<span class="text-xs font-bold text-text-main truncate block">Murat Korkmaz</span>
+</div>
+</div>
+<div class="flex items-center gap-2 pt-1 border-t border-border-light/40">
+<span class="material-symbols-outlined text-text-muted text-[18px]">payments</span>
+<div>
+<span class="text-[10px] uppercase font-bold text-text-muted block leading-none">Hizmet Tutarı</span>
+<span class="text-sm font-extrabold text-[#2F5233]">₺3.200</span>
+</div>
+</div>
+<div class="flex items-center gap-2 pt-1 border-t border-border-light/40">
+<div class="flex text-amber-500">
+<span class="material-symbols-outlined text-[15px]" style="font-variation-settings: 'FILL' 1;">star</span>
+</div>
+<div>
+<span class="text-[10px] uppercase font-bold text-text-muted block leading-none">Müşteri Puanı</span>
+<span class="text-xs font-bold text-text-main">★ 5.0 (Mükemmel)</span>
+</div>
+</div>
+</div>
+<!-- AÇILMIŞ SAHA ONAY RAPORU DETAYI (MÜDÜR AUDIT MODÜLÜ) -->
+<div class="mt-2 pt-3 border-t border-border-light space-y-2.5 bg-[#F9FBF9] -mx-4 -mb-4 p-4 border-b rounded-b-[18px]">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-1.5 text-primary-dark font-bold text-xs uppercase tracking-wide">
+<span class="material-symbols-outlined text-[17px]">verified_user</span>
+<span>Saha Onay Raporu Detayı</span>
+</div>
+<span class="text-[10px] font-bold text-text-muted bg-white px-2 py-0.5 rounded-md border border-border-light">Rapor #884</span>
+</div>
+<!-- Kimyasal Dozaj ve Sağlık Bakanlığı Onayı -->
+<div class="bg-surface-white p-2.5 rounded-xl border border-border-light flex items-center justify-between">
+<div class="flex items-center gap-2.5 min-w-0">
+<div class="w-8 h-8 rounded-lg bg-[#E8F5EB] flex items-center justify-center text-primary shrink-0">
+<span class="material-symbols-outlined text-[19px]">science</span>
+</div>
+<div class="min-w-0">
+<p class="text-xs font-bold text-text-main truncate">K-Othrine SC 50 (%0.5)</p>
+<p class="text-[11px] text-text-muted">Biyosidal Dozaj: 200 ml / 10L Su</p>
+</div>
+</div>
+<span class="shrink-0 text-[10px] font-bold text-[#2F5233] bg-[#E2EFE4] px-2 py-1 rounded-md">
+                Sağlık Bakanlığı Onaylı
+              </span>
+</div>
+<!-- Uygulama Kanıt Fotoğrafları (Öncesi / Sonrası) -->
+<div>
+<span class="text-[11px] font-bold text-text-muted mb-1.5 block">Uygulama Kanıt Fotoğrafları</span>
+<div class="grid grid-cols-2 gap-2">
+<div class="relative rounded-xl overflow-hidden h-24 bg-gray-100 border border-border-light">
+<img class="w-full h-full object-cover" data-alt="Öncesi restoran mutfağı ilaçlama alanı" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDjjP42hLzxmE6uVsyBDL9o7cRajyc0r3FzU57HLUS3opVd7WtJ5zFpyUymRfJzdccyBMnRD1X_yO-GNCyZLJnUhjTdJfw_Une0dhZ1iHVHDG8ATSifjwdZEZlY3-IsTZlelZwMEmq1G83Mo8biaYYTjd0CRAFGBHsVhTzuOIfnDGndbhLnOzAj_Z78JhhqZGLgKeCmpHmL6tw5vu6Bw0uFvFPikApdIR4KQxo4q5x7onBtIuttnogO"/>
+<span class="absolute bottom-1.5 left-1.5 bg-black/75 text-white font-inter text-[10px] font-bold px-2 py-0.5 rounded backdrop-blur-sm">
+                    Öncesi · 09:35
+                  </span>
+</div>
+<div class="relative rounded-xl overflow-hidden h-24 bg-gray-100 border border-border-light">
+<img class="w-full h-full object-cover" data-alt="Sonrası yerleştirilen kemirgen istasyonu" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBwC0-vyVWFcj2-34JotuxDqBU_fcS8UGNuun5Ygp20tlR5xR2_J7OytlUoJ3fQ7cFMi6uttSaWXhMuaIGyHesZ72Y_9m2SQBHUY8TJxJWO7gaQ9Icc8epB4rdXdz14nSANMQ1DaImK7fjNAlYUfwyXfreVD8Jg7408KrYENz_yOmi_Kls6P3GbaX-_HRvMuRQEX-o0XxBTZpuP9pfMWjN9LEwkqQdlBMESDO5CgL5ZI4HoYwshK5iQ"/>
+<span class="absolute bottom-1.5 left-1.5 bg-[#2F5233]/90 text-white font-inter text-[10px] font-bold px-2 py-0.5 rounded backdrop-blur-sm">
+                    Sonrası · 10:52
+                  </span>
+</div>
+</div>
+</div>
+<!-- Dijital Müşteri İmzası -->
+<div class="bg-surface-white p-2.5 rounded-xl border border-border-light flex items-center justify-between">
+<div class="flex items-center gap-2">
+<div class="w-7 h-7 rounded-full bg-[#E8F5EB] flex items-center justify-center text-primary">
+<span class="material-symbols-outlined text-[17px]">draw</span>
+</div>
+<div>
+<span class="text-xs font-bold text-text-main block">Kemal Pekcan (Bina Sorumlusu)</span>
+<span class="text-[11px] text-primary flex items-center gap-0.5 font-semibold">
+<span class="material-symbols-outlined text-[14px]">check_circle</span> Dijital İmzalandı
+                  </span>
+</div>
+</div>
+<span class="material-symbols-outlined text-gray-400 text-[22px]">history_edu</span>
+</div>
+<!-- Rapor Aksiyonları -->
+<div class="grid grid-cols-2 gap-2 pt-1">
+<button class="h-10 rounded-xl bg-primary hover:bg-primary-dark text-white font-bold text-xs flex items-center justify-center gap-1.5 shadow-sm active:scale-95 transition-all" type="button">
+<span class="material-symbols-outlined text-[18px]">verified</span>
+<span>Raporu Onayla</span>
+</button>
+<button class="h-10 rounded-xl bg-white hover:bg-gray-50 text-primary-dark border border-border-light font-bold text-xs flex items-center justify-center gap-1.5 active:scale-95 transition-all" type="button">
+<span class="material-symbols-outlined text-[18px]">download</span>
+<span>PDF İndir</span>
+</button>
+</div>
+</div>
+</div>
+</article>
+<!-- KART 2: DEVAM EDİYOR - NİLÜFER KONAKLARI B BLOK -->
+<article class="bg-surface-white rounded-[18px] shadow-sm border border-border-light relative overflow-hidden border-l-[5px] border-l-[#3D8A4E]">
+<div class="p-4 space-y-3">
+<div class="flex items-start justify-between gap-2">
+<div class="min-w-0">
+<div class="flex items-center gap-1.5 mb-1">
+<span class="text-xs font-bold text-primary tracking-wide">#NLF-4820</span>
+<span class="text-gray-300">·</span>
+<span class="text-xs font-medium text-text-muted flex items-center gap-0.5">
+<span class="material-symbols-outlined text-[14px]">location_on</span> Nilüfer Şube
+                </span>
+</div>
+<h2 class="text-[17px] font-bold text-text-main leading-snug">Nilüfer Konakları B Blok</h2>
+<p class="text-xs text-text-muted mt-0.5">Kemirgen İstasyon Kontrolü &amp; Yemleme</p>
+</div>
+<span class="shrink-0 px-2.5 py-1 rounded-full text-[11px] font-extrabold uppercase tracking-wider bg-[#E8F5EB] text-[#3D8A4E] border border-[#3D8A4E]/20 flex items-center gap-1.5">
+<span class="w-1.5 h-1.5 rounded-full bg-[#3D8A4E] animate-pulse"></span>
+              DEVAM EDİYOR
+            </span>
+</div>
+<div class="grid grid-cols-3 gap-2 p-2.5 bg-bg-main rounded-xl border border-border-light/60 text-center">
+<div>
+<span class="text-[10px] uppercase font-bold text-text-muted block">Saat</span>
+<span class="text-xs font-bold text-text-main">11:30 - 13:00</span>
+</div>
+<div>
+<span class="text-[10px] uppercase font-bold text-text-muted block">Teknisyen</span>
+<span class="text-xs font-bold text-text-main truncate block">Serkan Demir</span>
+</div>
+<div>
+<span class="text-[10px] uppercase font-bold text-text-muted block">Hizmet Tutarı</span>
+<span class="text-xs font-extrabold text-[#3D8A4E]">₺1.800</span>
+</div>
+</div>
+<div class="flex items-center justify-between pt-0.5">
+<div class="flex items-center gap-1 text-xs text-text-muted truncate min-w-0">
+<span class="material-symbols-outlined text-[15px] text-primary shrink-0">near_me</span>
+<span class="truncate">Odunluk Mah. Nilüfer / Bursa</span>
+</div>
+<button class="shrink-0 px-3 py-1.5 rounded-xl bg-bg-main hover:bg-[#E4ECE5] text-primary text-xs font-bold flex items-center gap-1 transition-colors" type="button">
+<span>Canlı Takip</span>
+<span class="material-symbols-outlined text-[16px]">chevron_right</span>
+</button>
+</div>
+</div>
+</article>
+<!-- KART 3: BEKLİYOR / YOLDA - DEMİRTAŞ LOJİSTİK DEPO -->
+<article class="bg-surface-white rounded-[18px] shadow-sm border border-border-light relative overflow-hidden border-l-[5px] border-l-[#B57F13]">
+<div class="p-4 space-y-3">
+<div class="flex items-start justify-between gap-2">
+<div class="min-w-0">
+<div class="flex items-center gap-1.5 mb-1">
+<span class="text-xs font-bold text-[#B57F13] tracking-wide">#NLF-4821</span>
+<span class="text-gray-300">·</span>
+<span class="text-xs font-medium text-text-muted flex items-center gap-0.5">
+<span class="material-symbols-outlined text-[14px]">location_on</span> Demirtaş Şube
+                </span>
+</div>
+<h2 class="text-[17px] font-bold text-text-main leading-snug">Demirtaş Lojistik Depo</h2>
+<p class="text-xs text-text-muted mt-0.5">ULV Uçkun &amp; Endüstriyel Depo Dezenfeksiyonu</p>
+</div>
+<span class="shrink-0 px-2.5 py-1 rounded-full text-[11px] font-extrabold uppercase tracking-wider bg-[#FEF8E7] text-[#B57F13] border border-[#B57F13]/20 flex items-center gap-1">
+<span class="material-symbols-outlined text-[13px]">local_shipping</span>
+              BEKLİYOR
+            </span>
+</div>
+<div class="grid grid-cols-3 gap-2 p-2.5 bg-bg-main rounded-xl border border-border-light/60 text-center">
+<div>
+<span class="text-[10px] uppercase font-bold text-text-muted block">Saat</span>
+<span class="text-xs font-bold text-text-main">14:00 - 16:00</span>
+</div>
+<div>
+<span class="text-[10px] uppercase font-bold text-text-muted block">Teknisyen</span>
+<span class="text-xs font-bold text-text-main truncate block">Burak Erdem</span>
+</div>
+<div>
+<span class="text-[10px] uppercase font-bold text-text-muted block">Hizmet Tutarı</span>
+<span class="text-xs font-extrabold text-[#B57F13]">₺4.500</span>
+</div>
+</div>
+<div class="flex items-center justify-between pt-0.5">
+<div class="flex items-center gap-1 text-[11px] text-text-muted">
+<span class="material-symbols-outlined text-[15px] text-[#B57F13]">inventory_2</span>
+<span>Ekipman: Termal ULV Cihazı</span>
+</div>
+<button class="px-3 py-1.5 rounded-xl bg-[#FEF8E7] hover:bg-amber-100 text-[#B57F13] text-xs font-bold transition-colors" type="button">
+              Yeniden Ata
+            </button>
+</div>
+</div>
+</article>
+<!-- KART 4: PLANLANDI - ÖZLÜCE PASTANESİ -->
+<article class="bg-surface-white rounded-[18px] shadow-sm border border-border-light relative overflow-hidden border-l-[5px] border-l-[#3D8A4E]">
+<div class="p-4 space-y-3">
+<div class="flex items-start justify-between gap-2">
+<div class="min-w-0">
+<div class="flex items-center gap-1.5 mb-1">
+<span class="text-xs font-bold text-primary tracking-wide">#NLF-4822</span>
+<span class="text-gray-300">·</span>
+<span class="text-xs font-medium text-text-muted flex items-center gap-0.5">
+<span class="material-symbols-outlined text-[14px]">location_on</span> Özlüce Şube
+                </span>
+</div>
+<h2 class="text-[17px] font-bold text-text-main leading-snug">Özlüce Pastanesi</h2>
+<p class="text-xs text-text-muted mt-0.5">Aylık Periyodik Jel &amp; Yürüyen Haşere İlaçlaması</p>
+</div>
+<span class="shrink-0 px-2.5 py-1 rounded-full text-[11px] font-extrabold uppercase tracking-wider bg-[#E8F5EB] text-[#3D8A4E] border border-[#3D8A4E]/20">
+              PLANLANDI
+            </span>
+</div>
+<div class="grid grid-cols-2 gap-2 p-2.5 bg-bg-main rounded-xl border border-border-light/60">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-primary text-[18px]">event</span>
+<div>
+<span class="text-[10px] uppercase font-bold text-text-muted block leading-none">Randevu Saati</span>
+<span class="text-xs font-bold text-text-main">Bugün 16:30</span>
+</div>
+</div>
+<div class="flex items-center gap-2">
+<div class="w-6 h-6 rounded-full bg-[#E8F5EB] text-primary font-bold text-[10px] flex items-center justify-center shrink-0">CY</div>
+<div class="min-w-0">
+<span class="text-[10px] uppercase font-bold text-text-muted block leading-none">Atanan Teknisyen</span>
+<span class="text-xs font-bold text-text-main truncate block">Caner Yıldız</span>
+</div>
+</div>
+</div>
+<div class="flex items-center justify-between pt-0.5">
+<div class="flex items-center gap-1 text-xs text-text-muted">
+<span class="material-symbols-outlined text-[15px] text-text-muted">map</span>
+<span>Özlüce Bulvarı No: 44</span>
+</div>
+<button class="text-primary hover:text-primary-dark font-bold text-xs flex items-center gap-0.5" type="button">
+<span>İş Detayı</span>
+<span class="material-symbols-outlined text-[16px]">arrow_forward</span>
+</button>
+</div>
+</div>
+</article>
+<!-- KART 5: İPTAL EDİLDİ - GÖRÜKLE RESTORAN (ZORUNLU GEREKSİNİM) -->
+<article class="bg-surface-white rounded-[18px] shadow-sm border border-border-light relative overflow-hidden border-l-[5px] border-l-[#C0392B]">
+<div class="p-4 space-y-3">
+<div class="flex items-start justify-between gap-2">
+<div class="min-w-0">
+<div class="flex items-center gap-1.5 mb-1">
+<span class="text-xs font-bold text-[#C0392B] tracking-wide">#NLF-4815</span>
+<span class="text-gray-300">·</span>
+<span class="text-xs font-medium text-text-muted flex items-center gap-0.5">
+<span class="material-symbols-outlined text-[14px]">location_on</span> Nilüfer / Görükle
+                </span>
+</div>
+<h2 class="text-[17px] font-bold text-text-main leading-snug">Görükle Restoran &amp; Cafe</h2>
+<p class="text-xs text-text-muted mt-0.5">Mutfak &amp; Depo Hamamböceği Mücadelesi</p>
+</div>
+<span class="shrink-0 px-2.5 py-1 rounded-full text-[11px] font-extrabold uppercase tracking-wider bg-[#FDEDEC] text-[#C0392B] border border-[#C0392B]/20">
+              İPTAL
+            </span>
+</div>
+<!-- İptal Gerekçesi Şeridi -->
+<div class="p-2.5 bg-[#FDEDEC]/60 rounded-xl border border-red-100 flex items-start gap-2">
+<span class="material-symbols-outlined text-[#C0392B] text-[18px] shrink-0 mt-0.5">error_outline</span>
+<div>
+<span class="text-[11px] font-bold text-[#C0392B] block">Müşteri Randevu İptali</span>
+<p class="text-[11px] text-text-muted leading-tight mt-0.5">
+                İşletme tadilatı nedeniyle müşteri tarafından saat 08:15'te iptal talep edildi. İleri tarihe ertelenecek.
+              </p>
+</div>
+</div>
+<div class="flex items-center justify-between pt-0.5 text-xs">
+<div class="text-text-muted flex items-center gap-1">
+<span class="material-symbols-outlined text-[15px]">event_busy</span>
+<span>İptal Zamanı: 08:15</span>
+</div>
+<button class="px-3 py-1.5 rounded-xl bg-gray-100 hover:bg-gray-200 text-text-main font-bold transition-colors" type="button">
+              Yeniden Planla
+            </button>
+</div>
+</div>
+</article>
+</div>
+</main>
+<!-- 6. YÜZEN EKLEME BUTONU (FLOATING ACTION BUTTON) -->
+<aside class="fixed bottom-24 right-4 z-40 flex items-center gap-2">
+<div class="bg-surface-white/95 backdrop-blur-md px-3 py-1.5 rounded-full text-xs font-bold text-primary-dark shadow-md border border-border-light hidden sm:block">
+      Yeni İş Girişi
+    </div>
+<button aria-label="Yeni Saha İşi Ekle" class="w-14 h-14 rounded-full bg-primary text-white flex items-center justify-center shadow-[0_8px_22px_rgba(61,138,78,0.45)] hover:bg-primary-dark active:scale-95 transition-all" type="button">
+<span class="material-symbols-outlined text-[30px]">add</span>
+</button>
+</aside>
+<!-- 7. ALT GEZİNME ÇUBUĞU (BOTTOM NAVIGATION BAR - 4 SEKME + ORTADA + BUTONU) -->
+<div class="fixed bottom-0 inset-x-0 z-40 px-4 pb-safe pointer-events-none mb-2">
+<nav class="pointer-events-auto max-w-sm mx-auto bg-surface-white/95 backdrop-blur-xl rounded-full shadow-[0_12px_32px_rgba(25,36,27,0.12)] border border-border-light px-3 h-16 flex items-center justify-between relative">
+<!-- Sekme 1: Ana Sayfa -->
+<a class="flex-1 flex flex-col items-center justify-center h-full text-text-muted hover:text-primary transition-all group" data-path="dashboard" href="#">
+<span class="material-symbols-outlined text-[23px] group-hover:scale-110 transition-transform">home</span>
+<span class="text-[10.5px] font-semibold mt-0.5">Ana Sayfa</span>
+<span class="w-1 h-1 rounded-full bg-primary mt-0.5 opacity-0"></span>
+</a>
+<!-- Sekme 2: İşler (AKTİF) -->
+<a class="flex-1 flex flex-col items-center justify-center h-full text-primary font-bold transition-all group" data-path="jobs" href="#">
+<span class="material-symbols-outlined text-[24px]" style="font-variation-settings: 'FILL' 1;">handyman</span>
+<span class="text-[10.5px] font-bold mt-0.5">İşler</span>
+<span class="w-1 h-1 rounded-full bg-primary mt-0.5 opacity-100"></span>
+</a>
+<!-- Ortada Yükseltilmiş Hızlı Ekleme Butonu -->
+<div class="relative flex items-center justify-center w-12 -mt-6">
+<button aria-label="Hızlı Ekle" class="w-12 h-12 rounded-full bg-primary hover:bg-primary-dark text-white flex items-center justify-center shadow-[0_6px_18px_rgba(61,138,78,0.5)] active:scale-95 transition-all" type="button">
+<span class="material-symbols-outlined text-[26px]">add</span>
+</button>
+</div>
+<!-- Sekme 3: Bildirimler -->
+<a class="flex-1 flex flex-col items-center justify-center h-full text-text-muted hover:text-primary transition-all group relative" data-path="notifications" href="#">
+<div class="relative">
+<span class="material-symbols-outlined text-[23px] group-hover:scale-110 transition-transform">notifications</span>
+<span class="absolute -top-1 -right-1 min-w-[15px] h-[15px] px-0.5 bg-[#C0392B] text-white text-[9px] font-bold rounded-full flex items-center justify-center">3</span>
+</div>
+<span class="text-[10.5px] font-semibold mt-0.5">Bildirimler</span>
+<span class="w-1 h-1 rounded-full bg-primary mt-0.5 opacity-0"></span>
+</a>
+<!-- Sekme 4: Mesajlar -->
+<a class="flex-1 flex flex-col items-center justify-center h-full text-text-muted hover:text-primary transition-all group" data-path="messages" href="#">
+<span class="material-symbols-outlined text-[23px] group-hover:scale-110 transition-transform">chat_bubble</span>
+<span class="text-[10.5px] font-semibold mt-0.5">Mesajlar</span>
+<span class="w-1 h-1 rounded-full bg-primary mt-0.5 opacity-0"></span>
+</a>
+</nav>
+</div>
+<!-- SOL ÇEKMECE MENÜ (DRAWER) -->
+<label class="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 cursor-pointer" for="drawer-toggle" id="drawer-backdrop"></label>
+<aside class="fixed top-0 bottom-0 left-0 w-[300px] max-w-[85vw] bg-surface-white z-50 flex flex-col shadow-2xl rounded-r-3xl overflow-hidden" id="drawer-panel">
+<div class="bg-gradient-to-br from-[#2F5233] to-[#3D8A4E] p-5 pt-safe text-white flex flex-col gap-3">
+<div class="flex items-center justify-between">
+<div class="w-12 h-12 rounded-full bg-white/20 backdrop-blur-md flex items-center justify-center text-white font-bold text-lg border border-white/20">
+          AY
+        </div>
+<label class="w-9 h-9 flex items-center justify-center rounded-xl bg-white/10 hover:bg-white/20 text-white cursor-pointer transition-colors" for="drawer-toggle">
+<span class="material-symbols-outlined text-[20px]">close</span>
+</label>
+</div>
+<div>
+<div class="flex items-center gap-1.5">
+<span class="text-base font-bold">Ayşe Yılmaz</span>
+<span class="px-2 py-0.5 rounded-full bg-white/20 text-[10px] font-bold tracking-wider uppercase">MÜDÜR</span>
+</div>
+<span class="text-xs text-white/80">Nilüfer Merkez Operasyon Sorumlusu</span>
+</div>
+</div>
+<div class="flex-1 overflow-y-auto p-4 space-y-4 text-xs font-semibold">
+<div class="space-y-1">
+<span class="text-[10px] uppercase font-bold text-text-muted px-2 tracking-wider">Operasyon Menüsü</span>
+<a class="flex items-center gap-2.5 px-3 h-10 rounded-xl text-text-main hover:bg-bg-main transition-colors" href="#">
+<span class="material-symbols-outlined text-primary text-[20px]">dashboard</span>
+<span>Ana Sayfa</span>
+</a>
+<a class="flex items-center gap-2.5 px-3 h-10 rounded-xl bg-[#E8F5EB] text-primary font-bold transition-colors" href="#">
+<span class="material-symbols-outlined text-primary text-[20px]">handyman</span>
+<span>İşler (Aktif)</span>
+</a>
+<a class="flex items-center justify-between px-3 h-10 rounded-xl text-text-main hover:bg-bg-main transition-colors" href="#">
+<div class="flex items-center gap-2.5">
+<span class="material-symbols-outlined text-primary text-[20px]">assignment_turned_in</span>
+<span>Bekleyen Onaylar</span>
+</div>
+<span class="px-1.5 py-0.5 rounded-md bg-[#FEF8E7] text-[#B57F13] font-bold text-[10px]">5</span>
+</a>
+<a class="flex items-center gap-2.5 px-3 h-10 rounded-xl text-text-main hover:bg-bg-main transition-colors" href="#">
+<span class="material-symbols-outlined text-primary text-[20px]">calendar_month</span>
+<span>Takvim &amp; Randevular</span>
+</a>
+<a class="flex items-center gap-2.5 px-3 h-10 rounded-xl text-text-main hover:bg-bg-main transition-colors" href="#">
+<span class="material-symbols-outlined text-primary text-[20px]">badge</span>
+<span>Teknisyen Kadrosu</span>
+</a>
+</div>
+<div class="space-y-1 pt-2 border-t border-border-light">
+<span class="text-[10px] uppercase font-bold text-text-muted px-2 tracking-wider">Sistem</span>
+<a class="flex items-center gap-2.5 px-3 h-10 rounded-xl text-text-main hover:bg-bg-main transition-colors" href="#">
+<span class="material-symbols-outlined text-text-muted text-[20px]">settings</span>
+<span>Şube Ayarları</span>
+</a>
+</div>
+</div>
+<div class="p-4 pb-safe border-t border-border-light">
+<button class="w-full h-11 flex items-center justify-center gap-2 rounded-xl bg-[#FDEDEC] text-[#C0392B] font-bold text-xs transition-colors" type="button">
+<span class="material-symbols-outlined text-[18px]">logout</span>
+<span>Güvenli Çıkış</span>
+</button>
+</div>
+</aside>
+<!-- Filtre Çipleri Etkileşimi Script -->
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+      const pills = document.querySelectorAll('.filter-pill');
+      pills.forEach(pill => {
+        pill.addEventListener('click', () => {
+          pills.forEach(p => {
+            p.classList.remove('bg-[#2F5233]', 'text-white');
+            p.classList.add('bg-surface-white', 'text-text-main');
+          });
+          pill.classList.remove('bg-surface-white', 'text-text-main');
+          pill.classList.add('bg-[#2F5233]', 'text-white');
+        });
+      });
+    });
+  </script>
+</body></html>
