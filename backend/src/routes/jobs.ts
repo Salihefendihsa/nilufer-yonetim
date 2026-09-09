@@ -9,6 +9,7 @@ import {
   deleteJob,
   createJobReport,
   getJobReport,
+  approveJobReport,
   rateJob,
 } from "../controllers/jobsController";
 import { exportJobReportPdf } from "../controllers/exportController";
@@ -27,6 +28,8 @@ router.delete("/:id", requireRole(Role.OWNER, Role.MANAGER), deleteJob);
 
 router.post("/:id/report", requireRole(Role.STAFF), createJobReport);
 router.get("/:id/report", getJobReport);
+// Saha raporu onayı yönetim yetkisidir (Stitch Müdür → Ayarlar: "Saha Onayları: Yetkili").
+router.post("/:id/report/approve", requireRole(Role.OWNER, Role.MANAGER), approveJobReport);
 router.get("/:id/report/pdf", exportJobReportPdf);
 router.patch("/:id/rate", requireRole(Role.CUSTOMER), rateJob);
 

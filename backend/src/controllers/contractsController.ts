@@ -5,7 +5,8 @@ import { prisma } from "../lib/prisma";
 import { getPagination, paginatedResponse } from "../lib/pagination";
 import { getCustomerIdForUser } from "../lib/access";
 import { idParam } from "../lib/params";
-import { addRecurrencePeriod } from "../lib/recurrence";
+import { addRecurrencePeriod, monthlyRecurringAmount } from "../lib/recurrence";
+import { recordAuditLog } from "../lib/auditLog";
 
 const createSchema = z.object({
   customerId: z.string().uuid(),
@@ -14,6 +15,7 @@ const createSchema = z.object({
   durationMonths: z.number().int().positive(),
   status: z.string().min(1),
   serviceType: z.string().optional(),
+  amount: z.number().nonnegative().optional(),
   pdfUrl: z.string().optional(),
   recurrenceType: z.enum(RecurrenceType).nullable().optional(),
 });
@@ -50,11 +52,52 @@ export async function listContracts(req: Request, res: Response) {
   }
 
   const [data, total] = await Promise.all([
-    prisma.contract.findMany({ where, skip, take, orderBy: { createdAt: "desc" } }),
+    prisma.contract.findMany({
+      where,
+      skip,
+      take,
+      orderBy: { createdAt: "desc" },
+      include: { customer: { select: { id: true, fullName: true, district: true } } },
+    }),
     prisma.contract.count({ where }),
   ]);
 
   return res.json(paginatedResponse(data, total, page, limit));
+}
+
+/**
+ * Sözleşme portföyü özeti — Stitch Müdür → Sözleşmeler üst kartları.
+ * `monthlyRecurringRevenue`, periyodu aylığa normalize edilmiş (yıllık/12,
+ * 3 aylık/3 …) tekrarlayan gelirdir; periyodu veya tutarı olmayan sözleşme
+ * 0 sayılır (bkz. lib/recurrence.ts:monthlyRecurringAmount).
+ */
+export async function getContractsSummary(_req: Request, res: Response) {
+  const now = new Date();
+  const in30Days = new Date(now);
+  in30Days.setDate(now.getDate() + 30);
+
+  const [statusGrouped, activeContracts, expiringCount] = await Promise.all([
+    prisma.contract.groupBy({ by: ["status"], _count: { _all: true } }),
+    prisma.contract.findMany({
+      where: { status: "ACTIVE" },
+      select: { amount: true, recurrenceType: true },
+    }),
+    prisma.contract.count({ where: { status: "ACTIVE", endDate: { gte: now, lte: in30Days } } }),
+  ]);
+
+  const monthlyRecurringRevenue = activeContracts.reduce(
+    (sum, c) => sum + monthlyRecurringAmount(c.amount === null ? null : Number(c.amount), c.recurrenceType),
+    0
+  );
+
+  return res.json({
+    byStatus: Object.fromEntries(statusGrouped.map((g) => [g.status, g._count._all])),
+    totalCount: statusGrouped.reduce((sum, g) => sum + g._count._all, 0),
+    activeCount: activeContracts.length,
+    expiringIn30DaysCount: expiringCount,
+    monthlyRecurringRevenue,
+    activeContractValueTotal: activeContracts.reduce((sum, c) => sum + Number(c.amount ?? 0), 0),
+  });
 }
 
 export async function getExpiringContracts(_req: Request, res: Response) {
@@ -93,7 +136,96 @@ export async function createContract(req: Request, res: Response) {
   const nextGenerationDate = computeNextGenerationDate(data.recurrenceType, data.startDate);
 
   const contract = await prisma.contract.create({ data: { ...data, nextGenerationDate } });
+
+  // Contract bir User'a değil Customer'a bağlı — hedef olarak aktörü kullanan
+  // aynı desen (bkz. productsController.ts:deleteProduct).
+  await recordAuditLog({
+    actorUserId: req.user!.sub,
+    action: "contract.create",
+    targetUserId: req.user!.sub,
+    targetType: "Contract",
+    targetId: contract.id,
+    detail: `customerId=${contract.customerId}, amount=${contract.amount ?? "—"}`,
+  });
+
   return res.status(201).json(contract);
+}
+
+const renewSchema = z.object({
+  durationMonths: z.number().int().positive().optional(),
+  amount: z.number().nonnegative().optional(),
+  recurrenceType: z.enum(RecurrenceType).nullable().optional(),
+});
+
+/**
+ * Sözleşme yenileme (Stitch Müdür → Sözleşmeler → "Yenile").
+ *
+ * Yeni dönem, eski sözleşmenin bitiş tarihinden başlar; süre/tutar/periyot
+ * verilmezse eskisinden devralınır. Eski kayıt EXPIRED'a çekilir — böylece
+ * aynı müşteri için iki ACTIVE sözleşme oluşmaz.
+ *
+ * Mükerrer yenilemeye karşı iyimser kilit: `status: "ACTIVE"` koşulu WHERE'de
+ * olduğundan iki eşzamanlı istekten yalnızca biri yeni sözleşmeyi oluşturur
+ * (bkz. quotesController.ts:convertQuote ile aynı desen).
+ */
+export async function renewContract(req: Request, res: Response) {
+  // Tüm alanlar opsiyonel: gövdesiz POST da geçerli bir "olduğu gibi yenile"
+  // isteğidir (mobil istemci gövdesiz gönderir).
+  const body = renewSchema.parse(req.body ?? {});
+
+  const existing = await prisma.contract.findUnique({ where: { id: idParam(req) } });
+  if (!existing) {
+    return res.status(404).json({ error: "Sözleşme bulunamadı" });
+  }
+  if (existing.status !== "ACTIVE") {
+    return res.status(409).json({ error: "Yalnızca aktif sözleşmeler yenilenebilir" });
+  }
+
+  const durationMonths = body.durationMonths ?? existing.durationMonths;
+  const startDate = new Date(existing.endDate);
+  const endDate = new Date(startDate);
+  endDate.setMonth(endDate.getMonth() + durationMonths);
+
+  const recurrenceType =
+    body.recurrenceType === undefined ? existing.recurrenceType : body.recurrenceType;
+  const amount = body.amount ?? (existing.amount === null ? undefined : Number(existing.amount));
+
+  const created = await prisma.$transaction(async (tx) => {
+    const guarded = await tx.contract.updateMany({
+      where: { id: existing.id, status: "ACTIVE" },
+      data: { status: "EXPIRED" },
+    });
+    if (guarded.count === 0) return null;
+
+    return tx.contract.create({
+      data: {
+        customerId: existing.customerId,
+        startDate,
+        endDate,
+        durationMonths,
+        status: "ACTIVE",
+        serviceType: existing.serviceType,
+        amount,
+        recurrenceType,
+        nextGenerationDate: computeNextGenerationDate(recurrenceType, startDate),
+      },
+    });
+  });
+
+  if (!created) {
+    return res.status(409).json({ error: "Bu sözleşme başka bir istekle yenilendi" });
+  }
+
+  await recordAuditLog({
+    actorUserId: req.user!.sub,
+    action: "contract.renew",
+    targetUserId: req.user!.sub,
+    targetType: "Contract",
+    targetId: created.id,
+    detail: `${existing.id} -> ${created.id} (${durationMonths} ay)`,
+  });
+
+  return res.status(201).json(created);
 }
 
 export async function updateContract(req: Request, res: Response) {
@@ -111,5 +243,15 @@ export async function updateContract(req: Request, res: Response) {
     where: { id: idParam(req) },
     data: { ...data, ...(nextGenerationDate !== undefined && { nextGenerationDate }) },
   });
+
+  await recordAuditLog({
+    actorUserId: req.user!.sub,
+    action: "contract.update",
+    targetUserId: req.user!.sub,
+    targetType: "Contract",
+    targetId: contract.id,
+    detail: JSON.stringify(data),
+  });
+
   return res.json(contract);
 }

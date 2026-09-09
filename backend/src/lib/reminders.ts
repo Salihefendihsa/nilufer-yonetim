@@ -24,9 +24,9 @@ async function getOwners(): Promise<UserForEmail[]> {
   return prisma.user.findMany({ where: { role: Role.OWNER }, select: { id: true, email: true } });
 }
 
-async function notifyOwners(title: string, body: string): Promise<void> {
+async function notifyOwners(title: string, body: string, link?: Parameters<typeof notifyUsers>[3]): Promise<void> {
   const owners = await getOwners();
-  await notifyUsers(owners.map((o) => o.id), title, body);
+  await notifyUsers(owners.map((o) => o.id), title, body, link);
 
   for (const owner of owners) {
     if (await shouldEmail(owner.id, "emailEnabled")) {
@@ -46,7 +46,8 @@ export async function checkLowStockAndNotify(productId: string): Promise<void> {
 
   await notifyOwners(
     "Kritik stok uyarısı",
-    `${product.name} stoğu kritik seviyenin altına düştü (${Number(product.currentStock)} ${product.unit} kaldı).`
+    `${product.name} stoğu kritik seviyenin altına düştü (${Number(product.currentStock)} ${product.unit} kaldı).`,
+    { type: "low_stock", relatedType: "Product", relatedId: product.id }
   );
 }
 

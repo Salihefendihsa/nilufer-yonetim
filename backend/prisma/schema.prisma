@@ -18,7 +18,30 @@ enum Role {
 enum JobStatus {
   PENDING
   SCHEDULED
+  IN_PROGRESS
   COMPLETED
+  CANCELLED
+}
+
+enum StaffStatus {
+  AVAILABLE
+  ON_JOB
+  ON_BREAK
+  ON_LEAVE
+  OFFLINE
+}
+
+enum ProductCategory {
+  BIOCIDAL
+  CONSUMABLE
+  EQUIPMENT
+  DISINFECTANT
+}
+
+/// Depo ikmal/satın alma talebi durumu (Stitch Müdür → Stok → "Satın Alma Talebi").
+enum PurchaseRequestStatus {
+  PENDING
+  RECEIVED
   CANCELLED
 }
 
@@ -36,6 +59,8 @@ enum StockMovementType {
 enum RecurrenceType {
   MONTHLY
   QUARTERLY
+  SEMIANNUAL
+  ANNUAL
 }
 
 enum JobPhotoType {
@@ -64,6 +89,9 @@ model User {
   auditLogsAsTarget AuditLog[] @relation("AuditLogTarget")
   uploadedJobPhotos JobPhoto[]
   sessions          UserSession[]
+  approvedJobReports JobReport[]           @relation("JobReportApprovedBy")
+  requestedPurchases StockPurchaseRequest[] @relation("PurchaseRequestedBy")
+  receivedPurchases  StockPurchaseRequest[] @relation("PurchaseReceivedBy")
 
   @@index([role])
 }
@@ -93,6 +121,13 @@ model Staff {
   position     String
   salaryBase   Decimal  @db.Decimal(10, 2)
   supervisorId String?
+  status       StaffStatus @default(AVAILABLE)
+  statusUntil  DateTime?
+  /// Zimmetli araç plakası (Stitch Müdür → Personel → "Zimmetli Araç").
+  vehiclePlate String?
+  /// Günlük iş kapasitesi — "4/5 İş (%80)" göstergesinin paydası. Boşsa
+  /// yüzde gösterilmez, yalnızca iş sayısı gösterilir (uydurma kapasite yok).
+  dailyJobCapacity Int?
   createdAt    DateTime @default(now())
 
   user            User             @relation(fields: [userId], references: [id])
@@ -103,6 +138,7 @@ model Staff {
   advanceRequests AdvanceRequest[]
   permissions     Permission[]
   certifications  StaffCertification[]
+  collectedPayments Payment[]      @relation("PaymentCollectedBy")
 
   @@index([position])
   @@index([supervisorId])
@@ -152,12 +188,21 @@ model AdvanceRequest {
 
 model Job {
   id               String    @id @default(uuid())
+  /// İnsan-okunur iş numarası (#NLF-4819 gösterimi). Postgres sequence ile
+  /// üretilir; mevcut satırlar migration sırasında otomatik numaralandırılır.
+  sequenceNo       Int       @default(autoincrement())
   customerId       String
   assignedStaffId  String?
   serviceType      String
   status           JobStatus @default(PENDING)
   scheduledAt      DateTime?
+  /// Randevu penceresinin bitişi ("09:30 - 11:00" gösterimi) ve zamanında
+  /// tamamlama oranı hesabının referansı.
+  scheduledEndAt   DateTime?
+  startedAt        DateTime?
   completedAt      DateTime?
+  cancelledAt      DateTime?
+  cancellationReason String?
   notes            String?
   price            Decimal?  @db.Decimal(10, 2)
   rating           Int?
@@ -173,6 +218,7 @@ model Job {
   @@index([assignedStaffId])
   @@index([status])
   @@index([scheduledAt])
+  @@index([sequenceNo])
 }
 
 model JobPhoto {
@@ -200,45 +246,110 @@ model JobReport {
   notes         String?
   signatureUrl  String?
   pdfUrl        String?
+  /// Müdür/patron saha raporu onayı (Stitch Müdür → İşler → "Raporu Onayla").
+  approvedAt        DateTime?
+  approvedByUserId  String?
   createdAt     DateTime @default(now())
 
   job           Job            @relation(fields: [jobId], references: [id])
   staff         Staff          @relation(fields: [staffId], references: [id])
   product       Product?       @relation(fields: [productId], references: [id])
+  approvedBy    User?          @relation("JobReportApprovedBy", fields: [approvedByUserId], references: [id])
+  /// Eski tekli-ürün akışı için (bkz. `productId`/`quantity` alanları) —
+  /// yeni raporlar `products` (JobReportProduct) kullanır, bu alan artık
+  /// yalnızca geriye dönük uyumluluk için `unique` bir StockMovement taşır.
   stockMovement StockMovement?
+  /// Stitch Personel → İşler: "Kullanılan Ürünler (Stoktan Düşüm)" — bir
+  /// raporda BİRDEN FAZLA ürün seçilip her biri için ayrı miktar/stepper
+  /// girilebilir. Her satır kendi StockMovement(OUT) kaydını üretir.
+  products      JobReportProduct[]
 
   @@index([jobId])
   @@index([staffId])
+  @@index([productId])
+  @@index([approvedAt])
+}
+
+/// Bir saha raporunda kullanılan birden fazla ürünü (ve stoktan düşülen
+/// miktarını) tutar — bkz. JobReport.products. Faz 9 (Personel) ile
+/// eklendi: Stitch "İşler" ekranındaki çoklu ürün + miktar stepper'ı
+/// gerçek bir tekli `productId`/`quantity` alanıyla karşılanamıyordu.
+model JobReportProduct {
+  id          String   @id @default(uuid())
+  jobReportId String
+  productId   String
+  quantity    Decimal  @db.Decimal(10, 2)
+  createdAt   DateTime @default(now())
+
+  jobReport     JobReport      @relation(fields: [jobReportId], references: [id])
+  product       Product        @relation(fields: [productId], references: [id])
+  stockMovement StockMovement?
+
+  @@index([jobReportId])
   @@index([productId])
 }
 
 model Product {
   id                String   @id @default(uuid())
+  /// Depo/stok kodu (INS-402, ROD-108 gibi) — Stitch Müdür → Stok listesi.
+  code              String?
   name              String
   unit              String
+  /// Etken madde / ambalaj açıklaması ("Balmumu Bazlı Parafin Blok · 5 Kg Kova").
+  description       String?
+  category          ProductCategory @default(BIOCIDAL)
   currentStock      Decimal  @db.Decimal(10, 2)
   criticalThreshold Decimal  @db.Decimal(10, 2)
   createdAt         DateTime @default(now())
 
-  movements  StockMovement[]
-  jobReports JobReport[]
+  movements         StockMovement[]
+  jobReports        JobReport[]
+  jobReportProducts JobReportProduct[]
+  purchaseRequests  StockPurchaseRequest[]
 
   @@index([name])
 }
 
 model StockMovement {
-  id                 String            @id @default(uuid())
-  productId          String
-  type               StockMovementType
-  quantity           Decimal           @db.Decimal(10, 2)
-  relatedJobReportId String?           @unique
-  note               String?
-  createdAt          DateTime          @default(now())
+  id                        String            @id @default(uuid())
+  productId                 String
+  type                      StockMovementType
+  quantity                  Decimal           @db.Decimal(10, 2)
+  /// Eski tekli-ürün raporu akışı (bkz. JobReport.productId) — yeni çoklu
+  /// ürün raporları `relatedJobReportProductId` kullanır.
+  relatedJobReportId        String?           @unique
+  relatedJobReportProductId String?           @unique
+  note                      String?
+  createdAt                 DateTime          @default(now())
 
-  product          Product    @relation(fields: [productId], references: [id])
-  relatedJobReport JobReport? @relation(fields: [relatedJobReportId], references: [id])
+  product                 Product           @relation(fields: [productId], references: [id])
+  relatedJobReport        JobReport?        @relation(fields: [relatedJobReportId], references: [id])
+  relatedJobReportProduct JobReportProduct? @relation(fields: [relatedJobReportProductId], references: [id])
 
   @@index([productId])
+}
+
+/// Depo ikmal / satın alma talebi. Müdür "Satın Alma Talebi" oluşturur
+/// (stok HEMEN artmaz, "Sipariş Bekleyen" olarak görünür); mal kabul
+/// edildiğinde (RECEIVED) tek bir transaction içinde stok artar ve bir
+/// StockMovement(IN) kaydı düşülür.
+model StockPurchaseRequest {
+  id               String                @id @default(uuid())
+  productId        String
+  quantity         Decimal               @db.Decimal(10, 2)
+  status           PurchaseRequestStatus @default(PENDING)
+  note             String?
+  requestedByUserId String
+  receivedAt       DateTime?
+  receivedByUserId String?
+  createdAt        DateTime              @default(now())
+
+  product      Product @relation(fields: [productId], references: [id])
+  requestedBy  User    @relation("PurchaseRequestedBy", fields: [requestedByUserId], references: [id])
+  receivedBy   User?   @relation("PurchaseReceivedBy", fields: [receivedByUserId], references: [id])
+
+  @@index([productId])
+  @@index([status])
 }
 
 model Contract {
@@ -249,6 +360,7 @@ model Contract {
   durationMonths     Int
   status             String
   serviceType        String?
+  amount             Decimal?        @db.Decimal(10, 2)
   pdfUrl             String?
   recurrenceType     RecurrenceType?
   nextGenerationDate DateTime?
@@ -266,13 +378,19 @@ model Payment {
   customerId  String
   amount      Decimal  @db.Decimal(10, 2)
   paymentType String
+  /// Dekont / referans numarası ("Dekont: #BNK-88219", "Ref #2024-89").
+  referenceNo String?
+  /// Saha tahsilatını yapan personel (Stitch: "Ahmet T. (Teknisyen)").
+  collectedByStaffId String?
   receiptUrl  String?
   createdAt   DateTime @default(now())
 
   customer Customer @relation(fields: [customerId], references: [id])
+  collectedByStaff Staff? @relation("PaymentCollectedBy", fields: [collectedByStaffId], references: [id])
 
   @@index([customerId])
   @@index([paymentType])
+  @@index([collectedByStaffId])
 }
 
 model Conversation {
@@ -298,6 +416,12 @@ model Message {
   readAt         DateTime?
   createdAt      DateTime  @default(now())
 
+  /// Saha fotoğrafı eki (Stitch Şef → Mesaj Detayı). Göreli yol (/uploads/...),
+  /// iş fotoğraflarıyla aynı multer altyapısını kullanır.
+  attachmentUrl  String?
+  /// Şimdilik yalnızca "image"; ileride başka tür eklenirse ayrımı korur.
+  attachmentType String?
+
   conversation Conversation @relation(fields: [conversationId], references: [id])
   sender       User         @relation(fields: [senderId], references: [id])
 
@@ -314,6 +438,13 @@ model QuoteRequest {
   serviceType String
   address     String?
   district    String?
+  amount      Decimal? @db.Decimal(10, 2)
+  /// Müdür notu (Stitch Müdür → Teklifler → "Not Ekle").
+  note        String?
+  /// Keşif randevusu (Stitch → "Keşif Randevusu Ver").
+  surveyAt    DateTime?
+  /// Müşteriye dönüştürüldüğü an — "ortalama dönüşüm süresi" hesabı için.
+  convertedAt DateTime?
   status      String   @default("NEW")
   createdAt   DateTime @default(now())
 
@@ -322,12 +453,15 @@ model QuoteRequest {
 }
 
 model Notification {
-  id        String    @id @default(uuid())
-  userId    String
-  title     String
-  body      String?
-  readAt    DateTime?
-  createdAt DateTime  @default(now())
+  id          String    @id @default(uuid())
+  userId      String
+  title       String
+  body        String?
+  type        String?
+  relatedType String?
+  relatedId   String?
+  readAt      DateTime?
+  createdAt   DateTime  @default(now())
 
   user User @relation(fields: [userId], references: [id])
 

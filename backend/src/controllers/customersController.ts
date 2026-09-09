@@ -43,12 +43,64 @@ export async function listCustomers(req: Request, res: Response) {
     where = searchFilter ? { AND: [scopeFilter, searchFilter] } : scopeFilter;
   }
 
+  // Stitch Müdür → Müşteriler: "En yeni / İsme göre / Bakiyeye göre" sıralama.
+  // Bakiye türetilmiş bir değer olduğu için veritabanında sıralanamaz; sayfa
+  // içi sıralama zenginleştirmeden sonra uygulanır (aşağıda).
+  const sort = typeof req.query.sort === "string" ? req.query.sort : "newest";
+  const orderBy: Prisma.CustomerOrderByWithRelationInput =
+    sort === "name" ? { fullName: "asc" } : { createdAt: "desc" };
+
   const [data, total] = await Promise.all([
-    prisma.customer.findMany({ where, skip, take, orderBy: { createdAt: "desc" } }),
+    prisma.customer.findMany({ where, skip, take, orderBy }),
     prisma.customer.count({ where }),
   ]);
 
-  return res.json(paginatedResponse(data, total, page, limit));
+  // STAFF finansal veri görmez (bkz. getCustomer) — bakiye eklenmez.
+  if (req.user!.role === Role.STAFF) {
+    return res.json(paginatedResponse(data, total, page, limit));
+  }
+
+  const customerIds = data.map((c) => c.id);
+  const [jobAgg, paymentAgg, activeContracts] = customerIds.length
+    ? await Promise.all([
+        prisma.job.groupBy({
+          by: ["customerId"],
+          _sum: { price: true },
+          _count: { _all: true },
+          _max: { scheduledAt: true, createdAt: true },
+          where: { customerId: { in: customerIds } },
+        }),
+        prisma.payment.groupBy({
+          by: ["customerId"],
+          _sum: { amount: true },
+          where: { customerId: { in: customerIds } },
+        }),
+        prisma.contract.groupBy({
+          by: ["customerId"],
+          _count: { _all: true },
+          where: { customerId: { in: customerIds }, status: "ACTIVE" },
+        }),
+      ])
+    : [[], [], []];
+
+  const enriched = data.map((customer) => {
+    const jobs = jobAgg.find((j) => j.customerId === customer.id);
+    const priced = Number(jobs?._sum.price ?? 0);
+    const paid = Number(paymentAgg.find((p) => p.customerId === customer.id)?._sum.amount ?? 0);
+    return {
+      ...customer,
+      jobCount: jobs?._count._all ?? 0,
+      lastJobDate: jobs?._max.scheduledAt ?? jobs?._max.createdAt ?? null,
+      activeContractCount: activeContracts.find((c) => c.customerId === customer.id)?._count._all ?? 0,
+      outstandingBalance: priced - paid,
+    };
+  });
+
+  if (sort === "balance") {
+    enriched.sort((a, b) => b.outstandingBalance - a.outstandingBalance);
+  }
+
+  return res.json(paginatedResponse(enriched, total, page, limit));
 }
 
 export async function getCustomer(req: Request, res: Response) {

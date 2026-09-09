@@ -13,6 +13,7 @@ import contractRoutes from "./routes/contracts";
 import paymentRoutes from "./routes/payments";
 import quoteRoutes from "./routes/quotes";
 import dashboardRoutes from "./routes/dashboard";
+import teamRoutes from "./routes/team";
 import userRoutes from "./routes/users";
 import advanceRoutes from "./routes/advances";
 import conversationRoutes from "./routes/conversations";
@@ -67,6 +68,8 @@ app.use("/contracts", contractRoutes);
 app.use("/payments", paymentRoutes);
 app.use("/quotes", quoteRoutes);
 app.use("/dashboard", dashboardRoutes);
+// Ekip (şef) kapsamlı görünümler — şirket geneli /dashboard'tan ayrıdır.
+app.use("/team", teamRoutes);
 app.use("/users", userRoutes);
 app.use("/advances", advanceRoutes);
 app.use("/conversations", conversationRoutes);

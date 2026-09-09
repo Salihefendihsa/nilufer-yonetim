@@ -1,5 +1,5 @@
 import cron from "node-cron";
-import { JobStatus } from "@prisma/client";
+import { JobStatus, StaffStatus } from "@prisma/client";
 import { prisma } from "./prisma";
 import { addRecurrencePeriod } from "./recurrence";
 import {
@@ -10,6 +10,20 @@ import {
   sendCertificationExpiryReminders,
   sendDailyDigest,
 } from "./reminders";
+
+/**
+ * Süresi dolmuş personel durumlarını (mola/izin bitişi) AVAILABLE'a döndürür.
+ * Yalnızca cron'a değil — okuma anında da (bkz. staffController.healExpiredStatuses)
+ * aynı mantık çağrılır, böylece iki tetik arasındaki pencerede bile bayat
+ * "Molada" durumu görünmez.
+ */
+export async function resetExpiredStaffStatuses(): Promise<number> {
+  const result = await prisma.staff.updateMany({
+    where: { statusUntil: { lte: new Date() }, status: { not: StaffStatus.AVAILABLE } },
+    data: { status: StaffStatus.AVAILABLE, statusUntil: null },
+  });
+  return result.count;
+}
 
 export async function generateRecurringJobs() {
   const now = new Date();
@@ -51,6 +65,11 @@ export function startReminderCrons() {
   // Yaklaşan iş hatırlatması — her 15 dakikada bir, ~1 saat kala.
   cron.schedule("*/15 * * * *", () => {
     sendUpcomingJobReminders().catch((err) => console.error("Yaklaşan iş hatırlatması başarısız:", err));
+  });
+
+  // Süresi dolan personel mola/izin durumlarını temizle — her 5 dakikada bir.
+  cron.schedule("*/5 * * * *", () => {
+    resetExpiredStaffStatuses().catch((err) => console.error("Personel durumu sıfırlama başarısız:", err));
   });
 
   // Günlük hatırlatıcılar — 08:00.

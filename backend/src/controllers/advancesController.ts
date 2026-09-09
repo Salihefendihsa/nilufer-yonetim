@@ -27,7 +27,11 @@ export async function createAdvanceRequest(req: Request, res: Response) {
   const data = createSchema.parse(req.body);
   const advance = await prisma.advanceRequest.create({ data: { ...data, staffId } });
 
-  await notifyManagement("Yeni avans talebi", `${data.amount}₺ - ${data.reason}`);
+  await notifyManagement("Yeni avans talebi", `${data.amount}₺ - ${data.reason}`, {
+    type: "advance_request",
+    relatedType: "AdvanceRequest",
+    relatedId: advance.id,
+  });
 
   return res.status(201).json(advance);
 }
