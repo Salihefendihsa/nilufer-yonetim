@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState, type FormEvent } from "react";
 import { Trash2 } from "lucide-react";
 import { Modal } from "@/components/Modal";
+import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { api, ApiError } from "@/lib/api";
 import { formatDate } from "@/lib/format";
 import type { Staff, StaffCertification } from "@/lib/types";
@@ -21,6 +22,8 @@ export function CertificationsModal({ open, onClose, staff }: CertificationsModa
   const [error, setError] = useState<string | null>(null);
   const [form, setForm] = useState(EMPTY_FORM);
   const [saving, setSaving] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<StaffCertification | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
   const load = useCallback(() => {
     if (!staff) return;
@@ -60,13 +63,17 @@ export function CertificationsModal({ open, onClose, staff }: CertificationsModa
     }
   }
 
-  async function handleDelete(certId: string) {
-    if (!staff) return;
+  async function handleDelete() {
+    if (!staff || !deleteTarget) return;
+    setDeleting(true);
     try {
-      await api.delete(`/staff/${staff.id}/certifications/${certId}`);
+      await api.delete(`/staff/${staff.id}/certifications/${deleteTarget.id}`);
+      setDeleteTarget(null);
       load();
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "Silinemedi");
+    } finally {
+      setDeleting(false);
     }
   }
 
@@ -95,7 +102,7 @@ export function CertificationsModal({ open, onClose, staff }: CertificationsModa
                 </div>
                 <button
                   type="button"
-                  onClick={() => handleDelete(c.id)}
+                  onClick={() => setDeleteTarget(c)}
                   aria-label="Sil"
                   className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl text-text-faint transition hover:bg-danger-50 hover:text-danger-500"
                 >
@@ -155,6 +162,15 @@ export function CertificationsModal({ open, onClose, staff }: CertificationsModa
           </div>
         </form>
       </div>
+
+      <ConfirmDialog
+        open={!!deleteTarget}
+        onClose={() => setDeleteTarget(null)}
+        onConfirm={handleDelete}
+        loading={deleting}
+        title="Belgeyi sil"
+        description={`"${deleteTarget?.name ?? ""}" belgesi silinecek. Bu işlem geri alınamaz.`}
+      />
     </Modal>
   );
 }
