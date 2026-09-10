@@ -21,6 +21,23 @@ final _currency = NumberFormat.currency(
 );
 final _dateFormat = DateFormat('d MMM yyyy', 'tr_TR');
 
+/// web/CustomerDetailPanel.tsx ile aynı hesap: müşterinin `Job.rating`
+/// alanı dolu olan işlerinden istemci tarafında ortalama alınır — backend
+/// zaten `jobs` dizisini `rating` dahil tüm alanlarla döndürüyor, ayrı bir
+/// uç gerekmiyor.
+List<num> _ratings(List<dynamic> jobs) => jobs
+    .map((j) => (j as Map<String, dynamic>)['rating'])
+    .whereType<num>()
+    .toList();
+
+double? _averageRating(List<dynamic> jobs) {
+  final ratings = _ratings(jobs);
+  if (ratings.isEmpty) return null;
+  return ratings.reduce((a, b) => a + b) / ratings.length;
+}
+
+int _ratedJobCount(List<dynamic> jobs) => _ratings(jobs).length;
+
 /// backend/src/controllers/customersController.ts:getCustomer ile aynı veriyi
 /// tek çağrıda çeker; STAFF için `payments`/`outstandingBalance` backend
 /// tarafından zaten çıkarılmıştır — burada rolü tekrar kontrol ETMİYORUZ,
@@ -179,6 +196,28 @@ class _CustomerDetailScreenState extends State<CustomerDetailScreen>
                 _InfoRow(icon: Icons.mail_outline_rounded, text: c.email!),
               if (c.address != null)
                 _InfoRow(icon: Icons.location_on_outlined, text: c.address!),
+              if (_averageRating(c.jobs) != null) ...[
+                const SizedBox(height: 6),
+                Row(
+                  children: [
+                    const Icon(
+                      Icons.star_rounded,
+                      size: 16,
+                      color: AppColors.warning500,
+                    ),
+                    const SizedBox(width: 4),
+                    Text(
+                      '${_averageRating(c.jobs)!.toStringAsFixed(1)} '
+                      '(${_ratedJobCount(c.jobs)} değerlendirme)',
+                      style: const TextStyle(
+                        fontSize: 12.5,
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.textSecondary,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
               if (hasFinance) ...[
                 const SizedBox(height: 10),
                 Container(

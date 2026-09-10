@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { AnimatePresence, motion } from "framer-motion";
-import { X, Briefcase, Wallet, Pencil, Trash2, FileDown } from "lucide-react";
+import { X, Briefcase, Wallet, Pencil, Trash2, FileDown, Star } from "lucide-react";
 import { api, ApiError, downloadFile } from "@/lib/api";
 import { formatDate, currencyFormatter } from "@/lib/format";
 import { StatusBadge } from "@/components/StatusBadge";
@@ -113,9 +113,22 @@ export function CustomerDetailPanel({ customerId, onClose, onEdit, onDelete }: C
                 </div>
 
                 <section>
-                  <div className="mb-3 flex items-center gap-2">
-                    <Briefcase size={16} strokeWidth={1.75} className="text-text-faint" />
-                    <h3 className="text-sm font-semibold text-text-primary">Geçmiş İşler</h3>
+                  <div className="mb-3 flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-2">
+                      <Briefcase size={16} strokeWidth={1.75} className="text-text-faint" />
+                      <h3 className="text-sm font-semibold text-text-primary">Geçmiş İşler</h3>
+                    </div>
+                    {(() => {
+                      const rated = detail.jobs.filter((j) => j.rating != null);
+                      if (rated.length === 0) return null;
+                      const avg = rated.reduce((sum, j) => sum + (j.rating ?? 0), 0) / rated.length;
+                      return (
+                        <div className="flex items-center gap-1 text-xs font-medium text-text-secondary">
+                          <Star size={13} strokeWidth={1.75} fill="#B57F13" className="text-warning-500" />
+                          {avg.toFixed(1)} ({rated.length})
+                        </div>
+                      );
+                    })()}
                   </div>
                   {detail.jobs.length === 0 ? (
                     <p className="text-sm text-text-faint">Henüz iş kaydı yok.</p>

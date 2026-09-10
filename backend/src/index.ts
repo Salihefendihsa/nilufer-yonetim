@@ -36,7 +36,16 @@ import { recordRequest } from "./lib/metrics";
 const app = express();
 
 app.use(helmet());
-app.use(cors());
+// CORS_ORIGIN tanımlıysa (virgülle ayrılmış liste) yalnızca o origin'lere
+// izin verilir — production'da web panelinin gerçek domain'i buraya
+// yazılmalı. Boş bırakılırsa (varsayılan/dev davranışı) her origin'e izin
+// verilir; kimlik doğrulama cookie değil Authorization: Bearer header'ı
+// üzerinden yapıldığı için (bkz. lib/jwt.ts) bu CSRF anlamında düşük risklidir,
+// ama production'da CORS_ORIGIN ayarlamak yine de iyi pratiktir.
+const corsOrigins = process.env.CORS_ORIGIN?.split(",")
+  .map((o) => o.trim())
+  .filter(Boolean);
+app.use(cors(corsOrigins && corsOrigins.length > 0 ? { origin: corsOrigins } : undefined));
 app.use(express.json({ limit: "5mb" })); // room for a base64-encoded signature image in the JSON body
 app.use(
   rateLimit({

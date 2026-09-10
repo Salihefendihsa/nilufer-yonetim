@@ -73,6 +73,11 @@ class _ApprovalsScreenState extends State<ApprovalsScreen> {
   bool _loading = true;
   String? _error;
   String? _busyId;
+  // null = Tümü. Web'deki bekleyen-onaylar sayfası zaten 4 kaynağı birleşik
+  // gösteriyor; mobilde bu segment filtresi eksikti (bkz.
+  // docs/STITCH_FEATURE_MATRIX.md) — yalnızca istemci tarafında, zaten
+  // çekilen listeleri filtreler, ek bir API çağrısı gerekmiyor.
+  String? _filter;
 
   @override
   void initState() {
@@ -193,53 +198,169 @@ class _ApprovalsScreenState extends State<ApprovalsScreen> {
               title: 'Bekleyen onay yok',
               icon: Icons.task_alt_rounded,
             )
-          : RefreshIndicator(
-              onRefresh: _load,
-              color: AppColors.primary600,
-              child: ListView(
-                padding: const EdgeInsets.all(16),
-                children: [
-                  if (_reportJobs.isNotEmpty) ...[
-                    _SectionTitle('Saha Raporu Onayı (${_reportJobs.length})'),
-                    ..._reportJobs.map(
-                      (j) => _ReportCard(
-                        job: j,
-                        busy: _busyId == j.id,
-                        onApprove: () => _approveReport(j),
-                      ),
+          : Column(
+              children: [
+                _FilterChips(
+                  value: _filter,
+                  counts: {
+                    'reports': _reportJobs.length,
+                    'quotes': _quotes.length,
+                    'advances': _advances.length,
+                    'contracts': _expiring.length,
+                  },
+                  onChanged: (v) => setState(() => _filter = v),
+                ),
+                Expanded(
+                  child: RefreshIndicator(
+                    onRefresh: _load,
+                    color: AppColors.primary600,
+                    child: ListView(
+                      padding: const EdgeInsets.all(16),
+                      children: [
+                        if (_reportJobs.isNotEmpty &&
+                            (_filter == null || _filter == 'reports')) ...[
+                          _SectionTitle(
+                            'Saha Raporu Onayı (${_reportJobs.length})',
+                          ),
+                          ..._reportJobs.map(
+                            (j) => _ReportCard(
+                              job: j,
+                              busy: _busyId == j.id,
+                              onApprove: () => _approveReport(j),
+                            ),
+                          ),
+                        ],
+                        if (_quotes.isNotEmpty &&
+                            (_filter == null || _filter == 'quotes')) ...[
+                          _SectionTitle('Yeni Teklifler (${_quotes.length})'),
+                          ..._quotes.map(
+                            (q) => _QuoteCard(
+                              quote: q,
+                              busy: _busyId == q.id,
+                              onContact: () => _markQuoteContacted(q),
+                              onConvert: () => _convertQuote(q),
+                            ),
+                          ),
+                        ],
+                        if (_advances.isNotEmpty &&
+                            (_filter == null || _filter == 'advances')) ...[
+                          _SectionTitle(
+                            'Avans Talepleri (${_advances.length})',
+                          ),
+                          ..._advances.map(
+                            (a) => _AdvanceCard(
+                              advance: a,
+                              busy: _busyId == a.id,
+                              onApprove: () => _decideAdvance(a, 'APPROVED'),
+                              onReject: () => _decideAdvance(a, 'REJECTED'),
+                            ),
+                          ),
+                        ],
+                        if (_expiring.isNotEmpty &&
+                            (_filter == null || _filter == 'contracts')) ...[
+                          _SectionTitle(
+                            'Süresi Yaklaşan Sözleşmeler (${_expiring.length})',
+                          ),
+                          ..._expiring.map(
+                            (c) => _ExpiringContractCard(contract: c),
+                          ),
+                        ],
+                        if (_filter != null &&
+                            !(_filter == 'reports' && _reportJobs.isNotEmpty) &&
+                            !(_filter == 'quotes' && _quotes.isNotEmpty) &&
+                            !(_filter == 'advances' && _advances.isNotEmpty) &&
+                            !(_filter == 'contracts' && _expiring.isNotEmpty))
+                          const Padding(
+                            padding: EdgeInsets.only(top: 40),
+                            child: EmptyStateView(
+                              title: 'Bu kategoride bekleyen onay yok',
+                              icon: Icons.task_alt_rounded,
+                            ),
+                          ),
+                      ],
                     ),
-                  ],
-                  if (_quotes.isNotEmpty) ...[
-                    _SectionTitle('Yeni Teklifler (${_quotes.length})'),
-                    ..._quotes.map(
-                      (q) => _QuoteCard(
-                        quote: q,
-                        busy: _busyId == q.id,
-                        onContact: () => _markQuoteContacted(q),
-                        onConvert: () => _convertQuote(q),
-                      ),
-                    ),
-                  ],
-                  if (_advances.isNotEmpty) ...[
-                    _SectionTitle('Avans Talepleri (${_advances.length})'),
-                    ..._advances.map(
-                      (a) => _AdvanceCard(
-                        advance: a,
-                        busy: _busyId == a.id,
-                        onApprove: () => _decideAdvance(a, 'APPROVED'),
-                        onReject: () => _decideAdvance(a, 'REJECTED'),
-                      ),
-                    ),
-                  ],
-                  if (_expiring.isNotEmpty) ...[
-                    _SectionTitle(
-                      'Süresi Yaklaşan Sözleşmeler (${_expiring.length})',
-                    ),
-                    ..._expiring.map((c) => _ExpiringContractCard(contract: c)),
-                  ],
-                ],
-              ),
+                  ),
+                ),
+              ],
             ),
+    );
+  }
+}
+
+/// Web'deki tek listede birleşik gösterime karşılık gelen segment filtresi
+/// — yalnızca ekranda zaten yüklü olan 4 listeyi istemci tarafında filtreler.
+class _FilterChips extends StatelessWidget {
+  final String? value;
+  final Map<String, int> counts;
+  final ValueChanged<String?> onChanged;
+
+  const _FilterChips({
+    required this.value,
+    required this.counts,
+    required this.onChanged,
+  });
+
+  static const _labels = {
+    'reports': 'Raporlar',
+    'quotes': 'Teklifler',
+    'advances': 'Avanslar',
+    'contracts': 'Sözleşmeler',
+  };
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      height: 46,
+      child: ListView(
+        scrollDirection: Axis.horizontal,
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+        children: [
+          _Chip(label: 'Tümü', selected: value == null, onTap: () => onChanged(null)),
+          for (final key in _labels.keys)
+            if ((counts[key] ?? 0) > 0)
+              Padding(
+                padding: const EdgeInsets.only(left: 8),
+                child: _Chip(
+                  label: '${_labels[key]} (${counts[key]})',
+                  selected: value == key,
+                  onTap: () => onChanged(key),
+                ),
+              ),
+        ],
+      ),
+    );
+  }
+}
+
+class _Chip extends StatelessWidget {
+  final String label;
+  final bool selected;
+  final VoidCallback onTap;
+  const _Chip({required this.label, required this.selected, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+        decoration: BoxDecoration(
+          color: selected ? AppColors.primary600 : AppColors.surfaceCard,
+          borderRadius: BorderRadius.circular(AppRadius.pill),
+          border: Border.all(
+            color: selected ? AppColors.primary600 : AppColors.borderDefault,
+          ),
+        ),
+        alignment: Alignment.center,
+        child: Text(
+          label,
+          style: TextStyle(
+            fontSize: 12.5,
+            fontWeight: FontWeight.w600,
+            color: selected ? Colors.white : AppColors.textSecondary,
+          ),
+        ),
+      ),
     );
   }
 }
