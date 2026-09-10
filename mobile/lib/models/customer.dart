@@ -63,7 +63,6 @@ class CustomerDetail extends Customer {
   final List<dynamic> jobs;
   final List<dynamic> contracts;
   final List<dynamic> payments;
-  final double? outstandingBalance;
 
   CustomerDetail({
     required super.id,
@@ -77,7 +76,7 @@ class CustomerDetail extends Customer {
     required this.jobs,
     required this.contracts,
     required this.payments,
-    required this.outstandingBalance,
+    required super.outstandingBalance,
   });
 
   factory CustomerDetail.fromJson(Map<String, dynamic> json) => CustomerDetail(

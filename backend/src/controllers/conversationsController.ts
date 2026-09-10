@@ -30,22 +30,29 @@ export async function listConversations(req: Request, res: Response) {
     },
   });
 
-  const result = await Promise.all(
-    conversations.map(async (c) => {
-      const lastMessage = c.messages[0] ?? null;
-      const unreadCount = await prisma.message.count({
-        where: { conversationId: c.id, senderId: { not: userId }, readAt: null },
-      });
-
-      return {
-        id: c.id,
-        participant: otherParticipant(c, userId),
-        lastMessage,
-        unreadCount,
-        updatedAt: lastMessage?.createdAt ?? c.createdAt,
-      };
-    })
+  const unreadCounts = await prisma.message.groupBy({
+    by: ["conversationId"],
+    where: {
+      conversationId: { in: conversations.map((c) => c.id) },
+      senderId: { not: userId },
+      readAt: null,
+    },
+    _count: { _all: true },
+  });
+  const unreadByConversationId = new Map(
+    unreadCounts.map((u) => [u.conversationId, u._count._all])
   );
+
+  const result = conversations.map((c) => {
+    const lastMessage = c.messages[0] ?? null;
+    return {
+      id: c.id,
+      participant: otherParticipant(c, userId),
+      lastMessage,
+      unreadCount: unreadByConversationId.get(c.id) ?? 0,
+      updatedAt: lastMessage?.createdAt ?? c.createdAt,
+    };
+  });
 
   result.sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime());
 

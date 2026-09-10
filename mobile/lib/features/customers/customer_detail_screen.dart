@@ -224,10 +224,10 @@ class _CustomerDetailScreenState extends State<CustomerDetailScreen>
           child: TabBarView(
             controller: _tabController,
             children: [
-              _JobsTab(jobs: c.jobs),
-              _ContractsTab(contracts: c.contracts),
+              _JobsTab(jobs: c.jobs, onRefresh: _load),
+              _ContractsTab(contracts: c.contracts, onRefresh: _load),
               hasFinance
-                  ? _PaymentsTab(payments: c.payments)
+                  ? _PaymentsTab(payments: c.payments, onRefresh: _load)
                   : const EmptyStateView(
                       title: 'Finansal veriler görünmüyor',
                       subtitle: 'Bu bilgiler yalnızca yönetim rolüne açıktır.',
@@ -281,7 +281,8 @@ class _InfoRow extends StatelessWidget {
 
 class _JobsTab extends StatelessWidget {
   final List<dynamic> jobs;
-  const _JobsTab({required this.jobs});
+  final Future<void> Function() onRefresh;
+  const _JobsTab({required this.jobs, required this.onRefresh});
 
   @override
   Widget build(BuildContext context) {
@@ -290,14 +291,18 @@ class _JobsTab extends StatelessWidget {
         title: 'Henüz iş yok',
         icon: Icons.assignment_outlined,
       );
-    return ListView.separated(
-      padding: const EdgeInsets.all(16),
-      itemCount: jobs.length,
-      separatorBuilder: (_, __) => const SizedBox(height: 8),
-      itemBuilder: (context, i) {
-        final j = jobs[i] as Map<String, dynamic>;
-        return _JobRow(job: j);
-      },
+    return RefreshIndicator(
+      onRefresh: onRefresh,
+      color: AppColors.primary600,
+      child: ListView.separated(
+        padding: const EdgeInsets.all(16),
+        itemCount: jobs.length,
+        separatorBuilder: (_, __) => const SizedBox(height: 8),
+        itemBuilder: (context, i) {
+          final j = jobs[i] as Map<String, dynamic>;
+          return _JobRow(job: j);
+        },
+      ),
     );
   }
 }
@@ -379,7 +384,8 @@ class _JobRowState extends State<_JobRow> {
 
 class _ContractsTab extends StatelessWidget {
   final List<dynamic> contracts;
-  const _ContractsTab({required this.contracts});
+  final Future<void> Function() onRefresh;
+  const _ContractsTab({required this.contracts, required this.onRefresh});
 
   @override
   Widget build(BuildContext context) {
@@ -388,38 +394,43 @@ class _ContractsTab extends StatelessWidget {
         title: 'Sözleşme yok',
         icon: Icons.description_outlined,
       );
-    return ListView.separated(
-      padding: const EdgeInsets.all(16),
-      itemCount: contracts.length,
-      separatorBuilder: (_, __) => const SizedBox(height: 8),
-      itemBuilder: (context, i) {
-        final c = contracts[i] as Map<String, dynamic>;
-        final amount = (c['amount'] as num?)?.toDouble();
-        return ListTile(
-          tileColor: AppColors.surfaceCard,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(14),
-            side: const BorderSide(color: AppColors.borderDefault),
-          ),
-          title: Text(
-            c['serviceType'] as String? ?? c['status'] as String? ?? '',
-            style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13.5),
-          ),
-          subtitle: Text(
-            amount != null
-                ? '${_currency.format(amount)} · ${c['status']}'
-                : c['status'] as String? ?? '',
-            style: const TextStyle(fontSize: 12),
-          ),
-        );
-      },
+    return RefreshIndicator(
+      onRefresh: onRefresh,
+      color: AppColors.primary600,
+      child: ListView.separated(
+        padding: const EdgeInsets.all(16),
+        itemCount: contracts.length,
+        separatorBuilder: (_, __) => const SizedBox(height: 8),
+        itemBuilder: (context, i) {
+          final c = contracts[i] as Map<String, dynamic>;
+          final amount = (c['amount'] as num?)?.toDouble();
+          return ListTile(
+            tileColor: AppColors.surfaceCard,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(14),
+              side: const BorderSide(color: AppColors.borderDefault),
+            ),
+            title: Text(
+              c['serviceType'] as String? ?? c['status'] as String? ?? '',
+              style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13.5),
+            ),
+            subtitle: Text(
+              amount != null
+                  ? '${_currency.format(amount)} · ${c['status']}'
+                  : c['status'] as String? ?? '',
+              style: const TextStyle(fontSize: 12),
+            ),
+          );
+        },
+      ),
     );
   }
 }
 
 class _PaymentsTab extends StatelessWidget {
   final List<dynamic> payments;
-  const _PaymentsTab({required this.payments});
+  final Future<void> Function() onRefresh;
+  const _PaymentsTab({required this.payments, required this.onRefresh});
 
   @override
   Widget build(BuildContext context) {
@@ -428,28 +439,32 @@ class _PaymentsTab extends StatelessWidget {
         title: 'Ödeme yok',
         icon: Icons.payments_outlined,
       );
-    return ListView.separated(
-      padding: const EdgeInsets.all(16),
-      itemCount: payments.length,
-      separatorBuilder: (_, __) => const SizedBox(height: 8),
-      itemBuilder: (context, i) {
-        final p = payments[i] as Map<String, dynamic>;
-        return ListTile(
-          tileColor: AppColors.surfaceCard,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(14),
-            side: const BorderSide(color: AppColors.borderDefault),
-          ),
-          title: Text(
-            _currency.format((p['amount'] as num).toDouble()),
-            style: const TextStyle(fontWeight: FontWeight.w700),
-          ),
-          subtitle: Text(
-            '${p['paymentType']} · ${_dateFormat.format(DateTime.parse(p['createdAt'] as String))}',
-            style: const TextStyle(fontSize: 12),
-          ),
-        );
-      },
+    return RefreshIndicator(
+      onRefresh: onRefresh,
+      color: AppColors.primary600,
+      child: ListView.separated(
+        padding: const EdgeInsets.all(16),
+        itemCount: payments.length,
+        separatorBuilder: (_, __) => const SizedBox(height: 8),
+        itemBuilder: (context, i) {
+          final p = payments[i] as Map<String, dynamic>;
+          return ListTile(
+            tileColor: AppColors.surfaceCard,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(14),
+              side: const BorderSide(color: AppColors.borderDefault),
+            ),
+            title: Text(
+              _currency.format((p['amount'] as num).toDouble()),
+              style: const TextStyle(fontWeight: FontWeight.w700),
+            ),
+            subtitle: Text(
+              '${p['paymentType']} · ${_dateFormat.format(DateTime.parse(p['createdAt'] as String))}',
+              style: const TextStyle(fontSize: 12),
+            ),
+          );
+        },
+      ),
     );
   }
 }
