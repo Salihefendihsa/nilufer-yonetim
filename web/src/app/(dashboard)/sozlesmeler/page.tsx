@@ -9,6 +9,7 @@ import { StatusStrip } from "@/components/StatusStrip";
 import { Table, type Column } from "@/components/Table";
 import { EmptyState } from "@/components/EmptyState";
 import { api, ApiError } from "@/lib/api";
+import { useToast } from "@/lib/ToastProvider";
 import { formatDate, currencyFormatter } from "@/lib/format";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
 import type { Contract, ContractsSummary, Customer, Paginated } from "@/lib/types";
@@ -45,6 +46,7 @@ function ContractsPageContent() {
   const [summary, setSummary] = useState<ContractsSummary | null>(null);
   const [renewTarget, setRenewTarget] = useState<Contract | null>(null);
   const [renewing, setRenewing] = useState(false);
+  const { showToast } = useToast();
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -82,6 +84,7 @@ function ContractsPageContent() {
       await api.post(`/contracts/${renewTarget.id}/renew`, {});
       setRenewTarget(null);
       load();
+      showToast("Sözleşme yenilendi.");
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "Sözleşme yenilenemedi");
     } finally {

@@ -8,6 +8,7 @@ import { StatusStrip } from "@/components/StatusStrip";
 import { StatusBadge, STATUS_COLORS, STATUS_TEXT } from "@/components/StatusBadge";
 import { getValidNextStatuses } from "@/lib/jobStatus";
 import { useAuth } from "@/lib/AuthProvider";
+import { useToast } from "@/lib/ToastProvider";
 import { api, ApiError } from "@/lib/api";
 import { formatDateTime, formatTime } from "@/lib/format";
 import { Modal } from "@/components/Modal";
@@ -27,6 +28,7 @@ const STATUS_FILTER_LABELS: Record<"ALL" | JobStatus, string> = {
 
 export default function JobsPage() {
   const { user } = useAuth();
+  const { showToast } = useToast();
   const [view, setView] = useState<"list" | "calendar">("list");
   const [jobs, setJobs] = useState<Job[]>([]);
   const [customers, setCustomers] = useState<Customer[]>([]);
@@ -108,6 +110,7 @@ export default function JobsPage() {
     try {
       await api.patch(`/jobs/${jobId}`, { status, ...(cancellationReason ? { cancellationReason } : {}) });
       load();
+      showToast(`İş durumu "${STATUS_FILTER_LABELS[status]}" olarak güncellendi.`);
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "Durum güncellenemedi");
     } finally {

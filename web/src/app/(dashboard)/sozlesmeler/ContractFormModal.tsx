@@ -2,6 +2,7 @@
 
 import { useEffect, useState, type FormEvent } from "react";
 import { Modal } from "@/components/Modal";
+import { useToast } from "@/lib/ToastProvider";
 import { api, ApiError } from "@/lib/api";
 import type { Customer } from "@/lib/types";
 
@@ -40,6 +41,7 @@ export function ContractFormModal({ open, onClose, onSaved, customers }: Contrac
   const [amount, setAmount] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const { showToast } = useToast();
 
   useEffect(() => {
     if (open) {
@@ -73,6 +75,7 @@ export function ContractFormModal({ open, onClose, onSaved, customers }: Contrac
       });
       onSaved();
       onClose();
+      showToast("Sözleşme oluşturuldu.");
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "Kaydedilemedi, tekrar deneyin");
     } finally {

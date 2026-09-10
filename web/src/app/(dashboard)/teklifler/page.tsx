@@ -8,6 +8,7 @@ import { StatCard } from "@/components/StatCard";
 import { StatusStrip } from "@/components/StatusStrip";
 import { EmptyState } from "@/components/EmptyState";
 import { api, ApiError } from "@/lib/api";
+import { useToast } from "@/lib/ToastProvider";
 import { formatDate, currencyFormatter } from "@/lib/format";
 import type { QuoteRequest, QuotesSummary, Paginated } from "@/lib/types";
 import { QuoteHistoryModal } from "./QuoteHistoryModal";
@@ -51,6 +52,7 @@ function QuotesPageContent() {
   const [surveyDrafts, setSurveyDrafts] = useState<Record<string, string>>({});
   const [summary, setSummary] = useState<QuotesSummary | null>(null);
   const [historyQuote, setHistoryQuote] = useState<QuoteRequest | null>(null);
+  const { showToast } = useToast();
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -79,6 +81,7 @@ function QuotesPageContent() {
     try {
       await api.patch(`/quotes/${id}`, { status });
       load();
+      showToast(`Talep durumu "${STATUS_LABELS[status] ?? status}" olarak güncellendi.`);
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "Durum güncellenemedi");
     } finally {
@@ -97,6 +100,7 @@ function QuotesPageContent() {
     try {
       await api.patch(`/quotes/${id}`, { amount });
       load();
+      showToast("Fiyat kaydedildi.");
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "Fiyat kaydedilemedi");
     } finally {
@@ -117,6 +121,7 @@ function QuotesPageContent() {
     try {
       await api.patch(`/quotes/${quote.id}`, payload);
       load();
+      showToast("Kaydedildi.");
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "Kaydedilemedi");
     } finally {
@@ -129,6 +134,7 @@ function QuotesPageContent() {
     try {
       await api.post(`/quotes/${id}/convert`);
       load();
+      showToast("Teklif işe dönüştürüldü.");
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "Dönüştürülemedi");
     } finally {

@@ -2,6 +2,7 @@
 
 import { useEffect, useState, type FormEvent } from "react";
 import { Modal } from "@/components/Modal";
+import { useToast } from "@/lib/ToastProvider";
 import { api, ApiError } from "@/lib/api";
 import type { Customer, ServiceType, Staff } from "@/lib/types";
 
@@ -27,6 +28,7 @@ export function JobFormModal({ open, onClose, onSaved, customers, staff }: JobFo
   const [price, setPrice] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const { showToast } = useToast();
 
   useEffect(() => {
     if (open) {
@@ -65,6 +67,7 @@ export function JobFormModal({ open, onClose, onSaved, customers, staff }: JobFo
       });
       onSaved();
       onClose();
+      showToast("İş oluşturuldu.");
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "Kaydedilemedi, tekrar deneyin");
     } finally {
