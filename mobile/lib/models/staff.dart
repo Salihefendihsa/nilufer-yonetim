@@ -83,6 +83,11 @@ class Staff {
   final double? averageRating;
   final int ratedJobsCount;
 
+  /// backend/src/lib/access.ts:resolveSupervisorInfo — supervisorId bir
+  /// Staff.id (TEAM_LEAD) veya User.id (MANAGER/OWNER) olabilir, ikisi de
+  /// burada tek bir tutarlı şekle çözülmüş olarak gelir.
+  final SupervisorInfo? supervisor;
+
   Staff({
     required this.id,
     required this.userId,
@@ -102,6 +107,7 @@ class Staff {
     this.expiringCertificationCount = 0,
     this.averageRating,
     this.ratedJobsCount = 0,
+    this.supervisor,
   });
 
   factory Staff.fromJson(Map<String, dynamic> json) {
@@ -128,8 +134,25 @@ class Staff {
           (json['expiringCertificationCount'] as num?)?.toInt() ?? 0,
       averageRating: (json['averageRating'] as num?)?.toDouble(),
       ratedJobsCount: (json['ratedJobsCount'] as num?)?.toInt() ?? 0,
+      supervisor: json['supervisor'] != null
+          ? SupervisorInfo.fromJson(json['supervisor'] as Map<String, dynamic>)
+          : null,
     );
   }
+}
+
+class SupervisorInfo {
+  final String userId;
+  final String fullName;
+  final String role;
+
+  SupervisorInfo({required this.userId, required this.fullName, required this.role});
+
+  factory SupervisorInfo.fromJson(Map<String, dynamic> json) => SupervisorInfo(
+    userId: json['userId'] as String,
+    fullName: json['fullName'] as String,
+    role: json['role'] as String,
+  );
 }
 
 class StaffCertification {

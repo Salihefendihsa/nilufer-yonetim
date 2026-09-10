@@ -120,6 +120,13 @@ model Staff {
   userId       String   @unique
   position     String
   salaryBase   Decimal  @db.Decimal(10, 2)
+  /// Organizasyon zincirindeki üst: STAFF/TEAM_LEAD → TEAM_LEAD ise bu bir
+  /// Staff.id'dir (eski davranış); STAFF/TEAM_LEAD → MANAGER'a doğrudan
+  /// bağlanıyorsa bu bir User.id'dir (MANAGER'ın kendi Staff kaydı yok —
+  /// bkz. lib/access.ts:resolveSupervisorInfo). Bu yüzden bilerek gerçek bir
+  /// FK ilişkisi YOK (tek bir tabloya işaret etmiyor); geçerlilik
+  /// controller'da (createStaff/updateStaff) uygulama seviyesinde kontrol
+  /// edilir.
   supervisorId String?
   status       StaffStatus @default(AVAILABLE)
   statusUntil  DateTime?
@@ -131,8 +138,6 @@ model Staff {
   createdAt    DateTime @default(now())
 
   user            User             @relation(fields: [userId], references: [id])
-  supervisor      Staff?           @relation("Supervision", fields: [supervisorId], references: [id])
-  teamMembers     Staff[]          @relation("Supervision")
   jobs            Job[]            @relation("AssignedStaff")
   jobReports      JobReport[]
   advanceRequests AdvanceRequest[]

@@ -3,7 +3,7 @@ import { z } from "zod";
 import { JobStatus, Role, StockMovementType, type Prisma } from "@prisma/client";
 import { prisma } from "../lib/prisma";
 import { getPagination, paginatedResponse } from "../lib/pagination";
-import { getCustomerIdForUser, getStaffIdForUser, getTeamStaffIds, canAccessJob } from "../lib/access";
+import { getCustomerIdForUser, getStaffIdForUser, getTeamStaffIds, canAccessJob, resolveSupervisorInfo } from "../lib/access";
 import { idParam } from "../lib/params";
 import { notifyUser, notifyManagement } from "../lib/notify";
 import { buildGoogleCalendarLink } from "../lib/googleCalendar";
@@ -264,12 +264,13 @@ async function notifySupervisorOfAssignment(
   const staff = await prisma.staff.findUnique({
     where: { id: assignedStaffId },
     select: {
+      supervisorId: true,
       user: { select: { fullName: true } },
-      supervisor: { select: { user: { select: { id: true } } } },
     },
   });
 
-  const supervisorUserId = staff?.supervisor?.user.id;
+  const supervisor = await resolveSupervisorInfo(staff?.supervisorId);
+  const supervisorUserId = supervisor?.userId;
   if (!supervisorUserId || supervisorUserId === actorUserId) return;
 
   const job = await prisma.job.findUnique({

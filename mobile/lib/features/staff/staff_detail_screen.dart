@@ -9,6 +9,7 @@ import '../../models/user.dart';
 import '../../theme/app_colors.dart';
 import '../../widgets/state_views.dart';
 import 'staff_api.dart';
+import 'staff_form_screen.dart';
 
 final _dateFormat = DateFormat('d MMM yyyy', 'tr_TR');
 
@@ -37,6 +38,14 @@ class _StaffDetailScreenState extends State<StaffDetailScreen> {
 
   bool get _isSelf =>
       _staff != null && _staff!.userId == context.read<AuthProvider>().user?.id;
+
+  /// backend/src/routes/staff.ts: PATCH/DELETE /:id ve sertifika CRUD'u
+  /// yalnızca OWNER/MANAGER'a açık (TEAM_LEAD durum değiştirebilir ama
+  /// düzenleyemez/silemez).
+  bool get _canManageStaff {
+    final role = context.read<AuthProvider>().user?.role;
+    return role == AppRole.owner || role == AppRole.manager;
+  }
 
   @override
   void initState() {
@@ -99,11 +108,176 @@ class _StaffDetailScreenState extends State<StaffDetailScreen> {
     }
   }
 
+  Future<void> _delete() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Personeli sil'),
+        content: Text(
+          '${_staff?.fullName ?? 'Bu personel'} silinecek. Bu işlem geri alınamaz.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('Vazgeç'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            child: const Text('Sil', style: TextStyle(color: Colors.red)),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+    try {
+      await _api.delete(widget.staffId);
+      if (mounted) Navigator.of(context).pop(true);
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(e is ApiException ? e.message : 'Silinemedi'),
+          ),
+        );
+      }
+    }
+  }
+
+  Future<void> _addCertification() async {
+    final nameController = TextEditingController();
+    DateTime issuedDate = DateTime.now();
+    DateTime expiryDate = DateTime.now().add(const Duration(days: 365));
+
+    final saved = await showDialog<bool>(
+      context: context,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setDialogState) => AlertDialog(
+          title: const Text('Yeni Sertifika'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: nameController,
+                decoration: const InputDecoration(labelText: 'Sertifika adı *'),
+              ),
+              const SizedBox(height: 12),
+              ListTile(
+                contentPadding: EdgeInsets.zero,
+                title: const Text('Veriliş tarihi'),
+                subtitle: Text(_dateFormat.format(issuedDate)),
+                onTap: () async {
+                  final picked = await showDatePicker(
+                    context: context,
+                    initialDate: issuedDate,
+                    firstDate: DateTime(2000),
+                    lastDate: DateTime(2100),
+                  );
+                  if (picked != null) {
+                    setDialogState(() => issuedDate = picked);
+                  }
+                },
+              ),
+              ListTile(
+                contentPadding: EdgeInsets.zero,
+                title: const Text('Bitiş tarihi'),
+                subtitle: Text(_dateFormat.format(expiryDate)),
+                onTap: () async {
+                  final picked = await showDatePicker(
+                    context: context,
+                    initialDate: expiryDate,
+                    firstDate: DateTime(2000),
+                    lastDate: DateTime(2100),
+                  );
+                  if (picked != null) {
+                    setDialogState(() => expiryDate = picked);
+                  }
+                },
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(false),
+              child: const Text('Vazgeç'),
+            ),
+            TextButton(
+              onPressed: nameController.text.trim().isEmpty
+                  ? null
+                  : () => Navigator.of(context).pop(true),
+              child: const Text('Ekle'),
+            ),
+          ],
+        ),
+      ),
+    );
+
+    if (saved != true || nameController.text.trim().isEmpty) return;
+    try {
+      await _api.createCertification(
+        widget.staffId,
+        name: nameController.text.trim(),
+        issuedDate: issuedDate,
+        expiryDate: expiryDate,
+      );
+      _load();
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              e is ApiException ? e.message : 'Sertifika eklenemedi',
+            ),
+          ),
+        );
+      }
+    }
+  }
+
+  Future<void> _deleteCertification(StaffCertification cert) async {
+    try {
+      await _api.deleteCertification(widget.staffId, cert.id);
+      _load();
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              e is ApiException ? e.message : 'Sertifika silinemedi',
+            ),
+          ),
+        );
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.surfacePage,
-      appBar: AppBar(title: Text(_staff?.fullName ?? 'Personel')),
+      appBar: AppBar(
+        title: Text(_staff?.fullName ?? 'Personel'),
+        actions: [
+          if (_staff != null && _canManageStaff) ...[
+            IconButton(
+              icon: const Icon(Icons.edit_outlined),
+              tooltip: 'Düzenle',
+              onPressed: () async {
+                final updated = await Navigator.of(context).push<bool>(
+                  MaterialPageRoute(
+                    builder: (_) => StaffFormScreen(staff: _staff),
+                  ),
+                );
+                if (updated == true) _load();
+              },
+            ),
+            IconButton(
+              icon: const Icon(Icons.delete_outline_rounded),
+              tooltip: 'Sil',
+              onPressed: _delete,
+            ),
+          ],
+        ],
+      ),
       body: _buildBody(),
     );
   }
@@ -154,6 +328,19 @@ class _StaffDetailScreenState extends State<StaffDetailScreen> {
                     style: const TextStyle(
                       fontSize: 12.5,
                       color: AppColors.textFaint,
+                    ),
+                  ),
+                if (s.supervisor != null)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 4),
+                    child: Text(
+                      '${roleLabelTr(roleFromString(s.supervisor!.role))}: '
+                      '${s.supervisor!.fullName}',
+                      style: const TextStyle(
+                        fontSize: 12.5,
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.textSecondary,
+                      ),
                     ),
                   ),
                 const SizedBox(height: 10),
@@ -228,12 +415,32 @@ class _StaffDetailScreenState extends State<StaffDetailScreen> {
               ),
           ],
 
-          if (_certifications.isNotEmpty) ...[
+          if (_certifications.isNotEmpty || _canManageStaff) ...[
             const SizedBox(height: 18),
-            const Text(
-              'Sertifikalar',
-              style: TextStyle(fontWeight: FontWeight.w700, fontSize: 14.5),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Text(
+                  'Sertifikalar',
+                  style: TextStyle(fontWeight: FontWeight.w700, fontSize: 14.5),
+                ),
+                if (_canManageStaff)
+                  IconButton(
+                    icon: const Icon(Icons.add_circle_outline_rounded),
+                    tooltip: 'Sertifika ekle',
+                    color: AppColors.primary600,
+                    onPressed: _addCertification,
+                  ),
+              ],
             ),
+            if (_certifications.isEmpty)
+              const Padding(
+                padding: EdgeInsets.only(bottom: 8),
+                child: Text(
+                  'Henüz sertifika eklenmemiş.',
+                  style: TextStyle(fontSize: 12.5, color: AppColors.textFaint),
+                ),
+              ),
             const SizedBox(height: 8),
             ..._certifications.map((c) {
               final expiringSoon =
@@ -288,6 +495,16 @@ class _StaffDetailScreenState extends State<StaffDetailScreen> {
                           color: color,
                         ),
                       ),
+                      if (_canManageStaff)
+                        IconButton(
+                          icon: const Icon(
+                            Icons.delete_outline_rounded,
+                            size: 18,
+                            color: AppColors.textFaint,
+                          ),
+                          tooltip: 'Sertifikayı sil',
+                          onPressed: () => _deleteCertification(c),
+                        ),
                     ],
                   ),
                 ),

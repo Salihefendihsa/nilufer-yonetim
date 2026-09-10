@@ -15,6 +15,7 @@ import {
   Truck,
   Star,
   AlertTriangle,
+  Network,
 } from "lucide-react";
 import { RequireRole } from "@/components/RequireRole";
 import { PageHeader } from "@/components/PageHeader";
@@ -24,6 +25,7 @@ import { EmptyState } from "@/components/EmptyState";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { api, ApiError } from "@/lib/api";
 import { useAuth } from "@/lib/AuthProvider";
+import { ROLE_LABELS } from "@/lib/auth";
 import type { Staff, Paginated } from "@/lib/types";
 import { StaffFormModal } from "./StaffFormModal";
 import { PermissionsModal } from "./PermissionsModal";
@@ -193,6 +195,14 @@ function StaffPageContent() {
                     <p className="flex items-center gap-1 text-xs text-text-faint">
                       <Truck size={11} strokeWidth={1.75} />
                       <span className="font-mono">{staff.vehiclePlate}</span>
+                    </p>
+                  )}
+                  {staff.supervisor && (
+                    <p className="flex items-center gap-1 text-xs text-text-faint">
+                      <Network size={11} strokeWidth={1.75} />
+                      <span>
+                        {ROLE_LABELS[staff.supervisor.role]}: {staff.supervisor.fullName}
+                      </span>
                     </p>
                   )}
                 </div>

@@ -48,6 +48,77 @@ export async function getTeamStaffIds(userId: string): Promise<string[]> {
   return [leadStaff.id, ...teamMembers.map((m) => m.id)];
 }
 
+export interface SupervisorInfo {
+  userId: string;
+  fullName: string;
+  role: Role;
+}
+
+/**
+ * Organizasyon zinciri STAFF → TEAM_LEAD → MANAGER → OWNER şeklinde ama
+ * yalnızca STAFF/TEAM_LEAD'in gerçek bir Staff kaydı var — MANAGER/OWNER'ın
+ * yok. Bu yüzden `Staff.supervisorId` polimorfik: önce bir Staff.id olarak
+ * denenir (TEAM_LEAD'e bağlıysa), bulunamazsa bir User.id olarak denenir
+ * (MANAGER'a doğrudan bağlıysa — bkz. schema.prisma Staff.supervisorId
+ * yorumu). Geçersiz/silinmiş bir id ise null döner (uydurma veri yok).
+ */
+export async function resolveSupervisorInfo(
+  supervisorId: string | null | undefined
+): Promise<SupervisorInfo | null> {
+  if (!supervisorId) return null;
+
+  const asStaff = await prisma.staff.findUnique({
+    where: { id: supervisorId },
+    select: { user: { select: { id: true, fullName: true, role: true } } },
+  });
+  if (asStaff) {
+    return { userId: asStaff.user.id, fullName: asStaff.user.fullName, role: asStaff.user.role };
+  }
+
+  const asUser = await prisma.user.findUnique({
+    where: { id: supervisorId },
+    select: { id: true, fullName: true, role: true },
+  });
+  if (asUser && (asUser.role === Role.MANAGER || asUser.role === Role.OWNER)) {
+    return { userId: asUser.id, fullName: asUser.fullName, role: asUser.role };
+  }
+
+  return null;
+}
+
+/**
+ * `resolveSupervisorInfo`'nun çoklu id için toplu (N+1 sorgu yapmayan)
+ * karşılığı — personel listesi gibi çok satırlı yanıtlarda kullanılır.
+ */
+export async function resolveSupervisorInfoBatch(
+  supervisorIds: (string | null | undefined)[]
+): Promise<Map<string, SupervisorInfo>> {
+  const ids = [...new Set(supervisorIds.filter((id): id is string => !!id))];
+  const result = new Map<string, SupervisorInfo>();
+  if (ids.length === 0) return result;
+
+  const staffMatches = await prisma.staff.findMany({
+    where: { id: { in: ids } },
+    select: { id: true, user: { select: { id: true, fullName: true, role: true } } },
+  });
+  for (const s of staffMatches) {
+    result.set(s.id, { userId: s.user.id, fullName: s.user.fullName, role: s.user.role });
+  }
+
+  const remainingIds = ids.filter((id) => !result.has(id));
+  if (remainingIds.length > 0) {
+    const userMatches = await prisma.user.findMany({
+      where: { id: { in: remainingIds }, role: { in: [Role.MANAGER, Role.OWNER] } },
+      select: { id: true, fullName: true, role: true },
+    });
+    for (const u of userMatches) {
+      result.set(u.id, { userId: u.id, fullName: u.fullName, role: u.role });
+    }
+  }
+
+  return result;
+}
+
 export async function hasPermission(userId: string, key: PermissionKey): Promise<boolean> {
   const staff = await getStaffRecordForUser(userId);
   if (!staff) return false;

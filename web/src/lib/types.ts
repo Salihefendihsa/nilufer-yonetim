@@ -147,6 +147,10 @@ export interface Staff {
   expiringCertificationCount?: number;
   averageRating?: number | null;
   ratedJobsCount?: number;
+  /** backend/src/lib/access.ts:resolveSupervisorInfo — supervisorId bir
+   * Staff.id (TEAM_LEAD) veya User.id (MANAGER/OWNER) olabilir, ikisi de
+   * burada tek bir tutarlı şekle çözülür. */
+  supervisor?: { userId: string; fullName: string; role: "TEAM_LEAD" | "MANAGER" | "OWNER" } | null;
 }
 
 export interface StaffDetail extends Staff {

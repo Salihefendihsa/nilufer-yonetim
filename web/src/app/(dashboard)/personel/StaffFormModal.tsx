@@ -29,6 +29,12 @@ export function StaffFormModal({ open, onClose, onSaved, staff }: StaffFormModal
   const [dailyJobCapacity, setDailyJobCapacity] = useState("");
   const [unlinkedUsers, setUnlinkedUsers] = useState<UnlinkedUser[]>([]);
   const [teamLeads, setTeamLeads] = useState<Staff[]>([]);
+  // Organizasyon zinciri STAFF → TEAM_LEAD → MANAGER → OWNER: MANAGER'ın
+  // kendi Staff kaydı yok (yalnızca User), bu yüzden ayrı bir uçtan
+  // (/users?role=MANAGER) çekilip "Şef" seçicisine ikinci bir grup olarak
+  // ekleniyor — backend/src/lib/access.ts:resolveSupervisorInfo bu iki
+  // kaynaktan (Staff.id veya User.id) gelen supervisorId'yi çözüyor.
+  const [managers, setManagers] = useState<UnlinkedUser[]>([]);
   const [usersLoading, setUsersLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
@@ -48,6 +54,11 @@ export function StaffFormModal({ open, onClose, onSaved, staff }: StaffFormModal
         .get<Paginated<Staff>>("/staff?role=TEAM_LEAD&limit=100")
         .then((res) => setTeamLeads(res.data))
         .catch(() => setTeamLeads([]));
+
+      api
+        .get<{ data: UnlinkedUser[] }>("/users?role=MANAGER")
+        .then((res) => setManagers(res.data))
+        .catch(() => setManagers([]));
 
       if (!staff) {
         setUsersLoading(true);
@@ -196,13 +207,26 @@ export function StaffFormModal({ open, onClose, onSaved, staff }: StaffFormModal
           <label className="text-sm font-medium text-text-secondary">Şef (opsiyonel)</label>
           <select value={supervisorId} onChange={(e) => setSupervisorId(e.target.value)} className="input">
             <option value="">Yok</option>
-            {teamLeads
-              .filter((lead) => lead.id !== staff?.id)
-              .map((lead) => (
-                <option key={lead.id} value={lead.id}>
-                  {lead.user.fullName}
-                </option>
-              ))}
+            {teamLeads.filter((lead) => lead.id !== staff?.id).length > 0 && (
+              <optgroup label="Ekip Liderleri">
+                {teamLeads
+                  .filter((lead) => lead.id !== staff?.id)
+                  .map((lead) => (
+                    <option key={lead.id} value={lead.id}>
+                      {lead.user.fullName}
+                    </option>
+                  ))}
+              </optgroup>
+            )}
+            {managers.length > 0 && (
+              <optgroup label="Müdürler">
+                {managers.map((m) => (
+                  <option key={m.id} value={m.id}>
+                    {m.fullName}
+                  </option>
+                ))}
+              </optgroup>
+            )}
           </select>
         </div>
 

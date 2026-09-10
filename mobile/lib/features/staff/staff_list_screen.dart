@@ -1,11 +1,15 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
+import '../../auth/auth_provider.dart';
 import '../../core/api_client.dart';
 import '../../models/staff.dart';
+import '../../models/user.dart';
 import '../../theme/app_colors.dart';
 import '../../widgets/state_views.dart';
 import 'staff_api.dart';
 import 'staff_detail_screen.dart';
+import 'staff_form_screen.dart';
 
 const Map<StaffStatus, Color> _statusColors = {
   StaffStatus.available: AppColors.success500,
@@ -56,11 +60,31 @@ class _StaffListScreenState extends State<StaffListScreen> {
     }
   }
 
+  bool get _canManage {
+    final role = context.read<AuthProvider>().user?.role;
+    return role == AppRole.owner || role == AppRole.manager;
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.surfacePage,
-      appBar: AppBar(title: const Text('Personel')),
+      appBar: AppBar(
+        title: const Text('Personel'),
+        actions: [
+          if (_canManage)
+            IconButton(
+              icon: const Icon(Icons.person_add_alt_1_rounded),
+              tooltip: 'Yeni personel',
+              onPressed: () async {
+                final created = await Navigator.of(context).push<bool>(
+                  MaterialPageRoute(builder: (_) => const StaffFormScreen()),
+                );
+                if (created == true) _load();
+              },
+            ),
+        ],
+      ),
       body: _buildBody(),
     );
   }
@@ -160,6 +184,15 @@ class _StaffListScreenState extends State<StaffListScreen> {
                               color: AppColors.textSecondary,
                             ),
                           ),
+                          if (s.supervisor != null)
+                            Text(
+                              '${roleLabelTr(roleFromString(s.supervisor!.role))}: '
+                              '${s.supervisor!.fullName}',
+                              style: const TextStyle(
+                                fontSize: 11.5,
+                                color: AppColors.textFaint,
+                              ),
+                            ),
                           const SizedBox(height: 4),
                           Wrap(
                             spacing: 6,

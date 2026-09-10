@@ -4,7 +4,7 @@ import { Role, StaffStatus, type Prisma } from "@prisma/client";
 import { prisma } from "../lib/prisma";
 import { getPagination, paginatedResponse } from "../lib/pagination";
 import { idParam } from "../lib/params";
-import { getTeamStaffIds, getStaffIdForUser } from "../lib/access";
+import { getTeamStaffIds, getStaffIdForUser, resolveSupervisorInfo, resolveSupervisorInfoBatch } from "../lib/access";
 import { PERMISSION_KEYS, isPermissionKey } from "../lib/permissions";
 import { recordAuditLog } from "../lib/auditLog";
 import { resetExpiredStaffStatuses } from "../lib/cron";
@@ -30,6 +30,22 @@ const updateSchema = z.object({
 const staffInclude = {
   user: { select: { id: true, fullName: true, email: true, phone: true, role: true } },
 };
+
+/**
+ * Maaş yalnızca OWNER/MANAGER'a (personel yönetimi web sayfası da yalnızca bu
+ * iki role açık) gösterilir. TEAM_LEAD, ekibindeki personeli GET /staff ile
+ * görebiliyor (iş yeniden atama seçicisi için — bkz. StaffApi.list() kullanımı
+ * mobile/lib/features/jobs/job_detail_screen.dart) ama bu, ekip üyelerinin
+ * maaşını da yanıt gövdesinde sızdırıyordu; STAFF de yalnızca kendi kaydını
+ * görüyor olsa da aynı kısıtlama STAFF için de tutarlılık amacıyla uygulanır.
+ */
+function redactSalaryForRole<T extends { salaryBase: unknown }>(staff: T, role: Role): Omit<T, "salaryBase"> | T {
+  if (role === Role.OWNER || role === Role.MANAGER) {
+    return staff;
+  }
+  const { salaryBase: _salaryBase, ...rest } = staff;
+  return rest;
+}
 
 export async function listStaff(req: Request, res: Response) {
   // Cron her 5 dakikada bir çalışır; iki tetik arasında bayat "Molada/İzinli"
@@ -114,14 +130,17 @@ export async function listStaff(req: Request, res: Response) {
       : Promise.resolve([]),
   ]);
 
+  const supervisorInfoById = await resolveSupervisorInfoBatch(data.map((s) => s.supervisorId));
+
   const enriched = data.map((staff) => {
     const rating = ratings.find((r) => r.assignedStaffId === staff.id);
     return {
-      ...staff,
+      ...redactSalaryForRole(staff, user.role),
       todaysJobsCount: todaysJobs.find((j) => j.assignedStaffId === staff.id)?._count._all ?? 0,
       expiringCertificationCount: expiringCerts.find((c) => c.staffId === staff.id)?._count._all ?? 0,
       averageRating: rating?._avg.rating ?? null,
       ratedJobsCount: rating?._count.rating ?? 0,
+      supervisor: staff.supervisorId ? (supervisorInfoById.get(staff.supervisorId) ?? null) : null,
     };
   });
 
@@ -157,7 +176,9 @@ export async function getStaff(req: Request, res: Response) {
     orderBy: { scheduledAt: "asc" },
   });
 
-  return res.json({ ...staff, todaysJobs });
+  const supervisor = await resolveSupervisorInfo(staff.supervisorId);
+
+  return res.json({ ...redactSalaryForRole(staff, req.user!.role), todaysJobs, supervisor });
 }
 
 export async function createStaff(req: Request, res: Response) {
@@ -176,6 +197,10 @@ export async function createStaff(req: Request, res: Response) {
     return res.status(409).json({ error: "Kullanıcı zaten bir personel kaydına bağlı" });
   }
 
+  if (data.supervisorId && !(await resolveSupervisorInfo(data.supervisorId))) {
+    return res.status(400).json({ error: "Geçersiz şef/müdür seçimi" });
+  }
+
   const staff = await prisma.staff.create({ data, include: staffInclude });
   return res.status(201).json(staff);
 }
@@ -186,6 +211,10 @@ export async function updateStaff(req: Request, res: Response) {
   const existing = await prisma.staff.findUnique({ where: { id: idParam(req) } });
   if (!existing) {
     return res.status(404).json({ error: "Personel bulunamadı" });
+  }
+
+  if (data.supervisorId && !(await resolveSupervisorInfo(data.supervisorId))) {
+    return res.status(400).json({ error: "Geçersiz şef/müdür seçimi" });
   }
 
   const staff = await prisma.staff.update({ where: { id: idParam(req) }, data, include: staffInclude });
