@@ -1068,9 +1068,12 @@ function CustomerDashboard() {
               const isExpanded = expandedJobId === job.id;
               return (
                 <li key={job.id} className="py-4">
-                  <div
+                  <button
+                    type="button"
+                    disabled={!isCompleted}
                     onClick={isCompleted ? () => toggleReport(job.id) : undefined}
-                    className={`flex items-center justify-between gap-4 ${isCompleted ? "cursor-pointer" : ""}`}
+                    aria-expanded={isCompleted ? isExpanded : undefined}
+                    className={`flex w-full items-center justify-between gap-4 text-left ${isCompleted ? "cursor-pointer" : "cursor-default"}`}
                   >
                     <div>
                       <p className="text-sm font-medium text-text-primary">{job.serviceType}</p>
@@ -1086,7 +1089,7 @@ function CustomerDashboard() {
                         />
                       )}
                     </div>
-                  </div>
+                  </button>
 
                   {isCompleted && (
                     <div className="mt-2 flex items-center gap-2">
