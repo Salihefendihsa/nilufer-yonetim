@@ -22,28 +22,55 @@ maddelerinden BAĞIMSIZ, iki gerçek fonksiyon hatası bulundu:
    `dart analyze`/`flutter test` temiz, gerçek cihazda İşler listesi için
    düzeltme sonrası ekran görüntüsüyle doğrulandı.
 
-2. **AÇIK — STAFF Ana Sayfa (Dashboard) tamamen boş geliyor.** Ali Kaya ile giriş
-   yapıldığında Ana Sayfa sekmesi üst bar + alt navigasyon dışında **hiçbir içerik**
-   göstermiyor (stat kartları, "Vardiya Durumu", görev listesi — hiçbiri). Kapsamlı
-   canlı hata ayıklama yapıldı (6 yeniden derleme/kurulum döngüsü): `_load()`'un
-   hatasız tamamlandığı doğrulandı (`loading=false error=null isStaff=true`),
-   `_buildStaffBody()`'nin çağrıldığı ve **exception fırlatmadan** döndüğü
-   `try/catch` ile doğrulandı (kırmızı "CAUGHT" ekranı hiç görünmedi), Impeller
-   render motoru devre dışı bırakılıp test edildi (fark etmedi, geri alındı), aynı
-   `border`+`borderRadius` hatası bu dosyada YOK (tüm kenarlıklar `Border.all` ile
-   tekdüze, kontrol edildi). Basit statik içerik (mavi kutu + metin) AYNI body
-   konumunda düzgün çiziliyor — yani sorun `RefreshIndicator`/`Scaffold`/
-   `IndexedStack` yerleşiminde değil, spesifik olarak `_buildStaffBody()`'nin
-   döndürdüğü GERÇEK widget ağacında. Kök neden **kesin olarak belirlenemedi**;
-   bisection testi (ListView içine tek bir `Text` widget'ı koyup diğer her şeyi
-   geçici olarak kaldırma) tam sonuçlanamadan cihaz bağlantısı koptu (USB/Wi-Fi).
-   Kullanıcı talimatıyla telefon testine daha fazla zaman ayrılmadı; kod
-   `_buildStaffBody`'nin özgün/temiz haline geri alındı (hata ayıklama kodu
-   kalmadı, `dart analyze` temiz). **Sonraki adım (cihaz tekrar bağlandığında):**
-   bisection testine kaldığı yerden devam et — ListView'e tek tek gerçek widget'lar
-   geri eklenerek (StatCardGrid/AppStatCard → Vardiya Durumu kartı →
-   EmptyStateView) hangi widget'ın paint aşamasında sessizce başarısız olduğu
-   izole edilmeli.
+2. **OLASI DÜZELTME UYGULANDI, CİHAZDA DOĞRULANMADI — STAFF Ana Sayfa (Dashboard)
+   tamamen boş geliyordu.** Ali Kaya ile giriş yapıldığında Ana Sayfa sekmesi üst
+   bar + alt navigasyon dışında **hiçbir içerik** göstermiyordu (stat kartları,
+   "Vardiya Durumu", görev listesi — hiçbiri). Önceki turda kapsamlı canlı hata
+   ayıklama yapılmıştı (6 yeniden derleme/kurulum döngüsü): `_load()`'un hatasız
+   tamamlandığı doğrulandı, `_buildStaffBody()`'nin exception fırlatmadan
+   döndüğü `try/catch` ile doğrulandı, Impeller render motoru devre dışı
+   bırakılıp test edildi (fark etmedi), aynı `border`+`borderRadius` hatası bu
+   dosyada YOK (tüm kenarlıklar `Border.all` ile tekdüze). Basit statik içerik
+   AYNI body konumunda düzgün çiziliyordu — yani sorun spesifik olarak
+   `_buildStaffBody()`'nin döndürdüğü widget ağacındaydı, ama bisection testi
+   cihaz bağlantısı koptuğu için tam sonuçlanamamıştı.
+
+   **Bu turda (2026-09-10), cihaza dokunmadan, yalnızca kod incelemesiyle**
+   `_buildStaffBody()` satır satır yeniden okundu ve `_buildManagementBody()` /
+   `_buildTeamLeadBody()` ile (aynı dosyada, aynı ekranın başka rol
+   varyantları — cihazda sorunsuz çalıştığı bilinen) yapısal olarak
+   karşılaştırıldı. Tek genuine fark bulundu: STAFF'ın "Vardiya Durumu"
+   kartındaki ilerleme çubuğu, `ClipRRect` içinde bir `Row`'a birden fazla
+   `Expanded(flex: n)` + düz renkli `Container` yerleştirerek elle çiziliyordu
+   (tamamlanan/aktif/iptal oranlarını 3 renkli segment olarak göstermek için).
+   `grep -rn "Expanded(flex:" lib` ile doğrulandı: bu desen **tüm mobil
+   kod tabanında yalnızca burada** kullanılıyor — Yönetim ve Şef gövdeleri
+   dahil hiçbir yerde başka bir `Expanded(flex:)` yok; onlar bunun yerine
+   `ClipRRect(child: LinearProgressIndicator(...))` (tek değerli, standart,
+   dahili `CustomPainter` tabanlı) kullanıyor ve bu iki varyant cihazda sorun
+   yaşamıyor.
+
+   Teori: kullanıcının daha önce işaret ettiği Impeller/gralloc4 texture
+   allocation riski — `ClipRRect`'in bir offscreen katman/texture ayırması
+   gerektiği durumlarda, klibin içine birden çok yan yana dolgu (`Expanded`
+   segmentleri) render etmek, tek bir `LinearProgressIndicator`'ı klipsemekten
+   yapısal olarak daha karmaşık bir compositing gerektirir; bu da bazı Android
+   GPU/sürücü kombinasyonlarında (özellikle daha eski Adreno/Mali + Impeller)
+   bilinen bir kırılganlık sınıfıdır. **Düzeltme:** bu tekil/sıradışı segment
+   deseni kaldırıldı, yerine aynı dosyada zaten iki kez kanıtlanmış olan
+   tek-değerli `ClipRRect + LinearProgressIndicator` (tamamlanma yüzdesi)
+   deseni kullanıldı — bilgi kaybı yok, üstündeki `_ShiftStatusDot` satırı
+   zaten Bekliyor/Planlandı/Tamam/İptal sayılarını ayrı ayrı gösteriyor.
+   `dart analyze`/`flutter test` temiz.
+
+   **Bu KESİN bir çözüm iddiası DEĞİLDİR** — cihaz testine dokunulmadı (kullanıcı
+   talimatı gereği), bu yüzden kök nedenin gerçekten bu olduğu doğrulanamadı.
+   En güçlü, kod-seviyesinde tespit edilebilir kanıt bu tekil deseni işaret
+   ediyordu, o yüzden proaktif olarak sadeleştirildi. **Sonraki adım (cihaz
+   tekrar kullanılabilir olduğunda):** güncellenmiş `_buildStaffBody()`'yi
+   Ali Kaya hesabıyla gerçek cihazda tekrar test et; sorun devam ederse
+   bisection'a StatCardGrid/AppStatCard → Vardiya Durumu kartı → görev
+   listesi sırasıyla kaldığı yerden devam et.
 
 ## Kapsam ve Yöntem
 

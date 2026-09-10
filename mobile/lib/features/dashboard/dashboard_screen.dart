@@ -712,29 +712,29 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 ],
               ),
               const SizedBox(height: 10),
+              // NOT: Burada önceden Row + birden fazla Expanded(flex:)
+              // segmentiyle elle çizilen çok renkli bir çubuk vardı. Bu
+              // uygulamada `Expanded(flex: ...)` yalnızca burada
+              // kullanılıyordu (grep ile doğrulandı) — Yönetim/Şef
+              // gövdelerindeki (bu dosyanın üstünde) kanıtlanmış
+              // ClipRRect+LinearProgressIndicator deseniyle DEĞİL, kendine
+              // özgü bir ClipRRect+Row+çoklu-dolgu bileşimiyle çiziliyordu.
+              // Gerçek cihazda STAFF Ana Sayfa'nın tamamen boş gelmesi
+              // sorununun kök nedeni bulunamadı (bkz.
+              // docs/WEB_MOBILE_PARITY.md); bu tekil/sıradışı çizim deseni
+              // en olası şüpheli olduğu için, aynı dosyada zaten güvenli
+              // olduğu kanıtlanmış tek-değerli LinearProgressIndicator
+              // desenine çekildi. Cihazda DOĞRULANMADI — olası bir
+              // düzeltme, kesin çözüm iddiası değil.
               if (total > 0)
                 ClipRRect(
                   borderRadius: BorderRadius.circular(AppRadius.pill),
-                  child: SizedBox(
-                    height: 8,
-                    child: Row(
-                      children: [
-                        if (completed > 0)
-                          Expanded(
-                            flex: completed,
-                            child: Container(color: AppColors.primary600),
-                          ),
-                        if (active > 0)
-                          Expanded(
-                            flex: active,
-                            child: Container(color: AppColors.warning500),
-                          ),
-                        if (cancelled > 0)
-                          Expanded(
-                            flex: cancelled,
-                            child: Container(color: AppColors.danger500),
-                          ),
-                      ],
+                  child: LinearProgressIndicator(
+                    value: completed / total,
+                    minHeight: 8,
+                    backgroundColor: AppColors.surfaceMuted,
+                    valueColor: const AlwaysStoppedAnimation(
+                      AppColors.primary600,
                     ),
                   ),
                 ),
