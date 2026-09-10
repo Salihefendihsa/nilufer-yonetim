@@ -25,6 +25,7 @@ import { EmptyState } from "@/components/EmptyState";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { api, ApiError } from "@/lib/api";
 import { useAuth } from "@/lib/AuthProvider";
+import { useToast } from "@/lib/ToastProvider";
 import { ROLE_LABELS } from "@/lib/auth";
 import type { Staff, Paginated } from "@/lib/types";
 import { StaffFormModal } from "./StaffFormModal";
@@ -90,6 +91,8 @@ function StaffPageContent() {
     load();
   }, [load]);
 
+  const { showToast } = useToast();
+
   async function handleDelete() {
     if (!deleteTarget) return;
     setDeleting(true);
@@ -97,6 +100,7 @@ function StaffPageContent() {
       await api.delete(`/staff/${deleteTarget.id}`);
       setDeleteTarget(null);
       load();
+      showToast("Personel silindi.");
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "Silinemedi");
     } finally {

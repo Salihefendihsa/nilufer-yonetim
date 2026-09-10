@@ -12,6 +12,7 @@ import { EmptyState } from "@/components/EmptyState";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { api, ApiError } from "@/lib/api";
 import { useAuth } from "@/lib/AuthProvider";
+import { useToast } from "@/lib/ToastProvider";
 import type { Product, ProductCategory, Paginated } from "@/lib/types";
 import { formatDateTime, decimalValue } from "@/lib/format";
 import { ProductFormModal } from "./ProductFormModal";
@@ -91,6 +92,8 @@ function StockPageContent() {
     load();
   }, [load]);
 
+  const { showToast } = useToast();
+
   async function handleDelete() {
     if (!deleteTarget) return;
     setDeleting(true);
@@ -98,6 +101,7 @@ function StockPageContent() {
       await api.delete(`/products/${deleteTarget.id}`);
       setDeleteTarget(null);
       load();
+      showToast("Ürün silindi.");
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "Silinemedi");
     } finally {

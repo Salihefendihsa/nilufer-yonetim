@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState, type FormEvent } from "react";
 import { Trash2 } from "lucide-react";
 import { Modal } from "@/components/Modal";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
+import { useToast } from "@/lib/ToastProvider";
 import { api, ApiError } from "@/lib/api";
 import { formatDate } from "@/lib/format";
 import type { Staff, StaffCertification } from "@/lib/types";
@@ -24,6 +25,7 @@ export function CertificationsModal({ open, onClose, staff }: CertificationsModa
   const [saving, setSaving] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<StaffCertification | null>(null);
   const [deleting, setDeleting] = useState(false);
+  const { showToast } = useToast();
 
   const load = useCallback(() => {
     if (!staff) return;
@@ -70,6 +72,7 @@ export function CertificationsModal({ open, onClose, staff }: CertificationsModa
       await api.delete(`/staff/${staff.id}/certifications/${deleteTarget.id}`);
       setDeleteTarget(null);
       load();
+      showToast("Belge silindi.");
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "Silinemedi");
     } finally {

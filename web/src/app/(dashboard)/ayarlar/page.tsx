@@ -22,6 +22,7 @@ import { PageHeader } from "@/components/PageHeader";
 import { Modal } from "@/components/Modal";
 import { Toggle } from "@/components/Toggle";
 import { useAuth } from "@/lib/AuthProvider";
+import { useToast } from "@/lib/ToastProvider";
 import { api, ApiError, downloadFile } from "@/lib/api";
 import type { District, NotificationPreference, ServiceType, SettingsMap, SystemHealth } from "@/lib/types";
 
@@ -73,6 +74,8 @@ function NotificationPreferencesSection({ isOwner }: { isOwner: boolean }) {
       .finally(() => setLoading(false));
   }, []);
 
+  const { showToast } = useToast();
+
   async function handleChange(field: "emailEnabled" | "dailyDigestEnabled", value: boolean) {
     if (!preference) return;
     setSaving(true);
@@ -82,6 +85,7 @@ function NotificationPreferencesSection({ isOwner }: { isOwner: boolean }) {
     try {
       const updated = await api.patch<NotificationPreference>("/notification-preferences", { [field]: value });
       setPreference(updated);
+      showToast("Bildirim tercihi güncellendi.");
     } catch (err) {
       setPreference(previous);
       setError(err instanceof ApiError ? err.message : "Güncellenemedi");
@@ -209,7 +213,7 @@ function CompanyInfoSection() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [saved, setSaved] = useState(false);
+  const { showToast } = useToast();
 
   useEffect(() => {
     api
@@ -223,12 +227,11 @@ function CompanyInfoSection() {
     e.preventDefault();
     setSaving(true);
     setError(null);
-    setSaved(false);
     try {
       const payload = Object.fromEntries(COMPANY_FIELDS.map((f) => [f.key, form[f.key] ?? ""]));
       const res = await api.patch<{ data: SettingsMap }>("/settings", payload);
       setForm(res.data);
-      setSaved(true);
+      showToast("Firma bilgileri kaydedildi.");
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "Kaydedilemedi, tekrar deneyin");
     } finally {
@@ -258,7 +261,6 @@ function CompanyInfoSection() {
           ))}
 
           {error && <p className="rounded-2xl border border-danger-100 bg-danger-50 px-4 py-3 text-sm text-danger-500">{error}</p>}
-          {saved && !error && <p className="rounded-2xl border border-primary-100 bg-primary-50 px-4 py-3 text-sm font-medium text-primary-700">Kaydedildi.</p>}
 
           <div className="mt-2 flex justify-end">
             <button
@@ -291,7 +293,7 @@ function TargetsSection() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [saved, setSaved] = useState(false);
+  const { showToast } = useToast();
 
   useEffect(() => {
     api
@@ -305,12 +307,11 @@ function TargetsSection() {
     e.preventDefault();
     setSaving(true);
     setError(null);
-    setSaved(false);
     try {
       const payload = Object.fromEntries(TARGET_FIELDS.map((f) => [f.key, (form[f.key] ?? "").trim()]));
       const res = await api.patch<{ data: SettingsMap }>("/settings", payload);
       setForm(res.data);
-      setSaved(true);
+      showToast("Aylık hedefler kaydedildi.");
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "Kaydedilemedi, tekrar deneyin");
     } finally {
@@ -344,11 +345,6 @@ function TargetsSection() {
           ))}
 
           {error && <p className="rounded-2xl border border-danger-100 bg-danger-50 px-4 py-3 text-sm text-danger-500">{error}</p>}
-          {saved && !error && (
-            <p className="rounded-2xl border border-primary-100 bg-primary-50 px-4 py-3 text-sm font-medium text-primary-700">
-              Kaydedildi.
-            </p>
-          )}
 
           <div className="mt-2 flex justify-end">
             <button type="submit" disabled={saving} className="btn-primary">

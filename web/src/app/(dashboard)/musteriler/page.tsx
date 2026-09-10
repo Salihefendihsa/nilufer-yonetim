@@ -8,6 +8,7 @@ import { StatusStrip } from "@/components/StatusStrip";
 import { Table, type Column } from "@/components/Table";
 import { EmptyState } from "@/components/EmptyState";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
+import { useToast } from "@/lib/ToastProvider";
 import { api, ApiError, downloadFile } from "@/lib/api";
 import { formatDate, currencyFormatter } from "@/lib/format";
 import type { Customer, CustomerListItem, Paginated } from "@/lib/types";
@@ -42,6 +43,7 @@ function CustomersPageContent() {
   const [editingCustomer, setEditingCustomer] = useState<Customer | null>(null);
   const [detailId, setDetailId] = useState<string | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<Customer | null>(null);
+  const { showToast } = useToast();
   const [deleting, setDeleting] = useState(false);
 
   const load = useCallback(async () => {
@@ -73,6 +75,7 @@ function CustomersPageContent() {
       setDeleteTarget(null);
       setDetailId(null);
       load();
+      showToast("Müşteri silindi.");
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "Silinemedi");
     } finally {

@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../auth/auth_provider.dart';
+import '../../core/api_client.dart';
 import '../../models/job.dart';
 import '../../models/user.dart';
 import '../../theme/app_colors.dart';
@@ -99,7 +100,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
         _staffTodaysJobs = await _api.getTodaysJobsCountForCurrentUser();
       }
     } catch (e) {
-      _error = e.toString();
+      _error = e is ApiException ? e.message : 'Veriler alınamadı';
     } finally {
       if (mounted) setState(() => _loading = false);
     }
