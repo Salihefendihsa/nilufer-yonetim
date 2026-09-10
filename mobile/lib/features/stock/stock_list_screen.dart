@@ -821,7 +821,7 @@ class _ProductFormScreenState extends State<_ProductFormScreen> {
               controller: _nameController,
               decoration: const InputDecoration(labelText: 'Ürün Adı'),
               validator: (v) =>
-                  (v == null || v.trim().isEmpty) ? 'Zorunlu' : null,
+                  (v == null || v.trim().isEmpty) ? 'Zorunlu alan' : null,
             ),
             const SizedBox(height: 12),
             TextFormField(
@@ -870,7 +870,7 @@ class _ProductFormScreenState extends State<_ProductFormScreen> {
               ),
               decoration: const InputDecoration(labelText: 'Kritik Seviye'),
               validator: (v) =>
-                  (v == null || v.trim().isEmpty) ? 'Zorunlu' : null,
+                  (v == null || v.trim().isEmpty) ? 'Zorunlu alan' : null,
             ),
             if (_error != null) ...[
               const SizedBox(height: 12),
