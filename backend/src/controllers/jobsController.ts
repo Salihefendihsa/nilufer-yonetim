@@ -487,7 +487,7 @@ export async function createJobReport(req: Request, res: Response) {
   const { signatureBase64, products, ...data } = reportSchema.parse(req.body);
 
   if (data.productId && !data.quantity) {
-    return res.status(400).json({ error: "productId belirtildiğinde miktar zorunludur" });
+    return res.status(400).json({ error: "Ürün seçildiğinde miktar zorunludur" });
   }
 
   const productIds = [

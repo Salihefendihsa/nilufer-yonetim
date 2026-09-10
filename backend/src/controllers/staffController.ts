@@ -342,7 +342,7 @@ export async function updateStaffStatus(req: Request, res: Response) {
   const data = statusUpdateSchema.parse(req.body);
 
   if (data.statusUntil && data.statusUntil.getTime() <= Date.now()) {
-    return res.status(400).json({ error: "statusUntil geçmiş bir tarih olamaz" });
+    return res.status(400).json({ error: "Durum bitiş tarihi geçmiş bir tarih olamaz" });
   }
 
   if (user.role === Role.STAFF) {

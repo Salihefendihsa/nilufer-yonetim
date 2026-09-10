@@ -22,11 +22,9 @@ export function errorHandler(err: unknown, _req: Request, res: Response, _next: 
 
   recordError();
 
-  if (err instanceof Error) {
-    console.error(err);
-    return res.status(500).json({ error: err.message });
-  }
-
+  // Beklenmeyen hatanın gerçek mesajı (İngilizce/teknik olabilir, dosya yolu
+  // sızdırabilir) sunucu loguna yazılır ama istemciye asla ham haliyle
+  // dönülmez — diğer tüm response'larla tutarlı, sabit bir Türkçe mesaj.
   console.error(err);
   return res.status(500).json({ error: "Sunucu hatası oluştu" });
 }

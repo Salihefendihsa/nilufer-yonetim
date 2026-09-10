@@ -46,7 +46,7 @@ export async function uploadJobPhoto(req: Request, res: Response) {
 
   const typeResult = typeSchema.safeParse(req.body.type ?? req.query.type);
   if (!typeResult.success) {
-    return res.status(400).json({ error: "type BEFORE veya AFTER olmalı" });
+    return res.status(400).json({ error: "Fotoğraf türü \"BEFORE\" veya \"AFTER\" olmalı" });
   }
 
   const photo = await prisma.jobPhoto.create({
