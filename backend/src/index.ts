@@ -35,6 +35,15 @@ import { recordRequest } from "./lib/metrics";
 
 const app = express();
 
+// Yalnızca gerçekten bir reverse proxy/load balancer arkasında çalışırken
+// (Nginx, Cloudflare, bir PaaS vb.) açılmalı — aksi halde istemcinin
+// X-Forwarded-For header'ını taklit ederek IP bazlı rate limiting'i (bkz.
+// middleware/loginRateLimit.ts) atlatması mümkün olur. Doğrudan internete
+// açıksa (proxy YOKSA) TRUST_PROXY ayarlanmamalı; varsayılan kapalıdır.
+if (process.env.TRUST_PROXY) {
+  app.set("trust proxy", process.env.TRUST_PROXY);
+}
+
 app.use(helmet());
 // CORS_ORIGIN tanımlıysa (virgülle ayrılmış liste) yalnızca o origin'lere
 // izin verilir — production'da web panelinin gerçek domain'i buraya
