@@ -6,6 +6,7 @@ import 'package:provider/provider.dart';
 
 import '../../auth/auth_provider.dart';
 import '../../core/api_client.dart';
+import '../../core/file_download.dart';
 import '../../models/customer.dart';
 import '../../models/user.dart';
 import '../../theme/app_colors.dart';
@@ -44,10 +45,30 @@ class _CustomersListScreenState extends State<CustomersListScreen> {
   int _page = 1;
   int _totalPages = 1;
   String _search = '';
+  bool _exporting = false;
 
   bool get _canManage {
     final role = context.read<AuthProvider>().user?.role;
     return role == AppRole.owner || role == AppRole.manager;
+  }
+
+  Future<void> _exportExcel() async {
+    setState(() => _exporting = true);
+    try {
+      await downloadAndShare('/customers/export/excel', 'musteriler.xlsx');
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              e is ApiException ? e.message : 'Excel dışa aktarılamadı',
+            ),
+          ),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _exporting = false);
+    }
   }
 
   @override
@@ -107,6 +128,18 @@ class _CustomersListScreenState extends State<CustomersListScreen> {
       appBar: AppBar(
         title: const Text('Müşteriler'),
         actions: [
+          if (_canManage)
+            IconButton(
+              icon: _exporting
+                  ? const SizedBox(
+                      width: 18,
+                      height: 18,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : const Icon(Icons.file_download_outlined),
+              tooltip: 'Excel olarak dışa aktar',
+              onPressed: _exporting ? null : _exportExcel,
+            ),
           if (_canManage)
             IconButton(
               icon: const Icon(Icons.person_add_alt_1_rounded),

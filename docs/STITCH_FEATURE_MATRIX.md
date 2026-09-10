@@ -2,11 +2,12 @@
 
 ## Genel Durum Özeti
 
-Bu belge üç Stitch paketini kapsar:
+Bu belge dört Stitch paketini kapsar:
 
 1. **Patron (OWNER) paketi** — `stitch_nil_fer_i_la_lama_mobil_paneli_patron.zip`, **15 ekran** (§1-§15).
 2. **Müdür (MANAGER) paketi** — `stitch_pest_control_manager_ui_mudur.zip`, **16 ekran dosyası = 15 sayfa** (bkz. "Faz 6").
 3. **Şef (TEAM_LEAD) paketi** — `stitch_pest_control_team_lead_ui_ef.zip`, **8 ekran = 7 sayfa** (bkz. "Faz 8").
+4. **Personel (STAFF) paketi** — `stitch_nil_fer_staff_mobile_app_personel.zip`, **8 ekran dosyası = 6 sayfa** (bkz. "Faz 9").
 
 **Durum:** Her iki paketin de tüm ekranları backend + web + Flutter üçlüsünde gerçek
 API'ye bağlıdır; hiçbir sekme/menü `ComingSoonScreen` veya sahte/statik veri değildir.
@@ -21,12 +22,24 @@ API'ye bağlıdır; hiçbir sekme/menü `ComingSoonScreen` veya sahte/statik ver
   Kategori B = 7 ekran, **Kategori C = 0 ekran uygulandı** — Stitch'in şef tasarımındaki
   yetki dışı öğeler (stok talebi, DESIGN.md'nin farklı çekmece listesi, canlı konum,
   sesli mesaj) koda **girmedi**, ayrı bölümde belgelendi.
-- **Açık sorular: YOK.** Faz 1-7'den gelen 16 maddenin tamamı (7 uygulandı, 8 kapsam dışı,
-  1 onaylandı) ve Faz 8'de açılan 3 madde (**1 uygulandı**: şefin stok takviye talebi;
-  **2 kapsam dışı**: sesli mesaj, "Şef Notu") karara bağlandı.
+- **Personel paketi (Faz 9)**: 6 sayfanın hepsi bağlı. Kategori A = 4 ekran (Takvim,
+  Bildirimler, Mesajlar, Ayarlar — zaten var olan genel ekranlar), Kategori B = 2 ekran
+  (Ana Sayfa, İşler, ikisi de uçtan uca doğrulandı), **Kategori C = 0 ekran uygulandı** —
+  QR Kod Tara ve SMS Bildirimleri **[her ikisi de KAPSAM DIŞI]** koda girmedi. Ayrıca
+  Stitch'ten bağımsız, önceden var olan bir personel maaş sızıntısı (`GET /staff`,
+  `GET /staff/:id`) bu fazda kapatıldı. **Kod/karar tarafı tamamlandı**; yalnızca
+  Ali Kaya (STAFF) hesabıyla telefonda görsel/dokunsal ekran turu, cihaz Wi-Fi'ye
+  bağlı olmadığı için (2026-09-10 itibarıyla hâlâ mobil veride) **beklemede** —
+  işlevsellik curl ile uçtan uca doğrulanmış durumda.
+- **Açık sorular: YOK (kod/karar tarafında).** Faz 1-7'den gelen 16 maddenin tamamı
+  (7 uygulandı, 8 kapsam dışı, 1 onaylandı), Faz 8'de açılan 3 madde (**1 uygulandı**:
+  şefin stok takviye talebi; **2 kapsam dışı**: sesli mesaj, "Şef Notu") ve Faz 9'da
+  açılan 3 madde (**2 kapsam dışı**: QR Kod Tara, SMS Bildirimleri; **1'i görsel
+  doğrulama beklemede**: Ali Kaya telefon turu) karara bağlandı.
 
-**Tek cümlelik özet**: Üç rolün tasarım seti de gerçek veriyle uçtan uca çalışır durumda ve
-karar bekleyen açık soru kalmamıştır.
+**Tek cümlelik özet**: Dört rolün tasarım seti de gerçek veriyle uçtan uca çalışır
+durumda; kod/karar tarafında açık soru kalmadı, yalnızca Faz 9'un telefon üzerinde
+görsel teyidi cihazın Wi-Fi'ye bağlanmasını bekliyor.
 
 ### Açık Soruların Durumu (16 maddenin tamamı)
 
@@ -829,9 +842,9 @@ zayıf 5-sekmeli (Ayarlar'ı hiç içermeyen) listesini değil kendi kabuğunu k
 
 | Stitch ne gösteriyor | Gerçek yetki haritası | Kontrolün yeri | Karar |
 |---|---|---|---|
-| Alt navigasyon ortası — **"QR Kod Tara"** yüzen aksiyon butonu (`hizli-islem`) | Sistemde QR kod tabanlı bir check-in/tarama akışı (ne için tarandığı, hangi veriyi değiştirdiği) tanımlı değil | — | **Uygulanmadı.** Anlamı belirsiz — iş başlangıcı için mi, ürün/barkod okuma için mi, envanter sayımı için mi? İş kuralı netleşmeden uydurulmadı; **açık soru**. |
+| Alt navigasyon ortası — **"QR Kod Tara"** yüzen aksiyon butonu (`hizli-islem`) **[KAPSAM DIŞI — kullanım senaryosu netleşmeden uygulanmayacak]** | Sistemde QR kod tabanlı bir check-in/tarama akışı (ne için tarandığı, hangi veriyi değiştirdiği) tanımlı değil | — | **Uygulanmadı, karara bağlandı: ertelendi.** Anlamı belirsiz — iş başlangıcı için mi, ürün/barkod okuma için mi, envanter sayımı için mi? İş kuralı netleşmeden uygulanmayacak. |
 | Bildirimler → Depo uyarısı kartında **"Merkez Depodan Talep Et"** düğmesi | Satın alma (stok takviye) talebi açma STAFF'a değil yalnızca OWNER/MANAGER/TEAM_LEAD'e açık (Faz 8'de şefe genişletilmişti, personele değil) | `backend/src/routes/products.ts`: `POST /:id/purchase-requests` → `requireRole(OWNER, MANAGER, TEAM_LEAD)` | **Uygulanmadı.** Düğme gerçek bir aksiyona bağlanmadı; personelin stok takviyesi talep etme yetkisi yok. |
-| Ayarlar → **"SMS Bildirimleri"** aç/kapa anahtarı | Sistemde SMS gönderme altyapısı hiç yok (`NotificationPreference` modelinde yalnızca `emailEnabled`/`dailyDigestEnabled` var, `lib/notify.ts`'de SMS sağlayıcı entegrasyonu yok) | `backend/prisma/schema.prisma:NotificationPreference` | **Uygulanmadı** — gerçek bir işlevi olmayan bir anahtar eklemek "yalnızca görsel/statik" yasağına girerdi. **Açık soru**: SMS altyapısı kurulacak mı (sağlayıcı seçimi, maliyet), yoksa Stitch'teki bu satır kalıcı olarak kaldırılacak mı? |
+| Ayarlar → **"SMS Bildirimleri"** aç/kapa anahtarı **[KAPSAM DIŞI — sağlayıcı seçimi yapılmadan uygulanmayacak]** | Sistemde SMS gönderme altyapısı hiç yok (`NotificationPreference` modelinde yalnızca `emailEnabled`/`dailyDigestEnabled` var, `lib/notify.ts`'de SMS sağlayıcı entegrasyonu yok) | `backend/prisma/schema.prisma:NotificationPreference` | **Uygulanmadı, karara bağlandı: ertelendi.** Sağlayıcı seçimi yapılmadan (İleti Merkezi, Netgsm vb. bir iş kararı) uygulanmayacak; Stitch'teki bu anahtar koda girmedi. |
 
 **Doğrulanan yetki sınırları (personel1/Ali Kaya hesabıyla canlı test, hepsi
 403):** `/dashboard/summary`, başka bir personelin işi (`GET /jobs/:id`), başka bir
@@ -877,13 +890,22 @@ sorunu. STAFF tarafının TÜM işlevselliği (giriş, kendi işleri, çoklu ür
 rapor, avans talebi, durum değişikliği, izolasyon) yukarıdaki curl testleriyle
 uçtan uca doğrulandı; eksik olan yalnızca görsel/dokunsal bir teyittir.
 
-### Faz 9 açık soruları
+### Faz 9 açık soruları (karara bağlandı: 2/3 ertelendi, 1/3 beklemede)
 
-1. **QR Kod Tara hızlı işlemi** — ne için kullanılacağı (iş check-in'i mi, ürün/barkod
-   okuma mı, envanter sayımı mı?) belirsiz. İş kuralı netleşmeden uygulanmadı.
-2. **SMS Bildirimleri** — sistemde SMS gönderme altyapısı hiç yok. Kurulacak mı
-   (sağlayıcı/maliyet kararı gerekir) yoksa Stitch'teki bu öğe kalıcı olarak mı
-   kaldırılacak?
+1. **QR Kod Tara hızlı işlemi** — **[KAPSAM DIŞI — kullanım senaryosu netleşmeden
+   uygulanmayacak]**. Ne için kullanılacağı (iş check-in'i mi, ürün/barkod okuma mı,
+   envanter sayımı mı?) belirsiz kaldığı için ertelendi; iş kuralı netleşmeden kod
+   yazılmayacak.
+2. **SMS Bildirimleri** — **[KAPSAM DIŞI — sağlayıcı seçimi yapılmadan
+   uygulanmayacak]**. Sağlayıcı seçimi (İleti Merkezi, Netgsm vb.) bir iş kararı;
+   bu karar verilmeden ertelendi.
 3. **Ali Kaya STAFF hesabıyla telefonda canlı ekran turu** — yukarıda açıklanan ağ
    kopması nedeniyle tamamlanamadı; kullanıcı telefonu Wi-Fi'ye yeniden bağladığında
-   tekrar denenebilir (APK zaten doğru IP ile hazır ve kurulu).
+   tekrar denenebilir (APK zaten doğru IP ile hazır ve kurulu). **2026-09-10 tekrar
+   denendi: telefon hâlâ Wi-Fi'ye değil mobil veriye bağlı** (`adb shell ip addr
+   show wlan0` → `NO-CARRIER,DORMANT`, aktif arayüz `rmnet0`), bu yüzden görsel tur
+   yine yapılamadı — hâlâ açık.
+
+**Sonuç:** Madde 1 ve 2 iş kararıyla kapsam dışı bırakıldığı için Faz 9'un kod/karar
+tarafı tamamlandı; yalnızca madde 3 (görsel/dokunsal teyit) telefon Wi-Fi'ye
+bağlandığında yapılacak, işlevsellik zaten curl ile uçtan uca doğrulanmış durumda.

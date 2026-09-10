@@ -5,10 +5,12 @@ import 'package:intl/intl.dart';
 import '../../auth/auth_provider.dart';
 import '../../core/api_client.dart';
 import '../../models/app_notification.dart';
+import '../../models/paginated.dart';
 import '../../models/user.dart';
 import '../../theme/app_colors.dart';
 import '../../navigation/manager_nav.dart';
 import '../../widgets/state_views.dart';
+import '../../widgets/stat_card.dart';
 import '../stock/stock_api.dart';
 import '../jobs/jobs_list_screen.dart';
 import '../messages/messages_list_screen.dart';
@@ -17,6 +19,15 @@ import '../stock/stock_list_screen.dart';
 import 'notifications_api.dart';
 
 final _dateFormat = DateFormat('d MMMM, HH:mm', 'tr_TR');
+
+/// web/src/lib/notifications.ts: NOTIFICATION_CATEGORIES — aynı sıra/etiket/renk.
+const List<({String key, String label, Color color})> _categoryOrder = [
+  (key: 'job', label: 'İşler', color: AppColors.primary500),
+  (key: 'payment', label: 'Ödemeler', color: AppColors.info500),
+  (key: 'message', label: 'Mesajlar', color: AppColors.success500),
+  (key: 'alert', label: 'Uyarılar', color: AppColors.warning500),
+  (key: 'other', label: 'Diğer', color: AppColors.textFaint),
+];
 
 /// Bildirime dokununca ilgili ekrana yönlendirir (backend/src/lib/notify.ts:
 /// NotificationLink ile birebir relatedType eşlemesi — web/src/lib/
@@ -49,6 +60,7 @@ class NotificationsScreen extends StatefulWidget {
 class _NotificationsScreenState extends State<NotificationsScreen> {
   final _api = NotificationsApi();
   List<AppNotification> _notifications = [];
+  NotificationSummary? _summary;
   bool _loading = true;
   String? _error;
 
@@ -64,8 +76,11 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
       _error = null;
     });
     try {
-      final res = await _api.list();
-      setState(() => _notifications = res.data);
+      final results = await Future.wait([_api.list(), _api.summary()]);
+      setState(() {
+        _notifications = (results[0] as Paginated<AppNotification>).data;
+        _summary = results[1] as NotificationSummary;
+      });
     } catch (e) {
       setState(
         () =>
@@ -181,11 +196,20 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     if (n.readAt == null) {
       try {
         await _api.markRead(n.id);
-        setState(
-          () => _notifications = _notifications
+        setState(() {
+          _notifications = _notifications
               .map((x) => x.id == n.id ? _withRead(x) : x)
-              .toList(),
-        );
+              .toList();
+          final s = _summary;
+          if (s != null) {
+            _summary = NotificationSummary(
+              total: s.total,
+              unread: (s.unread - 1).clamp(0, s.total),
+              today: s.today,
+              byCategory: s.byCategory,
+            );
+          }
+        });
       } catch (_) {}
     }
     final screen = _screenForRelatedType(n.relatedType);
@@ -237,22 +261,125 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     );
   }
 
+  /// web/src/app/(dashboard)/bildirimler/page.tsx: özet kartlar (Toplam/
+  /// Okunmamış/Bugün) + "Tip Dağılımı" — backend'in kendi `byCategory`
+  /// hesaplamasından (bkz. notifications_api.dart:summary()), ek bir
+  /// istemci-taraflı türetme YAPILMAZ.
+  Widget _buildSummary() {
+    final s = _summary;
+    if (s == null) return const SizedBox.shrink();
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          StatCardGrid(
+            crossAxisCount: 3,
+            children: [
+              AppStatCard(
+                label: 'Toplam',
+                value: '${s.total}',
+                icon: Icons.notifications_outlined,
+              ),
+              AppStatCard(
+                label: 'Okunmamış',
+                value: '${s.unread}',
+                icon: Icons.mark_email_unread_outlined,
+                iconColor: AppColors.danger500,
+                iconBackground: AppColors.danger50,
+              ),
+              AppStatCard(
+                label: 'Bugün',
+                value: '${s.today}',
+                icon: Icons.today_rounded,
+                iconColor: AppColors.info600,
+                iconBackground: AppColors.info50,
+              ),
+            ],
+          ),
+          if (s.total > 0) ...[
+            const SizedBox(height: 14),
+            const Text(
+              'Tip Dağılımı',
+              style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13.5),
+            ),
+            const SizedBox(height: 8),
+            for (final c in _categoryOrder)
+              if ((s.byCategory[c.key] ?? 0) > 0)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 6),
+                  child: Row(
+                    children: [
+                      SizedBox(
+                        width: 70,
+                        child: Text(
+                          c.label,
+                          style: const TextStyle(
+                            fontSize: 11.5,
+                            color: AppColors.textSecondary,
+                          ),
+                        ),
+                      ),
+                      Expanded(
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(999),
+                          child: LinearProgressIndicator(
+                            value: (s.byCategory[c.key] ?? 0) / s.total,
+                            minHeight: 8,
+                            backgroundColor: AppColors.surfaceMuted,
+                            color: c.color,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      SizedBox(
+                        width: 24,
+                        child: Text(
+                          '${s.byCategory[c.key] ?? 0}',
+                          textAlign: TextAlign.right,
+                          style: const TextStyle(
+                            fontSize: 11.5,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+          ],
+        ],
+      ),
+    );
+  }
+
   Widget _buildBody() {
     if (_loading) return const LoadingView();
     if (_error != null) return ErrorRetryView(message: _error!, onRetry: _load);
-    if (_notifications.isEmpty)
-      return const EmptyStateView(
-        title: 'Bildirim yok',
-        icon: Icons.notifications_none_rounded,
+    if (_notifications.isEmpty) {
+      return RefreshIndicator(
+        onRefresh: _load,
+        color: AppColors.primary600,
+        child: ListView(
+          children: [
+            _buildSummary(),
+            const EmptyStateView(
+              title: 'Bildirim yok',
+              icon: Icons.notifications_none_rounded,
+            ),
+          ],
+        ),
       );
+    }
 
     return RefreshIndicator(
       onRefresh: _load,
       color: AppColors.primary600,
       child: ListView.separated(
-        itemCount: _notifications.length,
-        separatorBuilder: (_, __) => const Divider(height: 1),
-        itemBuilder: (context, i) {
+        itemCount: _notifications.length + 1,
+        separatorBuilder: (_, i) => i == 0 ? const SizedBox.shrink() : const Divider(height: 1),
+        itemBuilder: (context, index) {
+          if (index == 0) return _buildSummary();
+          final i = index - 1;
           final n = _notifications[i];
           final unread = n.readAt == null;
           final linked = _screenForRelatedType(n.relatedType) != null;

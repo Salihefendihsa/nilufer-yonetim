@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
 import '../../core/api_client.dart';
+import '../../core/file_download.dart';
 import '../../models/customer.dart';
 import '../../theme/app_colors.dart';
 import '../../widgets/state_views.dart';
@@ -41,11 +42,52 @@ class _FinanceScreenState extends State<FinanceScreen> {
   List<Payment> _payments = [];
   bool _loading = true;
   String? _error;
+  bool _exporting = false;
+  String? _receiptDownloadingId;
+  List<Map<String, dynamic>> _revenueTrend = [];
 
   @override
   void initState() {
     super.initState();
     _load();
+  }
+
+  Future<void> _exportExcel() async {
+    setState(() => _exporting = true);
+    try {
+      await downloadAndShare('/payments/export/excel', 'odemeler.xlsx');
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              e is ApiException ? e.message : 'Excel dışa aktarılamadı',
+            ),
+          ),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _exporting = false);
+    }
+  }
+
+  Future<void> _downloadReceipt(Payment p) async {
+    setState(() => _receiptDownloadingId = p.id);
+    try {
+      await downloadAndShare('/payments/${p.id}/receipt/pdf', 'makbuz-${p.id}.pdf');
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              e is ApiException ? e.message : 'Makbuz indirilemedi',
+            ),
+          ),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _receiptDownloadingId = null);
+    }
   }
 
   Future<void> _load() async {
@@ -54,6 +96,9 @@ class _FinanceScreenState extends State<FinanceScreen> {
       _error = null;
     });
     try {
+      final trendJson = await ApiClient.instance
+          .get<Map<String, dynamic>>('/analytics/revenue-trend')
+          .catchError((_) => <String, dynamic>{'data': []});
       final results = await Future.wait([
         _api.getSummary(),
         _api.listPayments(),
@@ -61,6 +106,7 @@ class _FinanceScreenState extends State<FinanceScreen> {
       setState(() {
         _summary = results[0] as PaymentsSummary;
         _payments = (results[1] as dynamic).data as List<Payment>;
+        _revenueTrend = (trendJson['data'] as List).cast<Map<String, dynamic>>();
       });
     } catch (e) {
       setState(
@@ -80,6 +126,17 @@ class _FinanceScreenState extends State<FinanceScreen> {
       appBar: AppBar(
         title: const Text('Para & Finans'),
         actions: [
+          IconButton(
+            icon: _exporting
+                ? const SizedBox(
+                    width: 18,
+                    height: 18,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                : const Icon(Icons.file_download_outlined),
+            tooltip: 'Excel olarak dışa aktar',
+            onPressed: _exporting ? null : _exportExcel,
+          ),
           IconButton(
             icon: const Icon(Icons.add_rounded),
             onPressed: () async {
@@ -158,6 +215,25 @@ class _FinanceScreenState extends State<FinanceScreen> {
                 ),
             ],
           ),
+          if (_revenueTrend.isNotEmpty) ...[
+            const SizedBox(height: 20),
+            const Text(
+              'Ciro Trendi',
+              style: TextStyle(fontWeight: FontWeight.w700, fontSize: 14.5),
+            ),
+            const SizedBox(height: 8),
+            ..._revenueTrend.map((m) {
+              final maxTotal = _revenueTrend
+                  .map((e) => (e['total'] as num).toDouble())
+                  .reduce((a, b) => a > b ? a : b);
+              final total = (m['total'] as num).toDouble();
+              return _FinanceBarRow(
+                label: m['label'] as String,
+                value: maxTotal == 0 ? 0 : (total / maxTotal) * 100,
+                caption: _currency.format(total),
+              );
+            }),
+          ],
           if (s.paymentTypeBreakdown.isNotEmpty) ...[
             const SizedBox(height: 20),
             const Text(
@@ -266,18 +342,90 @@ class _FinanceScreenState extends State<FinanceScreen> {
                         ),
                       ),
                       const SizedBox(width: 8),
-                      Text(
-                        _currency.format(p.amount),
-                        style: const TextStyle(
-                          fontWeight: FontWeight.w700,
-                          color: AppColors.success600,
-                        ),
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.end,
+                        children: [
+                          Text(
+                            _currency.format(p.amount),
+                            style: const TextStyle(
+                              fontWeight: FontWeight.w700,
+                              color: AppColors.success600,
+                            ),
+                          ),
+                          SizedBox(
+                            width: 32,
+                            height: 32,
+                            child: _receiptDownloadingId == p.id
+                                ? const Padding(
+                                    padding: EdgeInsets.all(8),
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                    ),
+                                  )
+                                : IconButton(
+                                    padding: EdgeInsets.zero,
+                                    iconSize: 18,
+                                    tooltip: 'PDF makbuz indir/paylaş',
+                                    icon: const Icon(
+                                      Icons.receipt_outlined,
+                                      color: AppColors.textFaint,
+                                    ),
+                                    onPressed: () => _downloadReceipt(p),
+                                  ),
+                          ),
+                        ],
                       ),
                     ],
                   ),
                 ),
               ),
             ),
+        ],
+      ),
+    );
+  }
+}
+
+class _FinanceBarRow extends StatelessWidget {
+  final String label;
+  final double value;
+  final String caption;
+  const _FinanceBarRow({
+    required this.label,
+    required this.value,
+    required this.caption,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 10),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                label,
+                style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w600),
+              ),
+              Text(
+                caption,
+                style: const TextStyle(fontSize: 11.5, color: AppColors.textFaint),
+              ),
+            ],
+          ),
+          const SizedBox(height: 4),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(999),
+            child: LinearProgressIndicator(
+              value: (value / 100).clamp(0, 1),
+              minHeight: 8,
+              backgroundColor: AppColors.surfaceMuted,
+              color: AppColors.primary500,
+            ),
+          ),
         ],
       ),
     );
@@ -371,6 +519,7 @@ class _PaymentFormScreenState extends State<_PaymentFormScreen> {
                 children: [
                   DropdownButtonFormField<String>(
                     initialValue: _customerId,
+                    isExpanded: true,
                     decoration: const InputDecoration(labelText: 'Müşteri *'),
                     items: _customers
                         .map(
@@ -400,6 +549,7 @@ class _PaymentFormScreenState extends State<_PaymentFormScreen> {
                   const SizedBox(height: 12),
                   DropdownButtonFormField<String>(
                     initialValue: _paymentType,
+                    isExpanded: true,
                     decoration: const InputDecoration(labelText: 'Ödeme Türü'),
                     items: _paymentTypeLabels.entries
                         .map(
@@ -422,6 +572,7 @@ class _PaymentFormScreenState extends State<_PaymentFormScreen> {
                   const SizedBox(height: 12),
                   DropdownButtonFormField<String>(
                     initialValue: _collectedByStaffId,
+                    isExpanded: true,
                     decoration: const InputDecoration(
                       labelText: 'Tahsil Eden (opsiyonel)',
                     ),

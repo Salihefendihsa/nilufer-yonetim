@@ -14,14 +14,21 @@ import '../../widgets/state_views.dart';
 import 'messages_api.dart';
 
 final _timeFormat = DateFormat('HH:mm');
+final _dayFormat = DateFormat('d MMMM yyyy', 'tr_TR');
 
 class ChatScreen extends StatefulWidget {
   final String conversationId;
   final String participantName;
+  /// Gözlemci modu (bkz. messages_list_screen.dart → Gözlemci Modu, yalnızca
+  /// OWNER): mesajlar gösterilir ama gönderme kutusu yok; okundu işaretleme
+  /// isteği de atılmaz — backend `markConversationRead`'i katılımcı olmayan
+  /// biri için 403 ile reddediyor (`conversationsController.ts`).
+  final bool readOnly;
   const ChatScreen({
     super.key,
     required this.conversationId,
     required this.participantName,
+    this.readOnly = false,
   });
 
   @override
@@ -41,6 +48,24 @@ class _ChatScreenState extends State<ChatScreen> {
   String? _error;
 
   String? get _myId => context.read<AuthProvider>().user?.id;
+
+  /// Mesaj listesini gün ayırıcılarıyla (web'in "X Ocak 2026" bölücüleri)
+  /// tek bir akışa dönüştürür — `DateTime` = gün başlığı, `MessageItem` =
+  /// mesaj kabarcığı.
+  List<Object> get _timelineItems {
+    final items = <Object>[];
+    DateTime? lastDay;
+    for (final m in _messages) {
+      final created = DateTime.parse(m.createdAt);
+      final day = DateTime(created.year, created.month, created.day);
+      if (lastDay == null || day != lastDay) {
+        items.add(day);
+        lastDay = day;
+      }
+      items.add(m);
+    }
+    return items;
+  }
 
   @override
   void initState() {
@@ -63,7 +88,7 @@ class _ChatScreenState extends State<ChatScreen> {
     try {
       final res = await _api.getMessages(widget.conversationId, page: 1);
       setState(() => _messages = res.data);
-      await _api.markRead(widget.conversationId);
+      if (!widget.readOnly) await _api.markRead(widget.conversationId);
     } catch (e) {
       setState(
         () => _error = e is ApiException ? e.message : 'Mesajlar yüklenemedi',
@@ -141,9 +166,35 @@ class _ChatScreenState extends State<ChatScreen> {
                 : ListView.builder(
                     controller: _scrollController,
                     padding: const EdgeInsets.all(16),
-                    itemCount: _messages.length,
+                    itemCount: _timelineItems.length,
                     itemBuilder: (context, i) {
-                      final m = _messages[i];
+                      final item = _timelineItems[i];
+                      if (item is DateTime) {
+                        return Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                          child: Center(
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 12,
+                                vertical: 4,
+                              ),
+                              decoration: BoxDecoration(
+                                color: AppColors.surfaceMuted,
+                                borderRadius: BorderRadius.circular(999),
+                              ),
+                              child: Text(
+                                _dayFormat.format(item),
+                                style: const TextStyle(
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w600,
+                                  color: AppColors.textSecondary,
+                                ),
+                              ),
+                            ),
+                          ),
+                        );
+                      }
+                      final m = item as MessageItem;
                       final mine = m.senderId == _myId;
                       return Align(
                         alignment: mine
@@ -201,14 +252,37 @@ class _ChatScreenState extends State<ChatScreen> {
                                 ),
                               ),
                               const SizedBox(height: 4),
-                              Text(
-                                _timeFormat.format(DateTime.parse(m.createdAt)),
-                                style: TextStyle(
-                                  fontSize: 10,
-                                  color: mine
-                                      ? Colors.white70
-                                      : AppColors.textFaint,
-                                ),
+                              Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Text(
+                                    _timeFormat.format(
+                                      DateTime.parse(m.createdAt),
+                                    ),
+                                    style: TextStyle(
+                                      fontSize: 10,
+                                      color: mine
+                                          ? Colors.white70
+                                          : AppColors.textFaint,
+                                    ),
+                                  ),
+                                  // Okundu bilgisi yalnızca KENDİ gönderdiğimiz
+                                  // mesajlarda gösterilir (web'in çift tik
+                                  // deseniyle aynı: tek tik = gönderildi, çift
+                                  // tik = karşı taraf okudu).
+                                  if (mine) ...[
+                                    const SizedBox(width: 4),
+                                    Icon(
+                                      m.readAt != null
+                                          ? Icons.done_all_rounded
+                                          : Icons.done_rounded,
+                                      size: 13,
+                                      color: m.readAt != null
+                                          ? const Color(0xFF9BE7FF)
+                                          : Colors.white70,
+                                    ),
+                                  ],
+                                ],
                               ),
                             ],
                           ),
@@ -217,6 +291,34 @@ class _ChatScreenState extends State<ChatScreen> {
                     },
                   ),
           ),
+          if (widget.readOnly)
+            SafeArea(
+              top: false,
+              child: Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(12),
+                color: AppColors.surfaceMuted,
+                child: const Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(
+                      Icons.visibility_outlined,
+                      size: 15,
+                      color: AppColors.textSecondary,
+                    ),
+                    SizedBox(width: 6),
+                    Text(
+                      'Gözlemci modu — salt okunur, mesaj gönderemezsiniz',
+                      style: TextStyle(
+                        fontSize: 11.5,
+                        color: AppColors.textSecondary,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            )
+          else
           SafeArea(
             top: false,
             child: Padding(

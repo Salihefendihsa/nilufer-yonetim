@@ -13,6 +13,16 @@ class MessagesApi {
         .toList();
   }
 
+  /// backend/src/routes/conversations.ts: GET /all — yalnızca OWNER
+  /// (gözlemci modu). Katılımcı olmasa bile OWNER her konuşmayı görebilir.
+  Future<List<AllConversationSummary>> listAllConversations() async {
+    final json = await _api.get<Map<String, dynamic>>('/conversations/all');
+    return (json['data'] as List)
+        .cast<Map<String, dynamic>>()
+        .map(AllConversationSummary.fromJson)
+        .toList();
+  }
+
   Future<List<AvailableContact>> availableContacts() async {
     final json = await _api.get<Map<String, dynamic>>(
       '/conversations/available-contacts',

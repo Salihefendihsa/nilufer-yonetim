@@ -4,6 +4,8 @@ import 'package:intl/intl.dart';
 import '../../core/api_client.dart';
 import '../../theme/app_colors.dart';
 import '../../widgets/state_views.dart';
+import '../../widgets/stat_card.dart';
+import 'named_list_settings_screen.dart';
 
 final _dateFormat = DateFormat('d MMM yyyy, HH:mm', 'tr_TR');
 
@@ -98,6 +100,167 @@ class _AuditLogTabState extends State<_AuditLogTab> {
     }
   }
 
+  /// web/src/app/(dashboard)/loglar/page.tsx: özet kartlar + "En Aktif
+  /// Kullanıcılar" + "İşlem Türü Dağılımı" — hepsi filtreden bağımsız,
+  /// istemcide zaten çekilen `_logs` kümesinden türetilir (web'de de aynı
+  /// desen, backend'de ayrı bir özet ucu yok).
+  Widget _buildLogSummary() {
+    final startOfToday = DateTime.now();
+    final todayStart = DateTime(
+      startOfToday.year,
+      startOfToday.month,
+      startOfToday.day,
+    );
+    final weekAgo = DateTime.now().subtract(const Duration(days: 7));
+
+    final todayCount = _logs
+        .where((l) => DateTime.parse(l['createdAt'] as String).isAfter(todayStart))
+        .length;
+    final weekCount = _logs
+        .where((l) => DateTime.parse(l['createdAt'] as String).isAfter(weekAgo))
+        .length;
+    final actorCount = _logs
+        .map((l) => (l['actor'] as Map<String, dynamic>?)?['id'] ?? l['actorUserId'])
+        .toSet()
+        .length;
+
+    final actorCounts = <String, int>{};
+    for (final l in _logs) {
+      final name =
+          (l['actor'] as Map<String, dynamic>?)?['fullName'] as String? ??
+          'Bilinmiyor';
+      actorCounts[name] = (actorCounts[name] ?? 0) + 1;
+    }
+    final topActors = actorCounts.entries.toList()
+      ..sort((a, b) => b.value.compareTo(a.value));
+
+    final actionCounts = <String, int>{};
+    for (final l in _logs) {
+      final action = l['action'] as String;
+      actionCounts[action] = (actionCounts[action] ?? 0) + 1;
+    }
+    final topActions = actionCounts.entries.toList()
+      ..sort((a, b) => b.value.compareTo(a.value));
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          StatCardGrid(
+            children: [
+              AppStatCard(
+                label: 'Toplam Kayıt',
+                value: '${_logs.length}',
+                icon: Icons.history_rounded,
+              ),
+              AppStatCard(
+                label: 'Bugün',
+                value: '$todayCount',
+                icon: Icons.today_rounded,
+                iconColor: AppColors.info600,
+                iconBackground: AppColors.info50,
+              ),
+              AppStatCard(
+                label: 'Son 7 Gün',
+                value: '$weekCount',
+                icon: Icons.date_range_rounded,
+                iconColor: AppColors.success600,
+                iconBackground: AppColors.success50,
+              ),
+              AppStatCard(
+                label: 'Farklı Kullanıcı',
+                value: '$actorCount',
+                icon: Icons.people_outline_rounded,
+                iconColor: AppColors.warning600,
+                iconBackground: AppColors.warning50,
+              ),
+            ],
+          ),
+          if (topActors.isNotEmpty) ...[
+            const SizedBox(height: 16),
+            const Text(
+              'En Aktif Kullanıcılar',
+              style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13.5),
+            ),
+            const SizedBox(height: 8),
+            ..._logBars(
+              topActors.take(8).map((e) => (label: e.key, count: e.value)),
+            ),
+          ],
+          if (topActions.isNotEmpty) ...[
+            const SizedBox(height: 16),
+            const Text(
+              'İşlem Türü Dağılımı',
+              style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13.5),
+            ),
+            const SizedBox(height: 8),
+            ..._logBars(
+              topActions.take(6).map((e) => (label: e.key, count: e.value)),
+            ),
+          ],
+          const SizedBox(height: 16),
+          const Text(
+            'Son Kayıtlar',
+            style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13.5),
+          ),
+          const SizedBox(height: 8),
+        ],
+      ),
+    );
+  }
+
+  List<Widget> _logBars(Iterable<({String label, int count})> rows) {
+    final list = rows.toList();
+    final maxCount = list.fold(0, (m, r) => r.count > m ? r.count : m);
+    return list
+        .map(
+          (r) => Padding(
+            padding: const EdgeInsets.only(bottom: 6),
+            child: Row(
+              children: [
+                SizedBox(
+                  width: 110,
+                  child: Text(
+                    r.label,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      fontSize: 11.5,
+                      color: AppColors.textSecondary,
+                    ),
+                  ),
+                ),
+                Expanded(
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(999),
+                    child: LinearProgressIndicator(
+                      value: maxCount == 0 ? 0 : r.count / maxCount,
+                      minHeight: 8,
+                      backgroundColor: AppColors.surfaceMuted,
+                      color: AppColors.primary500,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                SizedBox(
+                  width: 24,
+                  child: Text(
+                    '${r.count}',
+                    textAlign: TextAlign.right,
+                    style: const TextStyle(
+                      fontSize: 11.5,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        )
+        .toList();
+  }
+
   @override
   Widget build(BuildContext context) {
     if (_loading) return const LoadingView();
@@ -113,9 +276,11 @@ class _AuditLogTabState extends State<_AuditLogTab> {
       color: AppColors.primary600,
       child: ListView.separated(
         padding: const EdgeInsets.all(16),
-        itemCount: _logs.length,
-        separatorBuilder: (_, __) => const SizedBox(height: 8),
-        itemBuilder: (context, i) {
+        itemCount: _logs.length + 1,
+        separatorBuilder: (_, i) => i == 0 ? const SizedBox.shrink() : const SizedBox(height: 8),
+        itemBuilder: (context, index) {
+          if (index == 0) return _buildLogSummary();
+          final i = index - 1;
           final log = _logs[i];
           final actor =
               (log['actor'] as Map<String, dynamic>?)?['fullName'] as String? ??
@@ -241,35 +406,113 @@ class _SettingsTabState extends State<_SettingsTab> {
   Widget build(BuildContext context) {
     if (_loading) return const LoadingView();
     if (_error != null) return ErrorRetryView(message: _error!, onRetry: _load);
-    if (_settings.isEmpty)
-      return const EmptyStateView(
-        title: 'Ayar bulunamadı',
-        icon: Icons.settings_outlined,
-      );
 
     return ListView(
       padding: const EdgeInsets.all(16),
-      children: _settings.entries.map((e) {
-        final controller = TextEditingController(text: e.value);
-        return Padding(
-          padding: const EdgeInsets.only(bottom: 12),
-          child: Row(
-            children: [
-              Expanded(
-                child: TextField(
-                  controller: controller,
-                  decoration: InputDecoration(labelText: e.key),
+      children: [
+        // web/src/app/(dashboard)/ayarlar/page.tsx: ServiceTypesSection +
+        // DistrictsSection — mobilde daha önce hiç yoktu.
+        Material(
+          color: AppColors.surfaceCard,
+          borderRadius: BorderRadius.circular(14),
+          child: ListTile(
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(14),
+              side: const BorderSide(color: AppColors.borderDefault),
+            ),
+            leading: const Icon(
+              Icons.auto_awesome_outlined,
+              color: AppColors.primary700,
+            ),
+            title: const Text('Hizmet Türleri'),
+            trailing: const Icon(
+              Icons.chevron_right_rounded,
+              color: AppColors.textFaint,
+            ),
+            onTap: () => Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (_) => const NamedListSettingsScreen(
+                  title: 'Hizmet Türleri',
+                  description:
+                      'Yeni iş oluşturulurken seçilebilecek hizmet türleri.',
+                  endpoint: '/service-types',
+                  addHint: 'Yeni hizmet türü adı',
                 ),
               ),
-              const SizedBox(width: 8),
-              IconButton(
-                icon: const Icon(Icons.save_outlined),
-                onPressed: _saving ? null : () => _save(e.key, controller.text),
-              ),
-            ],
+            ),
           ),
-        );
-      }).toList(),
+        ),
+        const SizedBox(height: 8),
+        Material(
+          color: AppColors.surfaceCard,
+          borderRadius: BorderRadius.circular(14),
+          child: ListTile(
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(14),
+              side: const BorderSide(color: AppColors.borderDefault),
+            ),
+            leading: const Icon(
+              Icons.map_outlined,
+              color: AppColors.primary700,
+            ),
+            title: const Text('Semtler'),
+            trailing: const Icon(
+              Icons.chevron_right_rounded,
+              color: AppColors.textFaint,
+            ),
+            onTap: () => Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (_) => const NamedListSettingsScreen(
+                  title: 'Semtler',
+                  description:
+                      'Müşteri/iş formlarında seçilebilecek semt listesi.',
+                  endpoint: '/districts',
+                  addHint: 'Yeni semt adı',
+                ),
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(height: 20),
+        if (_settings.isEmpty)
+          const Padding(
+            padding: EdgeInsets.symmetric(vertical: 12),
+            child: Text(
+              'Başka ayar bulunamadı.',
+              style: TextStyle(color: AppColors.textFaint),
+            ),
+          )
+        else ...[
+          const Text(
+            'Diğer Ayarlar',
+            style: TextStyle(fontWeight: FontWeight.w700, fontSize: 14),
+          ),
+          const SizedBox(height: 10),
+          ..._settings.entries.map((e) {
+            final controller = TextEditingController(text: e.value);
+            return Padding(
+              padding: const EdgeInsets.only(bottom: 12),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: TextField(
+                      controller: controller,
+                      decoration: InputDecoration(labelText: e.key),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  IconButton(
+                    icon: const Icon(Icons.save_outlined),
+                    onPressed: _saving
+                        ? null
+                        : () => _save(e.key, controller.text),
+                  ),
+                ],
+              ),
+            );
+          }),
+        ],
+      ],
     );
   }
 }

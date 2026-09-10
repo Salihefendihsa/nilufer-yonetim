@@ -18,6 +18,7 @@ class ReportsScreen extends StatefulWidget {
 class _ReportsScreenState extends State<ReportsScreen> {
   List<Map<String, dynamic>> _serviceBreakdown = [];
   List<Map<String, dynamic>> _topDistricts = [];
+  List<Map<String, dynamic>> _revenueTrend = [];
   Map<String, dynamic>? _retention;
   bool _loading = true;
   String? _error;
@@ -39,6 +40,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
         api.get<Map<String, dynamic>>('/analytics/service-breakdown'),
         api.get<Map<String, dynamic>>('/analytics/top-districts'),
         api.get<Map<String, dynamic>>('/analytics/customer-retention'),
+        api.get<Map<String, dynamic>>('/analytics/revenue-trend'),
       ]);
       setState(() {
         _serviceBreakdown = (results[0]['data'] as List)
@@ -46,6 +48,8 @@ class _ReportsScreenState extends State<ReportsScreen> {
         _topDistricts = (results[1]['data'] as List)
             .cast<Map<String, dynamic>>();
         _retention = results[2];
+        _revenueTrend = (results[3]['data'] as List)
+            .cast<Map<String, dynamic>>();
       });
     } catch (e) {
       setState(
@@ -101,6 +105,32 @@ class _ReportsScreenState extends State<ReportsScreen> {
                     ),
                     const SizedBox(height: 20),
                   ],
+                  const Text(
+                    'Ciro Trendi',
+                    style: TextStyle(
+                      fontWeight: FontWeight.w700,
+                      fontSize: 14.5,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  if (_revenueTrend.isEmpty)
+                    const EmptyStateView(
+                      title: 'Veri yok',
+                      icon: Icons.trending_up_rounded,
+                    )
+                  else
+                    ..._revenueTrend.map((m) {
+                      final maxTotal = _revenueTrend
+                          .map((e) => (e['total'] as num).toDouble())
+                          .reduce((a, b) => a > b ? a : b);
+                      final total = (m['total'] as num).toDouble();
+                      return _BarRow(
+                        label: m['label'] as String,
+                        value: maxTotal == 0 ? 0 : (total / maxTotal) * 100,
+                        caption: '₺${total.toStringAsFixed(0)}',
+                      );
+                    }),
+                  const SizedBox(height: 20),
                   const Text(
                     'Hizmet Türü Dağılımı',
                     style: TextStyle(

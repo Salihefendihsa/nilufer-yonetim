@@ -47,6 +47,34 @@ class StockApi {
     return Product.fromJson(json);
   }
 
+  /// backend/src/routes/products.ts: PATCH /:id — stok miktarı (`currentStock`)
+  /// buradan DEĞİŞTİRİLEMEZ (yalnızca restock/count uçlarından) — web'in
+  /// `ProductFormModal`'ıyla aynı kısıt.
+  Future<Product> update(
+    String id, {
+    String? code,
+    String? description,
+    required String name,
+    required String unit,
+    required ProductCategory category,
+    required double criticalThreshold,
+  }) async {
+    final json = await _api.patch<Map<String, dynamic>>(
+      '/products/$id',
+      body: {
+        'code': code != null && code.isNotEmpty ? code : null,
+        'description': description != null && description.isNotEmpty
+            ? description
+            : null,
+        'name': name,
+        'unit': unit,
+        'category': productCategoryToApiString(category),
+        'criticalThreshold': criticalThreshold,
+      },
+    );
+    return Product.fromJson(json);
+  }
+
   Future<Product> restock(String id, double quantity, {String? note}) async {
     final json = await _api.post<Map<String, dynamic>>(
       '/products/$id/restock',

@@ -135,6 +135,21 @@ class ApiClient {
     return _handle<T>(res, path);
   }
 
+  /// Excel/PDF export uçları gibi ikili (binary) yanıt dönen GET istekleri
+  /// için — `get<T>` gibi JSON decode etmez, ham byte döndürür. Web'in
+  /// `lib/api.ts:downloadFile` karşılığı.
+  Future<List<int>> getBytes(String path, {Map<String, dynamic>? query}) async {
+    final res = await http.get(_uri(path, query), headers: await _headers());
+    if (res.statusCode == 401) {
+      await onUnauthorized?.call();
+      throw ApiException(401, 'Oturum sona erdi');
+    }
+    if (res.statusCode < 200 || res.statusCode >= 300) {
+      throw ApiException(res.statusCode, 'Dosya indirilemedi');
+    }
+    return res.bodyBytes;
+  }
+
   /// Yüklenen dosyaların (fotoğraf/imza/PDF) tam URL'sini üretir — backend
   /// göreli yol döner (`/uploads/...`), API kökeniyle birleştirilmesi gerekir.
   String resolveUploadUrl(String url) {

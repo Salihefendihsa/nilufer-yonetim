@@ -78,6 +78,44 @@ class ConversationSummary {
       );
 }
 
+/// backend/src/controllers/conversationsController.ts:listAllConversations —
+/// GET /conversations/all, yalnızca OWNER. `ConversationSummary`'den farklı:
+/// tek bir "karşı taraf" yok, iki katılımcı da (`participantA`/`participantB`)
+/// dönüyor çünkü OWNER bunların hiçbirine ait olmayabilir (gözlemci).
+class AllConversationSummary {
+  final String id;
+  final ConversationParticipant participantA;
+  final ConversationParticipant participantB;
+  final MessageItem? lastMessage;
+  final int messageCount;
+  final String updatedAt;
+
+  AllConversationSummary({
+    required this.id,
+    required this.participantA,
+    required this.participantB,
+    required this.lastMessage,
+    required this.messageCount,
+    required this.updatedAt,
+  });
+
+  factory AllConversationSummary.fromJson(Map<String, dynamic> json) =>
+      AllConversationSummary(
+        id: json['id'] as String,
+        participantA: ConversationParticipant.fromJson(
+          json['participantA'] as Map<String, dynamic>,
+        ),
+        participantB: ConversationParticipant.fromJson(
+          json['participantB'] as Map<String, dynamic>,
+        ),
+        lastMessage: json['lastMessage'] != null
+            ? MessageItem.fromJson(json['lastMessage'] as Map<String, dynamic>)
+            : null,
+        messageCount: (json['messageCount'] as num?)?.toInt() ?? 0,
+        updatedAt: json['updatedAt'] as String,
+      );
+}
+
 class AvailableContact {
   final String id;
   final String fullName;

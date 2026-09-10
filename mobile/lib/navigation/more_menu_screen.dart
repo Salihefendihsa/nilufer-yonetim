@@ -3,9 +3,12 @@ import 'package:provider/provider.dart';
 
 import '../auth/auth_provider.dart';
 import '../features/admin/audit_settings_screen.dart';
+import '../features/admin/system_health_screen.dart';
+import '../features/admin/usage_stats_screen.dart';
 import '../features/contracts/contracts_list_screen.dart';
 import '../features/customers/customers_list_screen.dart';
 import '../features/finance/finance_screen.dart';
+import '../features/notifications/notifications_screen.dart';
 import '../features/performance/performance_screen.dart';
 import '../features/quotes/quotes_list_screen.dart';
 import '../features/reports/reports_screen.dart';
@@ -50,6 +53,11 @@ class MoreMenuScreen extends StatelessWidget {
         (_) => const CalendarScreen(),
       ),
       _MoreItem(
+        'Bildirimler',
+        Icons.notifications_outlined,
+        (_) => const NotificationsScreen(),
+      ),
+      _MoreItem(
         'Stok',
         Icons.inventory_2_outlined,
         (_) => const StockListScreen(),
@@ -84,6 +92,18 @@ class MoreMenuScreen extends StatelessWidget {
           'Denetim & Ayarlar',
           Icons.admin_panel_settings_outlined,
           (_) => const AuditSettingsScreen(),
+        ),
+      if (isOwner)
+        _MoreItem(
+          'Sistem Durumu',
+          Icons.monitor_heart_outlined,
+          (_) => const SystemHealthScreen(),
+        ),
+      if (isOwner)
+        _MoreItem(
+          'Kullanım İstatistikleri',
+          Icons.query_stats_rounded,
+          (_) => const UsageStatsScreen(),
         ),
     ];
 

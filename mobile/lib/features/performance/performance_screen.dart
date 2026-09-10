@@ -167,6 +167,123 @@ class _PerformanceScreenState extends State<PerformanceScreen> {
     }
   }
 
+  /// web'in "Personel bazlı tamamlanan iş" + "Müşteri puanı sıralaması" 2
+  /// çubuk grafiği — rank rozetleri (altın/gümüş/bronz) zaten bir podyum
+  /// görseli sağlıyor; bu ikisi sayısal karşılaştırmayı görsel bir çubuğa
+  /// çeviriyor (grafik kütüphanesi eklenmeden, mevcut çubuk-satır deseniyle).
+  Widget _buildRankingCharts() {
+    final byJobs = [..._entries]
+      ..sort((a, b) => b.completedJobsInPeriod.compareTo(a.completedJobsInPeriod));
+    final maxJobs = byJobs.isNotEmpty ? byJobs.first.completedJobsInPeriod : 0;
+
+    final rated = _entries.where((e) => e.averageRating != null).toList()
+      ..sort((a, b) => b.averageRating!.compareTo(a.averageRating!));
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Tamamlanan İşe Göre Sıralama',
+            style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13.5),
+          ),
+          const SizedBox(height: 8),
+          for (final e in byJobs.take(8))
+            Padding(
+              padding: const EdgeInsets.only(bottom: 6),
+              child: Row(
+                children: [
+                  SizedBox(
+                    width: 90,
+                    child: Text(
+                      e.fullName,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(fontSize: 11.5),
+                    ),
+                  ),
+                  Expanded(
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(999),
+                      child: LinearProgressIndicator(
+                        value: maxJobs == 0
+                            ? 0
+                            : e.completedJobsInPeriod / maxJobs,
+                        minHeight: 8,
+                        backgroundColor: AppColors.surfaceMuted,
+                        color: AppColors.primary500,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  SizedBox(
+                    width: 24,
+                    child: Text(
+                      '${e.completedJobsInPeriod}',
+                      textAlign: TextAlign.right,
+                      style: const TextStyle(
+                        fontSize: 11.5,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          if (rated.isNotEmpty) ...[
+            const SizedBox(height: 14),
+            const Text(
+              'Müşteri Puanına Göre Sıralama',
+              style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13.5),
+            ),
+            const SizedBox(height: 8),
+            for (final e in rated.take(8))
+              Padding(
+                padding: const EdgeInsets.only(bottom: 6),
+                child: Row(
+                  children: [
+                    SizedBox(
+                      width: 90,
+                      child: Text(
+                        e.fullName,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(fontSize: 11.5),
+                      ),
+                    ),
+                    Expanded(
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(999),
+                        child: LinearProgressIndicator(
+                          value: (e.averageRating! / 5).clamp(0, 1),
+                          minHeight: 8,
+                          backgroundColor: AppColors.surfaceMuted,
+                          color: AppColors.warning500,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    SizedBox(
+                      width: 30,
+                      child: Text(
+                        e.averageRating!.toStringAsFixed(2),
+                        textAlign: TextAlign.right,
+                        style: const TextStyle(
+                          fontSize: 11.5,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+          ],
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -223,9 +340,13 @@ class _PerformanceScreenState extends State<PerformanceScreen> {
               color: AppColors.primary600,
               child: ListView.separated(
                 padding: const EdgeInsets.all(16),
-                itemCount: _entries.length + (_summary != null ? 1 : 0),
+                itemCount:
+                    _entries.length +
+                    (_summary != null ? 1 : 0) +
+                    (_entries.length > 1 ? 1 : 0),
                 separatorBuilder: (_, __) => const SizedBox(height: 8),
-                itemBuilder: (context, index) {
+                itemBuilder: (context, rawIndex) {
+                  var index = rawIndex;
                   if (_summary != null && index == 0) {
                     final sm = _summary!;
                     return Container(
@@ -254,6 +375,13 @@ class _PerformanceScreenState extends State<PerformanceScreen> {
                             '${sm.totalCompletedInPeriod} tamamlanan iş · '
                             'önceki dönem ${sm.totalCompletedPreviousPeriod} · '
                             'kişi başı ${sm.jobsPerStaff.toStringAsFixed(1)}',
+                            style: const TextStyle(
+                              fontSize: 12.5,
+                              color: AppColors.textSecondary,
+                            ),
+                          ),
+                          Text(
+                            '${sm.staffCount} personel bu listede',
                             style: const TextStyle(
                               fontSize: 12.5,
                               color: AppColors.textSecondary,
@@ -291,8 +419,14 @@ class _PerformanceScreenState extends State<PerformanceScreen> {
                       ),
                     );
                   }
+                  if (_summary != null) index -= 1;
 
-                  final i = _summary != null ? index - 1 : index;
+                  if (_entries.length > 1 && index == 0) {
+                    return _buildRankingCharts();
+                  }
+                  if (_entries.length > 1) index -= 1;
+
+                  final i = index;
                   final e = _entries[i];
                   final rank = i + 1;
                   final rankColor = rank == 1

@@ -5,6 +5,7 @@ import 'package:url_launcher/url_launcher.dart';
 
 import '../../auth/auth_provider.dart';
 import '../../core/api_client.dart';
+import '../../core/file_download.dart';
 import '../../models/customer.dart';
 import '../../models/user.dart';
 import '../../theme/app_colors.dart';
@@ -77,6 +78,47 @@ class _CustomerDetailScreenState extends State<CustomerDetailScreen>
     return role == AppRole.owner || role == AppRole.manager;
   }
 
+  /// backend/src/routes/customers.ts: DELETE /:id —
+  /// `requireRoleOrPermission([MANAGER], "delete_customers")`: MANAGER her
+  /// zaman, OWNER yalnızca bu izin ayrıca atanmışsa silebilir. Web'de de aynı
+  /// şekilde OWNER/MANAGER'a gösterilip backend'in 403'e bırakması tercih
+  /// edildi — burada da aynı desen izlendi.
+  Future<void> _delete() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Müşteriyi sil'),
+        content: Text(
+          '${_customer?.fullName ?? 'Bu müşteri'} silinecek. Bu işlem geri alınamaz.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('Vazgeç'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            child: const Text('Sil', style: TextStyle(color: Colors.red)),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+    try {
+      await _api.delete(widget.customerId);
+      _changed = true;
+      if (mounted) Navigator.of(context).pop(true);
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(e is ApiException ? e.message : 'Silinemedi'),
+          ),
+        );
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return PopScope(
@@ -104,6 +146,12 @@ class _CustomerDetailScreenState extends State<CustomerDetailScreen>
                     _load();
                   }
                 },
+              ),
+            if (_canManage && _customer != null)
+              IconButton(
+                icon: const Icon(Icons.delete_outline_rounded),
+                tooltip: 'Sil',
+                onPressed: _delete,
               ),
           ],
         ),
@@ -248,27 +296,83 @@ class _JobsTab extends StatelessWidget {
       separatorBuilder: (_, __) => const SizedBox(height: 8),
       itemBuilder: (context, i) {
         final j = jobs[i] as Map<String, dynamic>;
-        return ListTile(
-          tileColor: AppColors.surfaceCard,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(14),
-            side: const BorderSide(color: AppColors.borderDefault),
-          ),
-          title: Text(
-            j['serviceType'] as String? ?? '',
-            style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13.5),
-          ),
-          subtitle: Text(
-            j['status'] as String? ?? '',
-            style: const TextStyle(fontSize: 12),
-          ),
-          onTap: () => Navigator.of(context).push(
-            MaterialPageRoute(
-              builder: (_) => JobDetailScreen(jobId: j['id'] as String),
-            ),
+        return _JobRow(job: j);
+      },
+    );
+  }
+}
+
+/// backend/src/routes/jobs.ts: GET /:id/report/pdf — yalnızca tamamlanmış
+/// (rapor girilmiş) işlerde anlamlı; web'de müşteri detayındaki iş
+/// listesinde "PDF İndir" olarak gösteriliyor.
+class _JobRow extends StatefulWidget {
+  final Map<String, dynamic> job;
+  const _JobRow({required this.job});
+
+  @override
+  State<_JobRow> createState() => _JobRowState();
+}
+
+class _JobRowState extends State<_JobRow> {
+  bool _downloading = false;
+
+  Future<void> _downloadReport() async {
+    setState(() => _downloading = true);
+    try {
+      final id = widget.job['id'] as String;
+      await downloadAndShare('/jobs/$id/report/pdf', 'is-raporu-$id.pdf');
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(e is ApiException ? e.message : 'Rapor indirilemedi'),
           ),
         );
-      },
+      }
+    } finally {
+      if (mounted) setState(() => _downloading = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final j = widget.job;
+    final isCompleted = j['status'] == 'COMPLETED';
+    return ListTile(
+      tileColor: AppColors.surfaceCard,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(14),
+        side: const BorderSide(color: AppColors.borderDefault),
+      ),
+      title: Text(
+        j['serviceType'] as String? ?? '',
+        style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13.5),
+      ),
+      subtitle: Text(
+        j['status'] as String? ?? '',
+        style: const TextStyle(fontSize: 12),
+      ),
+      trailing: isCompleted
+          ? (_downloading
+                ? const SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                : IconButton(
+                    tooltip: 'PDF İndir',
+                    icon: const Icon(
+                      Icons.picture_as_pdf_outlined,
+                      color: AppColors.textFaint,
+                    ),
+                    onPressed: _downloadReport,
+                  ))
+          : null,
+      onTap: () => Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (_) => JobDetailScreen(jobId: j['id'] as String),
+        ),
+      ),
     );
   }
 }

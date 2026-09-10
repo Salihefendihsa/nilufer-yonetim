@@ -9,8 +9,10 @@ import '../../models/user.dart';
 import '../../theme/app_colors.dart';
 import '../../navigation/manager_nav.dart';
 import '../../widgets/state_views.dart';
+import '../../widgets/stat_card.dart';
 import 'chat_screen.dart';
 import 'messages_api.dart';
+import 'observer_conversations_screen.dart';
 
 final _timeFormat = DateFormat('HH:mm');
 
@@ -121,6 +123,9 @@ class _MessagesListScreenState extends State<MessagesListScreen> {
     }
   }
 
+  bool get _isOwner =>
+      context.read<AuthProvider>().user?.role == AppRole.owner;
+
   bool get _canBroadcast {
     final role = context.read<AuthProvider>().user?.role;
     return role == AppRole.teamLead ||
@@ -211,6 +216,16 @@ class _MessagesListScreenState extends State<MessagesListScreen> {
               tooltip: 'Ekibime duyuru',
               onPressed: _openBroadcastSheet,
             ),
+          if (_isOwner)
+            IconButton(
+              icon: const Icon(Icons.visibility_outlined),
+              tooltip: 'Gözlemci Modu — Tüm Konuşmalar',
+              onPressed: () => Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (_) => const ObserverConversationsScreen(),
+                ),
+              ),
+            ),
           IconButton(
             icon: const Icon(Icons.edit_square),
             onPressed: _openNewConversationSheet,
@@ -218,6 +233,55 @@ class _MessagesListScreenState extends State<MessagesListScreen> {
         ],
       ),
       body: _buildBody(),
+    );
+  }
+
+  /// web/src/app/(dashboard)/mesajlar sayfasındaki özet kartlar — istemcide
+  /// zaten çekilen `_conversations` kümesinden türetilir, ek uç gerekmez.
+  Widget _buildSummary() {
+    final unreadConversations = _conversations
+        .where((c) => c.unreadCount > 0)
+        .length;
+    final totalUnread = _conversations.fold(0, (s, c) => s + c.unreadCount);
+    final todayStart = DateTime.now();
+    final startOfDay = DateTime(
+      todayStart.year,
+      todayStart.month,
+      todayStart.day,
+    );
+    final activeToday = _conversations
+        .where((c) => DateTime.parse(c.updatedAt).isAfter(startOfDay))
+        .length;
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
+      child: StatCardGrid(
+        crossAxisCount: 3,
+        children: [
+          AppStatCard(
+            label: 'Toplam Konuşma',
+            value: '${_conversations.length}',
+            icon: Icons.forum_outlined,
+          ),
+          AppStatCard(
+            label: 'Okunmamış',
+            value: '$totalUnread',
+            icon: Icons.mark_chat_unread_outlined,
+            iconColor: AppColors.danger500,
+            iconBackground: AppColors.danger50,
+            caption: unreadConversations > 0
+                ? '$unreadConversations konuşmada'
+                : null,
+          ),
+          AppStatCard(
+            label: 'Bugün Aktif',
+            value: '$activeToday',
+            icon: Icons.today_rounded,
+            iconColor: AppColors.info600,
+            iconBackground: AppColors.info50,
+          ),
+        ],
+      ),
     );
   }
 
@@ -237,9 +301,11 @@ class _MessagesListScreenState extends State<MessagesListScreen> {
       onRefresh: _load,
       color: AppColors.primary600,
       child: ListView.separated(
-        itemCount: _conversations.length,
-        separatorBuilder: (_, __) => const Divider(height: 1),
-        itemBuilder: (context, i) {
+        itemCount: _conversations.length + 1,
+        separatorBuilder: (_, i) => i == 0 ? const SizedBox.shrink() : const Divider(height: 1),
+        itemBuilder: (context, index) {
+          if (index == 0) return _buildSummary();
+          final i = index - 1;
           final c = _conversations[i];
           final unread = c.unreadCount > 0;
           return ListTile(

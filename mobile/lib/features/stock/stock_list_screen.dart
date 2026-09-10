@@ -310,6 +310,39 @@ class _StockListScreenState extends State<StockListScreen> {
     }
   }
 
+  Future<void> _deleteProduct(Product p) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Ürünü sil'),
+        content: Text('${p.name} silinecek. Bu işlem geri alınamaz.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('Vazgeç'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            child: const Text('Sil', style: TextStyle(color: Colors.red)),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+    try {
+      await _api.delete(p.id);
+      _load();
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(e is ApiException ? e.message : 'Silinemedi'),
+          ),
+        );
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -461,6 +494,42 @@ class _StockListScreenState extends State<StockListScreen> {
                         ),
                       ),
                     ),
+                    if (_canManage)
+                      PopupMenuButton<String>(
+                        icon: const Icon(
+                          Icons.more_vert_rounded,
+                          size: 18,
+                          color: AppColors.textFaint,
+                        ),
+                        padding: EdgeInsets.zero,
+                        onSelected: (v) async {
+                          if (v == 'edit') {
+                            final updated = await Navigator.of(context)
+                                .push<bool>(
+                                  MaterialPageRoute(
+                                    builder: (_) =>
+                                        _ProductFormScreen(product: p),
+                                  ),
+                                );
+                            if (updated == true) _load();
+                          } else if (v == 'delete') {
+                            _deleteProduct(p);
+                          }
+                        },
+                        itemBuilder: (context) => const [
+                          PopupMenuItem(
+                            value: 'edit',
+                            child: Text('Düzenle'),
+                          ),
+                          PopupMenuItem(
+                            value: 'delete',
+                            child: Text(
+                              'Sil',
+                              style: TextStyle(color: Colors.red),
+                            ),
+                          ),
+                        ],
+                      ),
                   ],
                 ),
                 const SizedBox(height: 8),
@@ -658,7 +727,8 @@ class _Chip extends StatelessWidget {
 }
 
 class _ProductFormScreen extends StatefulWidget {
-  const _ProductFormScreen();
+  final Product? product;
+  const _ProductFormScreen({this.product});
 
   @override
   State<_ProductFormScreen> createState() => _ProductFormScreenState();
@@ -666,15 +736,30 @@ class _ProductFormScreen extends StatefulWidget {
 
 class _ProductFormScreenState extends State<_ProductFormScreen> {
   final _formKey = GlobalKey<FormState>();
-  final _codeController = TextEditingController();
-  final _nameController = TextEditingController();
-  final _descriptionController = TextEditingController();
-  final _unitController = TextEditingController(text: 'litre');
+  late final _codeController = TextEditingController(
+    text: widget.product?.code ?? '',
+  );
+  late final _nameController = TextEditingController(
+    text: widget.product?.name ?? '',
+  );
+  late final _descriptionController = TextEditingController(
+    text: widget.product?.description ?? '',
+  );
+  late final _unitController = TextEditingController(
+    text: widget.product?.unit ?? 'litre',
+  );
   final _stockController = TextEditingController(text: '0');
-  final _thresholdController = TextEditingController();
-  ProductCategory _category = ProductCategory.biocidal;
+  late final _thresholdController = TextEditingController(
+    text: widget.product != null
+        ? widget.product!.criticalThreshold.toString()
+        : '',
+  );
+  late ProductCategory _category =
+      widget.product?.category ?? ProductCategory.biocidal;
   bool _saving = false;
   String? _error;
+
+  bool get _isEdit => widget.product != null;
 
   final _api = StockApi();
 
@@ -685,16 +770,29 @@ class _ProductFormScreenState extends State<_ProductFormScreen> {
       _error = null;
     });
     try {
-      await _api.create(
-        code: _codeController.text.trim(),
-        description: _descriptionController.text.trim(),
-        name: _nameController.text.trim(),
-        unit: _unitController.text.trim(),
-        category: _category,
-        currentStock: double.tryParse(_stockController.text.trim()) ?? 0,
-        criticalThreshold:
-            double.tryParse(_thresholdController.text.trim()) ?? 0,
-      );
+      if (_isEdit) {
+        await _api.update(
+          widget.product!.id,
+          code: _codeController.text.trim(),
+          description: _descriptionController.text.trim(),
+          name: _nameController.text.trim(),
+          unit: _unitController.text.trim(),
+          category: _category,
+          criticalThreshold:
+              double.tryParse(_thresholdController.text.trim()) ?? 0,
+        );
+      } else {
+        await _api.create(
+          code: _codeController.text.trim(),
+          description: _descriptionController.text.trim(),
+          name: _nameController.text.trim(),
+          unit: _unitController.text.trim(),
+          category: _category,
+          currentStock: double.tryParse(_stockController.text.trim()) ?? 0,
+          criticalThreshold:
+              double.tryParse(_thresholdController.text.trim()) ?? 0,
+        );
+      }
       if (mounted) Navigator.of(context).pop(true);
     } catch (e) {
       setState(() => _error = e is ApiException ? e.message : 'Kaydedilemedi');
@@ -706,7 +804,7 @@ class _ProductFormScreenState extends State<_ProductFormScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Yeni Ürün')),
+      appBar: AppBar(title: Text(_isEdit ? 'Ürünü Düzenle' : 'Yeni Ürün')),
       body: Form(
         key: _formKey,
         child: ListView(
@@ -742,6 +840,7 @@ class _ProductFormScreenState extends State<_ProductFormScreen> {
             const SizedBox(height: 12),
             DropdownButtonFormField<ProductCategory>(
               initialValue: _category,
+              isExpanded: true,
               decoration: const InputDecoration(labelText: 'Kategori'),
               items: ProductCategory.values
                   .map(
@@ -753,14 +852,16 @@ class _ProductFormScreenState extends State<_ProductFormScreen> {
                   .toList(),
               onChanged: (v) => setState(() => _category = v ?? _category),
             ),
-            const SizedBox(height: 12),
-            TextFormField(
-              controller: _stockController,
-              keyboardType: const TextInputType.numberWithOptions(
-                decimal: true,
+            if (!_isEdit) ...[
+              const SizedBox(height: 12),
+              TextFormField(
+                controller: _stockController,
+                keyboardType: const TextInputType.numberWithOptions(
+                  decimal: true,
+                ),
+                decoration: const InputDecoration(labelText: 'Başlangıç Stoğu'),
               ),
-              decoration: const InputDecoration(labelText: 'Başlangıç Stoğu'),
-            ),
+            ],
             const SizedBox(height: 12),
             TextFormField(
               controller: _thresholdController,
@@ -790,7 +891,7 @@ class _ProductFormScreenState extends State<_ProductFormScreen> {
                         color: Colors.white,
                       ),
                     )
-                  : const Text('Oluştur'),
+                  : Text(_isEdit ? 'Kaydet' : 'Oluştur'),
             ),
           ],
         ),
