@@ -164,6 +164,7 @@ class _JobFormScreenState extends State<JobFormScreen> {
                 children: [
                   DropdownButtonFormField<String>(
                     initialValue: _selectedCustomerId,
+                    isExpanded: true,
                     decoration: const InputDecoration(labelText: 'Müşteri *'),
                     items: _customers
                         .map(
@@ -181,6 +182,7 @@ class _JobFormScreenState extends State<JobFormScreen> {
                   const SizedBox(height: 12),
                   DropdownButtonFormField<String>(
                     initialValue: _selectedStaffId,
+                    isExpanded: true,
                     decoration: const InputDecoration(
                       labelText: 'Personel (opsiyonel)',
                     ),

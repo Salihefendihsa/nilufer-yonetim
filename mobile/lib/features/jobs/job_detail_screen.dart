@@ -1110,6 +1110,7 @@ class _ReassignStaffCardState extends State<_ReassignStaffCard> {
           const SizedBox(height: 8),
           DropdownButtonFormField<String>(
             initialValue: _selectedStaffId,
+            isExpanded: true,
             decoration: const InputDecoration(labelText: 'Personel'),
             items: _team
                 .map(

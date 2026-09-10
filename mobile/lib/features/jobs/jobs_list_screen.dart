@@ -243,6 +243,12 @@ class _JobCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final color = _statusColors[job.status]!;
+    // NOT: BoxDecoration'da farklı renkli kenarlarla (Border(left: ..., top: ...))
+    // borderRadius birlikte kullanılamaz — Flutter bunu paint() sırasında bir
+    // assertion ile reddediyor ve bu kartın TÜM içeriği (metin dahil) hiç
+    // çizilmeden boş kalıyordu (gerçek cihazda görsel doğrulama sırasında
+    // bulundu). Sol renkli şerit artık ayrı bir Container ile, tekdüze gri
+    // kenarlıktan bağımsız olarak çiziliyor.
     return Material(
       color: AppColors.surfaceCard,
       borderRadius: BorderRadius.circular(16),
@@ -250,17 +256,20 @@ class _JobCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(16),
         onTap: onTap,
         child: Container(
-          padding: const EdgeInsets.all(14),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(16),
-            border: Border(
-              left: BorderSide(color: color, width: 4),
-              top: const BorderSide(color: AppColors.borderDefault),
-              right: const BorderSide(color: AppColors.borderDefault),
-              bottom: const BorderSide(color: AppColors.borderDefault),
-            ),
+            border: Border.all(color: AppColors.borderDefault),
           ),
-          child: Column(
+          clipBehavior: Clip.antiAlias,
+          child: IntrinsicHeight(
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Container(width: 4, color: color),
+                Expanded(
+                  child: Padding(
+                    padding: const EdgeInsets.all(14),
+                    child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Row(
@@ -340,7 +349,12 @@ class _JobCard extends StatelessWidget {
                   ],
                 ],
               ),
-            ],
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ),

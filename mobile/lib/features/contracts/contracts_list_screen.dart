@@ -375,6 +375,7 @@ class _ContractFormScreenState extends State<_ContractFormScreen> {
                 children: [
                   DropdownButtonFormField<String>(
                     initialValue: _customerId,
+                    isExpanded: true,
                     decoration: const InputDecoration(labelText: 'Müşteri *'),
                     items: _customers
                         .map(
@@ -426,6 +427,7 @@ class _ContractFormScreenState extends State<_ContractFormScreen> {
                   const SizedBox(height: 12),
                   DropdownButtonFormField<String>(
                     initialValue: _status,
+                    isExpanded: true,
                     decoration: const InputDecoration(labelText: 'Durum'),
                     items: contractStatusOptions
                         .map(
@@ -459,6 +461,7 @@ class _ContractFormScreenState extends State<_ContractFormScreen> {
                   // nextGenerationDate hesaplar (contractsController.ts).
                   DropdownButtonFormField<String?>(
                     initialValue: _recurrenceType,
+                    isExpanded: true,
                     decoration: const InputDecoration(
                       labelText: 'Tekrar Periyodu (opsiyonel)',
                     ),
