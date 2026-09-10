@@ -2,6 +2,7 @@
 
 import { useEffect, useState, type FormEvent } from "react";
 import { Modal } from "@/components/Modal";
+import { useToast } from "@/lib/ToastProvider";
 import { api, ApiError } from "@/lib/api";
 
 interface BroadcastModalProps {
@@ -21,6 +22,7 @@ export function BroadcastModal({ open, onClose, onSent }: BroadcastModalProps) {
   const [content, setContent] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [sending, setSending] = useState(false);
+  const { showToast } = useToast();
 
   useEffect(() => {
     if (open) {
@@ -38,11 +40,13 @@ export function BroadcastModal({ open, onClose, onSent }: BroadcastModalProps) {
       const res = await api.post<{ recipientCount: number }>("/conversations/broadcast", {
         content: content.trim(),
       });
-      onSent();
-      onClose();
       if (res.recipientCount === 0) {
         setError("Duyuru gönderilecek ekip üyesi bulunamadı");
+        return;
       }
+      onSent();
+      onClose();
+      showToast(`Duyuru ${res.recipientCount} ekip üyesine gönderildi.`);
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "Duyuru gönderilemedi");
     } finally {

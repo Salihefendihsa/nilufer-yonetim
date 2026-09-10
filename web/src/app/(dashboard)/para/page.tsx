@@ -9,6 +9,7 @@ import { ChartCard, DonutChart, TrendChart } from "@/components/ChartCard";
 import { Table, type Column } from "@/components/Table";
 import { EmptyState } from "@/components/EmptyState";
 import { api, ApiError, downloadFile } from "@/lib/api";
+import { useToast } from "@/lib/ToastProvider";
 import { currencyFormatter, formatDate } from "@/lib/format";
 import type {
   Customer,
@@ -46,6 +47,7 @@ function PaymentsPageContent() {
   const [error, setError] = useState<string | null>(null);
   const [formOpen, setFormOpen] = useState(false);
   const [advanceBusyId, setAdvanceBusyId] = useState<string | null>(null);
+  const { showToast } = useToast();
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -80,6 +82,7 @@ function PaymentsPageContent() {
     try {
       await api.patch(`/advances/${id}`, { status });
       load();
+      showToast(status === "APPROVED" ? "Avans onaylandı." : "Avans reddedildi.");
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "Güncellenemedi");
     } finally {

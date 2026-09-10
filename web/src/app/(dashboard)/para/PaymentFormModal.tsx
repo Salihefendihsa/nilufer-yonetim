@@ -2,6 +2,7 @@
 
 import { useEffect, useState, type FormEvent } from "react";
 import { Modal } from "@/components/Modal";
+import { useToast } from "@/lib/ToastProvider";
 import { api, ApiError } from "@/lib/api";
 import type { Customer, Paginated, Staff } from "@/lib/types";
 
@@ -29,6 +30,7 @@ export function PaymentFormModal({ open, onClose, onSaved, customers }: PaymentF
   const [staffList, setStaffList] = useState<Staff[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const { showToast } = useToast();
 
   useEffect(() => {
     if (open) {
@@ -63,6 +65,7 @@ export function PaymentFormModal({ open, onClose, onSaved, customers }: PaymentF
       });
       onSaved();
       onClose();
+      showToast("Ödeme kaydedildi.");
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "Kaydedilemedi, tekrar deneyin");
     } finally {
@@ -89,7 +92,16 @@ export function PaymentFormModal({ open, onClose, onSaved, customers }: PaymentF
 
         <div className="flex flex-col gap-1.5">
           <label className="text-sm font-medium text-text-secondary">Tutar (₺)</label>
-          <input required type="number" min={0} step="0.01" value={amount} onChange={(e) => setAmount(e.target.value)} className="input" />
+          <input
+            required
+            type="number"
+            min={0}
+            step="0.01"
+            value={amount}
+            onChange={(e) => setAmount(e.target.value)}
+            className="input"
+            placeholder="Örn. 1500"
+          />
         </div>
 
         <div className="flex flex-col gap-1.5">
@@ -128,7 +140,12 @@ export function PaymentFormModal({ open, onClose, onSaved, customers }: PaymentF
 
         <div className="flex flex-col gap-1.5">
           <label className="text-sm font-medium text-text-secondary">Fiş/Makbuz Linki (opsiyonel)</label>
-          <input value={receiptUrl} onChange={(e) => setReceiptUrl(e.target.value)} className="input" />
+          <input
+            value={receiptUrl}
+            onChange={(e) => setReceiptUrl(e.target.value)}
+            className="input"
+            placeholder="https://..."
+          />
         </div>
 
         {error && <p className="rounded-2xl border border-danger-100 bg-danger-50 px-4 py-3 text-sm text-danger-500">{error}</p>}

@@ -18,6 +18,7 @@ import { PageHeader } from "@/components/PageHeader";
 import { StatCard } from "@/components/StatCard";
 import { StatusStrip } from "@/components/StatusStrip";
 import { api, ApiError } from "@/lib/api";
+import { useToast } from "@/lib/ToastProvider";
 import { formatDate, currencyFormatter } from "@/lib/format";
 import { formatDateTime } from "@/lib/format";
 import type { QuoteRequest, AdvanceRequest, Contract, Customer, Job, Paginated } from "@/lib/types";
@@ -54,6 +55,7 @@ function ApprovalQueueContent() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
+  const { showToast } = useToast();
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -93,6 +95,7 @@ function ApprovalQueueContent() {
     try {
       await api.patch(`/quotes/${id}`, { status: "CONTACTED" });
       load();
+      showToast("Teklif talebi iletişime geçildi olarak işaretlendi.");
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "Güncellenemedi");
     } finally {
@@ -105,6 +108,7 @@ function ApprovalQueueContent() {
     try {
       await api.post(`/quotes/${id}/convert`);
       load();
+      showToast("Teklif işe dönüştürüldü.");
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "Dönüştürülemedi");
     } finally {
@@ -117,6 +121,7 @@ function ApprovalQueueContent() {
     try {
       await api.patch(`/advances/${id}`, { status });
       load();
+      showToast(status === "APPROVED" ? "Avans onaylandı." : "Avans reddedildi.");
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "Güncellenemedi");
     } finally {
@@ -130,6 +135,7 @@ function ApprovalQueueContent() {
     try {
       await api.post(`/jobs/${jobId}/report/approve`, {});
       load();
+      showToast("Saha raporu onaylandı.");
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "Rapor onaylanamadı");
     } finally {
