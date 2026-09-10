@@ -6,6 +6,7 @@ import '../../models/advance.dart';
 import '../../models/contract.dart';
 import '../../models/job.dart';
 import '../../models/quote.dart';
+import '../../navigation/manager_nav.dart';
 import '../../theme/app_colors.dart';
 import '../../widgets/state_views.dart';
 import 'approvals_api.dart';
@@ -16,6 +17,42 @@ final _currency = NumberFormat.currency(
   decimalDigits: 0,
 );
 final _dateFormat = DateFormat('d MMM', 'tr_TR');
+
+/// Solda renkli bir şerit + tekdüze gri kenarlıklı kart kabuğu. BoxDecoration'da
+/// farklı renkli kenarlarla (Border(left: renkli, top/right/bottom: gri)
+/// borderRadius birlikte kullanılamaz — Flutter bunu paint() sırasında bir
+/// assertion ile reddediyor ve kartın TÜM içeriği (metin dahil) hiç
+/// çizilmeden boş kalıyordu (gerçek cihazda görsel doğrulama sırasında
+/// bulundu). Renkli şerit burada ayrı bir Container ile çiziliyor.
+class _AccentCard extends StatelessWidget {
+  final Color accentColor;
+  final Widget child;
+  const _AccentCard({required this.accentColor, required this.child});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 8),
+      decoration: BoxDecoration(
+        color: AppColors.surfaceCard,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: AppColors.borderDefault),
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: IntrinsicHeight(
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Container(width: 4, color: accentColor),
+            Expanded(
+              child: Padding(padding: const EdgeInsets.all(12), child: child),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
 
 /// web/src/app/(dashboard)/bekleyen-onaylar sayfasıyla aynı üç kaynağı
 /// birleştirir: yeni teklifler, bekleyen avanslar, süresi yaklaşan
@@ -81,6 +118,26 @@ class _ApprovalsScreenState extends State<ApprovalsScreen> {
     }
   }
 
+  Future<void> _markQuoteContacted(QuoteRequest q) async {
+    setState(() => _busyId = q.id);
+    try {
+      await _api.updateQuoteStatus(q.id, 'CONTACTED');
+      _load();
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              e is ApiException ? e.message : 'Güncellenemedi',
+            ),
+          ),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _busyId = null);
+    }
+  }
+
   Future<void> _convertQuote(QuoteRequest q) async {
     setState(() => _busyId = q.id);
     try {
@@ -124,6 +181,7 @@ class _ApprovalsScreenState extends State<ApprovalsScreen> {
     return Scaffold(
       backgroundColor: AppColors.surfacePage,
       appBar: AppBar(
+        leading: ManagerNav.maybeLeading(context),
         title: Text('Bekleyen Onaylar${_total > 0 ? ' ($_total)' : ''}'),
       ),
       body: _loading
@@ -157,6 +215,7 @@ class _ApprovalsScreenState extends State<ApprovalsScreen> {
                       (q) => _QuoteCard(
                         quote: q,
                         busy: _busyId == q.id,
+                        onContact: () => _markQuoteContacted(q),
                         onConvert: () => _convertQuote(q),
                       ),
                     ),
@@ -262,28 +321,19 @@ class _ReportCard extends StatelessWidget {
 class _QuoteCard extends StatelessWidget {
   final QuoteRequest quote;
   final bool busy;
+  final VoidCallback onContact;
   final VoidCallback onConvert;
   const _QuoteCard({
     required this.quote,
     required this.busy,
+    required this.onContact,
     required this.onConvert,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 8),
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: AppColors.surfaceCard,
-        borderRadius: BorderRadius.circular(14),
-        border: Border(
-          left: BorderSide(color: AppColors.info500, width: 4),
-          top: BorderSide(color: AppColors.borderDefault),
-          right: BorderSide(color: AppColors.borderDefault),
-          bottom: BorderSide(color: AppColors.borderDefault),
-        ),
-      ),
+    return _AccentCard(
+      accentColor: AppColors.info500,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -308,12 +358,25 @@ class _QuoteCard extends StatelessWidget {
               ),
             ),
           const SizedBox(height: 8),
-          SizedBox(
-            width: double.infinity,
-            child: OutlinedButton(
-              onPressed: busy ? null : onConvert,
-              child: Text(busy ? 'İşleniyor...' : 'Teklife Dönüştür & Onayla'),
-            ),
+          Row(
+            children: [
+              if (quote.status == 'NEW')
+                Expanded(
+                  child: OutlinedButton(
+                    onPressed: busy ? null : onContact,
+                    child: const Text('İletişime Geçildi'),
+                  ),
+                ),
+              if (quote.status == 'NEW') const SizedBox(width: 8),
+              Expanded(
+                child: ElevatedButton(
+                  onPressed: busy ? null : onConvert,
+                  child: Text(
+                    busy ? 'İşleniyor...' : 'Teklife Dönüştür & Onayla',
+                  ),
+                ),
+              ),
+            ],
           ),
         ],
       ),
@@ -335,19 +398,8 @@ class _AdvanceCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 8),
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: AppColors.surfaceCard,
-        borderRadius: BorderRadius.circular(14),
-        border: Border(
-          left: BorderSide(color: AppColors.warning500, width: 4),
-          top: BorderSide(color: AppColors.borderDefault),
-          right: BorderSide(color: AppColors.borderDefault),
-          bottom: BorderSide(color: AppColors.borderDefault),
-        ),
-      ),
+    return _AccentCard(
+      accentColor: AppColors.warning500,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -414,19 +466,8 @@ class _ExpiringContractCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 8),
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: AppColors.surfaceCard,
-        borderRadius: BorderRadius.circular(14),
-        border: Border(
-          left: BorderSide(color: AppColors.danger500, width: 4),
-          top: BorderSide(color: AppColors.borderDefault),
-          right: BorderSide(color: AppColors.borderDefault),
-          bottom: BorderSide(color: AppColors.borderDefault),
-        ),
-      ),
+    return _AccentCard(
+      accentColor: AppColors.danger500,
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [

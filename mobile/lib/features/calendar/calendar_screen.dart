@@ -7,10 +7,14 @@ import '../../models/job.dart';
 import '../../theme/app_colors.dart';
 import '../../auth/auth_provider.dart';
 import '../../models/user.dart';
+import '../../navigation/manager_nav.dart';
 import '../../widgets/state_views.dart';
+import '../../widgets/stat_card.dart';
 import '../team/team_api.dart';
 import '../jobs/jobs_api.dart';
 import '../jobs/job_detail_screen.dart';
+
+const _weekdayLabelsTr = ['Pzt', 'Sal', 'Çar', 'Per', 'Cum', 'Cmt', 'Paz'];
 
 /// web/src/app/(dashboard)/takvim/page.tsx ile aynı mantık: aylık ısı
 /// haritası + seçili günün iş listesi. Backend kapsamı (STAFF→kendi işleri,
@@ -108,7 +112,10 @@ class _CalendarScreenState extends State<CalendarScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.surfacePage,
-      appBar: AppBar(title: const Text('Takvim')),
+      appBar: AppBar(
+        leading: ManagerNav.maybeLeading(context),
+        title: const Text('Takvim'),
+      ),
       body: _loading
           ? const LoadingView()
           : _error != null
@@ -210,6 +217,144 @@ class _CalendarScreenState extends State<CalendarScreen> {
     );
   }
 
+  /// Web'de her rol için gösterilen özet kartlar (bugünkü iş, bu haftaki iş,
+  /// tamamlanma oranı, en yoğun gün) — önceden yalnızca TEAM_LEAD'in ayrı bir
+  /// `/team/calendar` ucundan gelen kısmi bir kartı vardı, OWNER/MANAGER/STAFF
+  /// hiçbirini görmüyordu. Artık zaten çekilen `_jobs` (ay kapsamlı) listesinden
+  /// istemci tarafında türetiliyor — ek bir API çağrısı gerekmiyor.
+  Widget _buildSummaryCards() {
+    final now = DateTime.now();
+    final todayKey = DateFormat('yyyy-MM-dd').format(now);
+    final todaysJobs = _jobsByDay[todayKey] ?? [];
+
+    final weekStart = now.subtract(Duration(days: (now.weekday - 1) % 7));
+    final weekStartDay = DateTime(weekStart.year, weekStart.month, weekStart.day);
+    final weekEndDay = weekStartDay.add(const Duration(days: 7));
+    final thisWeekJobs = _jobs
+        .where(
+          (j) =>
+              j.scheduledAt != null &&
+              !j.scheduledAt!.isBefore(weekStartDay) &&
+              j.scheduledAt!.isBefore(weekEndDay),
+        )
+        .toList();
+
+    final monthCompleted = _jobs
+        .where((j) => j.status == JobStatus.completed)
+        .length;
+    final completionPct = _jobs.isNotEmpty
+        ? (monthCompleted / _jobs.length * 100).round()
+        : null;
+
+    final byDay = _jobsByDay;
+    String? busiestLabel;
+    var busiestCount = 0;
+    byDay.forEach((key, jobs) {
+      if (jobs.length > busiestCount) {
+        busiestCount = jobs.length;
+        busiestLabel = key;
+      }
+    });
+
+    return StatCardGrid(
+      children: [
+        AppStatCard(
+          label: 'Bugünkü İş',
+          value: '${todaysJobs.length}',
+          icon: Icons.today_rounded,
+        ),
+        AppStatCard(
+          label: 'Bu Hafta',
+          value: '${thisWeekJobs.length}',
+          icon: Icons.date_range_rounded,
+          iconColor: AppColors.info600,
+          iconBackground: AppColors.info50,
+        ),
+        AppStatCard(
+          label: 'Tamamlanma (Ay)',
+          value: completionPct != null ? '%$completionPct' : '—',
+          icon: Icons.check_circle_outline_rounded,
+          iconColor: AppColors.success600,
+          iconBackground: AppColors.success50,
+          caption: '$monthCompleted / ${_jobs.length} iş',
+        ),
+        AppStatCard(
+          label: 'En Yoğun Gün',
+          value: busiestLabel != null
+              ? DateFormat('d MMM', 'tr_TR').format(DateTime.parse(busiestLabel!))
+              : '—',
+          icon: Icons.local_fire_department_outlined,
+          iconColor: AppColors.warning600,
+          iconBackground: AppColors.warning50,
+          caption: busiestLabel != null ? '$busiestCount iş' : null,
+        ),
+      ],
+    );
+  }
+
+  /// Haftanın günlerine göre (Pzt-Paz) bu ayki iş dağılımı — web'in
+  /// "Haftalık Dağılım" çubuk grafiğinin karşılığı, mevcut çubuk-satır
+  /// deseniyle (grafik kütüphanesi eklenmeden).
+  Widget _buildWeeklyDistribution() {
+    final counts = List<int>.filled(7, 0);
+    for (final j in _jobs) {
+      if (j.scheduledAt == null) continue;
+      counts[(j.scheduledAt!.weekday - 1) % 7]++;
+    }
+    final maxCount = counts.fold(0, (m, c) => c > m ? c : m);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          'Haftalık Dağılım (Bu Ay)',
+          style: TextStyle(fontWeight: FontWeight.w700, fontSize: 14.5),
+        ),
+        const SizedBox(height: 8),
+        for (var i = 0; i < 7; i++)
+          Padding(
+            padding: const EdgeInsets.only(bottom: 6),
+            child: Row(
+              children: [
+                SizedBox(
+                  width: 32,
+                  child: Text(
+                    _weekdayLabelsTr[i],
+                    style: const TextStyle(
+                      fontSize: 11.5,
+                      color: AppColors.textSecondary,
+                    ),
+                  ),
+                ),
+                Expanded(
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(999),
+                    child: LinearProgressIndicator(
+                      value: maxCount == 0 ? 0 : counts[i] / maxCount,
+                      minHeight: 8,
+                      backgroundColor: AppColors.surfaceMuted,
+                      color: AppColors.primary500,
+                    ),
+                  ),
+                ),
+                SizedBox(
+                  width: 28,
+                  child: Text(
+                    '${counts[i]}',
+                    textAlign: TextAlign.right,
+                    style: const TextStyle(
+                      fontSize: 11.5,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+      ],
+    );
+  }
+
   Widget _buildCalendar() {
     final byDay = _jobsByDay;
     final maxCount = byDay.values.fold(
@@ -229,6 +374,10 @@ class _CalendarScreenState extends State<CalendarScreen> {
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
+        Padding(
+          padding: const EdgeInsets.only(bottom: 12),
+          child: _buildSummaryCards(),
+        ),
         // Şef için ekip kapasitesi (diğer rollerde _teamCalendar null kalır).
         if (_teamCalendar != null) ...[
           Padding(
@@ -236,6 +385,10 @@ class _CalendarScreenState extends State<CalendarScreen> {
             child: _buildCapacityCard(_teamCalendar!),
           ),
         ],
+        Padding(
+          padding: const EdgeInsets.only(bottom: 18),
+          child: _buildWeeklyDistribution(),
+        ),
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
