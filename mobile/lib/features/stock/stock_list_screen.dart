@@ -299,6 +299,11 @@ class _StockListScreenState extends State<StockListScreen> {
     try {
       await _api.restock(p.id, result);
       _load();
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('Stok eklendi.')));
+      }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -332,6 +337,11 @@ class _StockListScreenState extends State<StockListScreen> {
     try {
       await _api.delete(p.id);
       _load();
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('Ürün silindi.')));
+      }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -370,7 +380,14 @@ class _StockListScreenState extends State<StockListScreen> {
                 final created = await Navigator.of(context).push<bool>(
                   MaterialPageRoute(builder: (_) => const _ProductFormScreen()),
                 );
-                if (created == true) _load();
+                if (created == true) {
+                  _load();
+                  if (context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Ürün kaydedildi.')),
+                    );
+                  }
+                }
               },
             ),
         ],
@@ -511,7 +528,16 @@ class _StockListScreenState extends State<StockListScreen> {
                                         _ProductFormScreen(product: p),
                                   ),
                                 );
-                            if (updated == true) _load();
+                            if (updated == true) {
+                              _load();
+                              if (context.mounted) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(
+                                    content: Text('Ürün kaydedildi.'),
+                                  ),
+                                );
+                              }
+                            }
                           } else if (v == 'delete') {
                             _deleteProduct(p);
                           }

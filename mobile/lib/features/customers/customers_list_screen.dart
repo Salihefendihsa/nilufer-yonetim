@@ -148,7 +148,14 @@ class _CustomersListScreenState extends State<CustomersListScreen> {
                 final created = await Navigator.of(context).push<bool>(
                   MaterialPageRoute(builder: (_) => const CustomerFormScreen()),
                 );
-                if (created == true) _load();
+                if (created == true) {
+                  _load();
+                  if (mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Müşteri kaydedildi.')),
+                    );
+                  }
+                }
               },
             ),
         ],

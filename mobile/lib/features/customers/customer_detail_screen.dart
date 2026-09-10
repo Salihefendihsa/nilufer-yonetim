@@ -124,7 +124,12 @@ class _CustomerDetailScreenState extends State<CustomerDetailScreen>
     try {
       await _api.delete(widget.customerId);
       _changed = true;
-      if (mounted) Navigator.of(context).pop(true);
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('Müşteri silindi.')));
+        Navigator.of(context).pop(true);
+      }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -161,6 +166,11 @@ class _CustomerDetailScreenState extends State<CustomerDetailScreen>
                   if (updated == true) {
                     _changed = true;
                     _load();
+                    if (mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('Müşteri güncellendi.')),
+                      );
+                    }
                   }
                 },
               ),

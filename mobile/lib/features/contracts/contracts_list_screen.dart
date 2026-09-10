@@ -422,7 +422,10 @@ class _ContractFormScreenState extends State<_ContractFormScreen> {
                   TextFormField(
                     controller: _durationController,
                     keyboardType: TextInputType.number,
-                    decoration: const InputDecoration(labelText: 'Süre (ay)'),
+                    decoration: const InputDecoration(
+                      labelText: 'Süre (ay)',
+                      hintText: 'Örn. 12',
+                    ),
                   ),
                   const SizedBox(height: 12),
                   DropdownButtonFormField<String>(
@@ -447,6 +450,7 @@ class _ContractFormScreenState extends State<_ContractFormScreen> {
                     ),
                     decoration: const InputDecoration(
                       labelText: 'Dönem Ücreti (₺, opsiyonel)',
+                      hintText: 'Örn. 1200',
                     ),
                   ),
                   const SizedBox(height: 12),
@@ -454,6 +458,7 @@ class _ContractFormScreenState extends State<_ContractFormScreen> {
                     controller: _serviceTypeController,
                     decoration: const InputDecoration(
                       labelText: 'Hizmet Türü (opsiyonel)',
+                      hintText: 'Örn. İlaçlama',
                     ),
                   ),
                   const SizedBox(height: 12),

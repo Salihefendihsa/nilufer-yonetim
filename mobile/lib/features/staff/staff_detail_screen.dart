@@ -131,7 +131,12 @@ class _StaffDetailScreenState extends State<StaffDetailScreen> {
     if (confirmed != true) return;
     try {
       await _api.delete(widget.staffId);
-      if (mounted) Navigator.of(context).pop(true);
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('Personel silindi.')));
+        Navigator.of(context).pop(true);
+      }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -220,6 +225,11 @@ class _StaffDetailScreenState extends State<StaffDetailScreen> {
         expiryDate: expiryDate,
       );
       _load();
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('Sertifika eklendi.')));
+      }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -237,6 +247,11 @@ class _StaffDetailScreenState extends State<StaffDetailScreen> {
     try {
       await _api.deleteCertification(widget.staffId, cert.id);
       _load();
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('Sertifika silindi.')));
+      }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -267,7 +282,14 @@ class _StaffDetailScreenState extends State<StaffDetailScreen> {
                     builder: (_) => StaffFormScreen(staff: _staff),
                   ),
                 );
-                if (updated == true) _load();
+                if (updated == true) {
+                  _load();
+                  if (mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Personel güncellendi.')),
+                    );
+                  }
+                }
               },
             ),
             IconButton(

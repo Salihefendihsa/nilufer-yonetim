@@ -172,7 +172,10 @@ class _NamedListSettingsScreenState extends State<NamedListSettingsScreen> {
                 if (_items.isEmpty)
                   const Padding(
                     padding: EdgeInsets.symmetric(vertical: 12),
-                    child: Text('Henüz eklenmemiş.'),
+                    child: EmptyStateView(
+                      title: 'Henüz eklenmemiş',
+                      icon: Icons.category_outlined,
+                    ),
                   )
                 else
                   ..._items.map((item) {
@@ -272,7 +275,16 @@ class _NamedListSettingsScreenState extends State<NamedListSettingsScreen> {
                     const SizedBox(width: 8),
                     ElevatedButton(
                       onPressed: _busy ? null : _add,
-                      child: const Text('Ekle'),
+                      child: _busy
+                          ? const SizedBox(
+                              width: 16,
+                              height: 16,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: Colors.white,
+                              ),
+                            )
+                          : const Text('Ekle'),
                     ),
                   ],
                 ),

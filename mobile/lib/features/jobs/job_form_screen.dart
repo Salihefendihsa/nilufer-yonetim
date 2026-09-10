@@ -244,6 +244,7 @@ class _JobFormScreenState extends State<JobFormScreen> {
                     ),
                     decoration: const InputDecoration(
                       labelText: 'Fiyat (opsiyonel)',
+                      hintText: 'Örn. 500',
                     ),
                   ),
                   const SizedBox(height: 12),
@@ -252,6 +253,7 @@ class _JobFormScreenState extends State<JobFormScreen> {
                     maxLines: 2,
                     decoration: const InputDecoration(
                       labelText: 'Notlar (opsiyonel)',
+                      hintText: 'Örn. Bahçe kapısından girilecek',
                     ),
                   ),
                   if (_error != null) ...[

@@ -96,6 +96,7 @@ class _CustomerFormScreenState extends State<CustomerFormScreen> {
               controller: _fullName,
               decoration: const InputDecoration(
                 labelText: 'Ad Soyad / Firma Adı',
+                hintText: 'Örn. Ahmet Yılmaz',
               ),
               validator: (v) =>
                   (v == null || v.trim().isEmpty) ? 'Zorunlu alan' : null,
@@ -104,7 +105,10 @@ class _CustomerFormScreenState extends State<CustomerFormScreen> {
             TextFormField(
               controller: _phone,
               keyboardType: TextInputType.phone,
-              decoration: const InputDecoration(labelText: 'Telefon'),
+              decoration: const InputDecoration(
+                labelText: 'Telefon',
+                hintText: '0532 123 45 67',
+              ),
               validator: (v) =>
                   (v == null || v.trim().isEmpty) ? 'Zorunlu alan' : null,
             ),
@@ -114,6 +118,7 @@ class _CustomerFormScreenState extends State<CustomerFormScreen> {
               keyboardType: TextInputType.emailAddress,
               decoration: const InputDecoration(
                 labelText: 'E-posta (opsiyonel)',
+                hintText: 'ornek@eposta.com',
               ),
             ),
             const SizedBox(height: 12),
@@ -121,13 +126,17 @@ class _CustomerFormScreenState extends State<CustomerFormScreen> {
               controller: _district,
               decoration: const InputDecoration(
                 labelText: 'Bölge / İlçe (opsiyonel)',
+                hintText: 'Örn. Nilüfer',
               ),
             ),
             const SizedBox(height: 12),
             TextFormField(
               controller: _address,
               maxLines: 2,
-              decoration: const InputDecoration(labelText: 'Adres (opsiyonel)'),
+              decoration: const InputDecoration(
+                labelText: 'Adres (opsiyonel)',
+                hintText: 'Örn. Fatih Mah. Çınar Sk. No:5',
+              ),
             ),
             if (_error != null) ...[
               const SizedBox(height: 12),

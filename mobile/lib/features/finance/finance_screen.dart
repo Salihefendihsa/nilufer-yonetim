@@ -143,7 +143,14 @@ class _FinanceScreenState extends State<FinanceScreen> {
               final created = await Navigator.of(context).push<bool>(
                 MaterialPageRoute(builder: (_) => const _PaymentFormScreen()),
               );
-              if (created == true) _load();
+              if (created == true) {
+                _load();
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Tahsilat kaydedildi.')),
+                  );
+                }
+              }
             },
           ),
         ],

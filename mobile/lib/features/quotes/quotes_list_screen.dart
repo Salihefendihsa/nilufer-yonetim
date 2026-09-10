@@ -131,6 +131,11 @@ class _QuotesListScreenState extends State<QuotesListScreen> {
     try {
       await _api.updateAmount(q.id, result);
       _load();
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('Fiyat kaydedildi.')));
+      }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -173,6 +178,11 @@ class _QuotesListScreenState extends State<QuotesListScreen> {
     try {
       await _api.updateDetails(q.id, note: controller.text.trim());
       _load();
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('Not kaydedildi.')));
+      }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -209,6 +219,11 @@ class _QuotesListScreenState extends State<QuotesListScreen> {
     try {
       await _api.updateDetails(q.id, surveyAt: surveyAt);
       _load();
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Keşif randevusu kaydedildi.')),
+        );
+      }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(

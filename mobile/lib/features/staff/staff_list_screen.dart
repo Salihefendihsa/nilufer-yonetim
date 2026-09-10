@@ -80,7 +80,14 @@ class _StaffListScreenState extends State<StaffListScreen> {
                 final created = await Navigator.of(context).push<bool>(
                   MaterialPageRoute(builder: (_) => const StaffFormScreen()),
                 );
-                if (created == true) _load();
+                if (created == true) {
+                  _load();
+                  if (mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Personel kaydedildi.')),
+                    );
+                  }
+                }
               },
             ),
         ],
