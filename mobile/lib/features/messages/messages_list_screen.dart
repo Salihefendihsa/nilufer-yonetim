@@ -358,7 +358,7 @@ class _MessagesListScreenState extends State<MessagesListScreen> {
                     ),
                     decoration: BoxDecoration(
                       color: AppColors.primary600,
-                      borderRadius: BorderRadius.circular(999),
+                      borderRadius: BorderRadius.circular(AppRadius.pill),
                     ),
                     child: Text(
                       '${c.unreadCount}',

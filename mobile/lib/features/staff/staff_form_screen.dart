@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../core/api_client.dart';
 import '../../models/staff.dart';
+import '../../theme/app_colors.dart';
 import 'staff_api.dart';
 
 const Map<String, String> _staffRoleLabels = {
@@ -223,7 +224,7 @@ class _StaffFormScreenState extends State<StaffFormScreen> {
                       padding: const EdgeInsets.all(12),
                       decoration: BoxDecoration(
                         color: Colors.grey.shade100,
-                        borderRadius: BorderRadius.circular(14),
+                        borderRadius: BorderRadius.circular(AppRadius.card),
                       ),
                       child: Text(
                         '${widget.staff!.fullName} (${widget.staff!.email})',

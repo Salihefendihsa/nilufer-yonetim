@@ -437,7 +437,7 @@ class _StockListScreenState extends State<StockListScreen> {
             padding: const EdgeInsets.all(14),
             decoration: BoxDecoration(
               color: AppColors.surfaceCard,
-              borderRadius: BorderRadius.circular(16),
+              borderRadius: BorderRadius.circular(AppRadius.card),
               border: Border.all(
                 color: p.isCritical
                     ? AppColors.danger500
@@ -484,7 +484,7 @@ class _StockListScreenState extends State<StockListScreen> {
                       ),
                       decoration: BoxDecoration(
                         color: AppColors.surfaceSubtle,
-                        borderRadius: BorderRadius.circular(999),
+                        borderRadius: BorderRadius.circular(AppRadius.pill),
                       ),
                       child: Text(
                         productCategoryLabelTr(p.category),
@@ -534,7 +534,7 @@ class _StockListScreenState extends State<StockListScreen> {
                 ),
                 const SizedBox(height: 8),
                 ClipRRect(
-                  borderRadius: BorderRadius.circular(999),
+                  borderRadius: BorderRadius.circular(AppRadius.pill),
                   child: LinearProgressIndicator(
                     value: ratio,
                     minHeight: 6,
@@ -572,7 +572,7 @@ class _StockListScreenState extends State<StockListScreen> {
                             ),
                             decoration: BoxDecoration(
                               color: AppColors.info50,
-                              borderRadius: BorderRadius.circular(999),
+                              borderRadius: BorderRadius.circular(AppRadius.pill),
                             ),
                             child: Text(
                               'Sipariş bekleyen: '
@@ -708,7 +708,7 @@ class _Chip extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
         decoration: BoxDecoration(
           color: selected ? AppColors.primary600 : AppColors.surfaceCard,
-          borderRadius: BorderRadius.circular(999),
+          borderRadius: BorderRadius.circular(AppRadius.pill),
           border: Border.all(
             color: selected ? AppColors.primary600 : AppColors.borderDefault,
           ),

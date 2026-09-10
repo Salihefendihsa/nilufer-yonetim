@@ -301,7 +301,7 @@ class _StaffDetailScreenState extends State<StaffDetailScreen> {
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
               color: AppColors.surfaceCard,
-              borderRadius: BorderRadius.circular(18),
+              borderRadius: BorderRadius.circular(AppRadius.sheet),
               border: Border.all(color: AppColors.borderDefault),
             ),
             child: Column(
@@ -353,7 +353,7 @@ class _StaffDetailScreenState extends State<StaffDetailScreen> {
                       ),
                       decoration: BoxDecoration(
                         color: AppColors.surfaceSubtle,
-                        borderRadius: BorderRadius.circular(999),
+                        borderRadius: BorderRadius.circular(AppRadius.pill),
                       ),
                       child: Text(
                         staffStatusLabelTr(s.status),
@@ -457,7 +457,7 @@ class _StaffDetailScreenState extends State<StaffDetailScreen> {
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
                     color: AppColors.surfaceCard,
-                    borderRadius: BorderRadius.circular(14),
+                    borderRadius: BorderRadius.circular(AppRadius.card),
                     border: Border.all(color: AppColors.borderDefault),
                   ),
                   child: Row(

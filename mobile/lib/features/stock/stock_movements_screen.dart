@@ -76,7 +76,7 @@ class _StockMovementsScreenState extends State<StockMovementsScreen> {
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
                       color: AppColors.surfaceCard,
-                      borderRadius: BorderRadius.circular(14),
+                      borderRadius: BorderRadius.circular(AppRadius.card),
                       border: Border.all(color: AppColors.borderDefault),
                     ),
                     child: Row(

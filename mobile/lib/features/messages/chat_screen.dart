@@ -180,7 +180,7 @@ class _ChatScreenState extends State<ChatScreen> {
                               ),
                               decoration: BoxDecoration(
                                 color: AppColors.surfaceMuted,
-                                borderRadius: BorderRadius.circular(999),
+                                borderRadius: BorderRadius.circular(AppRadius.pill),
                               ),
                               child: Text(
                                 _dayFormat.format(item),
@@ -213,7 +213,7 @@ class _ChatScreenState extends State<ChatScreen> {
                             color: mine
                                 ? AppColors.primary600
                                 : AppColors.surfaceCard,
-                            borderRadius: BorderRadius.circular(16),
+                            borderRadius: BorderRadius.circular(AppRadius.card),
                             border: mine
                                 ? null
                                 : Border.all(color: AppColors.borderDefault),

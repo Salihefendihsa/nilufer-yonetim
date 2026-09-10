@@ -293,7 +293,7 @@ class _QuotesListScreenState extends State<QuotesListScreen> {
             padding: const EdgeInsets.all(14),
             decoration: BoxDecoration(
               color: AppColors.surfaceCard,
-              borderRadius: BorderRadius.circular(16),
+              borderRadius: BorderRadius.circular(AppRadius.card),
               border: Border.all(color: AppColors.borderDefault),
             ),
             child: Column(
@@ -318,7 +318,7 @@ class _QuotesListScreenState extends State<QuotesListScreen> {
                       ),
                       decoration: BoxDecoration(
                         color: color.withValues(alpha: 0.12),
-                        borderRadius: BorderRadius.circular(999),
+                        borderRadius: BorderRadius.circular(AppRadius.pill),
                       ),
                       child: Text(
                         quoteStatusLabelTr(q.status),
@@ -441,7 +441,7 @@ class _QuotesListScreenState extends State<QuotesListScreen> {
                     ),
                     decoration: BoxDecoration(
                       color: AppColors.surfaceSubtle,
-                      borderRadius: BorderRadius.circular(10),
+                      borderRadius: BorderRadius.circular(AppRadius.chip),
                     ),
                     child: Row(
                       children: [
@@ -511,7 +511,7 @@ class _Chip extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
         decoration: BoxDecoration(
           color: selected ? AppColors.primary600 : AppColors.surfaceCard,
-          borderRadius: BorderRadius.circular(999),
+          borderRadius: BorderRadius.circular(AppRadius.pill),
           border: Border.all(
             color: selected ? AppColors.primary600 : AppColors.borderDefault,
           ),

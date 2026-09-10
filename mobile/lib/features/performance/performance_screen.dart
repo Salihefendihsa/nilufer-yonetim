@@ -205,7 +205,7 @@ class _PerformanceScreenState extends State<PerformanceScreen> {
                   ),
                   Expanded(
                     child: ClipRRect(
-                      borderRadius: BorderRadius.circular(999),
+                      borderRadius: BorderRadius.circular(AppRadius.pill),
                       child: LinearProgressIndicator(
                         value: maxJobs == 0
                             ? 0
@@ -254,7 +254,7 @@ class _PerformanceScreenState extends State<PerformanceScreen> {
                     ),
                     Expanded(
                       child: ClipRRect(
-                        borderRadius: BorderRadius.circular(999),
+                        borderRadius: BorderRadius.circular(AppRadius.pill),
                         child: LinearProgressIndicator(
                           value: (e.averageRating! / 5).clamp(0, 1),
                           minHeight: 8,
@@ -353,7 +353,7 @@ class _PerformanceScreenState extends State<PerformanceScreen> {
                       padding: const EdgeInsets.all(14),
                       decoration: BoxDecoration(
                         color: AppColors.surfaceCard,
-                        borderRadius: BorderRadius.circular(16),
+                        borderRadius: BorderRadius.circular(AppRadius.card),
                         border: Border.all(color: AppColors.borderDefault),
                       ),
                       child: Column(
@@ -440,7 +440,7 @@ class _PerformanceScreenState extends State<PerformanceScreen> {
                     padding: const EdgeInsets.all(14),
                     decoration: BoxDecoration(
                       color: AppColors.surfaceCard,
-                      borderRadius: BorderRadius.circular(16),
+                      borderRadius: BorderRadius.circular(AppRadius.card),
                       border: Border.all(color: AppColors.borderDefault),
                     ),
                     child: Row(

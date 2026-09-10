@@ -185,7 +185,7 @@ class _NamedListSettingsScreenState extends State<NamedListSettingsScreen> {
                       ),
                       decoration: BoxDecoration(
                         color: AppColors.surfaceCard,
-                        borderRadius: BorderRadius.circular(14),
+                        borderRadius: BorderRadius.circular(AppRadius.card),
                         border: Border.all(color: AppColors.borderDefault),
                       ),
                       child: editing

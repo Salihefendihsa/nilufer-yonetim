@@ -39,10 +39,10 @@ class CustomerMoreMenuScreen extends StatelessWidget {
           final item = items[i];
           return Material(
             color: AppColors.surfaceCard,
-            borderRadius: BorderRadius.circular(14),
+            borderRadius: BorderRadius.circular(AppRadius.card),
             child: ListTile(
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(14),
+                borderRadius: BorderRadius.circular(AppRadius.card),
                 side: const BorderSide(color: AppColors.borderDefault),
               ),
               leading: Icon(item.icon, color: AppColors.primary700),

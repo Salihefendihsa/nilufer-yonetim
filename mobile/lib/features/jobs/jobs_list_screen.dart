@@ -218,7 +218,7 @@ class _FilterChip extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
         decoration: BoxDecoration(
           color: selected ? base : AppColors.surfaceCard,
-          borderRadius: BorderRadius.circular(999),
+          borderRadius: BorderRadius.circular(AppRadius.pill),
           border: Border.all(color: selected ? base : AppColors.borderDefault),
         ),
         alignment: Alignment.center,
@@ -251,13 +251,13 @@ class _JobCard extends StatelessWidget {
     // kenarlıktan bağımsız olarak çiziliyor.
     return Material(
       color: AppColors.surfaceCard,
-      borderRadius: BorderRadius.circular(16),
+      borderRadius: BorderRadius.circular(AppRadius.card),
       child: InkWell(
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(AppRadius.card),
         onTap: onTap,
         child: Container(
           decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: BorderRadius.circular(AppRadius.card),
             border: Border.all(color: AppColors.borderDefault),
           ),
           clipBehavior: Clip.antiAlias,
@@ -291,7 +291,7 @@ class _JobCard extends StatelessWidget {
                     ),
                     decoration: BoxDecoration(
                       color: color.withValues(alpha: 0.12),
-                      borderRadius: BorderRadius.circular(999),
+                      borderRadius: BorderRadius.circular(AppRadius.pill),
                     ),
                     child: Text(
                       jobStatusLabelTr(job.status),

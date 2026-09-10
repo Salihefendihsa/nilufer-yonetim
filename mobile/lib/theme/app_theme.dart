@@ -66,7 +66,7 @@ class AppTheme {
         elevation: 0,
         margin: EdgeInsets.zero,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(18),
+          borderRadius: BorderRadius.circular(AppRadius.sheet),
           side: const BorderSide(color: AppColors.borderDefault),
         ),
       ),

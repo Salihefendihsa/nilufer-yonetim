@@ -245,7 +245,7 @@ class _FinanceScreenState extends State<FinanceScreen> {
               padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
               decoration: BoxDecoration(
                 color: AppColors.surfaceCard,
-                borderRadius: BorderRadius.circular(14),
+                borderRadius: BorderRadius.circular(AppRadius.card),
                 border: Border.all(color: AppColors.borderDefault),
               ),
               child: Column(
@@ -302,7 +302,7 @@ class _FinanceScreenState extends State<FinanceScreen> {
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
                     color: AppColors.surfaceCard,
-                    borderRadius: BorderRadius.circular(14),
+                    borderRadius: BorderRadius.circular(AppRadius.card),
                     border: Border.all(color: AppColors.borderDefault),
                   ),
                   child: Row(
@@ -418,7 +418,7 @@ class _FinanceBarRow extends StatelessWidget {
           ),
           const SizedBox(height: 4),
           ClipRRect(
-            borderRadius: BorderRadius.circular(999),
+            borderRadius: BorderRadius.circular(AppRadius.pill),
             child: LinearProgressIndicator(
               value: (value / 100).clamp(0, 1),
               minHeight: 8,

@@ -322,7 +322,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                       ),
                       Expanded(
                         child: ClipRRect(
-                          borderRadius: BorderRadius.circular(999),
+                          borderRadius: BorderRadius.circular(AppRadius.pill),
                           child: LinearProgressIndicator(
                             value: (s.byCategory[c.key] ?? 0) / s.total,
                             minHeight: 8,

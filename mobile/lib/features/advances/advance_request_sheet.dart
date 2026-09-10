@@ -91,7 +91,7 @@ class _AdvanceRequestSheetState extends State<_AdvanceRequestSheet> {
                   height: 36,
                   decoration: BoxDecoration(
                     color: AppColors.primary50,
-                    borderRadius: BorderRadius.circular(10),
+                    borderRadius: BorderRadius.circular(AppRadius.chip),
                   ),
                   child: const Icon(
                     Icons.payments_rounded,

@@ -35,7 +35,7 @@ class _AccentCard extends StatelessWidget {
       margin: const EdgeInsets.only(bottom: 8),
       decoration: BoxDecoration(
         color: AppColors.surfaceCard,
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(AppRadius.card),
         border: Border.all(color: AppColors.borderDefault),
       ),
       clipBehavior: Clip.antiAlias,
@@ -279,7 +279,7 @@ class _ReportCard extends StatelessWidget {
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: AppColors.surfaceCard,
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(AppRadius.card),
         border: const Border(
           left: BorderSide(color: AppColors.neutral600, width: 4),
           top: BorderSide(color: AppColors.borderDefault),

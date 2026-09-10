@@ -67,7 +67,7 @@ class AppStatCard extends StatelessWidget {
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: AppColors.surfaceCard,
-        borderRadius: BorderRadius.circular(18),
+        borderRadius: BorderRadius.circular(AppRadius.sheet),
         border: Border.all(color: AppColors.borderDefault),
       ),
       child: Column(
@@ -82,7 +82,7 @@ class AppStatCard extends StatelessWidget {
                 height: 36,
                 decoration: BoxDecoration(
                   color: iconBackground,
-                  borderRadius: BorderRadius.circular(10),
+                  borderRadius: BorderRadius.circular(AppRadius.chip),
                 ),
                 child: Icon(icon, size: 18, color: iconColor),
               ),
@@ -96,7 +96,7 @@ class AppStatCard extends StatelessWidget {
                     color: (badgeColor ?? AppColors.primary500).withValues(
                       alpha: 0.1,
                     ),
-                    borderRadius: BorderRadius.circular(999),
+                    borderRadius: BorderRadius.circular(AppRadius.pill),
                   ),
                   child: Text(
                     badge!,

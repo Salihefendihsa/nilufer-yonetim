@@ -117,9 +117,9 @@ class _StaffListScreenState extends State<StaffListScreen> {
               .toUpperCase();
           return Material(
             color: AppColors.surfaceCard,
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: BorderRadius.circular(AppRadius.card),
             child: InkWell(
-              borderRadius: BorderRadius.circular(16),
+              borderRadius: BorderRadius.circular(AppRadius.card),
               onTap: () => Navigator.of(context).push(
                 MaterialPageRoute(
                   builder: (_) => StaffDetailScreen(staffId: s.id),
@@ -128,7 +128,7 @@ class _StaffListScreenState extends State<StaffListScreen> {
               child: Container(
                 padding: const EdgeInsets.all(14),
                 decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(16),
+                  borderRadius: BorderRadius.circular(AppRadius.card),
                   border: Border.all(color: AppColors.borderDefault),
                 ),
                 child: Row(
@@ -237,7 +237,7 @@ class _StaffListScreenState extends State<StaffListScreen> {
                       ),
                       decoration: BoxDecoration(
                         color: color.withValues(alpha: 0.12),
-                        borderRadius: BorderRadius.circular(999),
+                        borderRadius: BorderRadius.circular(AppRadius.pill),
                       ),
                       child: Text(
                         staffStatusLabelTr(s.status),
@@ -270,7 +270,7 @@ class _Pill extends StatelessWidget {
     padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
     decoration: BoxDecoration(
       color: color.withValues(alpha: 0.10),
-      borderRadius: BorderRadius.circular(999),
+      borderRadius: BorderRadius.circular(AppRadius.pill),
     ),
     child: Text(
       text,

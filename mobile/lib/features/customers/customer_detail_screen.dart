@@ -190,7 +190,7 @@ class _CustomerDetailScreenState extends State<CustomerDetailScreen>
                     color: (c.outstandingBalance ?? 0) > 0
                         ? AppColors.danger50
                         : AppColors.success50,
-                    borderRadius: BorderRadius.circular(10),
+                    borderRadius: BorderRadius.circular(AppRadius.chip),
                   ),
                   child: Text(
                     'Bakiye: ${_currency.format(c.outstandingBalance)}',
@@ -346,7 +346,7 @@ class _JobRowState extends State<_JobRow> {
     return ListTile(
       tileColor: AppColors.surfaceCard,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(AppRadius.card),
         side: const BorderSide(color: AppColors.borderDefault),
       ),
       title: Text(
@@ -407,7 +407,7 @@ class _ContractsTab extends StatelessWidget {
           return ListTile(
             tileColor: AppColors.surfaceCard,
             shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(14),
+              borderRadius: BorderRadius.circular(AppRadius.card),
               side: const BorderSide(color: AppColors.borderDefault),
             ),
             title: Text(
@@ -451,7 +451,7 @@ class _PaymentsTab extends StatelessWidget {
           return ListTile(
             tileColor: AppColors.surfaceCard,
             shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(14),
+              borderRadius: BorderRadius.circular(AppRadius.card),
               side: const BorderSide(color: AppColors.borderDefault),
             ),
             title: Text(

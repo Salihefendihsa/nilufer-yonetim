@@ -259,7 +259,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             decoration: BoxDecoration(
               color: AppColors.surfaceCard,
-              borderRadius: BorderRadius.circular(18),
+              borderRadius: BorderRadius.circular(AppRadius.sheet),
               border: Border.all(color: AppColors.borderDefault),
             ),
             child: Column(
@@ -281,7 +281,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                         SizedBox(
                           width: 90,
                           child: ClipRRect(
-                            borderRadius: BorderRadius.circular(999),
+                            borderRadius: BorderRadius.circular(AppRadius.pill),
                             child: LinearProgressIndicator(
                               value: s.todaysJobsCount > 0
                                   ? entry.count / s.todaysJobsCount
@@ -328,7 +328,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
           Container(
             decoration: BoxDecoration(
               color: AppColors.surfaceCard,
-              borderRadius: BorderRadius.circular(18),
+              borderRadius: BorderRadius.circular(AppRadius.sheet),
               border: Border.all(color: AppColors.borderDefault),
             ),
             child: Column(
@@ -435,7 +435,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
           decoration: BoxDecoration(
             color: AppColors.surfaceCard,
-            borderRadius: BorderRadius.circular(18),
+            borderRadius: BorderRadius.circular(AppRadius.sheet),
             border: Border.all(color: AppColors.borderDefault),
           ),
           child: Column(
@@ -499,7 +499,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   padding: const EdgeInsets.all(14),
                   decoration: BoxDecoration(
                     color: AppColors.surfaceCard,
-                    borderRadius: BorderRadius.circular(16),
+                    borderRadius: BorderRadius.circular(AppRadius.card),
                     border: Border.all(color: AppColors.borderDefault),
                   ),
                   child: Column(
@@ -566,7 +566,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       if (w.dailyJobCapacity != null) ...[
                         const SizedBox(height: 8),
                         ClipRRect(
-                          borderRadius: BorderRadius.circular(999),
+                          borderRadius: BorderRadius.circular(AppRadius.pill),
                           child: LinearProgressIndicator(
                             value: (w.todaysJobsCount / w.dailyJobCapacity!)
                                 .clamp(0.0, 1.0),
@@ -679,7 +679,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
             color: AppColors.surfaceCard,
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: BorderRadius.circular(AppRadius.card),
             border: Border.all(color: AppColors.borderDefault),
           ),
           child: Column(
@@ -714,7 +714,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
               const SizedBox(height: 10),
               if (total > 0)
                 ClipRRect(
-                  borderRadius: BorderRadius.circular(999),
+                  borderRadius: BorderRadius.circular(AppRadius.pill),
                   child: SizedBox(
                     height: 8,
                     child: Row(
@@ -753,7 +753,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
               decoration: BoxDecoration(
                 color: AppColors.success50,
-                borderRadius: BorderRadius.circular(999),
+                borderRadius: BorderRadius.circular(AppRadius.pill),
               ),
               child: Text(
                 '$active Aktif',
@@ -933,7 +933,7 @@ class _StaffJobCardState extends State<_StaffJobCard> {
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: AppColors.surfaceCard,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(AppRadius.card),
         border: Border.all(
           color: job.status == JobStatus.inProgress
               ? AppColors.primary500
@@ -961,7 +961,7 @@ class _StaffJobCardState extends State<_StaffJobCard> {
                 ),
                 decoration: BoxDecoration(
                   color: _statusColor(job.status).withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(999),
+                  borderRadius: BorderRadius.circular(AppRadius.pill),
                 ),
                 child: Text(
                   jobStatusLabelTr(job.status),

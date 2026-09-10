@@ -179,7 +179,7 @@ class _ContractsListScreenState extends State<ContractsListScreen> {
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
                 color: AppColors.danger50,
-                borderRadius: BorderRadius.circular(14),
+                borderRadius: BorderRadius.circular(AppRadius.card),
                 border: Border.all(color: AppColors.danger500),
               ),
               child: Text(
@@ -198,7 +198,7 @@ class _ContractsListScreenState extends State<ContractsListScreen> {
                 padding: const EdgeInsets.all(14),
                 decoration: BoxDecoration(
                   color: AppColors.surfaceCard,
-                  borderRadius: BorderRadius.circular(16),
+                  borderRadius: BorderRadius.circular(AppRadius.card),
                   border: Border.all(color: AppColors.borderDefault),
                 ),
                 child: Column(
@@ -223,7 +223,7 @@ class _ContractsListScreenState extends State<ContractsListScreen> {
                           ),
                           decoration: BoxDecoration(
                             color: AppColors.surfaceSubtle,
-                            borderRadius: BorderRadius.circular(999),
+                            borderRadius: BorderRadius.circular(AppRadius.pill),
                           ),
                           child: Text(
                             contractStatusLabelTr(c.status),
@@ -575,7 +575,7 @@ class _MyContractsScreenState extends State<MyContractsScreen> {
                     padding: const EdgeInsets.all(14),
                     decoration: BoxDecoration(
                       color: AppColors.surfaceCard,
-                      borderRadius: BorderRadius.circular(16),
+                      borderRadius: BorderRadius.circular(AppRadius.card),
                       border: Border.all(color: AppColors.borderDefault),
                     ),
                     child: Column(

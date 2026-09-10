@@ -93,7 +93,7 @@ class AppDrawer extends StatelessWidget {
                           ),
                           decoration: BoxDecoration(
                             color: Colors.white.withValues(alpha: 0.18),
-                            borderRadius: BorderRadius.circular(999),
+                            borderRadius: BorderRadius.circular(AppRadius.pill),
                           ),
                           child: Text(
                             roleLabel,

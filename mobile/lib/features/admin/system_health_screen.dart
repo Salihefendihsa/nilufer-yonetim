@@ -137,7 +137,7 @@ class _SystemHealthScreenState extends State<SystemHealthScreen> {
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
                       color: AppColors.danger50,
-                      borderRadius: BorderRadius.circular(14),
+                      borderRadius: BorderRadius.circular(AppRadius.card),
                     ),
                     child: Text(
                       _error!,
@@ -267,7 +267,7 @@ class _HealthPill extends StatelessWidget {
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: AppColors.surfaceCard,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(AppRadius.card),
         border: Border.all(color: AppColors.borderDefault),
       ),
       child: Row(
@@ -277,7 +277,7 @@ class _HealthPill extends StatelessWidget {
             height: 34,
             decoration: BoxDecoration(
               color: color.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(10),
+              borderRadius: BorderRadius.circular(AppRadius.chip),
             ),
             child: Icon(icon, size: 17, color: color),
           ),
@@ -326,7 +326,7 @@ class _StatTile extends StatelessWidget {
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: AppColors.surfaceCard,
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(AppRadius.card),
         border: Border.all(color: AppColors.borderDefault),
       ),
       child: Column(
@@ -374,7 +374,7 @@ class _TrafficRow extends StatelessWidget {
           ),
           Expanded(
             child: ClipRRect(
-              borderRadius: BorderRadius.circular(999),
+              borderRadius: BorderRadius.circular(AppRadius.pill),
               child: LinearProgressIndicator(
                 value: sample.requests / maxRequests,
                 minHeight: 8,

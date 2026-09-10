@@ -233,7 +233,7 @@ class _AuditLogTabState extends State<_AuditLogTab> {
                 ),
                 Expanded(
                   child: ClipRRect(
-                    borderRadius: BorderRadius.circular(999),
+                    borderRadius: BorderRadius.circular(AppRadius.pill),
                     child: LinearProgressIndicator(
                       value: maxCount == 0 ? 0 : r.count / maxCount,
                       minHeight: 8,
@@ -289,7 +289,7 @@ class _AuditLogTabState extends State<_AuditLogTab> {
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
               color: AppColors.surfaceCard,
-              borderRadius: BorderRadius.circular(14),
+              borderRadius: BorderRadius.circular(AppRadius.card),
               border: Border.all(color: AppColors.borderDefault),
             ),
             child: Column(
@@ -414,10 +414,10 @@ class _SettingsTabState extends State<_SettingsTab> {
         // DistrictsSection — mobilde daha önce hiç yoktu.
         Material(
           color: AppColors.surfaceCard,
-          borderRadius: BorderRadius.circular(14),
+          borderRadius: BorderRadius.circular(AppRadius.card),
           child: ListTile(
             shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(14),
+              borderRadius: BorderRadius.circular(AppRadius.card),
               side: const BorderSide(color: AppColors.borderDefault),
             ),
             leading: const Icon(
@@ -445,10 +445,10 @@ class _SettingsTabState extends State<_SettingsTab> {
         const SizedBox(height: 8),
         Material(
           color: AppColors.surfaceCard,
-          borderRadius: BorderRadius.circular(14),
+          borderRadius: BorderRadius.circular(AppRadius.card),
           child: ListTile(
             shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(14),
+              borderRadius: BorderRadius.circular(AppRadius.card),
               side: const BorderSide(color: AppColors.borderDefault),
             ),
             leading: const Icon(

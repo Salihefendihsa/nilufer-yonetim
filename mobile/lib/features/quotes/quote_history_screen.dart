@@ -82,7 +82,7 @@ class _QuoteHistoryScreenState extends State<QuoteHistoryScreen> {
                     padding: const EdgeInsets.all(14),
                     decoration: BoxDecoration(
                       color: AppColors.surfaceCard,
-                      borderRadius: BorderRadius.circular(16),
+                      borderRadius: BorderRadius.circular(AppRadius.card),
                       border: Border.all(color: AppColors.borderDefault),
                     ),
                     child: Column(

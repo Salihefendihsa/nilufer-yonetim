@@ -132,7 +132,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         color: AppColors.surfaceCard,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(AppRadius.card),
         border: Border.all(color: AppColors.borderDefault),
       ),
       child: Column(
@@ -166,7 +166,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
           if (today != null && today > 0) ...[
             const SizedBox(height: 8),
             ClipRRect(
-              borderRadius: BorderRadius.circular(999),
+              borderRadius: BorderRadius.circular(AppRadius.pill),
               child: LinearProgressIndicator(
                 value: (c.todayJobCount / today).clamp(0.0, 1.0),
                 minHeight: 6,
@@ -328,7 +328,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
                 ),
                 Expanded(
                   child: ClipRRect(
-                    borderRadius: BorderRadius.circular(999),
+                    borderRadius: BorderRadius.circular(AppRadius.pill),
                     child: LinearProgressIndicator(
                       value: maxCount == 0 ? 0 : counts[i] / maxCount,
                       minHeight: 8,
@@ -471,7 +471,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
               child: ListTile(
                 tileColor: AppColors.surfaceCard,
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(14),
+                  borderRadius: BorderRadius.circular(AppRadius.card),
                   side: const BorderSide(color: AppColors.borderDefault),
                 ),
                 title: Text(

@@ -65,3 +65,21 @@ class AppColors {
   static const textFaint = Color(0xFF8B9A8E);
   static const textInverse = Color(0xFFFFFFFF);
 }
+
+/// Köşe yarıçapı token'ları — önceden ekran ekran serbestçe seçilen
+/// (14/16/18/vb.) değerler yerine, kavrama göre tek bir kaynak.
+class AppRadius {
+  AppRadius._();
+
+  /// Liste satırı / bölüm kartı kabukları (Material+InkWell+Container).
+  static const double card = 16;
+
+  /// Modal, alt sayfa (bottom sheet) gibi daha büyük yüzeyler.
+  static const double sheet = 18;
+
+  /// Küçük rozet/etiket kutuları (ör. durum rozeti arka planı).
+  static const double chip = 10;
+
+  /// Hap biçimli (pill) rozetler — tam yuvarlak kenar.
+  static const double pill = 999;
+}
