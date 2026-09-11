@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Plus, Wallet, TrendingUp, Receipt, AlertCircle, PiggyBank, Check, X, HandCoins, FileSpreadsheet, FileDown } from "lucide-react";
+import { ExpensesTab } from "./ExpensesTab";
 import { RequireRole } from "@/components/RequireRole";
 import { PageHeader } from "@/components/PageHeader";
 import { StatCard } from "@/components/StatCard";
@@ -35,7 +36,10 @@ export default function PaymentsPage() {
   );
 }
 
+type PageTab = "payments" | "expenses";
+
 function PaymentsPageContent() {
+  const [tab, setTab] = useState<PageTab>("payments");
   const [summary, setSummary] = useState<PaymentsSummary | null>(null);
   const [payments, setPayments] = useState<Payment[]>([]);
   const [customers, setCustomers] = useState<Customer[]>([]);
@@ -170,6 +174,33 @@ function PaymentsPageContent() {
         }
       />
 
+      <div className="flex w-fit gap-1 rounded-2xl border border-border bg-surface-card p-1 shadow-card">
+        <button
+          type="button"
+          onClick={() => setTab("payments")}
+          className={`flex items-center gap-1.5 rounded-xl px-3.5 py-2 text-sm font-medium transition ${
+            tab === "payments" ? "bg-primary-600 text-white shadow-card" : "text-text-secondary hover:bg-surface-subtle"
+          }`}
+        >
+          <Wallet size={14} strokeWidth={1.75} />
+          Tahsilatlar
+        </button>
+        <button
+          type="button"
+          onClick={() => setTab("expenses")}
+          className={`flex items-center gap-1.5 rounded-xl px-3.5 py-2 text-sm font-medium transition ${
+            tab === "expenses" ? "bg-primary-600 text-white shadow-card" : "text-text-secondary hover:bg-surface-subtle"
+          }`}
+        >
+          <Receipt size={14} strokeWidth={1.75} />
+          Giderler
+        </button>
+      </div>
+
+      {tab === "expenses" ? (
+        <ExpensesTab />
+      ) : (
+        <>
       {error && <p className="rounded-2xl border border-danger-100 bg-danger-50 px-4 py-3 text-sm text-danger-500">{error}</p>}
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
@@ -315,6 +346,8 @@ function PaymentsPageContent() {
       />
 
       <PaymentFormModal open={formOpen} onClose={() => setFormOpen(false)} onSaved={load} customers={customers} />
+        </>
+      )}
     </div>
   );
 }

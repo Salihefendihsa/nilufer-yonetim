@@ -55,3 +55,35 @@ sözleşmelerini ve varsayılan (spec'te belirtilmemiş) iş kurallarını kayde
   ve gerçek PDF byte'ları (`file` komutu "PDF document" doğruladı)
   teyit edildi. Salt okunur uçlar olduğu için test verisi oluşturulmadı,
   temizlik gerekmedi.
+
+## Bölüm C — Gider (Expense) Takibi
+
+- `Expense`: `category` (FUEL/CHEMICALS/EQUIPMENT/RENT/UTILITIES/OTHER),
+  `amount`, `description?`, `date`, `recordedByUserId`, `receiptUrl?`.
+  CRUD tamamı OWNER/MANAGER — `router.use(requireRole(OWNER, MANAGER))`
+  ile tüm alt uçlar tek satırda korunuyor (leaveRequests/expenses ile
+  aynı desen).
+- `GET /expenses` — `category` ve `month` (`YYYY-MM`) query filtreleri;
+  liste `date desc` sıralı, sayfalanmış.
+- Net kâr formülü güncellendi: `netProfitThisMonth = thisMonthTotal -
+  totalStaffSalaryBase - totalExpensesThisMonth` (bkz.
+  `paymentsController.ts:getPaymentsSummary`). `view_finance` görünürlük
+  kuralına dokunulmadı — formül yalnızca zaten görebilenler için hesaplanıyor.
+  Yeni alan: `summary.totalExpensesThisMonth`.
+- **Yan düzeltme (bug, bu değişikliği yaparken fark edildi)**: personel
+  maaş toplamı (`staffSalaryAgg`) `archivedAt: null` filtrelemiyordu —
+  terfi/işten çıkarma sonrası arşivlenen bir personelin maaşı net kârdan
+  düşülmeye SONSUZA KADAR devam ediyordu. Artık yalnızca aktif personel
+  sayılıyor.
+- Web: Para sayfasına "Tahsilatlar | Giderler" sekme geçişi eklendi
+  (personel sayfasındaki sekme deseniyle aynı). Giderler sekmesi:
+  kategori bazlı StatCard özetleri, kategori filtre çipleri, liste,
+  düzenle/sil, "Yeni Gider" formu (modal).
+- Mobile: `finance_screen.dart` artık bir `TabController` ile
+  "Tahsilatlar"/"Giderler" sekmelerine ayrıldı — AppBar'daki "+" butonu
+  aktif sekmeye göre farklı form ekranı açar (Excel dışa aktarma yalnızca
+  Tahsilatlar sekmesinde görünür, gider dışa aktarma spec'te yoktu).
+- Doğrulama: birkaç test gideri eklenip net kârın tam beklenen miktarda
+  (800₺ eklenince -800 delta) değiştiği curl ile doğrulandı; ardından
+  test kayıtları (2 gider + 1 audit log) ID bazlı silinip net kârın tam
+  eski değerine (`-314500`) döndüğü tekrar doğrulandı.

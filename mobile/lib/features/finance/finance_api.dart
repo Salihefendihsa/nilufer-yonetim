@@ -139,8 +139,122 @@ class Payment {
   );
 }
 
+String expenseCategoryLabelTr(String category) {
+  switch (category) {
+    case 'FUEL':
+      return 'Yakıt';
+    case 'CHEMICALS':
+      return 'Kimyasal/İlaç';
+    case 'EQUIPMENT':
+      return 'Ekipman';
+    case 'RENT':
+      return 'Kira';
+    case 'UTILITIES':
+      return 'Faturalar';
+    case 'OTHER':
+      return 'Diğer';
+    default:
+      return category;
+  }
+}
+
+const List<String> expenseCategories = [
+  'FUEL',
+  'CHEMICALS',
+  'EQUIPMENT',
+  'RENT',
+  'UTILITIES',
+  'OTHER',
+];
+
+class Expense {
+  final String id;
+  final String category;
+  final double amount;
+  final String? description;
+  final String date;
+  final String? recordedByUserName;
+
+  Expense({
+    required this.id,
+    required this.category,
+    required this.amount,
+    this.description,
+    required this.date,
+    this.recordedByUserName,
+  });
+
+  factory Expense.fromJson(Map<String, dynamic> json) => Expense(
+    id: json['id'] as String,
+    category: json['category'] as String,
+    amount: decimalOr(json['amount']),
+    description: json['description'] as String?,
+    date: json['date'] as String,
+    recordedByUserName:
+        (json['recordedByUser'] as Map<String, dynamic>?)?['fullName']
+            as String?,
+  );
+}
+
 class FinanceApi {
   final _api = ApiClient.instance;
+
+  Future<Paginated<Expense>> listExpenses({
+    int page = 1,
+    String? category,
+  }) async {
+    final json = await _api.get<Map<String, dynamic>>(
+      '/expenses',
+      query: {
+        'page': page,
+        'limit': 20,
+        if (category != null && category.isNotEmpty) 'category': category,
+      },
+    );
+    return Paginated.fromJson(json, Expense.fromJson);
+  }
+
+  Future<Expense> createExpense({
+    required String category,
+    required double amount,
+    String? description,
+    required String date,
+  }) async {
+    final json = await _api.post<Map<String, dynamic>>(
+      '/expenses',
+      body: {
+        'category': category,
+        'amount': amount,
+        if (description != null && description.isNotEmpty)
+          'description': description,
+        'date': date,
+      },
+    );
+    return Expense.fromJson(json);
+  }
+
+  Future<Expense> updateExpense({
+    required String id,
+    required String category,
+    required double amount,
+    String? description,
+    required String date,
+  }) async {
+    final json = await _api.patch<Map<String, dynamic>>(
+      '/expenses/$id',
+      body: {
+        'category': category,
+        'amount': amount,
+        'description': description,
+        'date': date,
+      },
+    );
+    return Expense.fromJson(json);
+  }
+
+  Future<void> deleteExpense(String id) async {
+    await _api.delete('/expenses/$id');
+  }
 
   /// Yalnızca OWNER/MANAGER (+ view_finance izni olan STAFF) —
   /// backend/src/routes/payments.ts:11.

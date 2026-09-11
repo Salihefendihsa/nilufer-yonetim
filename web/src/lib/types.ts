@@ -575,6 +575,21 @@ export interface PaymentsSummary {
   /** Yalnızca OWNER veya view_finance yetkisi olanlara döner. */
   netProfitThisMonth?: number;
   profitMargin?: number | null;
+  totalExpensesThisMonth?: number;
+}
+
+export type ExpenseCategory = "FUEL" | "CHEMICALS" | "EQUIPMENT" | "RENT" | "UTILITIES" | "OTHER";
+
+export interface Expense {
+  id: string;
+  category: ExpenseCategory;
+  amount: number;
+  description: string | null;
+  date: string;
+  recordedByUserId: string;
+  receiptUrl: string | null;
+  createdAt: string;
+  recordedByUser?: { fullName: string };
 }
 
 /** GET /team/summary — şef ana sayfası (yalnızca doğrudan ekip kapsamı). */

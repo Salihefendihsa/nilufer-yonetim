@@ -38,6 +38,15 @@ enum ProductCategory {
   DISINFECTANT
 }
 
+enum ExpenseCategory {
+  FUEL
+  CHEMICALS
+  EQUIPMENT
+  RENT
+  UTILITIES
+  OTHER
+}
+
 /// Depo ikmal/satın alma talebi durumu (Stitch Müdür → Stok → "Satın Alma Talebi").
 enum PurchaseRequestStatus {
   PENDING
@@ -112,6 +121,7 @@ model User {
   impersonationsAsOwner  ImpersonationSession[] @relation("ImpersonationOwner")
   impersonationsAsTarget ImpersonationSession[] @relation("ImpersonationTarget")
   leaveRequestDecisions LeaveRequest[] @relation("LeaveRequestDecidedBy")
+  recordedExpenses Expense[]
 
   @@index([role])
 }
@@ -492,6 +502,25 @@ model Payment {
   @@index([customerId])
   @@index([paymentType])
   @@index([collectedByStaffId])
+}
+
+/// Gider takibi — net kâr hesaplaması artık tahsilat - personel maaş tabanı
+/// - o aydaki toplam gideri kullanır (bkz. paymentsController.ts:
+/// getPaymentsSummary). view_finance ile aynı görünürlük kuralı geçerli.
+model Expense {
+  id               String           @id @default(uuid())
+  category         ExpenseCategory
+  amount           Decimal          @db.Decimal(10, 2)
+  description      String?
+  date             DateTime
+  recordedByUserId String
+  receiptUrl       String?
+  createdAt        DateTime         @default(now())
+
+  recordedByUser User @relation(fields: [recordedByUserId], references: [id])
+
+  @@index([category])
+  @@index([date])
 }
 
 model Conversation {

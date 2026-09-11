@@ -37,8 +37,10 @@ class FinanceScreen extends StatefulWidget {
   State<FinanceScreen> createState() => _FinanceScreenState();
 }
 
-class _FinanceScreenState extends State<FinanceScreen> {
+class _FinanceScreenState extends State<FinanceScreen>
+    with SingleTickerProviderStateMixin {
   final _api = FinanceApi();
+  late final TabController _tabController;
   PaymentsSummary? _summary;
   List<Payment> _payments = [];
   bool _loading = true;
@@ -47,10 +49,83 @@ class _FinanceScreenState extends State<FinanceScreen> {
   String? _receiptDownloadingId;
   List<Map<String, dynamic>> _revenueTrend = [];
 
+  List<Expense> _expenses = [];
+  bool _loadingExpenses = true;
+  String? _expensesError;
+  String? _expenseCategoryFilter;
+  String? _deletingExpenseId;
+
   @override
   void initState() {
     super.initState();
+    _tabController = TabController(length: 2, vsync: this);
+    _tabController.addListener(() => setState(() {}));
     _load();
+    _loadExpenses();
+  }
+
+  @override
+  void dispose() {
+    _tabController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _loadExpenses() async {
+    setState(() {
+      _loadingExpenses = true;
+      _expensesError = null;
+    });
+    try {
+      final res = await _api.listExpenses(category: _expenseCategoryFilter);
+      setState(() => _expenses = res.data);
+    } catch (e) {
+      setState(
+        () => _expensesError = e is ApiException
+            ? e.message
+            : 'Giderler yüklenemedi',
+      );
+    } finally {
+      setState(() => _loadingExpenses = false);
+    }
+  }
+
+  Future<void> _deleteExpense(Expense expense) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Gideri Sil'),
+        content: const Text('Bu gideri silmek istediğinize emin misiniz?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: const Text('Vazgeç'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: const Text('Sil'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+    setState(() => _deletingExpenseId = expense.id);
+    try {
+      await _api.deleteExpense(expense.id);
+      await _loadExpenses();
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('Gider silindi.')));
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(e is ApiException ? e.message : 'Silinemedi')),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _deletingExpenseId = null);
+    }
   }
 
   Future<void> _exportExcel() async {
@@ -127,36 +202,216 @@ class _FinanceScreenState extends State<FinanceScreen> {
       appBar: AppBar(
         title: const Text('Para & Finans'),
         actions: [
-          IconButton(
-            icon: _exporting
-                ? const SizedBox(
-                    width: 18,
-                    height: 18,
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  )
-                : const Icon(Icons.file_download_outlined),
-            tooltip: 'Excel olarak dışa aktar',
-            onPressed: _exporting ? null : _exportExcel,
-          ),
+          if (_tabController.index == 0)
+            IconButton(
+              icon: _exporting
+                  ? const SizedBox(
+                      width: 18,
+                      height: 18,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : const Icon(Icons.file_download_outlined),
+              tooltip: 'Excel olarak dışa aktar',
+              onPressed: _exporting ? null : _exportExcel,
+            ),
           IconButton(
             icon: const Icon(Icons.add_rounded),
             onPressed: () async {
-              final created = await Navigator.of(context).push<bool>(
-                MaterialPageRoute(builder: (_) => const _PaymentFormScreen()),
-              );
-              if (created == true) {
-                _load();
-                if (mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Tahsilat kaydedildi.')),
-                  );
+              if (_tabController.index == 0) {
+                final created = await Navigator.of(context).push<bool>(
+                  MaterialPageRoute(builder: (_) => const _PaymentFormScreen()),
+                );
+                if (created == true) {
+                  _load();
+                  if (mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Tahsilat kaydedildi.')),
+                    );
+                  }
+                }
+              } else {
+                final created = await Navigator.of(context).push<bool>(
+                  MaterialPageRoute(builder: (_) => const _ExpenseFormScreen()),
+                );
+                if (created == true) {
+                  _loadExpenses();
+                  if (mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Gider kaydedildi.')),
+                    );
+                  }
                 }
               }
             },
           ),
         ],
+        bottom: TabBar(
+          controller: _tabController,
+          tabs: const [
+            Tab(text: 'Tahsilatlar'),
+            Tab(text: 'Giderler'),
+          ],
+        ),
       ),
-      body: _buildBody(),
+      body: TabBarView(
+        controller: _tabController,
+        children: [_buildBody(), _buildExpensesBody()],
+      ),
+    );
+  }
+
+  Widget _buildExpensesBody() {
+    if (_loadingExpenses) return const LoadingView();
+    if (_expensesError != null) {
+      return ErrorRetryView(message: _expensesError!, onRetry: _loadExpenses);
+    }
+
+    final categoryTotals = <String, double>{};
+    for (final e in _expenses) {
+      categoryTotals[e.category] = (categoryTotals[e.category] ?? 0) + e.amount;
+    }
+    final totalAmount = _expenses.fold<double>(0, (sum, e) => sum + e.amount);
+
+    return RefreshIndicator(
+      onRefresh: _loadExpenses,
+      color: AppColors.primary600,
+      child: ListView(
+        padding: const EdgeInsets.all(16),
+        children: [
+          StatCardGrid(
+            children: [
+              AppStatCard(
+                label: 'Toplam Gider',
+                value: _currency.format(totalAmount),
+                icon: Icons.receipt_long_rounded,
+                iconColor: AppColors.danger500,
+                iconBackground: AppColors.danger50,
+              ),
+              for (final entry in categoryTotals.entries)
+                AppStatCard(
+                  label: expenseCategoryLabelTr(entry.key),
+                  value: _currency.format(entry.value),
+                  icon: Icons.category_outlined,
+                ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          SizedBox(
+            height: 36,
+            child: ListView(
+              scrollDirection: Axis.horizontal,
+              children: [
+                _CategoryChip(
+                  label: 'Tümü',
+                  selected: _expenseCategoryFilter == null,
+                  onTap: () {
+                    setState(() => _expenseCategoryFilter = null);
+                    _loadExpenses();
+                  },
+                ),
+                for (final c in expenseCategories)
+                  Padding(
+                    padding: const EdgeInsets.only(left: 6),
+                    child: _CategoryChip(
+                      label: expenseCategoryLabelTr(c),
+                      selected: _expenseCategoryFilter == c,
+                      onTap: () {
+                        setState(() => _expenseCategoryFilter = c);
+                        _loadExpenses();
+                      },
+                    ),
+                  ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 16),
+          if (_expenses.isEmpty)
+            const EmptyStateView(
+              title: 'Henüz gider yok',
+              icon: Icons.receipt_long_outlined,
+            )
+          else
+            ..._expenses.map(
+              (e) => Padding(
+                padding: const EdgeInsets.only(bottom: 8),
+                child: Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: AppColors.surfaceCard,
+                    borderRadius: BorderRadius.circular(AppRadius.card),
+                    border: Border.all(color: AppColors.borderDefault),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              expenseCategoryLabelTr(e.category),
+                              style: const TextStyle(
+                                fontWeight: FontWeight.w600,
+                                fontSize: 13,
+                              ),
+                            ),
+                            Text(
+                              [
+                                _dateFormat.format(DateTime.parse(e.date)),
+                                if (e.description != null) e.description!,
+                                if (e.recordedByUserName != null)
+                                  e.recordedByUserName!,
+                              ].join(' · '),
+                              maxLines: 2,
+                              style: const TextStyle(
+                                fontSize: 11,
+                                color: AppColors.textFaint,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.end,
+                        children: [
+                          Text(
+                            _currency.format(e.amount),
+                            style: const TextStyle(
+                              fontWeight: FontWeight.w700,
+                              color: AppColors.danger500,
+                            ),
+                          ),
+                          SizedBox(
+                            width: 32,
+                            height: 32,
+                            child: _deletingExpenseId == e.id
+                                ? const Padding(
+                                    padding: EdgeInsets.all(8),
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                    ),
+                                  )
+                                : IconButton(
+                                    padding: EdgeInsets.zero,
+                                    iconSize: 18,
+                                    tooltip: 'Sil',
+                                    icon: const Icon(
+                                      Icons.delete_outline_rounded,
+                                      color: AppColors.textFaint,
+                                    ),
+                                    onPressed: () => _deleteExpense(e),
+                                  ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+        ],
+      ),
     );
   }
 
@@ -579,6 +834,159 @@ class _PaymentFormScreenState extends State<_PaymentFormScreen> {
                 ],
               ),
             ),
+    );
+  }
+}
+
+class _CategoryChip extends StatelessWidget {
+  final String label;
+  final bool selected;
+  final VoidCallback onTap;
+
+  const _CategoryChip({
+    required this.label,
+    required this.selected,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return ChoiceChip(
+      label: Text(label),
+      selected: selected,
+      onSelected: (_) => onTap(),
+      selectedColor: AppColors.primary600,
+      labelStyle: TextStyle(
+        color: selected ? Colors.white : AppColors.textSecondary,
+        fontSize: 12.5,
+        fontWeight: FontWeight.w600,
+      ),
+      backgroundColor: AppColors.surfaceCard,
+      side: BorderSide(color: AppColors.borderDefault),
+    );
+  }
+}
+
+class _ExpenseFormScreen extends StatefulWidget {
+  const _ExpenseFormScreen();
+
+  @override
+  State<_ExpenseFormScreen> createState() => _ExpenseFormScreenState();
+}
+
+class _ExpenseFormScreenState extends State<_ExpenseFormScreen> {
+  final _formKey = GlobalKey<FormState>();
+  final _amountController = TextEditingController();
+  final _descriptionController = TextEditingController();
+  final _financeApi = FinanceApi();
+  String _category = expenseCategories.first;
+  DateTime _date = DateTime.now();
+  bool _saving = false;
+  String? _error;
+
+  Future<void> _submit() async {
+    if (!_formKey.currentState!.validate()) return;
+    setState(() {
+      _saving = true;
+      _error = null;
+    });
+    try {
+      await _financeApi.createExpense(
+        category: _category,
+        amount: double.parse(_amountController.text.trim()),
+        description: _descriptionController.text.trim(),
+        date: _date.toIso8601String(),
+      );
+      if (mounted) Navigator.of(context).pop(true);
+    } catch (e) {
+      setState(() => _error = e is ApiException ? e.message : 'Kaydedilemedi');
+    } finally {
+      if (mounted) setState(() => _saving = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text('Yeni Gider')),
+      body: Form(
+        key: _formKey,
+        child: ListView(
+          padding: const EdgeInsets.all(16),
+          children: [
+            DropdownButtonFormField<String>(
+              initialValue: _category,
+              isExpanded: true,
+              decoration: const InputDecoration(labelText: 'Kategori *'),
+              items: expenseCategories
+                  .map(
+                    (c) => DropdownMenuItem(
+                      value: c,
+                      child: Text(expenseCategoryLabelTr(c)),
+                    ),
+                  )
+                  .toList(),
+              onChanged: (v) => setState(() => _category = v ?? _category),
+            ),
+            const SizedBox(height: 12),
+            TextFormField(
+              controller: _amountController,
+              keyboardType: const TextInputType.numberWithOptions(
+                decimal: true,
+              ),
+              decoration: const InputDecoration(labelText: 'Tutar (₺) *'),
+              validator: (v) =>
+                  (v == null || double.tryParse(v.trim()) == null)
+                  ? 'Geçerli bir tutar girin'
+                  : null,
+            ),
+            const SizedBox(height: 12),
+            InkWell(
+              onTap: () async {
+                final picked = await showDatePicker(
+                  context: context,
+                  initialDate: _date,
+                  firstDate: DateTime(2020),
+                  lastDate: DateTime.now(),
+                );
+                if (picked != null) setState(() => _date = picked);
+              },
+              child: InputDecorator(
+                decoration: const InputDecoration(labelText: 'Tarih *'),
+                child: Text(DateFormat('d MMM y', 'tr_TR').format(_date)),
+              ),
+            ),
+            const SizedBox(height: 12),
+            TextFormField(
+              controller: _descriptionController,
+              decoration: const InputDecoration(
+                labelText: 'Açıklama (opsiyonel)',
+              ),
+            ),
+            if (_error != null) ...[
+              const SizedBox(height: 12),
+              Text(
+                _error!,
+                style: const TextStyle(color: Colors.red, fontSize: 13),
+              ),
+            ],
+            const SizedBox(height: 20),
+            ElevatedButton(
+              onPressed: _saving ? null : _submit,
+              child: _saving
+                  ? const SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2.4,
+                        color: Colors.white,
+                      ),
+                    )
+                  : const Text('Kaydet'),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

@@ -99,6 +99,7 @@ export async function getPaymentsSummary(req: Request, res: Response) {
     lastMonthAgg,
     typeGrouped,
     monthlyRevenueTarget,
+    expensesThisMonthAgg,
   ] = await Promise.all([
     prisma.payment.aggregate({
       _sum: { amount: true },
@@ -107,7 +108,9 @@ export async function getPaymentsSummary(req: Request, res: Response) {
     prisma.payment.aggregate({ _sum: { amount: true } }),
     prisma.payment.count({ where: { createdAt: { gte: startOfMonth, lt: startOfNextMonth } } }),
     prisma.job.aggregate({ _sum: { price: true } }),
-    prisma.staff.aggregate({ _sum: { salaryBase: true } }),
+    // archivedAt: null — terfi/işten çıkarma sonucu arşivlenen personelin
+    // maaşı artık aktif bir yük değil, net kâr hesabına dahil edilmemeli.
+    prisma.staff.aggregate({ _sum: { salaryBase: true }, where: { archivedAt: null } }),
     prisma.advanceRequest.aggregate({ _sum: { amount: true }, _count: true, where: { status: AdvanceStatus.PENDING } }),
     // Stitch Müdür → Para: "geçen aya göre" trend rozeti.
     prisma.payment.aggregate({
@@ -122,6 +125,10 @@ export async function getPaymentsSummary(req: Request, res: Response) {
       where: { createdAt: { gte: startOfMonth, lt: startOfNextMonth } },
     }),
     getMonthlyRevenueTarget(),
+    prisma.expense.aggregate({
+      _sum: { amount: true },
+      where: { date: { gte: startOfMonth, lt: startOfNextMonth } },
+    }),
   ]);
 
   const totalPriced = Number(allJobsPriceAgg._sum.price ?? 0);
@@ -160,7 +167,11 @@ export async function getPaymentsSummary(req: Request, res: Response) {
 
   if (canViewFinance) {
     const totalStaffSalaryBase = Number(staffSalaryAgg._sum.salaryBase ?? 0);
-    const netProfitThisMonth = thisMonthTotal - totalStaffSalaryBase;
+    const totalExpensesThisMonth = Number(expensesThisMonthAgg._sum.amount ?? 0);
+    // Net kâr = bu ayki tahsilat - toplam maaş tabanı - o aydaki toplam gider
+    // (bkz. docs/NEW_FEATURES_TOUR.md Bölüm C).
+    const netProfitThisMonth = thisMonthTotal - totalStaffSalaryBase - totalExpensesThisMonth;
+    summary.totalExpensesThisMonth = totalExpensesThisMonth;
     summary.netProfitThisMonth = netProfitThisMonth;
     summary.profitMargin = thisMonthTotal > 0 ? (netProfitThisMonth / thisMonthTotal) * 100 : null;
   }
