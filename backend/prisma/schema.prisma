@@ -456,6 +456,10 @@ model Product {
   currentStock      Decimal  @db.Decimal(10, 2)
   criticalThreshold Decimal  @db.Decimal(10, 2)
   createdAt         DateTime @default(now())
+  /// Bölüm A: aynı gün içinde tekrar tekrar kritik stok bildirimi gitmesin
+  /// diye — stok kritik eşiğin üstüne çıkınca null'a sıfırlanır (bkz.
+  /// lib/reminders.ts:evaluateLowStockAlert).
+  lastLowStockAlertAt DateTime?
 
   movements         StockMovement[]
   jobReports        JobReport[]

@@ -9,6 +9,7 @@ import {
   sendContractExpiryReminders,
   sendCertificationExpiryReminders,
   sendDailyDigest,
+  sweepLowStockAlerts,
 } from "./reminders";
 
 /**
@@ -70,6 +71,13 @@ export function startReminderCrons() {
   // Süresi dolan personel mola/izin durumlarını temizle — her 5 dakikada bir.
   cron.schedule("*/5 * * * *", () => {
     resetExpiredStaffStatuses().catch((err) => console.error("Personel durumu sıfırlama başarısız:", err));
+  });
+
+  // Kritik stok uyarısı güvenlik ağı — her saat başı. checkLowStockAndNotify
+  // yalnızca iş raporu stok düşüşünde tetiklenir; bu tarama sayım/mal kabul
+  // gibi diğer yollardan düşen stokları da yakalar (bkz. lib/reminders.ts).
+  cron.schedule("0 * * * *", () => {
+    sweepLowStockAlerts().catch((err) => console.error("Kritik stok taraması başarısız:", err));
   });
 
   // Günlük hatırlatıcılar — 08:00.

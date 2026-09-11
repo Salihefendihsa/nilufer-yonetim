@@ -1,6 +1,6 @@
 import { Role, AdvanceStatus, JobStatus } from "@prisma/client";
 import { prisma } from "./prisma";
-import { notifyUser, notifyUsers } from "./notify";
+import { notifyUser, notifyUsers, notifyManagement } from "./notify";
 import { sendEmail } from "./email";
 
 const UPCOMING_JOB_WINDOW_START_MIN = 55;
@@ -35,20 +35,72 @@ async function notifyOwners(title: string, body: string, link?: Parameters<typeo
   }
 }
 
-/**
- * Checked right after a stock decrement (not on a cron tick) so the OWNER hears about a
- * critical shortage the moment it happens, not up to a day later.
- */
-export async function checkLowStockAndNotify(productId: string): Promise<void> {
-  const product = await prisma.product.findUnique({ where: { id: productId } });
-  if (!product) return;
-  if (Number(product.currentStock) > Number(product.criticalThreshold)) return;
+function isSameCalendarDay(a: Date, b: Date): boolean {
+  return a.toDateString() === b.toDateString();
+}
 
-  await notifyOwners(
+interface LowStockProduct {
+  id: string;
+  name: string;
+  unit: string;
+  currentStock: unknown;
+  criticalThreshold: unknown;
+  lastLowStockAlertAt: Date | null;
+}
+
+/**
+ * Bölüm A: hem işten hemen sonraki anlık kontrol (checkLowStockAndNotify) hem
+ * de saatlik güvenlik ağı taraması (sweepLowStockAlerts) bu TEK fonksiyonu
+ * kullanır — böylece iki tetikleyici asla aynı gün içinde çift bildirim
+ * göndermez (lastLowStockAlertAt ile aynı gün kontrolü). Stok kritik eşiğin
+ * üstüne çıkınca alan null'a döner ki bir sonraki düşüşte yeniden bildirim
+ * gitsin.
+ */
+async function evaluateLowStockAlert(product: LowStockProduct): Promise<boolean> {
+  const isCritical = Number(product.currentStock) <= Number(product.criticalThreshold);
+
+  if (!isCritical) {
+    if (product.lastLowStockAlertAt) {
+      await prisma.product.update({ where: { id: product.id }, data: { lastLowStockAlertAt: null } });
+    }
+    return false;
+  }
+
+  if (product.lastLowStockAlertAt && isSameCalendarDay(product.lastLowStockAlertAt, new Date())) {
+    return false;
+  }
+
+  await notifyManagement(
     "Kritik stok uyarısı",
     `${product.name} stoğu kritik seviyenin altına düştü (${Number(product.currentStock)} ${product.unit} kaldı).`,
     { type: "low_stock", relatedType: "Product", relatedId: product.id }
   );
+  await prisma.product.update({ where: { id: product.id }, data: { lastLowStockAlertAt: new Date() } });
+  return true;
+}
+
+/**
+ * Checked right after a stock decrement (not on a cron tick) so OWNER/MANAGER hear about a
+ * critical shortage the moment it happens, not up to an hour later.
+ */
+export async function checkLowStockAndNotify(productId: string): Promise<void> {
+  const product = await prisma.product.findUnique({ where: { id: productId } });
+  if (!product) return;
+  await evaluateLowStockAlert(product);
+}
+
+/**
+ * Saatlik güvenlik ağı (bkz. lib/cron.ts:startReminderCrons) — stok sayımı,
+ * mal kabul gibi checkLowStockAndNotify'ı hiç TETİKLEMEYEN yollardan düşen
+ * stokları da yakalar. Aynı gün içinde zaten bildirilmiş bir ürünü atlar.
+ */
+export async function sweepLowStockAlerts(): Promise<number> {
+  const products = await prisma.product.findMany();
+  let notifiedCount = 0;
+  for (const product of products) {
+    if (await evaluateLowStockAlert(product)) notifiedCount++;
+  }
+  return notifiedCount;
 }
 
 /** Every ~15 minutes: nudge staff whose job starts in about an hour. */
