@@ -16,6 +16,7 @@ import {
   Star,
   AlertTriangle,
   Network,
+  ClipboardList,
 } from "lucide-react";
 import { RequireRole } from "@/components/RequireRole";
 import { PageHeader } from "@/components/PageHeader";
@@ -31,6 +32,7 @@ import type { Staff, Paginated } from "@/lib/types";
 import { StaffFormModal } from "./StaffFormModal";
 import { PermissionsModal } from "./PermissionsModal";
 import { CertificationsModal } from "./CertificationsModal";
+import { EvaluationsModal } from "./EvaluationsModal";
 
 /**
  * Bugünkü iş sayısı, biten sertifika sayısı ve ortalama puan artık /staff
@@ -64,6 +66,7 @@ function StaffPageContent() {
   const [deleting, setDeleting] = useState(false);
   const [permissionsTarget, setPermissionsTarget] = useState<Staff | null>(null);
   const [certificationsTarget, setCertificationsTarget] = useState<Staff | null>(null);
+  const [evaluationsTarget, setEvaluationsTarget] = useState<Staff | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -290,6 +293,15 @@ function StaffPageContent() {
                 Belgeler
               </button>
 
+              <button
+                type="button"
+                onClick={() => setEvaluationsTarget(staff)}
+                className="flex items-center justify-center gap-2 rounded-xl border border-border bg-surface-base px-3 py-2 text-xs font-medium text-text-secondary transition hover:border-border-strong hover:bg-surface-subtle hover:text-text-primary"
+              >
+                <ClipboardList size={14} strokeWidth={1.75} />
+                Değerlendirmeler
+              </button>
+
               {user?.role === "OWNER" && (
                 <button
                   type="button"
@@ -310,6 +322,8 @@ function StaffPageContent() {
       <PermissionsModal open={!!permissionsTarget} onClose={() => setPermissionsTarget(null)} staff={permissionsTarget} />
 
       <CertificationsModal open={!!certificationsTarget} onClose={() => setCertificationsTarget(null)} staff={certificationsTarget} />
+
+      <EvaluationsModal open={!!evaluationsTarget} onClose={() => setEvaluationsTarget(null)} staff={evaluationsTarget} />
 
       <ConfirmDialog
         open={!!deleteTarget}

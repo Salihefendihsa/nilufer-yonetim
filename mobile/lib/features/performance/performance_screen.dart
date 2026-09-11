@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../core/api_client.dart';
 import '../../theme/app_colors.dart';
 import '../../widgets/state_views.dart';
+import '../evaluations/evaluations_screen.dart';
 
 class LeaderboardEntry {
   final String staffId;
@@ -325,6 +326,17 @@ class _PerformanceScreenState extends State<PerformanceScreen> {
               ? 'Performans'
               : 'Performans · ${_summary!.totalCompletedInPeriod} iş',
         ),
+        actions: [
+          // Formal Değerlendirme sistemi — mevcut liderlik tablosundan ayrı,
+          // bağımsız bir bölüm (web'deki "Değerlendirmeler" sekmesiyle aynı işlev).
+          IconButton(
+            icon: const Icon(Icons.checklist_rtl_outlined),
+            tooltip: 'Değerlendirmeler',
+            onPressed: () => Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => const EvaluationsScreen()),
+            ),
+          ),
+        ],
       ),
       body: _loading
           ? const LoadingView()

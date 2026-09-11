@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { Trophy, Target, Star, Users2, Award, TrendingUp, Timer } from "lucide-react";
+import { Trophy, Target, Star, Users2, Award, TrendingUp, Timer, ClipboardList } from "lucide-react";
 import { RequireRole } from "@/components/RequireRole";
 import { EmptyState } from "@/components/EmptyState";
 import { PageHeader } from "@/components/PageHeader";
@@ -10,6 +10,9 @@ import { ChartCard, RankBars, SimpleBarChart } from "@/components/ChartCard";
 import { Table, type Column } from "@/components/Table";
 import { api, ApiError } from "@/lib/api";
 import type { StaffLeaderboardEntry, StaffLeaderboardSummary, LeaderboardPeriod } from "@/lib/types";
+import { EvaluationsTab } from "./EvaluationsTab";
+
+type PageTab = "leaderboard" | "evaluations";
 
 const PERIOD_LABELS: Record<LeaderboardPeriod, string> = {
   this_month: "Bu Ay",
@@ -33,6 +36,7 @@ export default function PerformancePage() {
 }
 
 function PerformancePageContent() {
+  const [tab, setTab] = useState<PageTab>("leaderboard");
   const [entries, setEntries] = useState<StaffLeaderboardEntry[]>([]);
   const [summary, setSummary] = useState<StaffLeaderboardSummary | null>(null);
   const [monthlyTarget, setMonthlyTarget] = useState<number | null>(null);
@@ -178,6 +182,35 @@ function PerformancePageContent() {
         description="Tamamlanan iş sayısı ve ortalama müşteri puanına göre sıralama."
       />
 
+      {/* Mevcut basit Performans mantığı (tamamlanan iş + müşteri puanı) hiç
+          değişmedi — Formal Değerlendirme sistemi ayrı bir sekme olarak eklendi. */}
+      <div className="flex gap-1 rounded-2xl border border-border bg-surface-card p-1 shadow-card w-fit">
+        <button
+          type="button"
+          onClick={() => setTab("leaderboard")}
+          className={`flex items-center gap-1.5 rounded-xl px-3.5 py-2 text-sm font-medium transition ${
+            tab === "leaderboard" ? "bg-primary-600 text-white shadow-card" : "text-text-secondary hover:bg-surface-subtle"
+          }`}
+        >
+          <Trophy size={14} strokeWidth={1.75} />
+          Liderlik Tablosu
+        </button>
+        <button
+          type="button"
+          onClick={() => setTab("evaluations")}
+          className={`flex items-center gap-1.5 rounded-xl px-3.5 py-2 text-sm font-medium transition ${
+            tab === "evaluations" ? "bg-primary-600 text-white shadow-card" : "text-text-secondary hover:bg-surface-subtle"
+          }`}
+        >
+          <ClipboardList size={14} strokeWidth={1.75} />
+          Değerlendirmeler
+        </button>
+      </div>
+
+      {tab === "evaluations" ? (
+        <EvaluationsTab />
+      ) : (
+        <>
       {error && <p className="rounded-2xl border border-danger-100 bg-danger-50 px-4 py-3 text-sm text-danger-500">{error}</p>}
 
       {/* [Dönem seçici] — Stitch Şef → Ekip Performansı: Bu Ay / Geçen Ay / Bu Yıl */}
@@ -314,6 +347,8 @@ function PerformancePageContent() {
       {/* [Detaylı tablo] */}
       {entries.length > 0 && (
         <Table columns={columns} data={entries} keyField={(row) => row.staffId} loading={loading} />
+      )}
+        </>
       )}
     </div>
   );

@@ -5,6 +5,7 @@ import {
   AlertTriangle,
   Bell,
   Building2,
+  ClipboardList,
   Download,
   HardDrive,
   Info,
@@ -24,7 +25,14 @@ import { Toggle } from "@/components/Toggle";
 import { useAuth } from "@/lib/AuthProvider";
 import { useToast } from "@/lib/ToastProvider";
 import { api, ApiError, downloadFile } from "@/lib/api";
-import type { District, NotificationPreference, ServiceType, SettingsMap, SystemHealth } from "@/lib/types";
+import type {
+  District,
+  EvaluationCriterion,
+  NotificationPreference,
+  ServiceType,
+  SettingsMap,
+  SystemHealth,
+} from "@/lib/types";
 
 export default function SettingsPage() {
   const { user } = useAuth();
@@ -51,6 +59,7 @@ export default function SettingsPage() {
               <ServiceTypesSection />
               <DistrictsSection />
             </div>
+            <EvaluationCriteriaSection />
             <BackupSection />
             <DangerZoneSection />
           </>
@@ -706,6 +715,201 @@ function DistrictsSection() {
             disabled={busy}
             className="btn-primary"
           >
+            <Plus size={16} strokeWidth={2} />
+            Ekle
+          </button>
+        </form>
+      </div>
+    </SectionCard>
+  );
+}
+
+/**
+ * Formal Değerlendirme sisteminin kriter kataloğu — mevcut basit Performans
+ * sayfasından (tamamlanan iş + müşteri puanı) bağımsız, ayrı bir bölüm.
+ * Hizmet Türleri/Bölgeler ile aynı CRUD stili (isim + isActive toggle),
+ * ek olarak opsiyonel bir açıklama alanı taşır.
+ */
+function EvaluationCriteriaSection() {
+  const [items, setItems] = useState<EvaluationCriterion[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [newName, setNewName] = useState("");
+  const [newDescription, setNewDescription] = useState("");
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editingName, setEditingName] = useState("");
+  const [busy, setBusy] = useState(false);
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    try {
+      const res = await api.get<{ data: EvaluationCriterion[] }>("/evaluation-criteria");
+      setItems(res.data);
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : "Kriterler yüklenemedi");
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    load();
+  }, [load]);
+
+  async function handleAdd(e: FormEvent) {
+    e.preventDefault();
+    if (!newName.trim()) return;
+    setBusy(true);
+    setError(null);
+    try {
+      await api.post("/evaluation-criteria", {
+        name: newName.trim(),
+        description: newDescription.trim() || undefined,
+      });
+      setNewName("");
+      setNewDescription("");
+      await load();
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : "Eklenemedi");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function handleRename(id: string) {
+    if (!editingName.trim()) return;
+    setBusy(true);
+    setError(null);
+    try {
+      await api.patch(`/evaluation-criteria/${id}`, { name: editingName.trim() });
+      setEditingId(null);
+      await load();
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : "Güncellenemedi");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function handleToggleActive(item: EvaluationCriterion) {
+    setBusy(true);
+    setError(null);
+    try {
+      if (item.isActive) {
+        await api.delete(`/evaluation-criteria/${item.id}`);
+      } else {
+        await api.patch(`/evaluation-criteria/${item.id}`, { isActive: true });
+      }
+      await load();
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : "Güncellenemedi");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <SectionCard
+      icon={ClipboardList}
+      title="Değerlendirme Kriterleri"
+      description="Personel değerlendirme formunda kullanılacak kriterler (1-20 arası puanlanır)."
+      action={
+        <span className="rounded-full bg-surface-subtle px-2.5 py-1 font-mono text-2xs text-text-faint">
+          {items.filter((i) => i.isActive).length} aktif
+        </span>
+      }
+    >
+      <div className="flex flex-col gap-4">
+        {error && <p className="rounded-2xl border border-danger-100 bg-danger-50 px-4 py-3 text-sm text-danger-500">{error}</p>}
+
+        {loading ? (
+          <p className="text-sm text-text-secondary">Yükleniyor...</p>
+        ) : (
+          <ul className="flex flex-col divide-y divide-border">
+            {items.map((item) => (
+              <li key={item.id} className="flex items-center justify-between gap-3 py-3">
+                {editingId === item.id ? (
+                  <input
+                    autoFocus
+                    value={editingName}
+                    onChange={(e) => setEditingName(e.target.value)}
+                    onKeyDown={(e) => e.key === "Enter" && handleRename(item.id)}
+                    className="input flex-1"
+                  />
+                ) : (
+                  <span className="flex flex-col">
+                    <span className={`text-sm ${item.isActive ? "text-text-primary" : "text-text-faint line-through"}`}>
+                      {item.name}
+                    </span>
+                    {item.description && <span className="text-xs text-text-faint">{item.description}</span>}
+                  </span>
+                )}
+
+                <div className="flex items-center gap-2">
+                  {editingId === item.id ? (
+                    <>
+                      <button
+                        type="button"
+                        disabled={busy}
+                        onClick={() => handleRename(item.id)}
+                        className="rounded-xl border border-primary-100 bg-primary-50 px-3 py-1.5 text-xs font-semibold text-primary-700 transition hover:bg-primary-100"
+                      >
+                        Kaydet
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setEditingId(null)}
+                        className="rounded-xl border border-border bg-surface-base px-3 py-1.5 text-xs font-medium text-text-secondary transition hover:bg-surface-subtle hover:text-text-primary"
+                      >
+                        Vazgeç
+                      </button>
+                    </>
+                  ) : (
+                    <>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setEditingId(item.id);
+                          setEditingName(item.name);
+                        }}
+                        aria-label="Düzenle"
+                        className="flex h-8 w-8 items-center justify-center rounded-xl text-text-faint transition hover:bg-surface-subtle hover:text-text-primary"
+                      >
+                        <Pencil size={15} strokeWidth={1.75} />
+                      </button>
+                      <button
+                        type="button"
+                        disabled={busy}
+                        onClick={() => handleToggleActive(item)}
+                        className={`rounded-xl px-3 py-1.5 text-xs font-medium transition hover:bg-surface-subtle ${
+                          item.isActive ? "text-danger-500" : "text-primary-600"
+                        }`}
+                      >
+                        {item.isActive ? "Pasifleştir" : "Aktifleştir"}
+                      </button>
+                    </>
+                  )}
+                </div>
+              </li>
+            ))}
+            {items.length === 0 && <p className="py-4 text-sm text-text-secondary">Henüz kriter eklenmemiş.</p>}
+          </ul>
+        )}
+
+        <form onSubmit={handleAdd} className="flex flex-col gap-3 sm:flex-row">
+          <input
+            value={newName}
+            onChange={(e) => setNewName(e.target.value)}
+            placeholder="Yeni kriter adı"
+            className="input flex-1"
+          />
+          <input
+            value={newDescription}
+            onChange={(e) => setNewDescription(e.target.value)}
+            placeholder="Açıklama (opsiyonel)"
+            className="input flex-1"
+          />
+          <button type="submit" disabled={busy} className="btn-primary shrink-0">
             <Plus size={16} strokeWidth={2} />
             Ekle
           </button>

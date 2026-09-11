@@ -473,6 +473,37 @@ class _SettingsTabState extends State<_SettingsTab> {
             ),
           ),
         ),
+        const SizedBox(height: 8),
+        Material(
+          color: AppColors.surfaceCard,
+          borderRadius: BorderRadius.circular(AppRadius.card),
+          child: ListTile(
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(AppRadius.card),
+              side: const BorderSide(color: AppColors.borderDefault),
+            ),
+            leading: const Icon(
+              Icons.checklist_rtl_outlined,
+              color: AppColors.primary700,
+            ),
+            title: const Text('Değerlendirme Kriterleri'),
+            trailing: const Icon(
+              Icons.chevron_right_rounded,
+              color: AppColors.textFaint,
+            ),
+            onTap: () => Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (_) => const NamedListSettingsScreen(
+                  title: 'Değerlendirme Kriterleri',
+                  description:
+                      'Personel değerlendirme formunda kullanılacak kriterler (1-20 arası puanlanır).',
+                  endpoint: '/evaluation-criteria',
+                  addHint: 'Yeni kriter adı',
+                ),
+              ),
+            ),
+          ),
+        ),
         const SizedBox(height: 20),
         if (_settings.isEmpty)
           const Padding(

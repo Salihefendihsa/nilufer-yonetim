@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../features/calendar/calendar_screen.dart';
 import '../features/dashboard/dashboard_screen.dart';
+import '../features/evaluations/evaluations_screen.dart';
 import '../features/jobs/jobs_list_screen.dart';
 import '../features/messages/messages_list_screen.dart';
 import '../features/notifications/notifications_screen.dart';
@@ -60,10 +61,18 @@ class _StaffShellState extends State<StaffShell> {
   static const _groups = <AppDrawerGroup>[
     AppDrawerGroup([
       AppDrawerEntry('Takvim', Icons.calendar_month_outlined, _buildCalendar),
+      // Formal Değerlendirme sistemi — kendi aldığı değerlendirmeleri salt
+      // okunur görür, değerlendirenin kimliği backend tarafından zaten gizlenir.
+      AppDrawerEntry(
+        'Değerlendirmelerim',
+        Icons.checklist_rtl_outlined,
+        _buildEvaluations,
+      ),
     ]),
   ];
 
   static Widget _buildCalendar(BuildContext _) => const CalendarScreen();
+  static Widget _buildEvaluations(BuildContext _) => const EvaluationsScreen();
 
   @override
   Widget build(BuildContext context) {

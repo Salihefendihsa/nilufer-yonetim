@@ -397,6 +397,51 @@ export interface District {
 
 export type JobPhotoType = "BEFORE" | "AFTER";
 
+export interface EvaluationCriterion {
+  id: string;
+  name: string;
+  description: string | null;
+  isActive: boolean;
+  sortOrder: number;
+  createdAt: string;
+}
+
+export interface EvaluationPeriod {
+  id: string;
+  label: string;
+  startDate: string;
+  endDate: string;
+  isLocked: boolean;
+  createdAt: string;
+}
+
+export type EvaluationStatus = "DRAFT" | "SUBMITTED" | "LOCKED";
+
+export interface EvaluationScoreItem {
+  id: string;
+  criterionId: string;
+  score: number;
+  criterion: EvaluationCriterion;
+}
+
+export interface Evaluation {
+  id: string;
+  /** OWNER/MANAGER için dolu; STAFF/TEAM_LEAD kendi kaydını görürken backend bu alanları hiç döndürmez. */
+  evaluatorUserId?: string;
+  evaluator?: { id: string; fullName: string };
+  targetStaffId: string;
+  periodId: string;
+  status: EvaluationStatus;
+  comment: string | null;
+  managerScore: number | null;
+  submittedAt: string | null;
+  lockedAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+  scores: EvaluationScoreItem[];
+  averageScore: number | null;
+}
+
 export interface JobPhoto {
   id: string;
   jobId: string;
