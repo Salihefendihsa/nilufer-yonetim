@@ -38,3 +38,31 @@ için bkz. `docs/NEW_FEATURES_TOUR.md`.
   `null`'a sıfırlandığı doğrulandı. Bu sentetik testin ürettiği 3 bildirim
   ID bazlı silindi; gerçek cron'un ürettiği (demo verideki gerçekten kritik
   ürünlere ait) bildirimler test verisi OLMADIĞI için dokunulmadı.
+
+
+## Bölüm B — Sözleşme Yenileme Hatırlatması
+
+- `Contract.lastRenewalAlertAt` (DateTime?) eklendi.
+- **Mevcut kodla ilişki (spec'te belirtilmemişti, netleştirildi)**: sistemde
+  zaten `sendContractExpiryReminders` vardı — 30 günlük pencere, günde bir
+  kez 08:00'de, sözleşme sayısını TOPLU bir özet olarak bildiren, dedup
+  alanı olmayan (zaten günde bir kez çalıştığı için buna ihtiyacı yoktu)
+  bir fonksiyon. Yeni `sweepContractRenewalAlerts` bunun YERİNE geçmiyor —
+  onunla BİRLİKTE, 7 gün veya daha az kalan sözleşmeler için SÖZLEŞME
+  BAZLI, daha aciliyetli ikinci bir hatırlatma katmanı ekliyor (30 gün =
+  "haberin olsun", 7 gün = "acele et"). İkisi de aynı 08:00 cron bloğunda
+  çalışıyor.
+- Dedup için Bölüm A'daki gibi ayrı bir "eşik üstüne çıkınca sıfırlama"
+  mantığına GEREK YOK — `lastRenewalAlertAt` yalnızca "bugün zaten
+  uyarıldı mı" kontrolü yapıyor; bir sözleşme yenilenip `endDate` uzatılırsa
+  otomatik olarak 7 günlük pencerenin dışına çıkar ve bir sonraki gerçek
+  yaklaşımda eski damga zaten "bugün değil" olduğu için doğal olarak
+  yeniden tetiklenir.
+- Web/Mobile UI değişikliği YOK — spec bunu istemiyordu.
+- Doğrulama: gerçek bir müşteriye bağlı, endDate'i 3 gün sonrası olan test
+  sözleşmesi oluşturuldu; tarama tetiklendi; OWNER+MANAGER'a (aynı anda
+  gerçekten yaklaşan BAŞKA bir sözleşme için de) toplam 6 bildirim oluştu;
+  lastRenewalAlertAt damgalandığı doğrulandı; aynı gün 2. taramanın hiçbir
+  yeni bildirim üretmediği (dedup) doğrulandı; test sözleşmesi VE yalnızca
+  ona ait 3 bildirim ID bazlı silindi, gerçek (test dışı) sözleşmeye ait
+  bildirimlere dokunulmadı.

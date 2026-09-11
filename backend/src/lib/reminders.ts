@@ -315,3 +315,40 @@ export async function sendDailyDigest(): Promise<number> {
 
   return eligibleOwners.length;
 }
+
+const RENEWAL_ALERT_WINDOW_DAYS = 7;
+
+/**
+ * Bölüm B (2. tur): mevcut `sendContractExpiryReminders` 30 günlük genel bir
+ * bilgilendirme özeti (toplam sayı, günde bir kez 08:00'de zaten çalışıyor).
+ * Bu fonksiyon AYRI ve daha aciliyetli — bitişine 7 gün veya daha az kalan
+ * HER sözleşme için ayrı ayrı, sözleşme bazlı `lastRenewalAlertAt` ile
+ * günlük dedup'lı bir hatırlatma gönderir. İkisi birbirinin yerini almaz,
+ * tamamlayıcıdır (30 gün = "haberin olsun", 7 gün = "acele et").
+ */
+export async function sweepContractRenewalAlerts(): Promise<number> {
+  const now = new Date();
+  const windowEnd = new Date(now);
+  windowEnd.setDate(windowEnd.getDate() + RENEWAL_ALERT_WINDOW_DAYS);
+
+  const contracts = await prisma.contract.findMany({
+    where: { status: "ACTIVE", endDate: { gte: now, lte: windowEnd } },
+    include: { customer: { select: { fullName: true } } },
+  });
+
+  let notifiedCount = 0;
+  for (const contract of contracts) {
+    if (contract.lastRenewalAlertAt && isSameCalendarDay(contract.lastRenewalAlertAt, now)) continue;
+
+    const daysLeft = Math.max(0, Math.ceil((contract.endDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)));
+    await notifyManagement(
+      "Sözleşme yenileme hatırlatması",
+      `${contract.customer.fullName} sözleşmesi ${daysLeft} gün içinde sona eriyor.`,
+      { type: "contract_renewal", relatedType: "Contract", relatedId: contract.id }
+    );
+    await prisma.contract.update({ where: { id: contract.id }, data: { lastRenewalAlertAt: now } });
+    notifiedCount++;
+  }
+
+  return notifiedCount;
+}

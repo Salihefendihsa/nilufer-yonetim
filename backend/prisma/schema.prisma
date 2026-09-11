@@ -547,6 +547,11 @@ model Contract {
   recurrenceType     RecurrenceType?
   nextGenerationDate DateTime?
   createdAt          DateTime        @default(now())
+  /// Bölüm B (2. tur): sözleşme bitişine 7 gün veya daha az kaldığında
+  /// günde bir kez OWNER/MANAGER'a hatırlatma gitsin diye — mevcut 30 günlük
+  /// bilgilendirici `sendContractExpiryReminders`'dan AYRI, daha aciliyetli
+  /// bir ikinci mekanizma (bkz. lib/reminders.ts:sweepContractRenewalAlerts).
+  lastRenewalAlertAt DateTime?
 
   customer Customer @relation(fields: [customerId], references: [id])
 

@@ -10,6 +10,7 @@ import {
   sendCertificationExpiryReminders,
   sendDailyDigest,
   sweepLowStockAlerts,
+  sweepContractRenewalAlerts,
 } from "./reminders";
 
 /**
@@ -86,6 +87,9 @@ export function startReminderCrons() {
     sendPendingApprovalReminders().catch((err) => console.error("Bekleyen onay hatırlatması başarısız:", err));
     sendContractExpiryReminders().catch((err) => console.error("Sözleşme bitiş hatırlatması başarısız:", err));
     sendCertificationExpiryReminders().catch((err) => console.error("Sertifika bitiş hatırlatması başarısız:", err));
+    // Bölüm B (2. tur): 7 gün veya daha az kalan sözleşmeler için sözleşme
+    // bazlı, daha aciliyetli ikinci bir hatırlatma — 30 günlük özetin YERİNE değil, yanına.
+    sweepContractRenewalAlerts().catch((err) => console.error("Sözleşme yenileme taraması başarısız:", err));
   });
 
   // Günlük özet emaili — 07:00.
