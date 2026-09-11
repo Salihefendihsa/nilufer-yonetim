@@ -114,6 +114,10 @@ export async function login(req: Request, res: Response) {
     return res.status(401).json({ error: "E-posta veya şifre hatalı" });
   }
 
+  if (!user.isActive) {
+    return res.status(403).json({ error: "Hesabınız devre dışı bırakılmış" });
+  }
+
   const session = await prisma.userSession.create({
     data: { userId: user.id, deviceInfo: req.headers["user-agent"] ?? undefined },
   });

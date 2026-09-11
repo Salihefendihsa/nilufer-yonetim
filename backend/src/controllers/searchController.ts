@@ -61,8 +61,11 @@ async function searchStaff(q: string, user: { role: Role; sub: string }): Promis
 
   const where =
     user.role === Role.TEAM_LEAD
-      ? { id: { in: await getTeamStaffIds(user.sub) }, user: { fullName: { contains: q, mode: "insensitive" as const } } }
-      : { user: { fullName: { contains: q, mode: "insensitive" as const } } };
+      ? {
+          id: { in: await getTeamStaffIds(user.sub) },
+          user: { fullName: { contains: q, mode: "insensitive" as const } },
+        }
+      : { archivedAt: null, user: { fullName: { contains: q, mode: "insensitive" as const } } };
 
   const staff = await prisma.staff.findMany({
     where,

@@ -9,6 +9,7 @@ class StaffApi {
     int page = 1,
     String? search,
     String? role,
+    bool includeArchived = false,
   }) async {
     final json = await _api.get<Map<String, dynamic>>(
       '/staff',
@@ -17,6 +18,9 @@ class StaffApi {
         'limit': 100,
         if (search != null && search.isNotEmpty) 'search': search,
         if (role != null) 'role': role,
+        // Yalnızca OWNER için anlamlı — "Geçmiş Personel" sekmesi
+        // (bkz. backend/src/controllers/staffController.ts:listStaff).
+        if (includeArchived) 'includeArchived': 'true',
       },
     );
     return Paginated.fromJson(json, Staff.fromJson);

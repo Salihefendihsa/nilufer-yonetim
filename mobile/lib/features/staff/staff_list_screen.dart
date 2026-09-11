@@ -35,6 +35,7 @@ class _StaffListScreenState extends State<StaffListScreen> {
   List<Staff> _staff = [];
   bool _loading = true;
   String? _error;
+  bool _showArchived = false;
 
   @override
   void initState() {
@@ -42,13 +43,15 @@ class _StaffListScreenState extends State<StaffListScreen> {
     _load();
   }
 
+  bool get _isOwner => context.read<AuthProvider>().user?.role == AppRole.owner;
+
   Future<void> _load() async {
     setState(() {
       _loading = true;
       _error = null;
     });
     try {
-      final res = await _api.list();
+      final res = await _api.list(includeArchived: _showArchived);
       setState(() => _staff = res.data);
     } catch (e) {
       setState(
@@ -71,9 +74,18 @@ class _StaffListScreenState extends State<StaffListScreen> {
     return Scaffold(
       backgroundColor: AppColors.surfacePage,
       appBar: AppBar(
-        title: const Text('Personel'),
+        title: Text(_showArchived ? 'Geçmiş Personel' : 'Personel'),
         actions: [
-          if (_canManage)
+          if (_isOwner)
+            IconButton(
+              icon: Icon(_showArchived ? Icons.groups_outlined : Icons.history_rounded),
+              tooltip: _showArchived ? 'Aktif Personel' : 'Geçmiş Personel',
+              onPressed: () {
+                setState(() => _showArchived = !_showArchived);
+                _load();
+              },
+            ),
+          if (_canManage && !_showArchived)
             IconButton(
               icon: const Icon(Icons.person_add_alt_1_rounded),
               tooltip: 'Yeni personel',

@@ -85,6 +85,10 @@ model User {
   /// kullanıcı zorunlu şifre değiştirme ekranına düşer, o ekranı/temel
   /// auth uçlarını dışında hiçbir uca erişemez (bkz. middleware/auth.ts).
   mustChangePassword Boolean @default(false)
+  /// İşten çıkarılan (terminate edilen) kullanıcı için false — login'de
+  /// reddedilir (bkz. middleware/auth.ts). Hiçbir veri silinmez, yalnızca
+  /// bu bayrakla gizlenir; POST /users/:id/reactivate ile geri açılır.
+  isActive     Boolean  @default(true)
   createdAt    DateTime @default(now())
 
   customer Customer?
@@ -189,6 +193,12 @@ model Staff {
   /// yüzde gösterilmez, yalnızca iş sayısı gösterilir (uydurma kapasite yok).
   dailyJobCapacity Int?
   createdAt    DateTime @default(now())
+  /// Doldurulmuşsa bu Staff kaydı "arşivlenmiş" sayılır — MÜDÜR'e terfi
+  /// (Staff kaydına artık ihtiyaç yok) veya işten çıkarma sonucu. Hiçbir
+  /// veri silinmez (maaş/iş/değerlendirme geçmişi korunur); aktif personel
+  /// sorgularının hepsi `archivedAt: null` ile filtrelenir. Düşürme/geri
+  /// aktif etmede null'a geri döner (aynı Staff kaydı yeniden kullanılır).
+  archivedAt   DateTime?
 
   user            User             @relation(fields: [userId], references: [id])
   jobs            Job[]            @relation("AssignedStaff")
@@ -201,6 +211,7 @@ model Staff {
 
   @@index([position])
   @@index([supervisorId])
+  @@index([archivedAt])
 }
 
 model StaffCertification {

@@ -387,6 +387,128 @@ class _StaffDetailScreenState extends State<StaffDetailScreen> {
     }
   }
 
+  /// Gerekçe soran ortak dialog — Terfi/Rol Değiştir/İşten Çıkar aynı deseni
+  /// paylaşır (web/src/app/(dashboard)/personel/ReasonModal.tsx ile aynı).
+  Future<String?> _askReason(String title, String description, {bool danger = false}) async {
+    final controller = TextEditingController();
+    return showDialog<String>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(title),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(description, style: const TextStyle(fontSize: 12.5)),
+            const SizedBox(height: 12),
+            TextField(
+              controller: controller,
+              decoration: const InputDecoration(labelText: 'Gerekçe'),
+              minLines: 2,
+              maxLines: 4,
+              autofocus: true,
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.of(ctx).pop(), child: const Text('Vazgeç')),
+          FilledButton(
+            style: danger ? FilledButton.styleFrom(backgroundColor: AppColors.danger500) : null,
+            onPressed: () => Navigator.of(ctx).pop(controller.text.trim()),
+            child: Text(danger ? 'Onayla' : 'Devam Et'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _promote() async {
+    final reason = await _askReason(
+      "Müdür'e Terfi Ettir",
+      "${_staff!.fullName} Müdür'e terfi ettirilecek. Personel kaydı arşivlenir (silinmez), "
+          "maaş/iş/değerlendirme geçmişi korunur.",
+    );
+    if (reason == null || reason.isEmpty) return;
+    try {
+      await ApiClient.instance.post('/staff/${_staff!.id}/promote-to-manager', body: {'reason': reason});
+      if (mounted) Navigator.of(context).pop(true);
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(e is ApiException ? e.message : 'Terfi ettirilemedi')),
+        );
+      }
+    }
+  }
+
+  Future<void> _swapRole() async {
+    final isTeamLead = _staff!.role == 'TEAM_LEAD';
+    final newRole = isTeamLead ? 'STAFF' : 'TEAM_LEAD';
+    final reason = await _askReason(
+      isTeamLead ? 'Personel Yap' : 'Şef Yap',
+      '${_staff!.fullName} ${isTeamLead ? 'Personel' : 'Ekip Lideri'} rolüne geçirilecek.',
+    );
+    if (reason == null || reason.isEmpty) return;
+    try {
+      await ApiClient.instance.patch(
+        '/staff/${_staff!.id}/role',
+        body: {'newRole': newRole, 'reason': reason},
+      );
+      _load();
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(e is ApiException ? e.message : 'Rol değiştirilemedi')),
+        );
+      }
+    }
+  }
+
+  Future<void> _terminate() async {
+    final reason = await _askReason(
+      'İşten Çıkar',
+      "${_staff!.fullName} işten çıkarılacak. Hesabı devre dışı kalır, tüm oturumları sonlanır; "
+          'hiçbir veri silinmez.',
+      danger: true,
+    );
+    if (reason == null || reason.isEmpty) return;
+    try {
+      await ApiClient.instance.post('/users/${_staff!.userId}/terminate', body: {'reason': reason});
+      if (mounted) Navigator.of(context).pop(true);
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(e is ApiException ? e.message : 'İşten çıkarılamadı')),
+        );
+      }
+    }
+  }
+
+  /// web/src/app/(dashboard)/personel/ArchivedStaffTab.tsx ile aynı akış —
+  /// "Geçmiş Personel" görünümündeki tek aksiyon.
+  Future<void> _reactivate() async {
+    final reason = await _askReason(
+      'Geri Aktif Et',
+      '${_staff!.fullName} yeniden aktif edilecek ve tekrar giriş yapabilecek.',
+    );
+    if (reason == null || reason.isEmpty) return;
+    try {
+      await ApiClient.instance.post('/users/${_staff!.userId}/reactivate', body: {'reason': reason});
+      _load();
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Personel yeniden aktif edildi.')),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(e is ApiException ? e.message : 'Geri aktif edilemedi')),
+        );
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -394,17 +516,36 @@ class _StaffDetailScreenState extends State<StaffDetailScreen> {
       appBar: AppBar(
         title: Text(_staff?.fullName ?? 'Personel'),
         actions: [
-          if (_staff != null && _isOwner)
+          if (_staff != null && _isOwner && _staff!.archivedAt != null)
+            IconButton(
+              icon: const Icon(Icons.restore_rounded),
+              tooltip: 'Geri Aktif Et',
+              onPressed: _reactivate,
+            ),
+          if (_staff != null && _isOwner && _staff!.archivedAt == null)
             PopupMenuButton<String>(
               icon: const Icon(Icons.admin_panel_settings_outlined),
               tooltip: 'Yönetici işlemleri',
               onSelected: (value) {
                 if (value == 'reset') _resetPassword();
                 if (value == 'impersonate') _impersonate();
+                if (value == 'promote') _promote();
+                if (value == 'swap_role') _swapRole();
+                if (value == 'terminate') _terminate();
               },
-              itemBuilder: (ctx) => const [
-                PopupMenuItem(value: 'reset', child: Text('Şifreyi Sıfırla')),
-                PopupMenuItem(value: 'impersonate', child: Text('Bu Kullanıcı Olarak Gir')),
+              itemBuilder: (ctx) => [
+                const PopupMenuItem(value: 'reset', child: Text('Şifreyi Sıfırla')),
+                const PopupMenuItem(value: 'impersonate', child: Text('Bu Kullanıcı Olarak Gir')),
+                const PopupMenuDivider(),
+                const PopupMenuItem(value: 'promote', child: Text("Müdür'e Terfi Ettir")),
+                PopupMenuItem(
+                  value: 'swap_role',
+                  child: Text(_staff!.role == 'TEAM_LEAD' ? 'Personel Yap' : 'Şef Yap'),
+                ),
+                const PopupMenuItem(
+                  value: 'terminate',
+                  child: Text('İşten Çıkar', style: TextStyle(color: AppColors.danger500)),
+                ),
               ],
             ),
           if (_staff != null && _canManageStaff) ...[
@@ -454,6 +595,27 @@ class _StaffDetailScreenState extends State<StaffDetailScreen> {
       child: ListView(
         padding: const EdgeInsets.all(16),
         children: [
+          if (s.archivedAt != null)
+            Container(
+              margin: const EdgeInsets.only(bottom: 12),
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: AppColors.warning50,
+                borderRadius: BorderRadius.circular(AppRadius.card),
+              ),
+              child: Row(
+                children: [
+                  const Icon(Icons.inventory_2_outlined, size: 16, color: AppColors.warning600),
+                  const SizedBox(width: 8),
+                  const Expanded(
+                    child: Text(
+                      'Bu personel arşivlenmiş — salt okunur görüntüleniyor.',
+                      style: TextStyle(fontSize: 12, color: AppColors.warning600),
+                    ),
+                  ),
+                ],
+              ),
+            ),
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(

@@ -57,7 +57,12 @@ export async function listStaff(req: Request, res: Response) {
   const roleFilter = typeof req.query.role === "string" ? req.query.role : undefined;
   const user = req.user!;
 
-  const conditions: Prisma.StaffWhereInput[] = [];
+  // "Geçmiş Personel" (arşivlenmiş) sekmesi yalnızca OWNER'a açık — diğer
+  // aktif personel sorgularının hiçbirinde arşivlenmiş kayıtlar görünmemeli.
+  const includeArchived = user.role === Role.OWNER && req.query.includeArchived === "true";
+  const conditions: Prisma.StaffWhereInput[] = includeArchived
+    ? [{ archivedAt: { not: null } }]
+    : [{ archivedAt: null }];
 
   if (search) {
     conditions.push({
@@ -253,6 +258,91 @@ export async function deleteStaff(req: Request, res: Response) {
   return res.status(204).send();
 }
 
+const reasonSchema = z.object({ reason: z.string().min(1, "Gerekçe zorunludur") });
+
+/**
+ * TEAM_LEAD/STAFF → MANAGER terfisi. Staff kaydı SİLİNMEZ — MANAGER'ın
+ * kendi Staff kaydı olmadığı için (bkz. şema yorumu) arşivlenir; maaş/iş/
+ * değerlendirme geçmişi olduğu gibi korunur. tokenVersion artırılır çünkü
+ * mevcut JWT'lerinde eski rol gömülü — yeni oturum açana kadar eski rolle
+ * dolaşmasınlar diye zorunlu re-login tetiklenir.
+ */
+export async function promoteToManager(req: Request, res: Response) {
+  const { reason } = reasonSchema.parse(req.body);
+  const staff = await prisma.staff.findUnique({ where: { id: idParam(req) }, include: { user: true } });
+  if (!staff) {
+    return res.status(404).json({ error: "Personel bulunamadı" });
+  }
+  if (staff.archivedAt) {
+    return res.status(409).json({ error: "Bu personel zaten arşivlenmiş" });
+  }
+  if (staff.user.role === Role.MANAGER || staff.user.role === Role.OWNER) {
+    return res.status(400).json({ error: "Bu kullanıcı zaten Müdür/Patron" });
+  }
+
+  await prisma.$transaction([
+    prisma.staff.update({ where: { id: staff.id }, data: { archivedAt: new Date() } }),
+    prisma.user.update({
+      where: { id: staff.userId },
+      data: { role: Role.MANAGER, tokenVersion: { increment: 1 } },
+    }),
+  ]);
+
+  await recordAuditLog({
+    actorUserId: req.user!.sub,
+    action: "staff.promoted_to_manager",
+    targetUserId: staff.userId,
+    targetType: "Staff",
+    targetId: staff.id,
+    detail: reason,
+  });
+
+  return res.json({ ok: true });
+}
+
+/**
+ * STAFF/TEAM_LEAD arasında rol değişimi — AYNI Staff kaydı üzerinde,
+ * arşivleme YOK (terfi/işten çıkarmadan farkı bu).
+ */
+const roleChangeSchema = z.object({
+  newRole: z.enum(["STAFF", "TEAM_LEAD"]),
+  reason: z.string().min(1, "Gerekçe zorunludur"),
+});
+
+export async function changeStaffRole(req: Request, res: Response) {
+  const { newRole, reason } = roleChangeSchema.parse(req.body);
+  const staff = await prisma.staff.findUnique({ where: { id: idParam(req) }, include: { user: true } });
+  if (!staff) {
+    return res.status(404).json({ error: "Personel bulunamadı" });
+  }
+  if (staff.archivedAt) {
+    return res.status(409).json({ error: "Arşivlenmiş bir personelin rolü değiştirilemez" });
+  }
+  const oldRole = staff.user.role;
+  if (oldRole !== Role.STAFF && oldRole !== Role.TEAM_LEAD) {
+    return res.status(400).json({ error: "Bu uç yalnızca Personel/Şef arası geçiş içindir" });
+  }
+  if (oldRole === newRole) {
+    return res.status(409).json({ error: `Bu personel zaten ${newRole}` });
+  }
+
+  await prisma.user.update({
+    where: { id: staff.userId },
+    data: { role: newRole, tokenVersion: { increment: 1 } },
+  });
+
+  await recordAuditLog({
+    actorUserId: req.user!.sub,
+    action: "staff.role_changed",
+    targetUserId: staff.userId,
+    targetType: "Staff",
+    targetId: staff.id,
+    detail: `${oldRole} -> ${newRole}: ${reason}`,
+  });
+
+  return res.json({ ok: true });
+}
+
 interface OrgChartNode {
   id: string;
   userId: string;
@@ -276,15 +366,33 @@ const ACTIVE_JOB_STATUSES = ["PENDING", "SCHEDULED", "IN_PROGRESS"] as const;
  * eklenmez.
  */
 export async function getOrgChart(_req: Request, res: Response) {
-  const [owners, managers, allStaff] = await Promise.all([
+  const [owners, managers, allStaffWithArchived] = await Promise.all([
     prisma.user.findMany({ where: { role: Role.OWNER }, select: { id: true, fullName: true } }),
     prisma.user.findMany({ where: { role: Role.MANAGER }, select: { id: true, fullName: true } }),
+    // Arşivlenmişler de (terfi/işten çıkarma) çekilir — YALNIZCA aşağıdaki
+    // supervisorId normalizasyonu için: bir TEAM_LEAD MÜDÜR'e terfi
+    // ettirildiğinde eski ekibinin supervisorId'si hâlâ onun (artık
+    // arşivlenmiş) Staff.id'sine işaret eder; bu, terfi eden kişinin yeni
+    // User.id'sine yönlendirilmezse ekip "unassigned"a düşer. Arşivlenmiş
+    // kayıtların KENDİSİ ağaçta hiç render edilmez (aşağıda `activeStaff`).
     prisma.staff.findMany({
       include: { user: { select: { id: true, fullName: true, role: true } } },
     }),
   ]);
 
-  const staffIds = allStaff.map((s) => s.id);
+  const activeStaff = allStaffWithArchived.filter((s) => !s.archivedAt);
+  const archivedStaffById = new Map(allStaffWithArchived.filter((s) => s.archivedAt).map((s) => [s.id, s]));
+
+  function normalizeSupervisorId(supervisorId: string | null): string | null {
+    if (!supervisorId) return null;
+    const archived = archivedStaffById.get(supervisorId);
+    // Terfi eden bir TEAM_LEAD/STAFF'ın eski Staff.id'si artık MANAGER
+    // rolündeki User.id'sine yönlendirilir — org şemasında MANAGER'lar
+    // User.id ile anahtarlanıyor (bkz. buildManagerNode).
+    return archived ? archived.user.id : supervisorId;
+  }
+
+  const staffIds = activeStaff.map((s) => s.id);
   const jobs =
     staffIds.length > 0
       ? await prisma.job.findMany({
@@ -303,22 +411,23 @@ export async function getOrgChart(_req: Request, res: Response) {
 
   // supervisorId -> doğrudan raporlayan Staff kayıtları (bkz. şemadaki yorum:
   // bu bir Staff.id VEYA bir User.id olabilir, iki durumu da tek bir map ile ele alıyoruz).
-  const childrenBySupervisorId = new Map<string, typeof allStaff>();
-  const unassigned: typeof allStaff = [];
+  const childrenBySupervisorId = new Map<string, typeof activeStaff>();
+  const unassigned: typeof activeStaff = [];
   const knownIds = new Set([...owners.map((o) => o.id), ...managers.map((m) => m.id), ...staffIds]);
 
-  for (const staff of allStaff) {
-    if (!staff.supervisorId || !knownIds.has(staff.supervisorId)) {
+  for (const staff of activeStaff) {
+    const supervisorId = normalizeSupervisorId(staff.supervisorId);
+    if (!supervisorId || !knownIds.has(supervisorId)) {
       // Ya hiç şef atanmamış, ya da geçersiz/silinmiş bir id'ye işaret ediyor.
       unassigned.push(staff);
       continue;
     }
-    const bucket = childrenBySupervisorId.get(staff.supervisorId) ?? [];
+    const bucket = childrenBySupervisorId.get(supervisorId) ?? [];
     bucket.push(staff);
-    childrenBySupervisorId.set(staff.supervisorId, bucket);
+    childrenBySupervisorId.set(supervisorId, bucket);
   }
 
-  function buildStaffNode(staff: (typeof allStaff)[number]): OrgChartNode {
+  function buildStaffNode(staff: (typeof activeStaff)[number]): OrgChartNode {
     return {
       id: staff.id,
       userId: staff.user.id,
@@ -574,7 +683,7 @@ export async function getStaffLeaderboard(req: Request, res: Response) {
   const lastMonthStart = new Date(now.getFullYear(), now.getMonth() - 1, 1);
   const bounds = periodBounds(period, now);
 
-  const where: Prisma.StaffWhereInput = {};
+  const where: Prisma.StaffWhereInput = { archivedAt: null };
   if (user.role === Role.TEAM_LEAD) {
     // Tek seviyeli ekip kapsamı: yalnızca doğrudan raporlayanlar + şefin kendisi.
     const teamIds = await getTeamStaffIds(user.sub);

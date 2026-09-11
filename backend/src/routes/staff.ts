@@ -12,6 +12,8 @@ import {
   updateStaffStatus,
   getStaffLeaderboard,
   getOrgChart,
+  promoteToManager,
+  changeStaffRole,
 } from "../controllers/staffController";
 import {
   listCertifications,
@@ -33,6 +35,9 @@ router.get("/:id", requireRole(Role.OWNER, Role.MANAGER, Role.TEAM_LEAD, Role.ST
 router.post("/", requireRole(Role.OWNER, Role.MANAGER), createStaff);
 router.patch("/:id", requireRole(Role.OWNER, Role.MANAGER), updateStaff);
 router.delete("/:id", requireRole(Role.OWNER, Role.MANAGER), deleteStaff);
+
+router.post("/:id/promote-to-manager", requireRole(Role.OWNER), promoteToManager);
+router.patch("/:id/role", requireRole(Role.OWNER), changeStaffRole);
 
 router.get("/:id/permissions", requireRole(Role.OWNER), getStaffPermissions);
 router.patch("/:id/permissions", requireRole(Role.OWNER), updateStaffPermissions);

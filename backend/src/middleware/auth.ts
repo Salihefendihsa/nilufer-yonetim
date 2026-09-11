@@ -38,10 +38,16 @@ export async function requireAuth(req: Request, res: Response, next: NextFunctio
     // stateless olduğu için gerçek "oturum iptali" tek yolu budur.
     const user = await prisma.user.findUnique({
       where: { id: payload.sub },
-      select: { tokenVersion: true, mustChangePassword: true },
+      select: { tokenVersion: true, mustChangePassword: true, isActive: true },
     });
     if (!user || user.tokenVersion !== payload.tokenVersion) {
       return res.status(401).json({ error: "Oturumunuzun süresi doldu, tekrar giriş yapın" });
+    }
+    // İşten çıkarma (terminate) tokenVersion'ı zaten artırır (mevcut tüm
+    // token'lar bir üstteki kontrolle elenir) — bu, o mekanizma bir şekilde
+    // atlatılsa bile ikinci bir savunma katmanı.
+    if (!user.isActive) {
+      return res.status(403).json({ error: "Hesabınız devre dışı bırakılmış" });
     }
 
     if (payload.impersonationSessionId) {

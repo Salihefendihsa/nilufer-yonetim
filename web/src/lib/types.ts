@@ -153,6 +153,8 @@ export interface Staff {
    * Staff.id (TEAM_LEAD) veya User.id (MANAGER/OWNER) olabilir, ikisi de
    * burada tek bir tutarlı şekle çözülür. */
   supervisor?: { userId: string; fullName: string; role: "TEAM_LEAD" | "MANAGER" | "OWNER" } | null;
+  /** Dolu ise bu kayıt arşivlenmiş (terfi/işten çıkarma) — GET /staff?includeArchived=true dışında hiçbir listede görünmez. */
+  archivedAt?: string | null;
 }
 
 export interface StaffDetail extends Staff {

@@ -88,6 +88,10 @@ class Staff {
   /// burada tek bir tutarlı şekle çözülmüş olarak gelir.
   final SupervisorInfo? supervisor;
 
+  /// Doluysa bu kayıt arşivlenmiş (terfi/işten çıkarma) — GET /staff?includeArchived=true
+  /// dışında hiçbir listede görünmez.
+  final String? archivedAt;
+
   Staff({
     required this.id,
     required this.userId,
@@ -108,6 +112,7 @@ class Staff {
     this.averageRating,
     this.ratedJobsCount = 0,
     this.supervisor,
+    this.archivedAt,
   });
 
   factory Staff.fromJson(Map<String, dynamic> json) {
@@ -137,6 +142,7 @@ class Staff {
       supervisor: json['supervisor'] != null
           ? SupervisorInfo.fromJson(json['supervisor'] as Map<String, dynamic>)
           : null,
+      archivedAt: json['archivedAt'] as String?,
     );
   }
 }

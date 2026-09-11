@@ -38,7 +38,7 @@ export async function getDashboardSummary(_req: Request, res: Response) {
       where: { createdAt: { gte: startOfMonth, lt: startOfNextMonth } },
     }),
     prisma.quoteRequest.count({ where: { status: "NEW" } }),
-    prisma.staff.count(),
+    prisma.staff.count({ where: { archivedAt: null } }),
     prisma.job.count({
       where: { status: JobStatus.COMPLETED, completedAt: { gte: startOfMonth, lt: startOfNextMonth } },
     }),

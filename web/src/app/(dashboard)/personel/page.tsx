@@ -20,6 +20,8 @@ import {
   Workflow,
   KeyRound,
   UserCog,
+  Users,
+  History,
 } from "lucide-react";
 import { RequireRole } from "@/components/RequireRole";
 import { PageHeader } from "@/components/PageHeader";
@@ -39,6 +41,10 @@ import { EvaluationsModal } from "./EvaluationsModal";
 import { OrgChartView } from "./OrgChartView";
 import { ResetPasswordModal } from "./ResetPasswordModal";
 import { ImpersonateModal } from "./ImpersonateModal";
+import { RoleActionsMenu } from "./RoleActionsMenu";
+import { ReasonModal } from "./ReasonModal";
+import { ManagersTab } from "./ManagersTab";
+import { ArchivedStaffTab } from "./ArchivedStaffTab";
 
 /**
  * Bugünkü iş sayısı, biten sertifika sayısı ve ortalama puan artık /staff
@@ -60,7 +66,7 @@ export default function StaffPage() {
   );
 }
 
-type PageTab = "list" | "org-chart";
+type PageTab = "list" | "managers" | "org-chart" | "archived";
 
 function StaffPageContent() {
   const { user } = useAuth();
@@ -79,6 +85,9 @@ function StaffPageContent() {
   const [evaluationsTarget, setEvaluationsTarget] = useState<Staff | null>(null);
   const [resetPasswordTarget, setResetPasswordTarget] = useState<Staff | null>(null);
   const [impersonateTarget, setImpersonateTarget] = useState<Staff | null>(null);
+  const [promoteTarget, setPromoteTarget] = useState<Staff | null>(null);
+  const [swapRoleTarget, setSwapRoleTarget] = useState<Staff | null>(null);
+  const [terminateTarget, setTerminateTarget] = useState<Staff | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -165,6 +174,16 @@ function StaffPageContent() {
           </button>
           <button
             type="button"
+            onClick={() => setTab("managers")}
+            className={`flex items-center gap-1.5 rounded-xl px-3.5 py-2 text-sm font-medium transition ${
+              tab === "managers" ? "bg-primary-600 text-white shadow-card" : "text-text-secondary hover:bg-surface-subtle"
+            }`}
+          >
+            <Users size={14} strokeWidth={1.75} />
+            Müdürler
+          </button>
+          <button
+            type="button"
             onClick={() => setTab("org-chart")}
             className={`flex items-center gap-1.5 rounded-xl px-3.5 py-2 text-sm font-medium transition ${
               tab === "org-chart" ? "bg-primary-600 text-white shadow-card" : "text-text-secondary hover:bg-surface-subtle"
@@ -173,10 +192,24 @@ function StaffPageContent() {
             <Workflow size={14} strokeWidth={1.75} />
             Organizasyon Şeması
           </button>
+          <button
+            type="button"
+            onClick={() => setTab("archived")}
+            className={`flex items-center gap-1.5 rounded-xl px-3.5 py-2 text-sm font-medium transition ${
+              tab === "archived" ? "bg-primary-600 text-white shadow-card" : "text-text-secondary hover:bg-surface-subtle"
+            }`}
+          >
+            <History size={14} strokeWidth={1.75} />
+            Geçmiş Personel
+          </button>
         </div>
       )}
 
-      {tab === "org-chart" ? (
+      {tab === "managers" ? (
+        <ManagersTab />
+      ) : tab === "archived" ? (
+        <ArchivedStaffTab />
+      ) : tab === "org-chart" ? (
         <OrgChartView
           onSelectStaff={(staffId) => {
             const staff = rows.find((r) => r.id === staffId);
@@ -263,6 +296,14 @@ function StaffPageContent() {
                   )}
                 </div>
                 <div className="ml-auto flex flex-col items-end gap-1">
+                  {isOwner && (
+                    <RoleActionsMenu
+                      currentRole={staff.user.role as "STAFF" | "TEAM_LEAD"}
+                      onPromote={() => setPromoteTarget(staff)}
+                      onSwapRole={() => setSwapRoleTarget(staff)}
+                      onTerminate={() => setTerminateTarget(staff)}
+                    />
+                  )}
                   {staff.averageRating !== null && (
                     <span className="inline-flex items-center gap-1 rounded-full bg-warning-50 px-2 py-0.5 text-[11px] font-semibold text-warning-600">
                       <Star size={10} strokeWidth={2} />
@@ -400,6 +441,53 @@ function StaffPageContent() {
       <ResetPasswordModal open={!!resetPasswordTarget} onClose={() => setResetPasswordTarget(null)} staff={resetPasswordTarget} />
 
       <ImpersonateModal open={!!impersonateTarget} onClose={() => setImpersonateTarget(null)} staff={impersonateTarget} />
+
+      <ReasonModal
+        open={!!promoteTarget}
+        onClose={() => setPromoteTarget(null)}
+        onDone={() => {
+          setPromoteTarget(null);
+          load();
+        }}
+        title="Müdür'e Terfi Ettir"
+        description={`"${promoteTarget?.user.fullName}" Müdür'e terfi ettirilecek. Personel kaydı arşivlenir (silinmez), maaş/iş/değerlendirme geçmişi korunur.`}
+        confirmLabel="Terfi Ettir"
+        onSubmit={(reason) => api.post(`/staff/${promoteTarget!.id}/promote-to-manager`, { reason })}
+      />
+
+      <ReasonModal
+        open={!!swapRoleTarget}
+        onClose={() => setSwapRoleTarget(null)}
+        onDone={() => {
+          setSwapRoleTarget(null);
+          load();
+        }}
+        title={swapRoleTarget?.user.role === "TEAM_LEAD" ? "Personel Yap" : "Şef Yap"}
+        description={`"${swapRoleTarget?.user.fullName}" ${
+          swapRoleTarget?.user.role === "TEAM_LEAD" ? "Personel" : "Ekip Lideri"
+        } rolüne geçirilecek.`}
+        confirmLabel="Rolü Değiştir"
+        onSubmit={(reason) =>
+          api.patch(`/staff/${swapRoleTarget!.id}/role`, {
+            newRole: swapRoleTarget!.user.role === "TEAM_LEAD" ? "STAFF" : "TEAM_LEAD",
+            reason,
+          })
+        }
+      />
+
+      <ReasonModal
+        open={!!terminateTarget}
+        onClose={() => setTerminateTarget(null)}
+        onDone={() => {
+          setTerminateTarget(null);
+          load();
+        }}
+        title="İşten Çıkar"
+        description={`"${terminateTarget?.user.fullName}" işten çıkarılacak. Hesabı devre dışı kalır, tüm oturumları sonlanır; hiçbir veri silinmez.`}
+        confirmLabel="İşten Çıkar"
+        danger
+        onSubmit={(reason) => api.post(`/users/${terminateTarget!.userId}/terminate`, { reason })}
+      />
 
       <ConfirmDialog
         open={!!deleteTarget}

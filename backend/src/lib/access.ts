@@ -41,7 +41,7 @@ export async function getTeamStaffIds(userId: string): Promise<string[]> {
   if (!leadStaff) return [];
 
   const teamMembers = await prisma.staff.findMany({
-    where: { supervisorId: leadStaff.id },
+    where: { supervisorId: leadStaff.id, archivedAt: null },
     select: { id: true },
   });
 
