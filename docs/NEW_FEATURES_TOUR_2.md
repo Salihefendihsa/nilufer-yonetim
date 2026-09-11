@@ -215,42 +215,6 @@ etkisi (Expense kaydı) ancak OWNER/MANAGER onayından SONRA oluşur.
 
 ## Bölüm E — Sözleşme Otomasyon Sağlık Kontrolü
 
-- Mevcut tekrarlayan sözleşme→iş üretim mantığı incelendi: `lib/cron.ts:
-  generateRecurringJobs` her gece 02:00'de `Contract.nextGenerationDate`
-  alanı `<= now` olan her sözleşme için bir `Job` üretir ve bu alanı bir
-  periyot ileri alır (`lib/recurrence.ts:addRecurrencePeriod`).
-  `nextGenerationDate` ZATEN "bir sonraki beklenen otomatik iş tarihi"
-  anlamına geliyor — Bölüm E için YENİ bir hesaplama İCAT EDİLMEDİ, mevcut
-  alan aynen kullanıldı.
-- `GET /contracts/health-check` (OWNER/MANAGER) — `status: ACTIVE`,
-  `recurrenceType` dolu, `nextGenerationDate < now` olan sözleşmeleri
-  "gecikmiş" sayar (normal koşullarda bu asla olmamalı; sunucu kapalıyken
-  02:00 geçtiyse veya bir hata oluştuysa ortaya çıkar). Her kayıt için
-  `daysOverdue` (`Math.ceil` ile — kısmi bir gün bile "1 gün gecikmiş"
-  sayılır, gecikme olduğundan az gösterilmesin diye).
-- Web: Sözleşmeler sayfası başlığına, gecikme varsa turuncu bir rozet
-  butonu ("N otomasyon gecikmesi") — tıklanınca genişleyen bir panel,
-  her satırda "Şimdi İş Oluştur" → `/isler?customerId=&serviceType=`
-  linkine yönlendirir; İşler sayfası bu query parametrelerini okuyup
-  formu önceden doldurulmuş halde otomatik açar.
-  - **Yan not**: `useSearchParams()` Next.js'te bir `<Suspense>` sınırı
-    gerektiriyor (aksi halde statik dışa aktarımda derleme hatası) —
-    `JobsPage` bu yüzden ince bir `Suspense` sarmalayıcıya bölündü.
-- Mobile: Sözleşmeler ekranı AppBar'ına aynı rozet (`Badge` widget'ı) +
-  açılır panel; "Şimdi Oluştur" butonu mevcut `JobFormScreen`'e yeni
-  opsiyonel `prefillCustomerId`/`prefillServiceType` parametreleriyle
-  yönlendirir.
-- Doğrulama: gerçek bir müşteriye bağlı, `recurrenceType: MONTHLY`,
-  `nextGenerationDate` gelecekte olan SAĞLIKLI bir test sözleşmesi
-  oluşturuldu → health-check'te GÖRÜNMEDİĞİ doğrulandı → ardından
-  `nextGenerationDate` doğrudan (cron'un kaçırdığı bir çalışmayı simüle
-  etmek için) 3 gün geriye çekildi → artık health-check'te doğru
-  `customerName`/`serviceType`/`daysOverdue` ile GÖRÜNDÜĞÜ doğrulandı.
-  Test sözleşmesi ID bazlı silindi.
-
-
-## Bölüm E — Sözleşme Otomasyon Sağlık Kontrolü
-
 - Mevcut tekrarlayan iş üretim mantığı incelendi: `lib/cron.ts:
   generateRecurringJobs`, her gece 02:00'de `Contract.nextGenerationDate`si
   `<= now` olan her tekrarlayan sözleşme için bir `Job` üretip bu tarihi
