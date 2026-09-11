@@ -49,6 +49,8 @@ class _EvaluationsScreenState extends State<EvaluationsScreen> {
   List<EvaluationCriterion> _criteria = [];
   List<Staff> _staff = [];
   List<Evaluation> _evaluations = [];
+  List<StaffBonus> _pendingBonuses = [];
+  String? _bonusBusyId;
   bool _loading = true;
   String? _error;
 
@@ -71,10 +73,17 @@ class _EvaluationsScreenState extends State<EvaluationsScreen> {
         final page = await _staffApi.list();
         staff = page.data;
       }
+      List<StaffBonus> pendingBonuses = [];
+      if (_canManage) {
+        pendingBonuses = await _api.listPendingStaffBonuses().catchError(
+          (_) => <StaffBonus>[],
+        );
+      }
       setState(() {
         _periods = periods;
         _criteria = criteria.where((c) => c.isActive).toList();
         _staff = staff;
+        _pendingBonuses = pendingBonuses;
         _selectedPeriod ??= periods.isNotEmpty ? periods.first : null;
       });
       await _loadEvaluations();
@@ -112,6 +121,8 @@ class _EvaluationsScreenState extends State<EvaluationsScreen> {
 
   Future<void> _createPeriod() async {
     final labelController = TextEditingController();
+    final bonusThresholdController = TextEditingController();
+    final bonusAmountController = TextEditingController();
     DateTime? start;
     DateTime? end;
     final created = await showModalBottomSheet<bool>(
@@ -172,6 +183,32 @@ class _EvaluationsScreenState extends State<EvaluationsScreen> {
                   ),
                 ],
               ),
+              const SizedBox(height: 12),
+              Row(
+                children: [
+                  Expanded(
+                    child: TextField(
+                      controller: bonusThresholdController,
+                      keyboardType: TextInputType.number,
+                      decoration: const InputDecoration(
+                        labelText: 'Prim Eşiği (opsiyonel, 1-20)',
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: TextField(
+                      controller: bonusAmountController,
+                      keyboardType: const TextInputType.numberWithOptions(
+                        decimal: true,
+                      ),
+                      decoration: const InputDecoration(
+                        labelText: 'Prim Tutarı (₺)',
+                      ),
+                    ),
+                  ),
+                ],
+              ),
               const SizedBox(height: 16),
               ElevatedButton(
                 onPressed: () async {
@@ -186,6 +223,12 @@ class _EvaluationsScreenState extends State<EvaluationsScreen> {
                       label: labelController.text.trim(),
                       startDate: start!,
                       endDate: end!,
+                      bonusThreshold: int.tryParse(
+                        bonusThresholdController.text.trim(),
+                      ),
+                      bonusAmount: double.tryParse(
+                        bonusAmountController.text.trim(),
+                      ),
                     );
                     if (ctx.mounted) Navigator.of(ctx).pop(true);
                   } catch (e) {
@@ -282,9 +325,128 @@ class _EvaluationsScreenState extends State<EvaluationsScreen> {
     );
   }
 
+  Future<void> _decideBonus(StaffBonus bonus, bool approve) async {
+    setState(() => _bonusBusyId = bonus.id);
+    try {
+      if (approve) {
+        await _api.approveStaffBonus(bonus.id);
+      } else {
+        await _api.rejectStaffBonus(bonus.id);
+      }
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(approve ? 'Prim onaylandı.' : 'Prim reddedildi.')),
+        );
+      }
+      final pending = await _api.listPendingStaffBonuses();
+      if (mounted) setState(() => _pendingBonuses = pending);
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(e is ApiException ? e.message : 'İşlem tamamlanamadı')),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _bonusBusyId = null);
+    }
+  }
+
+  /// Bölüm C (2. tur): dönem kilitlenirken bonusThreshold/bonusAmount
+  /// tanımlıysa otomatik oluşan onay bekleyen prim önerileri — para OTOMATİK
+  /// ÖDENMEZ, onaylanınca backend'de bir Expense(BONUS) kaydı oluşur.
+  Widget _buildPendingBonusesSection() {
+    if (_pendingBonuses.isEmpty) return const SizedBox.shrink();
+    return Container(
+      margin: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: AppColors.warning50,
+        borderRadius: BorderRadius.circular(AppRadius.card),
+        border: Border.all(color: AppColors.warning500.withValues(alpha: 0.25)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(Icons.card_giftcard_rounded, size: 16, color: AppColors.warning600),
+              const SizedBox(width: 6),
+              const Text(
+                'Bekleyen Primler',
+                style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13),
+              ),
+              const SizedBox(width: 6),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                decoration: BoxDecoration(
+                  color: AppColors.warning50,
+                  borderRadius: BorderRadius.circular(999),
+                ),
+                child: Text(
+                  '${_pendingBonuses.length}',
+                  style: const TextStyle(fontSize: 10.5, fontWeight: FontWeight.w700, color: AppColors.warning600),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          for (final b in _pendingBonuses)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 6),
+              child: Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(AppRadius.chip),
+                ),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            b.staffFullName ?? 'Personel',
+                            style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 12.5),
+                          ),
+                          Text(
+                            '${b.evaluationPeriodLabel ?? "Dönem"} · ${b.amount.toStringAsFixed(0)} ₺',
+                            style: const TextStyle(fontSize: 11, color: AppColors.textSecondary),
+                          ),
+                        ],
+                      ),
+                    ),
+                    if (_bonusBusyId == b.id)
+                      const SizedBox(
+                        width: 18,
+                        height: 18,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    else ...[
+                      IconButton(
+                        icon: const Icon(Icons.check_circle_outline, color: AppColors.primary600, size: 20),
+                        onPressed: () => _decideBonus(b, true),
+                        tooltip: 'Onayla',
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.cancel_outlined, color: AppColors.danger500, size: 20),
+                        onPressed: () => _decideBonus(b, false),
+                        tooltip: 'Reddet',
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildManagerView() {
     return Column(
       children: [
+        _buildPendingBonusesSection(),
         Padding(
           padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
           child: Row(

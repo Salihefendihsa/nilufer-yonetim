@@ -463,6 +463,25 @@ export interface EvaluationPeriod {
   endDate: string;
   isLocked: boolean;
   createdAt: string;
+  /** Bölüm C (2. tur) — ikisi de doluysa dönem kilitlenirken otomatik prim önerisi üretilir. */
+  bonusThreshold: number | null;
+  bonusAmount: number | null;
+}
+
+export type StaffBonusStatus = "PENDING" | "APPROVED" | "REJECTED";
+
+export interface StaffBonus {
+  id: string;
+  staffId: string;
+  evaluationPeriodId: string;
+  evaluationId: string;
+  amount: number;
+  status: StaffBonusStatus;
+  approvedByUserId: string | null;
+  approvedAt: string | null;
+  createdAt: string;
+  staff?: { user: { id: string; fullName: string } };
+  evaluationPeriod?: { id: string; label: string };
 }
 
 export type EvaluationStatus = "DRAFT" | "SUBMITTED" | "LOCKED";

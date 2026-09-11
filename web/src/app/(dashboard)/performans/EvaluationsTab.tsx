@@ -1,12 +1,14 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState, type FormEvent } from "react";
-import { ClipboardList, Lock, Plus, Send } from "lucide-react";
+import { ClipboardList, Lock, Plus, Send, Gift, Check, X } from "lucide-react";
 import { EmptyState } from "@/components/EmptyState";
 import { Modal } from "@/components/Modal";
 import { api, ApiError } from "@/lib/api";
 import { useAuth } from "@/lib/AuthProvider";
-import type { Evaluation, EvaluationCriterion, EvaluationPeriod, Paginated, Staff } from "@/lib/types";
+import { useToast } from "@/lib/ToastProvider";
+import { currencyFormatter } from "@/lib/format";
+import type { Evaluation, EvaluationCriterion, EvaluationPeriod, Paginated, Staff, StaffBonus } from "@/lib/types";
 
 const STATUS_LABELS: Record<string, string> = {
   DRAFT: "Taslak",
@@ -115,6 +117,8 @@ export function EvaluationsTab() {
     <div className="flex flex-col gap-6">
       {error && <p className="rounded-2xl border border-danger-100 bg-danger-50 px-4 py-3 text-sm text-danger-500">{error}</p>}
 
+      <PendingBonusesSection />
+
       <div className="flex flex-wrap items-center gap-3">
         <select
           value={selectedPeriodId ?? ""}
@@ -218,6 +222,90 @@ export function EvaluationsTab() {
   );
 }
 
+/**
+ * Bölüm C (2. tur): onay bekleyen prim önerileri. Dönem kilitlenirken
+ * bonusThreshold/bonusAmount tanımlıysa otomatik oluşur — para OTOMATİK
+ * ÖDENMEZ, yalnızca burada onaylanınca gerçek bir Expense(BONUS) kaydı
+ * oluşur ve net kâra yansır.
+ */
+function PendingBonusesSection() {
+  const [bonuses, setBonuses] = useState<StaffBonus[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [busyId, setBusyId] = useState<string | null>(null);
+  const { showToast } = useToast();
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    try {
+      const res = await api.get<{ data: StaffBonus[] }>("/staff-bonuses?status=PENDING");
+      setBonuses(res.data);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    load();
+  }, [load]);
+
+  async function decide(id: string, action: "approve" | "reject") {
+    setBusyId(id);
+    try {
+      await api.post(`/staff-bonuses/${id}/${action}`);
+      showToast(action === "approve" ? "Prim onaylandı." : "Prim reddedildi.");
+      await load();
+    } catch (err) {
+      showToast(err instanceof ApiError ? err.message : "İşlem tamamlanamadı");
+    } finally {
+      setBusyId(null);
+    }
+  }
+
+  if (loading || bonuses.length === 0) return null;
+
+  return (
+    <div className="rounded-2xl border border-warning-100 bg-warning-50 p-5">
+      <div className="mb-3 flex items-center gap-2">
+        <Gift size={16} strokeWidth={1.75} className="text-warning-600" />
+        <h3 className="text-sm font-semibold text-text-primary">Bekleyen Primler</h3>
+        <span className="rounded-full bg-warning-100 px-2 py-0.5 text-2xs font-semibold text-warning-700">{bonuses.length}</span>
+      </div>
+      <ul className="flex flex-col gap-2">
+        {bonuses.map((b) => (
+          <li key={b.id} className="flex flex-wrap items-center justify-between gap-3 rounded-xl bg-white px-4 py-3">
+            <div>
+              <p className="text-sm font-medium text-text-primary">{b.staff?.user.fullName ?? "Personel"}</p>
+              <p className="text-xs text-text-secondary">
+                {b.evaluationPeriod?.label ?? "Dönem"} · {currencyFormatter.format(b.amount)}
+              </p>
+            </div>
+            <div className="flex gap-2">
+              <button
+                type="button"
+                disabled={busyId === b.id}
+                onClick={() => decide(b.id, "approve")}
+                className="flex items-center gap-1.5 rounded-xl bg-primary-50 px-3 py-2 text-xs font-medium text-primary-600 transition hover:bg-primary-100 disabled:opacity-50"
+              >
+                <Check size={14} strokeWidth={1.75} />
+                Onayla
+              </button>
+              <button
+                type="button"
+                disabled={busyId === b.id}
+                onClick={() => decide(b.id, "reject")}
+                className="flex items-center gap-1.5 rounded-xl bg-danger-50 px-3 py-2 text-xs font-medium text-danger-500 transition hover:bg-danger-100 disabled:opacity-50"
+              >
+                <X size={14} strokeWidth={1.75} />
+                Reddet
+              </button>
+            </div>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
 function NewPeriodModal({
   open,
   onClose,
@@ -230,6 +318,8 @@ function NewPeriodModal({
   const [label, setLabel] = useState("");
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
+  const [bonusThreshold, setBonusThreshold] = useState("");
+  const [bonusAmount, setBonusAmount] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
@@ -242,10 +332,18 @@ function NewPeriodModal({
     setSubmitting(true);
     setError(null);
     try {
-      const period = await api.post<EvaluationPeriod>("/evaluation-periods", { label: label.trim(), startDate, endDate });
+      const period = await api.post<EvaluationPeriod>("/evaluation-periods", {
+        label: label.trim(),
+        startDate,
+        endDate,
+        bonusThreshold: bonusThreshold.trim() ? Number(bonusThreshold) : undefined,
+        bonusAmount: bonusAmount.trim() ? Number(bonusAmount) : undefined,
+      });
       setLabel("");
       setStartDate("");
       setEndDate("");
+      setBonusThreshold("");
+      setBonusAmount("");
       onCreated(period);
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "Dönem oluşturulamadı");
@@ -271,6 +369,36 @@ function NewPeriodModal({
             <label className="label">Bitiş</label>
             <input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} className="input w-full" />
           </div>
+        </div>
+        <div className="grid grid-cols-2 gap-3 rounded-2xl border border-border bg-surface-subtle p-3">
+          <div>
+            <label className="label">Prim Eşiği (opsiyonel, 1-20)</label>
+            <input
+              type="number"
+              min={1}
+              max={20}
+              value={bonusThreshold}
+              onChange={(e) => setBonusThreshold(e.target.value)}
+              className="input w-full"
+              placeholder="Örn. 17"
+            />
+          </div>
+          <div>
+            <label className="label">Prim Tutarı (₺, opsiyonel)</label>
+            <input
+              type="number"
+              min={0}
+              step="0.01"
+              value={bonusAmount}
+              onChange={(e) => setBonusAmount(e.target.value)}
+              className="input w-full"
+              placeholder="Örn. 1000"
+            />
+          </div>
+          <p className="col-span-2 text-xs text-text-faint">
+            İkisi de doldurulursa, dönem kilitlenirken bu eşiğin üzerinde ortalama puan alan her değerlendirme için
+            otomatik bir onay bekleyen prim önerisi oluşturulur.
+          </p>
         </div>
         <div className="flex justify-end gap-2">
           <button type="button" onClick={onClose} className="btn-ghost">

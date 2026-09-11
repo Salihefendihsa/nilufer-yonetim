@@ -58,10 +58,19 @@ export async function deleteEvaluationCriterion(req: Request, res: Response) {
 // Dönem CRUD
 // ---------------------------------------------------------------------------
 
+// Bölüm C (2. tur): ikisi de opsiyonel — yalnızca ikisi de doluysa dönem
+// kilitlenirken otomatik prim önerisi üretimi devreye girer (bkz.
+// updateEvaluationPeriod).
+const bonusFields = {
+  bonusThreshold: z.number().int().min(1).max(20).nullable().optional(),
+  bonusAmount: z.number().positive().nullable().optional(),
+};
+
 const periodCreateSchema = z.object({
   label: z.string().min(1),
   startDate: z.coerce.date(),
   endDate: z.coerce.date(),
+  ...bonusFields,
 });
 
 const periodUpdateSchema = z.object({
@@ -69,6 +78,7 @@ const periodUpdateSchema = z.object({
   startDate: z.coerce.date().optional(),
   endDate: z.coerce.date().optional(),
   isLocked: z.boolean().optional(),
+  ...bonusFields,
 });
 
 export async function listEvaluationPeriods(_req: Request, res: Response) {
@@ -101,6 +111,32 @@ export async function updateEvaluationPeriod(req: Request, res: Response) {
         where: { periodId: idParam(req), status: { not: EvaluationStatus.LOCKED } },
         data: { status: EvaluationStatus.LOCKED, lockedAt: new Date() },
       });
+
+      // Bölüm C (2. tur): eşik + tutar tanımlıysa, kilitlenen dönemdeki
+      // averageScore >= bonusThreshold olan HER Evaluation için otomatik bir
+      // PENDING prim önerisi üretilir. Para OTOMATİK ödenmez — yalnızca
+      // öneri; gerçek ödeme (Expense) ancak /staff-bonuses/:id/approve ile.
+      if (updated.bonusThreshold != null && updated.bonusAmount != null) {
+        const evaluations = await tx.evaluation.findMany({
+          where: { periodId: idParam(req) },
+          include: { scores: true },
+        });
+        const qualifying = evaluations.filter((e) => {
+          const avg = computeAverage(e.scores);
+          return avg !== null && avg >= updated.bonusThreshold!;
+        });
+        if (qualifying.length > 0) {
+          await tx.staffBonus.createMany({
+            data: qualifying.map((e) => ({
+              staffId: e.targetStaffId,
+              evaluationPeriodId: idParam(req),
+              evaluationId: e.id,
+              amount: updated.bonusAmount!,
+            })),
+            skipDuplicates: true,
+          });
+        }
+      }
     }
     return updated;
   });

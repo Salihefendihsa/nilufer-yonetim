@@ -25,6 +25,8 @@ class EvaluationsApi {
     required String label,
     required DateTime startDate,
     required DateTime endDate,
+    int? bonusThreshold,
+    double? bonusAmount,
   }) async {
     final json = await _api.post<Map<String, dynamic>>(
       '/evaluation-periods',
@@ -32,10 +34,31 @@ class EvaluationsApi {
         'label': label,
         'startDate': startDate.toIso8601String(),
         'endDate': endDate.toIso8601String(),
+        if (bonusThreshold != null) 'bonusThreshold': bonusThreshold,
+        if (bonusAmount != null) 'bonusAmount': bonusAmount,
       },
     );
     return EvaluationPeriod.fromJson(json);
   }
+
+  // --- Bölüm C (2. tur): onay bekleyen prim önerileri ---
+
+  Future<List<StaffBonus>> listPendingStaffBonuses() async {
+    final json = await _api.get<Map<String, dynamic>>(
+      '/staff-bonuses',
+      query: {'status': 'PENDING'},
+    );
+    return (json['data'] as List)
+        .cast<Map<String, dynamic>>()
+        .map(StaffBonus.fromJson)
+        .toList();
+  }
+
+  Future<void> approveStaffBonus(String id) =>
+      _api.post('/staff-bonuses/$id/approve');
+
+  Future<void> rejectStaffBonus(String id) =>
+      _api.post('/staff-bonuses/$id/reject');
 
   /// [isLocked]=true olunca o döneme ait TÜM değerlendirmeler backend
   /// tarafında otomatik LOCKED'a çekilir.

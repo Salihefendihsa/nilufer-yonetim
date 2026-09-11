@@ -44,6 +44,9 @@ enum ExpenseCategory {
   EQUIPMENT
   RENT
   UTILITIES
+  /// Bölüm C (2. tur): onaylanan bir StaffBonus için otomatik oluşturulan
+  /// Expense'in kategorisi — net kâr hesaplamasına gerçekten yansısın diye.
+  BONUS
   OTHER
 }
 
@@ -134,6 +137,7 @@ model User {
   recordedExpenses Expense[]
   twoFactorRecoveryCodes TwoFactorRecoveryCode[]
   twoFactorChallenges    TwoFactorChallenge[]
+  staffBonusesApproved   StaffBonus[] @relation("StaffBonusApprovedBy")
 
   @@index([role])
 }
@@ -264,6 +268,7 @@ model Staff {
   certifications  StaffCertification[]
   collectedPayments Payment[]      @relation("PaymentCollectedBy")
   evaluationsReceived Evaluation[] @relation("EvaluationTarget")
+  staffBonuses    StaffBonus[]
 
   @@index([position])
   @@index([supervisorId])
@@ -761,8 +766,15 @@ model EvaluationPeriod {
   endDate   DateTime
   isLocked  Boolean  @default(false)
   createdAt DateTime @default(now())
+  /// Bölüm C (2. tur): ikisi de opsiyonel — doluysa dönem kilitlenirken
+  /// averageScore >= bonusThreshold olan her Evaluation için otomatik bir
+  /// PENDING StaffBonus önerisi oluşturulur (para OTOMATİK ödenmez, yalnızca
+  /// öneri — bkz. StaffBonus, docs/NEW_FEATURES_TOUR_2.md Bölüm C).
+  bonusThreshold Int?
+  bonusAmount    Decimal? @db.Decimal(10, 2)
 
-  evaluations Evaluation[]
+  evaluations  Evaluation[]
+  staffBonuses StaffBonus[]
 }
 
 enum EvaluationStatus {
@@ -790,10 +802,47 @@ model Evaluation {
   target    Staff            @relation("EvaluationTarget", fields: [targetStaffId], references: [id])
   period    EvaluationPeriod @relation(fields: [periodId], references: [id])
   scores    EvaluationScore[]
+  staffBonus StaffBonus?
 
   @@unique([evaluatorUserId, targetStaffId, periodId])
   @@index([targetStaffId])
   @@index([periodId])
+  @@index([status])
+}
+
+enum StaffBonusStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+/// Dönem kilitlenirken (bonusThreshold/bonusAmount tanımlıysa) otomatik
+/// üretilen "onay bekleyen prim önerisi" — bkz. EvaluationPeriod. Para
+/// OTOMATİK ödenmez: OWNER/MANAGER onaylayana kadar yalnızca bir öneri
+/// olarak durur. Onaylanınca ayrıca bir Expense(BONUS) kaydı oluşturulur
+/// (bkz. staffBonusesController.ts:approveStaffBonus) — net kâra gerçekten
+/// yansıması için.
+model StaffBonus {
+  id                 String           @id @default(uuid())
+  staffId            String
+  evaluationPeriodId String
+  /// Bir Evaluation'dan en fazla BİR prim önerisi çıkabilir — dönem
+  /// kilitleme işlemi yanlışlıkla iki kez tetiklenirse bile mükerrer öneri
+  /// oluşmasın diye tekil.
+  evaluationId       String           @unique
+  amount             Decimal          @db.Decimal(10, 2)
+  status             StaffBonusStatus @default(PENDING)
+  approvedByUserId   String?
+  approvedAt         DateTime?
+  createdAt          DateTime         @default(now())
+
+  staff            Staff            @relation(fields: [staffId], references: [id])
+  evaluationPeriod EvaluationPeriod @relation(fields: [evaluationPeriodId], references: [id])
+  evaluation       Evaluation       @relation(fields: [evaluationId], references: [id])
+  approvedByUser   User?            @relation("StaffBonusApprovedBy", fields: [approvedByUserId], references: [id])
+
+  @@index([staffId])
+  @@index([evaluationPeriodId])
   @@index([status])
 }
 

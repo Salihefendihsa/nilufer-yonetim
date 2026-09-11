@@ -66,3 +66,60 @@ için bkz. `docs/NEW_FEATURES_TOUR.md`.
   yeni bildirim üretmediği (dedup) doğrulandı; test sözleşmesi VE yalnızca
   ona ait 3 bildirim ID bazlı silindi, gerçek (test dışı) sözleşmeye ait
   bildirimlere dokunulmadı.
+
+
+## Bölüm C — Değerlendirme-Prim Bağlantısı
+
+**Karar (kullanıcı tarafından verildi, belirsizlik yok)**: Tam otomatik ödeme
+YOK — güvenlik için bir inceleme katmanı var. Dönem kilitlenince yalnızca
+"onay bekleyen prim önerisi" (StaffBonus, PENDING) oluşur; gerçek para
+etkisi (Expense kaydı) ancak OWNER/MANAGER onayından SONRA oluşur.
+
+- `EvaluationPeriod.bonusThreshold` (Int?, 1-20) ve `bonusAmount` (Decimal?)
+  eklendi — ikisi de opsiyonel, ikisi de doluysa otomatik üretim devreye
+  girer.
+- Yeni `StaffBonus` modeli: `status` (PENDING/APPROVED/REJECTED),
+  `evaluationId` **tekil** (bir Evaluation'dan en fazla bir prim önerisi —
+  dönem kilitleme işlemi kazara iki kez tetiklenirse bile mükerrer öneri
+  oluşmaz, `createMany({ skipDuplicates: true })` ile).
+- `ExpenseCategory`'ye `BONUS` eklendi.
+- `updateEvaluationPeriod` (mevcut dönem kilitleme akışı, DEĞİŞTİRİLMEDİ,
+  yalnızca genişletildi): `isLocked: true`'ya geçişte, dönemin
+  `bonusThreshold`/`bonusAmount`'ı doluysa, o dönemdeki **her Evaluation**
+  için (spesifikasyonun birebir okunuşu — bir personel birden fazla
+  değerlendiriciden değerlendirilmişse birden fazla StaffBonus önerisi
+  çıkabilir, bilinçli bir tasarım kararı, kasıtlı toplulaştırma yok)
+  `averageScore >= bonusThreshold` ise otomatik PENDING StaffBonus üretilir.
+- `POST /staff-bonuses/:id/approve` (OWNER/MANAGER) — tek transaction
+  içinde: StaffBonus → APPROVED VE bir `Expense(category: BONUS)` kaydı
+  oluşturulur (`description`: personel adı + dönem etiketi). Personel
+  kullanıcısına bildirim gider. Zaten sonuçlandırılmış bir öneriyi tekrar
+  onaylamaya çalışmak 409 döner (mükerrer Expense'e karşı koruma).
+- `POST /staff-bonuses/:id/reject` (OWNER/MANAGER) — yalnızca status
+  REJECTED olur, hiçbir Expense oluşmaz.
+- Web: Performans → Değerlendirmeler sekmesine (`EvaluationsTab.tsx`)
+  "Bekleyen Primler" bölümü + yeni dönem formuna opsiyonel prim
+  eşiği/tutarı alanları.
+- Mobile: **Spec'te "performance_screen.dart'a ekle" deniyordu ama** o
+  dosya liderlik tablosu ekranı — "Değerlendirmeler" içeriği gerçekte AYRI
+  bir dosyada (`evaluations_screen.dart`, AppBar'daki ikondan açılıyor).
+  Web'deki yerleşimle TUTARLI olmak için (Bekleyen Primler,
+  Değerlendirmeler sekmesinin içinde) `evaluations_screen.dart`'a eklendi
+  — bu netleştirme burada not düşülüyor.
+- **Yan düzeltme (gerçek bug, iş sırasında bulundu)**: mobile'daki yeni
+  `StaffBonus.amount` ve `EvaluationPeriod.bonusAmount` alanları Prisma'nın
+  `Decimal` tipleri — JSON'da SAYI değil STRING olarak serileşiyor (bkz.
+  `models/decimal.dart`'taki mevcut uyarı notu). `(json['amount'] as num)`
+  ile parse edilseydi çalışma anında `TypeError` fırlatırdı; mevcut
+  `decimalOr`/`decimalOrNull` yardımcıları kullanılarak düzeltildi.
+- Doğrulama: Node script ile uçtan uca test edildi — bonus eşikli bir dönem
+  oluşturuldu, biri eşiğin ÜSTÜNDE (averageScore 20) biri ALTINDA
+  (averageScore 5) iki değerlendirme girildi, dönem kilitlendi →
+  yalnızca yüksek puanlı için TEK bir PENDING StaffBonus oluştuğu
+  doğrulandı (düşük puanlı için HİÇ oluşmadığı da ayrıca doğrulandı) →
+  onaylanınca Expense(BONUS) oluştuğu ve net kârın tam tutar kadar
+  (500₺) düştüğü doğrulandı → aynı öneriyi ikinci kez onaylamanın 409
+  döndürdüğü (mükerrer ödeme koruması) doğrulandı → ayrı bir dönemde
+  reddedilen bir önerinin HİÇBİR Expense üretmediği doğrulandı. Tüm test
+  verileri (2 dönem, 2 değerlendirme, prim önerileri, 1 gider, 1 test
+  kriteri) ID bazlı silindi.
