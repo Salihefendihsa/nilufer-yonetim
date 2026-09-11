@@ -1,3 +1,5 @@
+import type { Role } from "./auth";
+
 /**
  * Prisma `Decimal` alanları JSON'a **string** olarak serileşir
  * (`"currentStock": "-8"`), `Int`/`Float` alanları ise sayı olarak gelir.
@@ -396,6 +398,22 @@ export interface District {
 }
 
 export type JobPhotoType = "BEFORE" | "AFTER";
+
+export interface OrgChartNode {
+  id: string;
+  userId: string;
+  fullName: string;
+  role: Role;
+  position: string | null;
+  status: StaffStatus | null;
+  assignedCustomers: { id: string; fullName: string }[];
+  children: OrgChartNode[];
+}
+
+export interface OrgChartResponse {
+  tree: OrgChartNode[];
+  unassigned: Omit<OrgChartNode, "children">[];
+}
 
 export interface EvaluationCriterion {
   id: string;

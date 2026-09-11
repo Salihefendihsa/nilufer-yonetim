@@ -4,7 +4,7 @@ import { Role, StaffStatus, type Prisma } from "@prisma/client";
 import { prisma } from "../lib/prisma";
 import { getPagination, paginatedResponse } from "../lib/pagination";
 import { idParam } from "../lib/params";
-import { getTeamStaffIds, getStaffIdForUser, resolveSupervisorInfo, resolveSupervisorInfoBatch } from "../lib/access";
+import { getTeamStaffIds, getStaffIdForUser, resolveSupervisorInfo, resolveSupervisorInfoBatch, wouldCreateSupervisorCycle } from "../lib/access";
 import { PERMISSION_KEYS, isPermissionKey } from "../lib/permissions";
 import { recordAuditLog } from "../lib/auditLog";
 import { resetExpiredStaffStatuses } from "../lib/cron";
@@ -216,6 +216,9 @@ export async function updateStaff(req: Request, res: Response) {
   if (data.supervisorId && !(await resolveSupervisorInfo(data.supervisorId))) {
     return res.status(400).json({ error: "Geçersiz şef/müdür seçimi" });
   }
+  if (data.supervisorId && (await wouldCreateSupervisorCycle(existing.id, data.supervisorId))) {
+    return res.status(400).json({ error: "Bu atama döngüsel bir hiyerarşi oluşturur" });
+  }
 
   const staff = await prisma.staff.update({ where: { id: idParam(req) }, data, include: staffInclude });
 
@@ -248,6 +251,126 @@ export async function deleteStaff(req: Request, res: Response) {
   });
 
   return res.status(204).send();
+}
+
+interface OrgChartNode {
+  id: string;
+  userId: string;
+  fullName: string;
+  role: Role;
+  position: string | null;
+  status: StaffStatus | null;
+  assignedCustomers: { id: string; fullName: string }[];
+  children: OrgChartNode[];
+}
+
+const ACTIVE_JOB_STATUSES = ["PENDING", "SCHEDULED", "IN_PROGRESS"] as const;
+
+/**
+ * Organizasyon şeması: OWNER(ler) en tepede, altında MANAGER'lar, onların
+ * altında (varsa) TEAM_LEAD'ler, onların altında STAFF — ama zincir
+ * `Staff.supervisorId`nin polimorfik doğası gereği (bkz. resolveSupervisorInfo)
+ * kısayolları da destekler: bir STAFF/TEAM_LEAD doğrudan bir MANAGER'a veya
+ * hatta OWNER'a bağlanabilir. `supervisorId` çözülemeyen (silinmiş/geçersiz)
+ * kayıtlar ayrı bir "unassigned" listesinde döner — ağaçta uydurma bir yere
+ * eklenmez.
+ */
+export async function getOrgChart(_req: Request, res: Response) {
+  const [owners, managers, allStaff] = await Promise.all([
+    prisma.user.findMany({ where: { role: Role.OWNER }, select: { id: true, fullName: true } }),
+    prisma.user.findMany({ where: { role: Role.MANAGER }, select: { id: true, fullName: true } }),
+    prisma.staff.findMany({
+      include: { user: { select: { id: true, fullName: true, role: true } } },
+    }),
+  ]);
+
+  const staffIds = allStaff.map((s) => s.id);
+  const jobs =
+    staffIds.length > 0
+      ? await prisma.job.findMany({
+          where: { assignedStaffId: { in: staffIds }, status: { in: [...ACTIVE_JOB_STATUSES] } },
+          select: { assignedStaffId: true, customer: { select: { id: true, fullName: true } } },
+        })
+      : [];
+
+  const customersByStaffId = new Map<string, Map<string, { id: string; fullName: string }>>();
+  for (const job of jobs) {
+    if (!job.assignedStaffId) continue;
+    const bucket = customersByStaffId.get(job.assignedStaffId) ?? new Map();
+    bucket.set(job.customer.id, job.customer);
+    customersByStaffId.set(job.assignedStaffId, bucket);
+  }
+
+  // supervisorId -> doğrudan raporlayan Staff kayıtları (bkz. şemadaki yorum:
+  // bu bir Staff.id VEYA bir User.id olabilir, iki durumu da tek bir map ile ele alıyoruz).
+  const childrenBySupervisorId = new Map<string, typeof allStaff>();
+  const unassigned: typeof allStaff = [];
+  const knownIds = new Set([...owners.map((o) => o.id), ...managers.map((m) => m.id), ...staffIds]);
+
+  for (const staff of allStaff) {
+    if (!staff.supervisorId || !knownIds.has(staff.supervisorId)) {
+      // Ya hiç şef atanmamış, ya da geçersiz/silinmiş bir id'ye işaret ediyor.
+      unassigned.push(staff);
+      continue;
+    }
+    const bucket = childrenBySupervisorId.get(staff.supervisorId) ?? [];
+    bucket.push(staff);
+    childrenBySupervisorId.set(staff.supervisorId, bucket);
+  }
+
+  function buildStaffNode(staff: (typeof allStaff)[number]): OrgChartNode {
+    return {
+      id: staff.id,
+      userId: staff.user.id,
+      fullName: staff.user.fullName,
+      role: staff.user.role,
+      position: staff.position,
+      status: staff.status,
+      assignedCustomers: [...(customersByStaffId.get(staff.id)?.values() ?? [])],
+      children: (childrenBySupervisorId.get(staff.id) ?? []).map(buildStaffNode),
+    };
+  }
+
+  function buildManagerNode(manager: { id: string; fullName: string }): OrgChartNode {
+    return {
+      id: manager.id,
+      userId: manager.id,
+      fullName: manager.fullName,
+      role: Role.MANAGER,
+      position: null,
+      status: null,
+      assignedCustomers: [],
+      children: (childrenBySupervisorId.get(manager.id) ?? []).map(buildStaffNode),
+    };
+  }
+
+  const tree = owners.map((owner) => ({
+    id: owner.id,
+    userId: owner.id,
+    fullName: owner.fullName,
+    role: Role.OWNER,
+    position: null,
+    status: null,
+    assignedCustomers: [],
+    children: [
+      ...managers.map(buildManagerNode),
+      // OWNER'a doğrudan bağlanan (aradaki MÜDÜR'ü atlayan) STAFF/TEAM_LEAD.
+      ...(childrenBySupervisorId.get(owner.id) ?? []).map(buildStaffNode),
+    ],
+  }));
+
+  return res.json({
+    tree,
+    unassigned: unassigned.map((staff) => ({
+      id: staff.id,
+      userId: staff.user.id,
+      fullName: staff.user.fullName,
+      role: staff.user.role,
+      position: staff.position,
+      status: staff.status,
+      assignedCustomers: [...(customersByStaffId.get(staff.id)?.values() ?? [])],
+    })),
+  });
 }
 
 const permissionsUpdateSchema = z.object(

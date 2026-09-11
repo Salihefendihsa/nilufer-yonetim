@@ -12,6 +12,7 @@ import '../features/notifications/notifications_screen.dart';
 import '../features/performance/performance_screen.dart';
 import '../features/quotes/quotes_list_screen.dart';
 import '../features/reports/reports_screen.dart';
+import '../features/staff/org_chart_screen.dart';
 import '../features/staff/staff_list_screen.dart';
 import '../features/calendar/calendar_screen.dart';
 import '../features/stock/stock_list_screen.dart';
@@ -87,6 +88,12 @@ class MoreMenuScreen extends StatelessWidget {
         Icons.bar_chart_rounded,
         (_) => const ReportsScreen(),
       ),
+      if (isOwner)
+        _MoreItem(
+          'Organizasyon Şeması',
+          Icons.account_tree_outlined,
+          (_) => const OrgChartScreen(),
+        ),
       if (isOwner)
         _MoreItem(
           'Denetim & Ayarlar',

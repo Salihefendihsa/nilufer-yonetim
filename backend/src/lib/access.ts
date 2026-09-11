@@ -130,6 +130,36 @@ export async function hasPermission(userId: string, key: PermissionKey): Promise
   return permission?.value ?? false;
 }
 
+/**
+ * Bir Staff'ın supervisorId'sini `candidateSupervisorId`'ye çekmek döngüsel
+ * bir hiyerarşi yaratır mı? (Örn. A, B'nin şefiyken B'yi A'ya şef yapmak.)
+ * Yalnızca Staff→Staff (TEAM_LEAD) bağlantılarında döngü mümkün — bir
+ * MANAGER/OWNER'a (User.id) ulaşan zincir orada sonlanır, MANAGER/OWNER'ın
+ * kendi Staff kaydı yok. Kendi kendine şef olmak da bir döngü sayılır.
+ */
+export async function wouldCreateSupervisorCycle(
+  staffId: string,
+  candidateSupervisorId: string
+): Promise<boolean> {
+  let currentId: string | null = candidateSupervisorId;
+  const visited = new Set<string>();
+
+  while (currentId) {
+    if (currentId === staffId) return true;
+    if (visited.has(currentId)) return false; // farklı bir döngüye girdik, staffId'yi etkilemiyor
+    visited.add(currentId);
+
+    const current: { supervisorId: string | null } | null = await prisma.staff.findUnique({
+      where: { id: currentId },
+      select: { supervisorId: true },
+    });
+    if (!current) return false; // bir User.id'ye (MANAGER/OWNER) ulaşıldı — zincir sonlandı
+    currentId = current.supervisorId;
+  }
+
+  return false;
+}
+
 /** Finds the staff member currently assigned to a customer's most recent job, if any. */
 export async function getCustomerAssignedStaffUserId(customerId: string): Promise<string | null> {
   const job = await prisma.job.findFirst({

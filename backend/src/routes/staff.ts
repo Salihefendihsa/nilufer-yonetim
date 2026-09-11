@@ -11,6 +11,7 @@ import {
   updateStaffPermissions,
   updateStaffStatus,
   getStaffLeaderboard,
+  getOrgChart,
 } from "../controllers/staffController";
 import {
   listCertifications,
@@ -25,6 +26,7 @@ const router = Router();
 router.use(requireAuth);
 
 router.get("/leaderboard", requireRole(Role.OWNER, Role.MANAGER, Role.TEAM_LEAD), getStaffLeaderboard);
+router.get("/org-chart", requireRole(Role.OWNER), getOrgChart);
 router.get("/certifications/expiring", requireRole(Role.OWNER, Role.MANAGER), getExpiringCertifications);
 router.get("/", requireRole(Role.OWNER, Role.MANAGER, Role.TEAM_LEAD, Role.STAFF), listStaff);
 router.get("/:id", requireRole(Role.OWNER, Role.MANAGER, Role.TEAM_LEAD, Role.STAFF), getStaff);

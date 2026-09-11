@@ -17,6 +17,7 @@ import {
   AlertTriangle,
   Network,
   ClipboardList,
+  Workflow,
 } from "lucide-react";
 import { RequireRole } from "@/components/RequireRole";
 import { PageHeader } from "@/components/PageHeader";
@@ -33,6 +34,7 @@ import { StaffFormModal } from "./StaffFormModal";
 import { PermissionsModal } from "./PermissionsModal";
 import { CertificationsModal } from "./CertificationsModal";
 import { EvaluationsModal } from "./EvaluationsModal";
+import { OrgChartView } from "./OrgChartView";
 
 /**
  * Bugünkü iş sayısı, biten sertifika sayısı ve ortalama puan artık /staff
@@ -54,8 +56,12 @@ export default function StaffPage() {
   );
 }
 
+type PageTab = "list" | "org-chart";
+
 function StaffPageContent() {
   const { user } = useAuth();
+  const isOwner = user?.role === "OWNER";
+  const [tab, setTab] = useState<PageTab>("list");
   const [rows, setRows] = useState<StaffRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -139,6 +145,43 @@ function StaffPageContent() {
         }
       />
 
+      {isOwner && (
+        <div className="flex w-fit gap-1 rounded-2xl border border-border bg-surface-card p-1 shadow-card">
+          <button
+            type="button"
+            onClick={() => setTab("list")}
+            className={`flex items-center gap-1.5 rounded-xl px-3.5 py-2 text-sm font-medium transition ${
+              tab === "list" ? "bg-primary-600 text-white shadow-card" : "text-text-secondary hover:bg-surface-subtle"
+            }`}
+          >
+            <HardHat size={14} strokeWidth={1.75} />
+            Personel Listesi
+          </button>
+          <button
+            type="button"
+            onClick={() => setTab("org-chart")}
+            className={`flex items-center gap-1.5 rounded-xl px-3.5 py-2 text-sm font-medium transition ${
+              tab === "org-chart" ? "bg-primary-600 text-white shadow-card" : "text-text-secondary hover:bg-surface-subtle"
+            }`}
+          >
+            <Workflow size={14} strokeWidth={1.75} />
+            Organizasyon Şeması
+          </button>
+        </div>
+      )}
+
+      {tab === "org-chart" ? (
+        <OrgChartView
+          onSelectStaff={(staffId) => {
+            const staff = rows.find((r) => r.id === staffId);
+            if (staff) {
+              setEditingStaff(staff);
+              setFormOpen(true);
+            }
+          }}
+        />
+      ) : (
+        <>
       {/* [Özet kartlar] */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
         <StatCard label="Toplam personel" value={loading ? "—" : String(rows.length)} icon={Users2} mono />
@@ -315,6 +358,8 @@ function StaffPageContent() {
             </div>
           ))}
         </div>
+      )}
+        </>
       )}
 
       <StaffFormModal open={formOpen} onClose={() => setFormOpen(false)} onSaved={load} staff={editingStaff} />
