@@ -174,3 +174,50 @@ sözleşmelerini ve varsayılan (spec'te belirtilmemiş) iş kurallarını kayde
   kayıtları (1 tedarikçi + 1 satın alma talebi) ID bazlı kalıcı olarak
   silindi (StockPurchaseRequest'te hard-delete uç olmadığı için doğrudan
   Prisma script'iyle, normal CANCELLED durumunu değiştirmeden).
+
+## Bölüm F — Push Bildirimleri (FCM)
+
+**Kısıt (kullanıcı tarafından baştan belirtildi)**: gerçek push bildirimi göndermek
+bir Firebase projesi/kimlik bilgileri gerektirir ve bunu tarafımdan oluşturmak mümkün
+değildir (Firebase Console erişimi yok). Bu bölümde yalnızca ALTYAPI kuruldu; gerçek
+Firebase kurulumu adım adım `PROJECT_HANDOFF_TR.md` §13'e yazıldı.
+
+- Backend: `firebase-admin` paketi kuruldu (`backend/src/lib/push.ts`).
+  `FIREBASE_SERVICE_ACCOUNT_KEY` env değişkeni (ham JSON veya base64) — boşsa
+  `isPushConfigured()` false döner ve hiçbir Firebase çağrısı yapılmaz (`sendEmail`
+  ile aynı "yapılandırılmamışsa sessizce atla" prensibi).
+- `User.fcmTokens` (`String[]`, bir kullanıcının birden fazla cihazı olabileceği
+  için dizi). `POST /users/me/fcm-token { token }` — herhangi bir giriş yapmış
+  kullanıcı (rol kısıtı yok) kendi cihazının token'ını ekler; aynı token tekrar
+  gönderilirse yinelenmez.
+- `lib/notify.ts`'teki mevcut `notifyUser`/`notifyUsers`/`notifyManagement`
+  fonksiyonları DEĞİŞTİRİLMEDİ (imzaları aynı) — içlerine, uygulama içi bildirim
+  oluşturulduktan SONRA çağrılan yeni bir `pushToUsers()` yardımcı fonksiyonu
+  eklendi. Böylece sistemdeki TÜM mevcut bildirim tetikleyicileri (iş atama, izin
+  onayı, stok ikmal talebi, vb. — onlarca çağrı yeri) hiçbir değişiklik yapmadan
+  otomatik olarak push'a da kavuştu.
+- Geçersiz/süresi dolmuş FCM token'ları (`messaging/registration-token-not-registered`
+  veya `messaging/invalid-argument` hatası) push gönderiminden sonra otomatik
+  olarak `User.fcmTokens`'tan temizlenir — liste zamanla şişmez.
+- Push payload'ına `relatedType`/`relatedId` (`data` alanı olarak) eklendi —
+  mobil tarafta bildirime dokunulduğunda mevcut in-app yönlendirme deseniyle aynı
+  şekilde ilgili ekrana gidilebilmesi için (bkz. PROJECT_HANDOFF_TR.md §13.4).
+- `.env.example`'a `FIREBASE_SERVICE_ACCOUNT_KEY` eklendi (yorum satırlarıyla
+  birlikte, nasıl alınacağına dair PROJECT_HANDOFF_TR.md'ye yönlendirme).
+- **Mobile: kullanıcı kararıyla kod tarafı eklenmedi** — `firebase_core`/
+  `firebase_messaging` paketleri pubspec.yaml'a eklenmedi, ilgili Dart kodu
+  yazılmadı (yalnızca dokümantasyon). Gerekçe: gerçek Firebase config dosyaları
+  (`google-services.json`/`GoogleService-Info.plist`) olmadan bu paketler
+  projeye eklenirse `flutter analyze`/`flutter test`/derleme kırılabilir veya en
+  azından çalışma zamanında `Firebase.initializeApp()` hata verir — kullanıcı bu
+  riski almak yerine, kendi Firebase projesini kurduktan sonra
+  PROJECT_HANDOFF_TR.md §13.4'teki adımları izlemeyi tercih etti.
+- Doğrulama: **gerçek push bildirimi tarafımdan test EDİLEMEDİ** (Firebase
+  projesi/cihaz erişimi yok — bu, kullanıcının baştan kabul ettiği bir sınır).
+  Test edilen ve doğrulanan: (1) Firebase HİÇ yapılandırılmamışken backend'in
+  hatasız başladığı ve çalıştığı, (2) `/users/me/fcm-token`'ın token kaydettiği
+  ve tekrar gönderimde yinelemediği, (3) `notifyManagement` tetikleyen bir işlem
+  (satın alma talebi oluşturma) yapıldığında hem hiçbir hata fırlatılmadığı hem
+  de uygulama içi bildirimin normal şekilde oluşmaya devam ettiği (push'un
+  sessizce atlandığı) — Node script ile uçtan uca doğrulandı, test verisi
+  (fcmToken + satın alma talebi) temizlendi.

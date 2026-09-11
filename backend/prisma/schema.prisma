@@ -104,6 +104,11 @@ model User {
   /// /2fa/enable ile kod doğrulanana kadar twoFactorEnabled false kalır.
   twoFactorSecret  String?
   twoFactorEnabled Boolean @default(false)
+  /// Push bildirimi (FCM) cihaz token'ları — bir kullanıcı birden fazla
+  /// cihazda oturum açabildiği için dizi. Firebase yapılandırılmamışsa
+  /// (FIREBASE_SERVICE_ACCOUNT_KEY yoksa) bu alan hiç kullanılmaz, yalnızca
+  /// uygulama içi bildirimler çalışmaya devam eder (bkz. lib/push.ts).
+  fcmTokens String[] @default([])
 
   customer Customer?
   staff    Staff?

@@ -457,6 +457,110 @@ adb install "C:\Users\SALİH\Desktop\nilufer-yonetim\mobile\build\app\outputs\fl
 
 ---
 
+## 13. Push Bildirimleri (FCM) — Firebase Kurulumu (yapılması gereken, sizin tarafınızdan)
+
+Backend'de push bildirimi ALTYAPISI hazır (`backend/src/lib/push.ts`, `lib/notify.ts`'in
+mevcut `notifyUser`/`notifyUsers`/`notifyManagement` fonksiyonlarına eklendi,
+`POST /users/me/fcm-token` ile cihaz token'ı kaydediliyor) ve **Firebase yapılandırılmadan
+sistem hatasız çalışmaya devam eder** — yalnızca uygulama içi bildirimler (mevcut
+"Bildirimler" ekranı) çalışır, push bildirimleri sessizce atlanır. Gerçek push bildirimi
+göndermek için bir Firebase projesine ve mobil tarafta ek paketlere ihtiyaç var; bu adımı
+tarafımdan (asistan) tamamlamak mümkün değil çünkü bir Firebase Console hesabı/erişimi
+gerektiriyor. Mobil tarafta `firebase_core`/`firebase_messaging` paketleri de HENÜZ
+eklenmedi — bunlar da aşağıdaki adımlarla birlikte sizin tarafınızdan eklenmeli.
+
+### 13.1 — Firebase projesi oluşturma
+
+1. https://console.firebase.google.com adresine gidin, "Proje Ekle" ile yeni bir proje
+   oluşturun (örn. "nilufer-ilaclama").
+2. Google Analytics'i isteğe bağlı bırakabilirsiniz (push bildirimi için gerekmiyor).
+
+### 13.2 — Android uygulaması ekleme
+
+1. Firebase Console → Proje Ayarları → "Uygulama Ekle" → Android simgesi.
+2. Paket adı: `mobile/android/app/build.gradle` (veya `build.gradle.kts`) içindeki
+   `applicationId` değerini kullanın.
+3. İndirilen **`google-services.json`** dosyasını `mobile/android/app/` klasörüne koyun
+   (proje reposuna commit ETMEYİN — `.gitignore`'a ekleyin, gizli anahtar içermese de
+   proje kimliği barındırdığı için genel pratik budur).
+4. Android tarafında Google Services Gradle eklentisini etkinleştirmeniz gerekir —
+   `flutterfire configure` komutu (aşağıda) bunu genelde otomatik yapar; elle
+   yapacaksanız FlutterFire resmi dokümantasyonundaki "Add Firebase to your Android app"
+   adımlarını izleyin.
+
+### 13.3 — iOS uygulaması ekleme (yalnızca iOS'a dağıtım planlıyorsanız)
+
+1. Firebase Console → aynı proje → "Uygulama Ekle" → iOS simgesi.
+2. Bundle ID: `mobile/ios/Runner.xcodeproj` içindeki bundle identifier.
+3. İndirilen **`GoogleService-Info.plist`** dosyasını `mobile/ios/Runner/` klasörüne
+   ekleyin (Xcode üzerinden "Runner" hedefine sürükleyerek ekleyin, yalnızca dosya
+   sistemine kopyalamak yetmez).
+
+### 13.4 — Flutter tarafında paketler (bu adım henüz KOD OLARAK YAPILMADI)
+
+```bash
+cd mobile
+dart pub global activate flutterfire_cli   # ilk kurulumda bir kez
+flutterfire configure                       # Firebase projenizi seçip firebase_options.dart üretir
+flutter pub add firebase_core firebase_messaging
+```
+
+Sonrasında:
+- `main.dart`'ta `WidgetsFlutterBinding.ensureInitialized()`'dan hemen sonra
+  `await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);` çağrılmalı.
+- Giriş sonrası (örn. `AuthProvider.login()` başarılı olduktan sonra) FCM token'ı alınıp
+  backend'e kaydedilmeli:
+  ```dart
+  final fcmToken = await FirebaseMessaging.instance.getToken();
+  if (fcmToken != null) {
+    await ApiClient.instance.post('/users/me/fcm-token', body: {'token': fcmToken});
+  }
+  FirebaseMessaging.instance.onTokenRefresh.listen((newToken) {
+    ApiClient.instance.post('/users/me/fcm-token', body: {'token': newToken});
+  });
+  ```
+- Bildirime dokununca ilgili ekrana gitmek için mevcut `relatedType`/`relatedId` deseni
+  kullanılabilir (bkz. `notifications_screen.dart`'taki mevcut in-app yönlendirme mantığı)
+  — `FirebaseMessaging.onMessageOpenedApp` içinde `message.data['relatedType']`/
+  `message.data['relatedId']` okunarak aynı yönlendirme fonksiyonu çağrılabilir
+  (backend zaten bu iki alanı `data` olarak push payload'ına ekliyor, bkz.
+  `backend/src/lib/notify.ts:pushToUsers`).
+- Android 13+ için bildirim izni istemeniz gerekir (`Permission.notification.request()`
+  — `permission_handler` paketiyle, veya `firebase_messaging`'in kendi
+  `requestPermission()` metoduyla).
+
+### 13.5 — Backend'de servis hesabı anahtarı
+
+1. Firebase Console → Proje Ayarları → "Hizmet Hesapları" sekmesi.
+2. "Yeni Özel Anahtar Oluştur" → bir JSON dosyası iner.
+3. Bu dosyanın TÜM içeriğini (JSON'ı) `backend/.env` dosyasındaki
+   `FIREBASE_SERVICE_ACCOUNT_KEY` değişkenine TEK SATIR olarak yapıştırın — JSON
+   satır sonu karakterleri barındırdığı için önce base64'e çevirmeniz daha güvenli
+   olur:
+   ```bash
+   # PowerShell:
+   [Convert]::ToBase64String([IO.File]::ReadAllBytes("indirilen-dosya.json")) | Set-Clipboard
+   # Sonra .env'e: FIREBASE_SERVICE_ACCOUNT_KEY=<panodaki base64 metni>
+   ```
+   (`lib/push.ts` değeri hem ham JSON hem base64 olarak kabul eder — `{` ile
+   başlıyorsa ham JSON, değilse base64 olarak çözülür.)
+4. Backend'i yeniden başlatın. Değer boşsa (varsayılan) sistem zaten hatasız çalışmaya
+   devam eder — bu adım tamamen opsiyoneldir, yalnızca gerçek push bildirimi
+   istiyorsanız gereklidir.
+5. **Bu anahtarı asla git'e commit etmeyin** — `.env` zaten `.gitignore`'da.
+
+### 13.6 — Doğrulama
+
+Yukarıdaki adımları tamamladıktan sonra: bir kullanıcıyla mobil uygulamaya giriş yapın,
+`/users/me/fcm-token`'ın çağrıldığını (backend loglarında veya bir network inceleyiciyle)
+doğrulayın, ardından o kullanıcıya bir bildirim tetikleyen bir işlem yapın (örn. bir iş
+atayın) — telefon kilitliyken bile bir push bildirimi düşmeli. **Bu son doğrulama adımı
+gerçek bir Firebase projesi ve fiziksel/emülatör cihaz gerektirdiği için tarafımdan
+test edilemedi** — yalnızca "Firebase yapılandırılmadan sistem hatasız çalışıyor" kısmı
+(§Bölüm F doğrulaması, `docs/NEW_FEATURES_TOUR.md`) tarafımdan test edildi.
+
+---
+
 ## Sonraki Adım
 
 Flutter mobil uygulaması artık `mobile/` altında gerçek bir proje olarak mevcut ve backend/web ile birlikte 15 Stitch ekranının tamamı için (bkz. `docs/STITCH_FEATURE_MATRIX.md`) gerçek API'ye bağlı ekranlar içeriyor. Bu doküman artık yalnızca bir "aktarım analizi" değil, projeyi yerelde çalıştırmak için de kullanılabilir (bkz. §12). Kalan açık sorular ve bilinçli olarak kapsam dışı bırakılan tek ayrıntı (finans trend grafiği) için `docs/STITCH_FEATURE_MATRIX.md` başındaki "Genel Durum Özeti"ne bakın.

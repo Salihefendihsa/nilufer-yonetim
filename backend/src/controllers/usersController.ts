@@ -6,6 +6,31 @@ import { idParam } from "../lib/params";
 import { resolveSupervisorInfo, wouldCreateSupervisorCycle } from "../lib/access";
 import { recordAuditLog } from "../lib/auditLog";
 
+const fcmTokenSchema = z.object({ token: z.string().min(1) });
+
+/**
+ * Cihazın FCM token'ını kaydeder — kullanıcı birden fazla cihazda oturum
+ * açabildiği için dizi (bkz. schema.prisma User.fcmTokens); aynı token
+ * tekrar gönderilirse (örn. token yenilenmediyse) yinelenmez.
+ */
+export async function registerFcmToken(req: Request, res: Response) {
+  const { token } = fcmTokenSchema.parse(req.body);
+
+  const user = await prisma.user.findUnique({ where: { id: req.user!.sub }, select: { fcmTokens: true } });
+  if (!user) {
+    return res.status(404).json({ error: "Kullanıcı bulunamadı" });
+  }
+
+  if (!user.fcmTokens.includes(token)) {
+    await prisma.user.update({
+      where: { id: req.user!.sub },
+      data: { fcmTokens: { set: [...user.fcmTokens, token] } },
+    });
+  }
+
+  return res.json({ ok: true });
+}
+
 export async function listUsers(req: Request, res: Response) {
   const roleQuery = typeof req.query.role === "string" ? req.query.role : undefined;
 
