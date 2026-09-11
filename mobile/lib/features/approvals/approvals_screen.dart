@@ -5,6 +5,7 @@ import '../../core/api_client.dart';
 import '../../models/advance.dart';
 import '../../models/contract.dart';
 import '../../models/job.dart';
+import '../../models/leave_request.dart';
 import '../../models/quote.dart';
 import '../../navigation/manager_nav.dart';
 import '../../theme/app_colors.dart';
@@ -70,6 +71,7 @@ class _ApprovalsScreenState extends State<ApprovalsScreen> {
   List<AdvanceRequest> _advances = [];
   List<Contract> _expiring = [];
   List<Job> _reportJobs = [];
+  List<LeaveRequest> _leaveRequests = [];
   bool _loading = true;
   String? _error;
   String? _busyId;
@@ -95,6 +97,7 @@ class _ApprovalsScreenState extends State<ApprovalsScreen> {
       _api.pendingAdvances().catchError((_) => <AdvanceRequest>[]),
       _api.expiringContracts().catchError((_) => <Contract>[]),
       _api.pendingReportJobs().catchError((_) => <Job>[]),
+      _api.pendingLeaveRequests().catchError((_) => <LeaveRequest>[]),
     ]);
     if (!mounted) return;
     setState(() {
@@ -102,8 +105,25 @@ class _ApprovalsScreenState extends State<ApprovalsScreen> {
       _advances = results[1] as List<AdvanceRequest>;
       _expiring = results[2] as List<Contract>;
       _reportJobs = results[3] as List<Job>;
+      _leaveRequests = results[4] as List<LeaveRequest>;
       _loading = false;
     });
+  }
+
+  Future<void> _decideLeave(LeaveRequest leave, String status) async {
+    setState(() => _busyId = leave.id);
+    try {
+      await _api.decideLeaveRequest(leave.id, status);
+      _load();
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(e is ApiException ? e.message : 'İşlem başarısız')),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _busyId = null);
+    }
   }
 
   Future<void> _decideAdvance(AdvanceRequest a, String status) async {
@@ -179,7 +199,7 @@ class _ApprovalsScreenState extends State<ApprovalsScreen> {
   }
 
   int get _total =>
-      _quotes.length + _advances.length + _expiring.length + _reportJobs.length;
+      _quotes.length + _advances.length + _expiring.length + _reportJobs.length + _leaveRequests.length;
 
   @override
   Widget build(BuildContext context) {
@@ -207,6 +227,7 @@ class _ApprovalsScreenState extends State<ApprovalsScreen> {
                     'quotes': _quotes.length,
                     'advances': _advances.length,
                     'contracts': _expiring.length,
+                    'leaves': _leaveRequests.length,
                   },
                   onChanged: (v) => setState(() => _filter = v),
                 ),
@@ -217,6 +238,20 @@ class _ApprovalsScreenState extends State<ApprovalsScreen> {
                     child: ListView(
                       padding: const EdgeInsets.all(16),
                       children: [
+                        if (_leaveRequests.isNotEmpty &&
+                            (_filter == null || _filter == 'leaves')) ...[
+                          _SectionTitle(
+                            'İzin Talepleri (${_leaveRequests.length})',
+                          ),
+                          ..._leaveRequests.map(
+                            (l) => _LeaveCard(
+                              leave: l,
+                              busy: _busyId == l.id,
+                              onApprove: () => _decideLeave(l, 'APPROVED'),
+                              onReject: () => _decideLeave(l, 'REJECTED'),
+                            ),
+                          ),
+                        ],
                         if (_reportJobs.isNotEmpty &&
                             (_filter == null || _filter == 'reports')) ...[
                           _SectionTitle(
@@ -269,7 +304,8 @@ class _ApprovalsScreenState extends State<ApprovalsScreen> {
                             !(_filter == 'reports' && _reportJobs.isNotEmpty) &&
                             !(_filter == 'quotes' && _quotes.isNotEmpty) &&
                             !(_filter == 'advances' && _advances.isNotEmpty) &&
-                            !(_filter == 'contracts' && _expiring.isNotEmpty))
+                            !(_filter == 'contracts' && _expiring.isNotEmpty) &&
+                            !(_filter == 'leaves' && _leaveRequests.isNotEmpty))
                           const Padding(
                             padding: EdgeInsets.only(top: 40),
                             child: EmptyStateView(
@@ -305,6 +341,7 @@ class _FilterChips extends StatelessWidget {
     'quotes': 'Teklifler',
     'advances': 'Avanslar',
     'contracts': 'Sözleşmeler',
+    'leaves': 'İzinler',
   };
 
   @override
@@ -621,6 +658,60 @@ class _ExpiringContractCard extends StatelessWidget {
                 color: AppColors.danger600,
               ),
             ),
+        ],
+      ),
+    );
+  }
+}
+
+class _LeaveCard extends StatelessWidget {
+  final LeaveRequest leave;
+  final bool busy;
+  final VoidCallback onApprove;
+  final VoidCallback onReject;
+  const _LeaveCard({
+    required this.leave,
+    required this.busy,
+    required this.onApprove,
+    required this.onReject,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return _AccentCard(
+      accentColor: AppColors.danger500,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            leave.staffName ?? 'Personel',
+            style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13.5),
+          ),
+          Text(
+            '${_dateFormat.format(DateTime.parse(leave.startDate))} – '
+            '${_dateFormat.format(DateTime.parse(leave.endDate))} · ${leave.reason}',
+            style: const TextStyle(fontSize: 11.5, color: AppColors.textSecondary),
+          ),
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              Expanded(
+                child: OutlinedButton(
+                  onPressed: busy ? null : onReject,
+                  style: OutlinedButton.styleFrom(foregroundColor: AppColors.danger600),
+                  child: const Text('Reddet'),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: ElevatedButton(
+                  onPressed: busy ? null : onApprove,
+                  style: ElevatedButton.styleFrom(backgroundColor: AppColors.success600),
+                  child: const Text('Onayla'),
+                ),
+              ),
+            ],
+          ),
         ],
       ),
     );

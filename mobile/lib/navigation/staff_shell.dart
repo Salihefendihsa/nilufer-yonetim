@@ -4,6 +4,7 @@ import '../features/calendar/calendar_screen.dart';
 import '../features/dashboard/dashboard_screen.dart';
 import '../features/evaluations/evaluations_screen.dart';
 import '../features/jobs/jobs_list_screen.dart';
+import '../features/leave_requests/leave_requests_screen.dart';
 import '../features/messages/messages_list_screen.dart';
 import '../features/notifications/notifications_screen.dart';
 import '../theme/app_colors.dart';
@@ -68,11 +69,17 @@ class _StaffShellState extends State<StaffShell> {
         Icons.checklist_rtl_outlined,
         _buildEvaluations,
       ),
+      AppDrawerEntry(
+        'İzinlerim',
+        Icons.event_busy_outlined,
+        _buildLeaveRequests,
+      ),
     ]),
   ];
 
   static Widget _buildCalendar(BuildContext _) => const CalendarScreen();
   static Widget _buildEvaluations(BuildContext _) => const EvaluationsScreen();
+  static Widget _buildLeaveRequests(BuildContext _) => const LeaveRequestsScreen();
 
   @override
   Widget build(BuildContext context) {

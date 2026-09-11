@@ -11,6 +11,7 @@ import {
   ArrowRightCircle,
   AlertTriangle,
   ClipboardList,
+  CalendarOff,
 } from "lucide-react";
 import { RequireRole } from "@/components/RequireRole";
 import { EmptyState } from "@/components/EmptyState";
@@ -18,10 +19,11 @@ import { PageHeader } from "@/components/PageHeader";
 import { StatCard } from "@/components/StatCard";
 import { StatusStrip } from "@/components/StatusStrip";
 import { api, ApiError } from "@/lib/api";
+import { useAuth } from "@/lib/AuthProvider";
 import { useToast } from "@/lib/ToastProvider";
 import { formatDate, currencyFormatter } from "@/lib/format";
 import { formatDateTime } from "@/lib/format";
-import type { QuoteRequest, AdvanceRequest, Contract, Customer, Job, Paginated } from "@/lib/types";
+import type { QuoteRequest, AdvanceRequest, Contract, Customer, Job, Paginated, LeaveRequest } from "@/lib/types";
 
 /** /jobs?pendingReportApproval=true yanıtında onaysız rapor özeti gömülü gelir. */
 interface JobWithPendingReport extends Job {
@@ -34,6 +36,7 @@ const QUEUE_COLORS = {
   advance: "#3D8A4E",
   quote: "#1F6FA8",
   report: "#5A6B5E",
+  leave: "#9B1C1C",
 } as const;
 
 /** Bitişine 7 günden az kalan sözleşme "acil" sayılır ve kırmızı kodlanır. */
@@ -41,17 +44,24 @@ const URGENT_DAY_THRESHOLD = 7;
 
 export default function ApprovalQueuePage() {
   return (
-    <RequireRole roles={["OWNER", "MANAGER"]}>
+    <RequireRole roles={["OWNER", "MANAGER", "TEAM_LEAD"]}>
       <ApprovalQueueContent />
     </RequireRole>
   );
 }
 
 function ApprovalQueueContent() {
+  const { user } = useAuth();
+  // TEAM_LEAD yalnızca kendi ekibinin izin taleplerini ve saha raporu
+  // onaylarını görebilir — teklif/avans/sözleşme uçları OWNER/MANAGER'a
+  // özel (bkz. backend routes), bu yüzden TEAM_LEAD için hiç çağrılmaz.
+  const isTeamLead = user?.role === "TEAM_LEAD";
+
   const [quotes, setQuotes] = useState<QuoteRequest[]>([]);
   const [advances, setAdvances] = useState<AdvanceRequest[]>([]);
   const [expiringContracts, setExpiringContracts] = useState<(Contract & { customer: Customer })[]>([]);
   const [pendingReports, setPendingReports] = useState<JobWithPendingReport[]>([]);
+  const [leaveRequests, setLeaveRequests] = useState<LeaveRequest[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
@@ -61,20 +71,24 @@ function ApprovalQueueContent() {
     setLoading(true);
     setError(null);
     try {
-      // allSettled: bu üç kalemden biri yetki/ağ hatası verirse sayfanın tamamı
+      // allSettled: bu kalemlerden biri yetki/ağ hatası verirse sayfanın tamamı
       // çökmesin, yalnızca o kalem boş listeyle gösterilsin.
-      const [quotesRes, advancesRes, expiringRes, reportsRes] = await Promise.allSettled([
-        api.get<Paginated<QuoteRequest>>("/quotes?status=NEW&limit=50"),
-        api.get<Paginated<AdvanceRequest>>("/advances?status=PENDING&limit=50"),
-        api.get<{ data: (Contract & { customer: Customer })[] }>("/contracts/expiring"),
+      const [quotesRes, advancesRes, expiringRes, reportsRes, leaveRes] = await Promise.allSettled([
+        isTeamLead ? Promise.resolve({ data: [], pagination: null } as never) : api.get<Paginated<QuoteRequest>>("/quotes?status=NEW&limit=50"),
+        isTeamLead ? Promise.resolve({ data: [], pagination: null } as never) : api.get<Paginated<AdvanceRequest>>("/advances?status=PENDING&limit=50"),
+        isTeamLead ? Promise.resolve({ data: [] } as never) : api.get<{ data: (Contract & { customer: Customer })[] }>("/contracts/expiring"),
         api.get<Paginated<JobWithPendingReport>>("/jobs?pendingReportApproval=true&limit=50"),
+        api.get<Paginated<LeaveRequest>>("/leave-requests?status=PENDING&limit=50"),
       ]);
       setQuotes(quotesRes.status === "fulfilled" ? quotesRes.value.data : []);
       setAdvances(advancesRes.status === "fulfilled" ? advancesRes.value.data : []);
       setExpiringContracts(expiringRes.status === "fulfilled" ? expiringRes.value.data : []);
       setPendingReports(reportsRes.status === "fulfilled" ? reportsRes.value.data : []);
+      setLeaveRequests(
+        leaveRes.status === "fulfilled" ? leaveRes.value.data.filter((l) => l.status === "PENDING") : []
+      );
 
-      const firstError = [quotesRes, advancesRes, expiringRes, reportsRes].find((r) => r.status === "rejected");
+      const firstError = [quotesRes, advancesRes, expiringRes, reportsRes, leaveRes].find((r) => r.status === "rejected");
       if (firstError && firstError.status === "rejected") {
         const reason = firstError.reason;
         setError(reason instanceof ApiError ? reason.message : "Kuyruğun bir kısmı yüklenemedi");
@@ -84,7 +98,7 @@ function ApprovalQueueContent() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [isTeamLead]);
 
   useEffect(() => {
     load();
@@ -143,7 +157,20 @@ function ApprovalQueueContent() {
     }
   }
 
-  const total = quotes.length + advances.length + expiringContracts.length + pendingReports.length;
+  async function handleLeaveDecision(id: string, status: "APPROVED" | "REJECTED") {
+    setBusyId(id);
+    try {
+      await api.patch(`/leave-requests/${id}/decide`, { status });
+      load();
+      showToast(status === "APPROVED" ? "İzin talebi onaylandı." : "İzin talebi reddedildi.");
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : "Güncellenemedi");
+    } finally {
+      setBusyId(null);
+    }
+  }
+
+  const total = quotes.length + advances.length + expiringContracts.length + pendingReports.length + leaveRequests.length;
 
   const daysLeftOf = (contract: Contract) =>
     Math.max(0, Math.ceil((new Date(contract.endDate).getTime() - Date.now()) / (1000 * 60 * 60 * 24)));
@@ -210,6 +237,14 @@ function ApprovalQueueContent() {
           mono
           hint={urgency.urgent > 0 ? `${urgency.urgent} tanesi ${URGENT_DAY_THRESHOLD} günden az` : undefined}
         />
+        <StatCard
+          label="İzin talebi"
+          value={loading ? "—" : String(leaveRequests.length)}
+          icon={CalendarOff}
+          accent="red"
+          mono
+          hint="Karar bekleyen izin talepleri"
+        />
       </div>
 
       {/* [Aciliyet / tür dağılımı şeridi] */}
@@ -221,6 +256,7 @@ function ApprovalQueueContent() {
           { label: "avans", count: advances.length, color: QUEUE_COLORS.advance },
           { label: "teklif", count: quotes.length, color: QUEUE_COLORS.quote },
           { label: "saha raporu", count: pendingReports.length, color: QUEUE_COLORS.report },
+          { label: "izin", count: leaveRequests.length, color: QUEUE_COLORS.leave },
         ]}
         action={
           urgency.urgent > 0 ? (
@@ -243,6 +279,47 @@ function ApprovalQueueContent() {
         </div>
       ) : (
         <div className="flex flex-col gap-3">
+          {leaveRequests.map((leave) => (
+            <div
+              key={leave.id}
+              className="flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-border border-l-4 bg-surface-card p-5 shadow-card transition hover:shadow-cardHover"
+              style={{ borderLeftColor: QUEUE_COLORS.leave }}
+            >
+              <div className="flex items-start gap-3">
+                <span className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-danger-50 text-danger-500 ring-1 ring-danger-100">
+                  <CalendarOff size={16} strokeWidth={1.75} />
+                </span>
+                <div>
+                  <p className="text-2xs font-semibold uppercase tracking-wide text-danger-500">İzin Talebi</p>
+                  <p className="mt-0.5 font-medium text-text-primary">{leave.staff?.user.fullName ?? "Personel"}</p>
+                  <p className="text-sm text-text-secondary">
+                    {formatDate(leave.startDate)} – {formatDate(leave.endDate)} · {leave.reason}
+                  </p>
+                </div>
+              </div>
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  disabled={busyId === leave.id}
+                  onClick={() => handleLeaveDecision(leave.id, "APPROVED")}
+                  className="flex items-center gap-1.5 rounded-xl bg-primary-600 px-4 py-2 text-sm font-semibold text-white shadow-card transition hover:bg-primary-700 disabled:opacity-50"
+                >
+                  <Check size={15} strokeWidth={2} />
+                  Onayla
+                </button>
+                <button
+                  type="button"
+                  disabled={busyId === leave.id}
+                  onClick={() => handleLeaveDecision(leave.id, "REJECTED")}
+                  className="flex items-center gap-1.5 rounded-xl border border-danger-100 bg-danger-50 px-4 py-2 text-sm font-semibold text-danger-500 transition hover:bg-danger-100 disabled:opacity-50"
+                >
+                  <X size={15} strokeWidth={2} />
+                  Reddet
+                </button>
+              </div>
+            </div>
+          ))}
+
           {pendingReports.map((job) => (
             <div
               key={job.id}

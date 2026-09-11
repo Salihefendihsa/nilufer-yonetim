@@ -26,6 +26,7 @@ import {
   Bell,
   BarChart3,
   Timer,
+  CalendarOff,
 } from "lucide-react";
 import { useAuth } from "@/lib/AuthProvider";
 import { ROLE_LABELS, ROLE_SHORT_LABELS, type Role } from "@/lib/auth";
@@ -48,7 +49,8 @@ const NAV_ITEMS: NavItem[] = [
   { href: "/takvim", label: "Takvim", icon: Calendar, roles: ["OWNER", "MANAGER", "TEAM_LEAD", "STAFF", "CUSTOMER"], group: "genel" },
   { href: "/bildirimler", label: "Bildirimler", icon: Bell, roles: ["OWNER", "MANAGER", "TEAM_LEAD", "STAFF", "CUSTOMER"], group: "genel" },
   { href: "/mesajlar", label: "Mesajlar", icon: MessageCircle, roles: ["OWNER", "MANAGER", "TEAM_LEAD", "STAFF", "CUSTOMER"], group: "genel" },
-  { href: "/bekleyen-onaylar", label: "Bekleyen Onaylar", icon: ClipboardCheck, roles: ["OWNER", "MANAGER"], group: "operasyon" },
+  { href: "/bekleyen-onaylar", label: "Bekleyen Onaylar", icon: ClipboardCheck, roles: ["OWNER", "MANAGER", "TEAM_LEAD"], group: "operasyon" },
+  { href: "/izinlerim", label: "İzin Taleplerim", icon: CalendarOff, roles: ["TEAM_LEAD", "STAFF"], group: "operasyon" },
   { href: "/musteriler", label: "Müşteriler", icon: Users, roles: ["OWNER", "MANAGER"], group: "operasyon" },
   { href: "/personel", label: "Personel", icon: HardHat, roles: ["OWNER", "MANAGER"], group: "operasyon" },
   { href: "/performans", label: "Performans", icon: Trophy, roles: ["OWNER", "MANAGER", "TEAM_LEAD"], group: "operasyon" },

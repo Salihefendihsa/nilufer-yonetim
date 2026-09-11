@@ -2,6 +2,7 @@ import '../../core/api_client.dart';
 import '../../models/advance.dart';
 import '../../models/contract.dart';
 import '../../models/job.dart';
+import '../../models/leave_request.dart';
 import '../../models/quote.dart';
 
 /// web/src/app/(dashboard)/bekleyen-onaylar/page.tsx ile aynı desen: 3
@@ -63,4 +64,20 @@ class ApprovalsApi {
       _api.patch('/quotes/$id', body: {'status': status});
 
   Future<void> convertQuote(String id) => _api.post('/quotes/$id/convert');
+
+  /// 4. onay kaynağı — izin talepleri (bkz. backend/src/routes/leaveRequests.ts).
+  Future<List<LeaveRequest>> pendingLeaveRequests() async {
+    final json = await _api.get<Map<String, dynamic>>(
+      '/leave-requests',
+      query: {'status': 'PENDING', 'limit': 50},
+    );
+    return (json['data'] as List)
+        .cast<Map<String, dynamic>>()
+        .map(LeaveRequest.fromJson)
+        .where((l) => l.status == 'PENDING')
+        .toList();
+  }
+
+  Future<void> decideLeaveRequest(String id, String status) =>
+      _api.patch('/leave-requests/$id/decide', body: {'status': status});
 }

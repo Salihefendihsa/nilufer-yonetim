@@ -173,6 +173,22 @@ export interface AdvanceRequest {
   staff?: { user: { fullName: string } };
 }
 
+export type LeaveRequestStatus = "PENDING" | "APPROVED" | "REJECTED";
+
+export interface LeaveRequest {
+  id: string;
+  staffId: string;
+  startDate: string;
+  endDate: string;
+  reason: string;
+  status: LeaveRequestStatus;
+  requestedAt: string;
+  decidedAt: string | null;
+  decidedByUserId: string | null;
+  decisionNote: string | null;
+  staff?: { user: { fullName: string } };
+}
+
 export interface QuoteRequest {
   id: string;
   fullName: string;

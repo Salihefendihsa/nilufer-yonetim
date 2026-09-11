@@ -111,6 +111,7 @@ model User {
   passwordResetTokens  PasswordResetToken[]
   impersonationsAsOwner  ImpersonationSession[] @relation("ImpersonationOwner")
   impersonationsAsTarget ImpersonationSession[] @relation("ImpersonationTarget")
+  leaveRequestDecisions LeaveRequest[] @relation("LeaveRequestDecidedBy")
 
   @@index([role])
 }
@@ -204,6 +205,7 @@ model Staff {
   jobs            Job[]            @relation("AssignedStaff")
   jobReports      JobReport[]
   advanceRequests AdvanceRequest[]
+  leaveRequests LeaveRequest[]
   permissions     Permission[]
   certifications  StaffCertification[]
   collectedPayments Payment[]      @relation("PaymentCollectedBy")
@@ -251,6 +253,35 @@ model AdvanceRequest {
   createdAt DateTime      @default(now())
 
   staff Staff @relation(fields: [staffId], references: [id])
+
+  @@index([staffId])
+  @@index([status])
+}
+
+enum LeaveRequestStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+/// İzin talep/onay akışı — onaylanınca Staff.status=ON_LEAVE,
+/// Staff.statusUntil=endDate olur; mevcut resetExpiredStaffStatuses cron'u
+/// (lib/cron.ts) süre dolunca otomatik AVAILABLE'a döndürür, ayrı bir cron
+/// gerekmez.
+model LeaveRequest {
+  id              String             @id @default(uuid())
+  staffId         String
+  startDate       DateTime
+  endDate         DateTime
+  reason          String
+  status          LeaveRequestStatus @default(PENDING)
+  requestedAt     DateTime           @default(now())
+  decidedAt       DateTime?
+  decidedByUserId String?
+  decisionNote    String?
+
+  staff        Staff @relation(fields: [staffId], references: [id])
+  decidedByUser User? @relation("LeaveRequestDecidedBy", fields: [decidedByUserId], references: [id])
 
   @@index([staffId])
   @@index([status])

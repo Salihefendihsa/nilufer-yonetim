@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../features/calendar/calendar_screen.dart';
 import '../features/dashboard/dashboard_screen.dart';
 import '../features/jobs/jobs_list_screen.dart';
+import '../features/leave_requests/leave_requests_screen.dart';
 import '../features/messages/messages_list_screen.dart';
 import '../features/notifications/notifications_screen.dart';
 import '../features/performance/performance_screen.dart';
@@ -68,12 +69,18 @@ class _TeamLeadShellState extends State<TeamLeadShell> {
         _buildPerformance,
       ),
       AppDrawerEntry('Stok', Icons.inventory_2_outlined, _buildStock),
+      AppDrawerEntry(
+        'İzinlerim',
+        Icons.event_busy_outlined,
+        _buildLeaveRequests,
+      ),
     ]),
   ];
 
   static Widget _buildCalendar(BuildContext _) => const CalendarScreen();
   static Widget _buildPerformance(BuildContext _) => const PerformanceScreen();
   static Widget _buildStock(BuildContext _) => const StockListScreen();
+  static Widget _buildLeaveRequests(BuildContext _) => const LeaveRequestsScreen();
 
   @override
   Widget build(BuildContext context) {
