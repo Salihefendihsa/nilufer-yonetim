@@ -12,6 +12,8 @@ import '../../widgets/state_views.dart';
 import '../../widgets/stat_card.dart';
 import 'chat_screen.dart';
 import 'messages_api.dart';
+import 'observer_access_api.dart';
+import 'observer_access_sheet.dart';
 import 'observer_conversations_screen.dart';
 
 final _timeFormat = DateFormat('HH:mm');
@@ -28,6 +30,7 @@ class MessagesListScreen extends StatefulWidget {
 
 class _MessagesListScreenState extends State<MessagesListScreen> {
   final _api = MessagesApi();
+  final _observerApi = ObserverAccessApi();
   List<ConversationSummary> _conversations = [];
   bool _loading = true;
   String? _error;
@@ -120,6 +123,34 @@ class _MessagesListScreenState extends State<MessagesListScreen> {
             ),
           ),
         );
+    }
+  }
+
+  /// Gözlemci Modu'na girmeden önce aktif bir ObserverAccessGrant olup
+  /// olmadığını kontrol eder; yoksa gerekçe+süre formunu açar
+  /// (web/src/app/(dashboard)/mesajlar/page.tsx:handleOpenObserverMode ile
+  /// aynı akış).
+  Future<void> _openObserverMode() async {
+    try {
+      final current = await _observerApi.getCurrent();
+      if (current == null) {
+        final granted = await showObserverAccessSheet(context);
+        if (granted == null || !mounted) return;
+      }
+      if (!mounted) return;
+      await Navigator.of(context).push(
+        MaterialPageRoute(builder: (_) => const ObserverConversationsScreen()),
+      );
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              e is ApiException ? e.message : 'Gözlemci erişimi kontrol edilemedi',
+            ),
+          ),
+        );
+      }
     }
   }
 
@@ -220,11 +251,7 @@ class _MessagesListScreenState extends State<MessagesListScreen> {
             IconButton(
               icon: const Icon(Icons.visibility_outlined),
               tooltip: 'Gözlemci Modu — Tüm Konuşmalar',
-              onPressed: () => Navigator.of(context).push(
-                MaterialPageRoute(
-                  builder: (_) => const ObserverConversationsScreen(),
-                ),
-              ),
+              onPressed: _openObserverMode,
             ),
           IconButton(
             icon: const Icon(Icons.edit_square),

@@ -92,6 +92,8 @@ model User {
   approvedJobReports JobReport[]           @relation("JobReportApprovedBy")
   requestedPurchases StockPurchaseRequest[] @relation("PurchaseRequestedBy")
   receivedPurchases  StockPurchaseRequest[] @relation("PurchaseReceivedBy")
+  observerAccessGrants ObserverAccessGrant[]
+  evaluationsGiven     Evaluation[]          @relation("EvaluationEvaluator")
 
   @@index([role])
 }
@@ -144,6 +146,7 @@ model Staff {
   permissions     Permission[]
   certifications  StaffCertification[]
   collectedPayments Payment[]      @relation("PaymentCollectedBy")
+  evaluationsReceived Evaluation[] @relation("EvaluationTarget")
 
   @@index([position])
   @@index([supervisorId])
@@ -517,6 +520,97 @@ model UserSession {
 
   @@index([userId])
   @@index([loginAt])
+}
+
+/// Gözlemci Modu erişim izni — OWNER, GET /conversations/all'a erişmeden önce
+/// gerekçeli ve süreli (veya acil durumda süresiz) bir izin talep etmek
+/// zorundadır. Bu, "OWNER'ın her şeyi görebilmesi" ile "her erişimin izlenip
+/// hesap verebilir olması" arasında bir denge kurar.
+model ObserverAccessGrant {
+  id                String    @id @default(uuid())
+  requestedByUserId String
+  reason            String
+  expiresAt         DateTime?
+  isEmergency       Boolean   @default(false)
+  createdAt         DateTime  @default(now())
+
+  requestedBy User @relation(fields: [requestedByUserId], references: [id])
+
+  @@index([requestedByUserId])
+  @@index([expiresAt])
+}
+
+/// Formal Değerlendirme sisteminin kriter kataloğu — mevcut basit
+/// Performans sayfasından (tamamlanan iş + müşteri puanı) bağımsız, ayrı bir
+/// bölüm olarak eklenir; o sayfanın mantığı değişmez.
+model EvaluationCriterion {
+  id          String   @id @default(uuid())
+  name        String
+  description String?
+  isActive    Boolean  @default(true)
+  sortOrder   Int      @default(0)
+  createdAt   DateTime @default(now())
+
+  scores EvaluationScore[]
+
+  @@index([isActive])
+}
+
+model EvaluationPeriod {
+  id        String   @id @default(uuid())
+  label     String
+  startDate DateTime
+  endDate   DateTime
+  isLocked  Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  evaluations Evaluation[]
+}
+
+enum EvaluationStatus {
+  DRAFT
+  SUBMITTED
+  LOCKED
+}
+
+model Evaluation {
+  id              String           @id @default(uuid())
+  evaluatorUserId String
+  targetStaffId   String
+  periodId        String
+  status          EvaluationStatus @default(DRAFT)
+  comment         String?
+  /// Opsiyonel ek genel puan (1-20) — kriter ortalamasından (averageScore,
+  /// her okumada hesaplanır) AYRIDIR, asla birbirine karışmaz/üzerine yazmaz.
+  managerScore    Int?
+  submittedAt     DateTime?
+  lockedAt        DateTime?
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+
+  evaluator User             @relation("EvaluationEvaluator", fields: [evaluatorUserId], references: [id])
+  target    Staff            @relation("EvaluationTarget", fields: [targetStaffId], references: [id])
+  period    EvaluationPeriod @relation(fields: [periodId], references: [id])
+  scores    EvaluationScore[]
+
+  @@unique([evaluatorUserId, targetStaffId, periodId])
+  @@index([targetStaffId])
+  @@index([periodId])
+  @@index([status])
+}
+
+model EvaluationScore {
+  id           String @id @default(uuid())
+  evaluationId String
+  criterionId  String
+  /// 1-20 arası, Zod ile validate edilir.
+  score        Int
+
+  evaluation Evaluation           @relation(fields: [evaluationId], references: [id], onDelete: Cascade)
+  criterion  EvaluationCriterion  @relation(fields: [criterionId], references: [id])
+
+  @@unique([evaluationId, criterionId])
+  @@index([evaluationId])
 }
 
 model AuditLog {

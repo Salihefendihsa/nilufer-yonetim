@@ -239,6 +239,15 @@ export interface AllConversationSummary {
   updatedAt: string;
 }
 
+export interface ObserverAccessGrant {
+  id: string;
+  requestedByUserId: string;
+  reason: string;
+  expiresAt: string | null;
+  isEmergency: boolean;
+  createdAt: string;
+}
+
 export interface AvailableContact {
   id: string;
   fullName: string;

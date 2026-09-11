@@ -9,9 +9,10 @@ import { DayDivider, MessageBubble } from "@/components/MessageBubble";
 import { api, ApiError, resolveUploadUrl } from "@/lib/api";
 import { useAuth } from "@/lib/AuthProvider";
 import { ROLE_LABELS, type Role } from "@/lib/auth";
-import type { ConversationSummary, AllConversationSummary, MessageItem, Paginated, AvailableContact } from "@/lib/types";
+import type { ConversationSummary, AllConversationSummary, MessageItem, Paginated, AvailableContact, ObserverAccessGrant } from "@/lib/types";
 import { NewConversationModal } from "./NewConversationModal";
 import { BroadcastModal } from "./BroadcastModal";
+import { ObserverAccessModal } from "./ObserverAccessModal";
 
 type ViewMode = "mine" | "all";
 
@@ -80,6 +81,8 @@ export default function MessagesPage() {
   const [error, setError] = useState<string | null>(null);
   const [newConversationOpen, setNewConversationOpen] = useState(false);
   const [broadcastOpen, setBroadcastOpen] = useState(false);
+  const [observerGrant, setObserverGrant] = useState<ObserverAccessGrant | null>(null);
+  const [observerModalOpen, setObserverModalOpen] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const loadConversations = useCallback(async () => {
@@ -99,10 +102,36 @@ export default function MessagesPage() {
       setAllConversations(res.data);
       return res.data;
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : "Konuşmalar yüklenemedi");
+      if (err instanceof ApiError && err.status === 403) {
+        // Grant süresi tam bu sırada dolmuş olabilir — sessizce tekrar talep formuna düş.
+        setObserverGrant(null);
+        setObserverModalOpen(true);
+      } else {
+        setError(err instanceof ApiError ? err.message : "Konuşmalar yüklenemedi");
+      }
       return [];
     }
   }, []);
+
+  async function handleOpenObserverMode() {
+    try {
+      const res = await api.get<{ data: ObserverAccessGrant | null }>("/observer-access/current");
+      if (res.data) {
+        setObserverGrant(res.data);
+        setMode("all");
+      } else {
+        setObserverModalOpen(true);
+      }
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : "Gözlemci erişimi kontrol edilemedi");
+    }
+  }
+
+  function handleObserverGranted(grant: ObserverAccessGrant) {
+    setObserverGrant(grant);
+    setObserverModalOpen(false);
+    setMode("all");
+  }
 
   useEffect(() => {
     setLoadingConversations(true);
@@ -258,7 +287,7 @@ export default function MessagesPage() {
                 </button>
                 <button
                   type="button"
-                  onClick={() => setMode("all")}
+                  onClick={handleOpenObserverMode}
                   className={`flex items-center gap-1.5 rounded-xl px-3.5 py-2 text-sm font-medium transition ${
                     mode === "all" ? "bg-primary-600 text-white shadow-card" : "text-text-secondary hover:bg-surface-subtle"
                   }`}
@@ -283,6 +312,19 @@ export default function MessagesPage() {
       />
 
       {error && <p className="rounded-2xl border border-danger-100 bg-danger-50 px-4 py-3 text-sm text-danger-500">{error}</p>}
+
+      {mode === "all" && observerGrant && (
+        <p className="flex flex-wrap items-center gap-2 rounded-2xl border border-warning-100 bg-warning-50 px-4 py-3 text-sm text-warning-600">
+          <Eye size={15} strokeWidth={1.75} />
+          <span className="font-medium">{observerGrant.isEmergency ? "Acil durum erişimi (sınırsız)" : "Gözlemci erişimi aktif"}</span>
+          <span className="text-warning-600/80">— Gerekçe: {observerGrant.reason}</span>
+          {observerGrant.expiresAt && (
+            <span className="text-warning-600/80">
+              · Bitiş: {new Date(observerGrant.expiresAt).toLocaleString("tr-TR")}
+            </span>
+          )}
+        </p>
+      )}
 
       {/* [Özet kartlar] */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
@@ -533,6 +575,12 @@ export default function MessagesPage() {
         open={newConversationOpen}
         onClose={() => setNewConversationOpen(false)}
         onSelect={handleSelectContact}
+      />
+
+      <ObserverAccessModal
+        open={observerModalOpen}
+        onClose={() => setObserverModalOpen(false)}
+        onGranted={handleObserverGranted}
       />
     </div>
   );

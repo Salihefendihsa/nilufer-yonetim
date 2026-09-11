@@ -9,6 +9,7 @@ import { notifyUser } from "../lib/notify";
 import { saveBase64Image } from "../lib/upload";
 import { getTeamStaffIds } from "../lib/access";
 import { recordAuditLog } from "../lib/auditLog";
+import { findActiveGrant } from "./observerAccessController";
 
 const participantSelect = { id: true, fullName: true, role: true } as const;
 
@@ -59,8 +60,20 @@ export async function listConversations(req: Request, res: Response) {
   return res.json({ data: result });
 }
 
-/** OWNER-only: every conversation in the system, regardless of whether OWNER is a participant. */
-export async function listAllConversations(_req: Request, res: Response) {
+/**
+ * OWNER-only: every conversation in the system, regardless of whether OWNER is a
+ * participant. Erişim, önceden alınmış aktif bir ObserverAccessGrant'a bağlıdır
+ * (bkz. controllers/observerAccessController.ts) — yoksa 403 döner ve web/mobile
+ * gerekçe+süre formunu açar. Her başarılı çağrı ayrıca kendi "kullanım" audit log
+ * kaydını düşer (grant'ın verilişinden bağımsız, kullanımının izlenmesi için).
+ */
+export async function listAllConversations(req: Request, res: Response) {
+  const userId = req.user!.sub;
+  const grant = await findActiveGrant(userId);
+  if (!grant) {
+    return res.status(403).json({ error: "Önce gözlemci erişimi talep edin", requiresGrant: true });
+  }
+
   const conversations = await prisma.conversation.findMany({
     include: {
       participantA: { select: participantSelect },
@@ -83,6 +96,15 @@ export async function listAllConversations(_req: Request, res: Response) {
       };
     })
     .sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime());
+
+  await recordAuditLog({
+    actorUserId: userId,
+    action: "observer.access_used",
+    targetUserId: userId,
+    targetType: "ObserverAccessGrant",
+    targetId: grant.id,
+    detail: `Tüm konuşmalar listelendi (${result.length} konuşma)`,
+  });
 
   return res.json({ data: result });
 }
