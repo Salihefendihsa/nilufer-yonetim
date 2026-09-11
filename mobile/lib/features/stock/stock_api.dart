@@ -134,12 +134,73 @@ class StockApi {
     String productId,
     double quantity, {
     String? note,
+    String? supplierId,
+    String? orderTrackingNumber,
   }) => _api.post('/products/$productId/purchase-requests', body: {
     'quantity': quantity,
     if (note != null && note.isNotEmpty) 'note': note,
+    if (supplierId != null && supplierId.isNotEmpty) 'supplierId': supplierId,
+    if (orderTrackingNumber != null && orderTrackingNumber.isNotEmpty)
+      'orderTrackingNumber': orderTrackingNumber,
   });
 
   /// status: RECEIVED (mal kabul, stoğu artırır) veya CANCELLED.
   Future<void> resolvePurchaseRequest(String id, String status) =>
       _api.patch('/products/purchase-requests/$id', body: {'status': status});
+
+  // --- Tedarikçiler (Bölüm E) ---
+
+  Future<List<Supplier>> listSuppliers() async {
+    final json = await _api.get<Map<String, dynamic>>('/suppliers');
+    return (json['data'] as List)
+        .cast<Map<String, dynamic>>()
+        .map(Supplier.fromJson)
+        .toList();
+  }
+
+  Future<Supplier> createSupplier({
+    required String name,
+    String? contactPerson,
+    String? phone,
+    String? email,
+    String? address,
+  }) async {
+    final json = await _api.post<Map<String, dynamic>>(
+      '/suppliers',
+      body: {
+        'name': name,
+        if (contactPerson != null && contactPerson.isNotEmpty)
+          'contactPerson': contactPerson,
+        if (phone != null && phone.isNotEmpty) 'phone': phone,
+        if (email != null && email.isNotEmpty) 'email': email,
+        if (address != null && address.isNotEmpty) 'address': address,
+      },
+    );
+    return Supplier.fromJson(json);
+  }
+
+  Future<Supplier> updateSupplier(
+    String id, {
+    String? name,
+    String? contactPerson,
+    String? phone,
+    String? email,
+    String? address,
+    bool? isActive,
+  }) async {
+    final json = await _api.patch<Map<String, dynamic>>(
+      '/suppliers/$id',
+      body: {
+        if (name != null) 'name': name,
+        'contactPerson': contactPerson,
+        'phone': phone,
+        'email': email,
+        'address': address,
+        if (isActive != null) 'isActive': isActive,
+      },
+    );
+    return Supplier.fromJson(json);
+  }
+
+  Future<void> deleteSupplier(String id) => _api.delete('/suppliers/$id');
 }

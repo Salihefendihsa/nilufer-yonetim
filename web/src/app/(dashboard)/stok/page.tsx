@@ -19,6 +19,7 @@ import { ProductFormModal } from "./ProductFormModal";
 import { RestockModal } from "./RestockModal";
 import { PurchaseRequestModal } from "./PurchaseRequestModal";
 import { PurchaseRequestsPanel } from "./PurchaseRequestsPanel";
+import { SuppliersPanel } from "./SuppliersPanel";
 import { MovementsModal } from "./MovementsModal";
 import { StockCountModal } from "./StockCountModal";
 
@@ -367,6 +368,7 @@ function StockPageContent() {
       />
 
       {canManage && <PurchaseRequestsPanel key={purchaseRefreshKey} onChanged={load} />}
+      {canManage && <SuppliersPanel />}
 
       <ProductFormModal open={formOpen} onClose={() => setFormOpen(false)} onSaved={load} />
       <RestockModal open={!!restockTarget} onClose={() => setRestockTarget(null)} onSaved={load} product={restockTarget} />

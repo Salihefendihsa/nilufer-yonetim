@@ -3,7 +3,7 @@
 import { useEffect, useState, type FormEvent } from "react";
 import { Modal } from "@/components/Modal";
 import { api, ApiError } from "@/lib/api";
-import type { Product } from "@/lib/types";
+import type { Product, Supplier } from "@/lib/types";
 
 interface PurchaseRequestModalProps {
   open: boolean;
@@ -19,6 +19,9 @@ interface PurchaseRequestModalProps {
 export function PurchaseRequestModal({ open, onClose, onSaved, product }: PurchaseRequestModalProps) {
   const [quantity, setQuantity] = useState("");
   const [note, setNote] = useState("");
+  const [supplierId, setSupplierId] = useState("");
+  const [orderTrackingNumber, setOrderTrackingNumber] = useState("");
+  const [suppliers, setSuppliers] = useState<Supplier[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
 
@@ -26,7 +29,13 @@ export function PurchaseRequestModal({ open, onClose, onSaved, product }: Purcha
     if (open) {
       setQuantity("");
       setNote("");
+      setSupplierId("");
+      setOrderTrackingNumber("");
       setError(null);
+      api
+        .get<{ data: Supplier[] }>("/suppliers")
+        .then((res) => setSuppliers(res.data.filter((s) => s.isActive)))
+        .catch(() => setSuppliers([]));
     }
   }, [open]);
 
@@ -40,6 +49,8 @@ export function PurchaseRequestModal({ open, onClose, onSaved, product }: Purcha
       await api.post(`/products/${product.id}/purchase-requests`, {
         quantity: Number(quantity),
         note: note.trim() || undefined,
+        supplierId: supplierId || undefined,
+        orderTrackingNumber: orderTrackingNumber.trim() || undefined,
       });
       onSaved();
       onClose();
@@ -73,12 +84,34 @@ export function PurchaseRequestModal({ open, onClose, onSaved, product }: Purcha
         </div>
 
         <div className="flex flex-col gap-1.5">
+          <label className="text-sm font-medium text-text-secondary">Tedarikçi (opsiyonel)</label>
+          <select value={supplierId} onChange={(e) => setSupplierId(e.target.value)} className="input">
+            <option value="">Seçilmedi</option>
+            {suppliers.map((s) => (
+              <option key={s.id} value={s.id}>
+                {s.name}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <div className="flex flex-col gap-1.5">
+          <label className="text-sm font-medium text-text-secondary">Sipariş/Kargo Takip No (opsiyonel)</label>
+          <input
+            value={orderTrackingNumber}
+            onChange={(e) => setOrderTrackingNumber(e.target.value)}
+            className="input"
+            placeholder="Örn. TRK-90412"
+          />
+        </div>
+
+        <div className="flex flex-col gap-1.5">
           <label className="text-sm font-medium text-text-secondary">Not (opsiyonel)</label>
           <input
             value={note}
             onChange={(e) => setNote(e.target.value)}
             className="input"
-            placeholder="Örn. Tedarikçi X, 2 hafta teslim"
+            placeholder="Örn. 2 hafta teslim"
           />
         </div>
 

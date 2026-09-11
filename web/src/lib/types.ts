@@ -354,8 +354,22 @@ export interface StockPurchaseRequest {
   receivedAt: string | null;
   receivedByUserId: string | null;
   createdAt: string;
+  supplierId: string | null;
+  orderTrackingNumber: string | null;
   product?: { id: string; name: string; unit: string; code: string | null };
   requestedBy?: { fullName: string };
+  supplier?: { id: string; name: string } | null;
+}
+
+export interface Supplier {
+  id: string;
+  name: string;
+  contactPerson: string | null;
+  phone: string | null;
+  email: string | null;
+  address: string | null;
+  isActive: boolean;
+  createdAt: string;
 }
 
 export type RecurrenceType = "MONTHLY" | "QUARTERLY" | "SEMIANNUAL" | "ANNUAL";

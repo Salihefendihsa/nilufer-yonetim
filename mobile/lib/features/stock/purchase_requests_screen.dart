@@ -148,6 +148,10 @@ class _PurchaseRequestsScreenState extends State<PurchaseRequestsScreen> {
                           [
                             r.requestedByName ?? '—',
                             _dateFormat.format(DateTime.parse(r.createdAt)),
+                            if (r.supplierName != null) r.supplierName!,
+                            if (r.orderTrackingNumber != null &&
+                                r.orderTrackingNumber!.isNotEmpty)
+                              'Takip: ${r.orderTrackingNumber}',
                             if (r.note != null && r.note!.isNotEmpty) r.note!,
                           ].join(' · '),
                           style: const TextStyle(

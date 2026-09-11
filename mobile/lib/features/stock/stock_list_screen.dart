@@ -10,6 +10,7 @@ import '../../widgets/state_views.dart';
 import 'purchase_requests_screen.dart';
 import 'stock_api.dart';
 import 'stock_movements_screen.dart';
+import 'suppliers_screen.dart';
 
 /// backend/src/routes/products.ts: GET herkese (rol dahilinde) açık, yazma
 /// yalnızca OWNER/MANAGER — bu ekran STAFF/TEAM_LEAD için salt okunur.
@@ -69,7 +70,15 @@ class _StockListScreenState extends State<StockListScreen> {
   Future<void> _showPurchaseSheet(Product p) async {
     final quantityController = TextEditingController();
     final noteController = TextEditingController();
-    final result = await showModalBottomSheet<double>(
+    final trackingController = TextEditingController();
+    String? supplierId;
+    final suppliers = await _api.listSuppliers().catchError(
+      (_) => <Supplier>[],
+    );
+    final activeSuppliers = suppliers.where((s) => s.isActive).toList();
+
+    if (!mounted) return;
+    final result = await showModalBottomSheet<Map<String, dynamic>>(
       context: context,
       isScrollControlled: true,
       builder: (ctx) => Padding(
@@ -79,51 +88,95 @@ class _StockListScreenState extends State<StockListScreen> {
           right: 20,
           top: 20,
         ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              '${p.name} — Satın Alma Talebi',
-              style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 15),
-            ),
-            const SizedBox(height: 4),
-            const Text(
-              'Talep oluşturulduğunda stok hemen artmaz; mal kabulünde işlenir.',
-              style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
-            ),
-            const SizedBox(height: 12),
-            TextField(
-              controller: quantityController,
-              keyboardType: const TextInputType.numberWithOptions(
-                decimal: true,
+        child: StatefulBuilder(
+          builder: (ctx, setSheetState) => Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                '${p.name} — Satın Alma Talebi',
+                style: const TextStyle(
+                  fontWeight: FontWeight.w700,
+                  fontSize: 15,
+                ),
               ),
-              decoration: InputDecoration(labelText: 'Miktar (${p.unit})'),
-              autofocus: true,
-            ),
-            const SizedBox(height: 12),
-            TextField(
-              controller: noteController,
-              decoration: const InputDecoration(labelText: 'Not (opsiyonel)'),
-            ),
-            const SizedBox(height: 16),
-            ElevatedButton(
-              onPressed: () => Navigator.of(
-                ctx,
-              ).pop(double.tryParse(quantityController.text.trim())),
-              child: const Text('Talep Oluştur'),
-            ),
-            const SizedBox(height: 12),
-          ],
+              const SizedBox(height: 4),
+              const Text(
+                'Talep oluşturulduğunda stok hemen artmaz; mal kabulünde işlenir.',
+                style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: quantityController,
+                keyboardType: const TextInputType.numberWithOptions(
+                  decimal: true,
+                ),
+                decoration: InputDecoration(labelText: 'Miktar (${p.unit})'),
+                autofocus: true,
+              ),
+              if (activeSuppliers.isNotEmpty) ...[
+                const SizedBox(height: 12),
+                DropdownButtonFormField<String>(
+                  initialValue: supplierId,
+                  isExpanded: true,
+                  decoration: const InputDecoration(
+                    labelText: 'Tedarikçi (opsiyonel)',
+                  ),
+                  items: [
+                    const DropdownMenuItem<String>(
+                      value: null,
+                      child: Text('Seçilmedi'),
+                    ),
+                    ...activeSuppliers.map(
+                      (s) => DropdownMenuItem(
+                        value: s.id,
+                        child: Text(s.name, overflow: TextOverflow.ellipsis),
+                      ),
+                    ),
+                  ],
+                  onChanged: (v) => setSheetState(() => supplierId = v),
+                ),
+              ],
+              const SizedBox(height: 12),
+              TextField(
+                controller: trackingController,
+                decoration: const InputDecoration(
+                  labelText: 'Sipariş/Kargo Takip No (opsiyonel)',
+                ),
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: noteController,
+                decoration: const InputDecoration(labelText: 'Not (opsiyonel)'),
+              ),
+              const SizedBox(height: 16),
+              ElevatedButton(
+                onPressed: () {
+                  final qty = double.tryParse(quantityController.text.trim());
+                  if (qty == null || qty <= 0) return;
+                  Navigator.of(ctx).pop({
+                    'quantity': qty,
+                    'supplierId': supplierId,
+                    'note': noteController.text.trim(),
+                    'orderTrackingNumber': trackingController.text.trim(),
+                  });
+                },
+                child: const Text('Talep Oluştur'),
+              ),
+              const SizedBox(height: 12),
+            ],
+          ),
         ),
       ),
     );
-    if (result == null || result <= 0) return;
+    if (result == null) return;
     try {
       await _api.createPurchaseRequest(
         p.id,
-        result,
-        note: noteController.text.trim(),
+        result['quantity'] as double,
+        note: result['note'] as String?,
+        supplierId: result['supplierId'] as String?,
+        orderTrackingNumber: result['orderTrackingNumber'] as String?,
       );
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -360,6 +413,16 @@ class _StockListScreenState extends State<StockListScreen> {
       appBar: AppBar(
         title: const Text('Stok'),
         actions: [
+          if (_canManage)
+            IconButton(
+              icon: const Icon(Icons.local_shipping_outlined),
+              tooltip: 'Tedarikçiler',
+              onPressed: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute(builder: (_) => const SuppliersScreen()),
+                );
+              },
+            ),
           if (_canManage)
             IconButton(
               icon: const Icon(Icons.shopping_cart_outlined),

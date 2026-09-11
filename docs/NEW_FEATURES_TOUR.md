@@ -142,3 +142,35 @@ sözleşmelerini ve varsayılan (spec'te belirtilmemiş) iş kurallarını kayde
   kurtarma kodunun tekrar kullanılamadığı → disable → disable sonrası
   normal (2FA'sız) girişin çalıştığı — hepsi doğrulandı (11/11 adım
   beklenen sonucu verdi).
+
+## Bölüm E — Tedarikçi/Sipariş Yönetimi
+
+- `Supplier`: `name`, `contactPerson?`, `phone?`, `email?`, `address?`,
+  `isActive`. CRUD `/suppliers` — OWNER/MANAGER (ServiceType/District'ten
+  farklı olarak OWNER-only değil, çünkü tedarikçi kaydı operasyonel bir iş,
+  MANAGER'ın günlük akışının parçası — mevcut satın alma talebi akışıyla
+  aynı rol seviyesinde tutuldu).
+- Silme = `ServiceType`/`District` ile AYNI desen: kalıcı silmez,
+  `isActive=false` yapar — geçmiş `StockPurchaseRequest.supplierId`
+  referansları kırılmasın diye (bir tedarikçi pasifleşse bile eski
+  siparişlerdeki adı görünmeye devam eder).
+- `StockPurchaseRequest`'e iki opsiyonel alan eklendi: `supplierId` (FK) ve
+  `orderTrackingNumber` (serbest metin, kargo/sipariş no). Mevcut talep
+  akışına (PENDING → RECEIVED/CANCELLED, iyimser kilit, stok yalnızca mal
+  kabulünde artar) hiç dokunulmadı — yalnızca `createPurchaseRequest`
+  şemasına iki opsiyonel alan eklendi, `listPurchaseRequests`/
+  `updatePurchaseRequest` yanıtlarına `supplier: {id, name}` include edildi.
+- Web: Stok sayfasına açılır/kapanır "Tedarikçiler" paneli (ServiceType/
+  District'teki satır-içi ekle/düzenle/pasifleştir deseniyle aynı) +
+  Satın Alma Talebi formuna tedarikçi seçici ve takip no alanı.
+- Mobile: Stok ekranı AppBar'ına yeni bir "Tedarikçiler" ikonu (yalnızca
+  OWNER/MANAGER) → yeni `SuppliersScreen`; satın alma talebi bottom
+  sheet'ine tedarikçi dropdown'u (yalnızca aktif tedarikçi varsa gösterilir)
+  ve takip no alanı eklendi.
+- Doğrulama: Node script ile tedarikçi oluşturuldu → ürüne bağlı satın alma
+  talebine iliştirildi → listede `supplier`/`orderTrackingNumber` doğru
+  döndüğü teyit edildi → tedarikçi güncellendi → talep iptal edildi →
+  tedarikçi pasifleştirildi (`isActive:false` teyit edildi) → test
+  kayıtları (1 tedarikçi + 1 satın alma talebi) ID bazlı kalıcı olarak
+  silindi (StockPurchaseRequest'te hard-delete uç olmadığı için doğrudan
+  Prisma script'iyle, normal CANCELLED durumunu değiştirmeden).

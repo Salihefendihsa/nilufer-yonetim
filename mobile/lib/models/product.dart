@@ -103,6 +103,9 @@ class StockPurchaseRequest {
   final String? productName;
   final String? productUnit;
   final String? requestedByName;
+  final String? supplierId;
+  final String? supplierName;
+  final String? orderTrackingNumber;
 
   StockPurchaseRequest({
     required this.id,
@@ -114,10 +117,14 @@ class StockPurchaseRequest {
     this.productName,
     this.productUnit,
     this.requestedByName,
+    this.supplierId,
+    this.supplierName,
+    this.orderTrackingNumber,
   });
 
   factory StockPurchaseRequest.fromJson(Map<String, dynamic> json) {
     final product = json['product'] as Map<String, dynamic>?;
+    final supplier = json['supplier'] as Map<String, dynamic>?;
     return StockPurchaseRequest(
       id: json['id'] as String,
       productId: json['productId'] as String,
@@ -129,8 +136,41 @@ class StockPurchaseRequest {
       productUnit: product?['unit'] as String?,
       requestedByName:
           (json['requestedBy'] as Map<String, dynamic>?)?['fullName'] as String?,
+      supplierId: supplier?['id'] as String?,
+      supplierName: supplier?['name'] as String?,
+      orderTrackingNumber: json['orderTrackingNumber'] as String?,
     );
   }
+}
+
+class Supplier {
+  final String id;
+  final String name;
+  final String? contactPerson;
+  final String? phone;
+  final String? email;
+  final String? address;
+  final bool isActive;
+
+  Supplier({
+    required this.id,
+    required this.name,
+    this.contactPerson,
+    this.phone,
+    this.email,
+    this.address,
+    required this.isActive,
+  });
+
+  factory Supplier.fromJson(Map<String, dynamic> json) => Supplier(
+    id: json['id'] as String,
+    name: json['name'] as String,
+    contactPerson: json['contactPerson'] as String?,
+    phone: json['phone'] as String?,
+    email: json['email'] as String?,
+    address: json['address'] as String?,
+    isActive: json['isActive'] as bool? ?? true,
+  );
 }
 
 class StockMovement {

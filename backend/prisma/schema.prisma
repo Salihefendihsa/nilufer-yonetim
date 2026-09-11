@@ -493,13 +493,36 @@ model StockPurchaseRequest {
   receivedAt       DateTime?
   receivedByUserId String?
   createdAt        DateTime              @default(now())
+  /// Bölüm E: tedarikçi ve kargo/sipariş takip no — ikisi de opsiyonel,
+  /// mevcut talep akışını bozmadan eklendi.
+  supplierId          String?
+  orderTrackingNumber String?
 
-  product      Product @relation(fields: [productId], references: [id])
-  requestedBy  User    @relation("PurchaseRequestedBy", fields: [requestedByUserId], references: [id])
-  receivedBy   User?   @relation("PurchaseReceivedBy", fields: [receivedByUserId], references: [id])
+  product      Product   @relation(fields: [productId], references: [id])
+  requestedBy  User      @relation("PurchaseRequestedBy", fields: [requestedByUserId], references: [id])
+  receivedBy   User?     @relation("PurchaseReceivedBy", fields: [receivedByUserId], references: [id])
+  supplier     Supplier? @relation(fields: [supplierId], references: [id])
 
   @@index([productId])
   @@index([status])
+  @@index([supplierId])
+}
+
+/// Tedarikçi kataloğu (Bölüm E) — Hizmet Türleri/Bölgeler ile aynı isim +
+/// isActive deseni, ek olarak iletişim bilgileri.
+model Supplier {
+  id            String   @id @default(uuid())
+  name          String
+  contactPerson String?
+  phone         String?
+  email         String?
+  address       String?
+  isActive      Boolean  @default(true)
+  createdAt     DateTime @default(now())
+
+  purchaseRequests StockPurchaseRequest[]
+
+  @@index([name])
 }
 
 model Contract {

@@ -89,6 +89,8 @@ export function PurchaseRequestsPanel({ onChanged }: { onChanged: () => void }) 
                 </p>
                 <p className="text-xs text-text-secondary">
                   {request.requestedBy?.fullName ?? "—"} · {formatDateTime(request.createdAt)}
+                  {request.supplier ? ` · ${request.supplier.name}` : ""}
+                  {request.orderTrackingNumber ? ` · Takip: ${request.orderTrackingNumber}` : ""}
                   {request.note ? ` · ${request.note}` : ""}
                 </p>
               </div>

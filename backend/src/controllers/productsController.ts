@@ -277,6 +277,8 @@ export async function listProductMovements(req: Request, res: Response) {
 const purchaseRequestSchema = z.object({
   quantity: z.number().positive(),
   note: z.string().optional(),
+  supplierId: z.string().uuid().optional(),
+  orderTrackingNumber: z.string().min(1).optional(),
 });
 
 /**
@@ -291,10 +293,17 @@ export async function createPurchaseRequest(req: Request, res: Response) {
     return res.status(404).json({ error: "Ürün bulunamadı" });
   }
 
-  const { quantity, note } = purchaseRequestSchema.parse(req.body);
+  const { quantity, note, supplierId, orderTrackingNumber } = purchaseRequestSchema.parse(req.body);
+
+  if (supplierId) {
+    const supplier = await prisma.supplier.findUnique({ where: { id: supplierId } });
+    if (!supplier) {
+      return res.status(404).json({ error: "Tedarikçi bulunamadı" });
+    }
+  }
 
   const request = await prisma.stockPurchaseRequest.create({
-    data: { productId, quantity, note, requestedByUserId: req.user!.sub },
+    data: { productId, quantity, note, supplierId, orderTrackingNumber, requestedByUserId: req.user!.sub },
   });
 
   await recordAuditLog({
@@ -343,6 +352,7 @@ export async function listPurchaseRequests(req: Request, res: Response) {
       include: {
         product: { select: { id: true, name: true, unit: true, code: true } },
         requestedBy: { select: { fullName: true } },
+        supplier: { select: { id: true, name: true } },
       },
     }),
     prisma.stockPurchaseRequest.count({ where }),
@@ -421,7 +431,10 @@ export async function updatePurchaseRequest(req: Request, res: Response) {
 
   const updated = await prisma.stockPurchaseRequest.findUnique({
     where: { id: requestId },
-    include: { product: { select: { id: true, name: true, unit: true, code: true } } },
+    include: {
+      product: { select: { id: true, name: true, unit: true, code: true } },
+      supplier: { select: { id: true, name: true } },
+    },
   });
   return res.json(updated);
 }
