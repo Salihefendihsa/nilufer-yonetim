@@ -51,7 +51,7 @@ export default function GirisPage() {
       // Full reload (not router.push) so AuthProvider remounts and re-reads the
       // freshly-written localStorage session instead of keeping its stale
       // pre-login (unauthenticated) React state.
-      window.location.href = "/";
+      window.location.href = user.mustChangePassword ? "/sifre-degistir-zorunlu" : "/";
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "Giriş yapılamadı, lütfen tekrar deneyin");
     } finally {
@@ -155,9 +155,14 @@ export default function GirisPage() {
             </div>
 
             <div className="flex flex-col gap-1.5">
-              <label htmlFor="password" className="text-sm font-medium text-text-secondary">
-                Şifre
-              </label>
+              <div className="flex items-center justify-between">
+                <label htmlFor="password" className="text-sm font-medium text-text-secondary">
+                  Şifre
+                </label>
+                <a href="/sifremi-unuttum" className="text-xs font-medium text-primary-600 hover:text-primary-700 hover:underline">
+                  Şifremi Unuttum
+                </a>
+              </div>
               <input
                 id="password"
                 type="password"

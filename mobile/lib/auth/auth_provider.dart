@@ -19,6 +19,8 @@ class AuthProvider extends ChangeNotifier {
   AppUser? user;
   String? loginError;
   bool isBusy = false;
+  bool mustChangePassword = false;
+  Map<String, dynamic>? impersonationMeta;
 
   Timer? _heartbeatTimer;
 
@@ -36,6 +38,11 @@ class AuthProvider extends ChangeNotifier {
     }
     try {
       user = AppUser.fromJson(jsonDecode(userJson) as Map<String, dynamic>);
+      mustChangePassword = await SecureStorage.readMustChangePassword();
+      final metaJson = await SecureStorage.readImpersonationMetaJson();
+      impersonationMeta = metaJson != null
+          ? jsonDecode(metaJson) as Map<String, dynamic>
+          : null;
       status = AuthStatus.authenticated;
       _startHeartbeat();
     } catch (_) {
@@ -79,9 +86,11 @@ class AuthProvider extends ChangeNotifier {
       );
       final token = res['token'] as String;
       final userJson = res['user'] as Map<String, dynamic>;
+      mustChangePassword = res['mustChangePassword'] as bool? ?? false;
       await SecureStorage.saveSession(
         token: token,
         userJson: jsonEncode(userJson),
+        mustChangePassword: mustChangePassword,
       );
       user = AppUser.fromJson(userJson);
       status = AuthStatus.authenticated;
@@ -94,6 +103,69 @@ class AuthProvider extends ChangeNotifier {
       isBusy = false;
       notifyListeners();
     }
+  }
+
+  /// Zorunlu (OWNER tarafından sıfırlanan) veya isteğe bağlı şifre değişimi —
+  /// backend/src/controllers/authController.ts:changePassword.
+  Future<bool> changePassword({
+    required String currentPassword,
+    required String newPassword,
+  }) async {
+    isBusy = true;
+    loginError = null;
+    notifyListeners();
+    try {
+      final res = await ApiClient.instance.post<Map<String, dynamic>>(
+        '/auth/change-password',
+        body: {'currentPassword': currentPassword, 'newPassword': newPassword},
+      );
+      final token = res['token'] as String;
+      final userJson = res['user'] as Map<String, dynamic>;
+      mustChangePassword = false;
+      await SecureStorage.saveSession(
+        token: token,
+        userJson: jsonEncode(userJson),
+        mustChangePassword: false,
+      );
+      user = AppUser.fromJson(userJson);
+      return true;
+    } on ApiException catch (e) {
+      loginError = e.message;
+      return false;
+    } finally {
+      isBusy = false;
+      notifyListeners();
+    }
+  }
+
+  /// OWNER'ın kendi oturumunu saklayıp hedef kullanıcının oturumuna geçmesi —
+  /// backend/src/controllers/adminController.ts:startImpersonation.
+  Future<void> beginImpersonation({
+    required String token,
+    required Map<String, dynamic> targetUserJson,
+    required Map<String, dynamic> impersonationMetaJson,
+  }) async {
+    await SecureStorage.beginImpersonation(
+      targetToken: token,
+      targetUserJson: jsonEncode(targetUserJson),
+      impersonationMetaJson: jsonEncode(impersonationMetaJson),
+    );
+    user = AppUser.fromJson(targetUserJson);
+    impersonationMeta = impersonationMetaJson;
+    mustChangePassword = false;
+    _startHeartbeat();
+    notifyListeners();
+  }
+
+  /// Sunucu tarafı /admin/impersonate/end çağrısı yapıldıktan SONRA çağrılmalı.
+  Future<void> endImpersonation() async {
+    await SecureStorage.restoreOwnerSession();
+    final userJson = await SecureStorage.readUserJson();
+    if (userJson != null) {
+      user = AppUser.fromJson(jsonDecode(userJson) as Map<String, dynamic>);
+    }
+    impersonationMeta = null;
+    notifyListeners();
   }
 
   Future<void> logout() async {

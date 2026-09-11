@@ -46,3 +46,13 @@ export function loginRateLimiter(req: Request, res: Response, next: NextFunction
   const isMobileClaim = req.headers["x-client-type"] === "mobile";
   return isMobileClaim ? mobileLoginLimiter(req, res, next) : webLoginLimiter(req, res, next);
 }
+
+/** Aynı e-postaya kısa sürede çok sayıda sıfırlama isteği atılmasını önler. */
+export const forgotPasswordRateLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  limit: 3,
+  keyGenerator: loginKeyGenerator,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: "Çok fazla sıfırlama isteği yapıldı, lütfen daha sonra tekrar deneyin" },
+});

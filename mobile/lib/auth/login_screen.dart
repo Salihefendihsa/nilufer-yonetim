@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 
 import '../theme/app_colors.dart';
 import 'auth_provider.dart';
+import 'forgot_password_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -121,6 +122,15 @@ class _LoginScreenState extends State<LoginScreen> {
                     validator: (v) =>
                         (v == null || v.isEmpty) ? 'Şifre gerekli' : null,
                     onFieldSubmitted: (_) => _submit(),
+                  ),
+                  Align(
+                    alignment: Alignment.centerRight,
+                    child: TextButton(
+                      onPressed: () => Navigator.of(context).push(
+                        MaterialPageRoute(builder: (_) => const ForgotPasswordScreen()),
+                      ),
+                      child: const Text('Şifremi Unuttum', style: TextStyle(fontSize: 12.5)),
+                    ),
                   ),
                   if (auth.loginError != null) ...[
                     const SizedBox(height: 12),

@@ -14,10 +14,25 @@ export interface JwtPayload {
   role: Role;
   email: string;
   sessionId?: string;
+  /** User.tokenVersion anlık değeriyle karşılaştırılır (bkz. middleware/auth.ts)
+   * — şifre sıfırlama gibi güvenlik olaylarında bu token'lar geçersiz kılınır. */
+  tokenVersion: number;
+  /** Bu bir impersonation token'ıysa: OWNER'ın User.id'si. */
+  impersonatedBy?: string;
+  /** Bu bir impersonation token'ıysa: ImpersonationSession.id — sonlandırılan
+   * bir oturumun token'ının hemen reddedilebilmesi için. */
+  impersonationSessionId?: string;
 }
 
+/**
+ * Normal oturumlar 7 gün geçerli. Impersonation token'ları KASITLI OLARAK
+ * çok daha kısa (1 saat) — hem yanlışlıkla uzun süre "başkası olarak"
+ * kalınmasını önler hem de sızıntı riskini sınırlar. Bu süre bir iş kararı
+ * değil, makul bir varsayılan (docs/SECURITY.md'de not edildi).
+ */
 export function signToken(payload: JwtPayload): string {
-  return jwt.sign(payload, getSecret(), { expiresIn: "7d" });
+  const expiresIn = payload.impersonationSessionId ? "1h" : "7d";
+  return jwt.sign(payload, getSecret(), { expiresIn });
 }
 
 export function verifyToken(token: string): JwtPayload {

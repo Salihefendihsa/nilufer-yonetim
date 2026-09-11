@@ -1,13 +1,20 @@
 import type { Request, Response } from "express";
 import bcrypt from "bcrypt";
-import { createHash, timingSafeEqual } from "crypto";
+import { createHash, randomBytes, timingSafeEqual } from "crypto";
 import { z } from "zod";
 import { Role } from "@prisma/client";
 import { prisma } from "../lib/prisma";
 import { signToken } from "../lib/jwt";
 import { verifyRecaptcha } from "../lib/recaptcha";
+import { sendEmail } from "../lib/email";
 
 const SALT_ROUNDS = 10;
+const RESET_TOKEN_TTL_MS = 60 * 60 * 1000; // 1 saat — makul bir varsayılan, docs/SECURITY.md'de not edildi.
+
+/** Ham sıfırlama token'ı asla DB'de durmaz — yalnızca bu hash saklanır/karşılaştırılır. */
+function hashResetToken(rawToken: string): string {
+  return createHash("sha256").update(rawToken).digest("hex");
+}
 
 /** Sabit uzunluklu (hash'lenmiş) zamanlama-güvenli karşılaştırma — doğrudan
  * string karşılaştırma erken-çıkışla sızıntı verebileceği için kullanılmaz. */
@@ -80,7 +87,7 @@ export async function register(req: Request, res: Response) {
     },
   });
 
-  const token = signToken({ sub: user.id, role: user.role, email: user.email });
+  const token = signToken({ sub: user.id, role: user.role, email: user.email, tokenVersion: user.tokenVersion });
 
   return res.status(201).json({
     token,
@@ -111,11 +118,18 @@ export async function login(req: Request, res: Response) {
     data: { userId: user.id, deviceInfo: req.headers["user-agent"] ?? undefined },
   });
 
-  const token = signToken({ sub: user.id, role: user.role, email: user.email, sessionId: session.id });
+  const token = signToken({
+    sub: user.id,
+    role: user.role,
+    email: user.email,
+    sessionId: session.id,
+    tokenVersion: user.tokenVersion,
+  });
 
   return res.json({
     token,
     user: { id: user.id, email: user.email, fullName: user.fullName, role: user.role },
+    mustChangePassword: user.mustChangePassword,
   });
 }
 
@@ -158,5 +172,111 @@ export async function me(req: Request, res: Response) {
     phone: user.phone,
     role: user.role,
     createdAt: user.createdAt,
+    mustChangePassword: user.mustChangePassword,
   });
+}
+
+const forgotPasswordSchema = z.object({ email: z.string().email() });
+
+/**
+ * Kullanıcı var/yok fark etmeksizin AYNI başarı mesajı döner (email
+ * enumeration'ı önlemek için) — yalnızca kullanıcı gerçekten varsa arka
+ * planda bir token üretilip e-posta gönderilir.
+ */
+export async function forgotPassword(req: Request, res: Response) {
+  const { email } = forgotPasswordSchema.parse(req.body);
+
+  const user = await prisma.user.findUnique({ where: { email } });
+  if (user) {
+    const rawToken = randomBytes(32).toString("hex");
+    await prisma.passwordResetToken.create({
+      data: {
+        userId: user.id,
+        token: hashResetToken(rawToken),
+        expiresAt: new Date(Date.now() + RESET_TOKEN_TTL_MS),
+      },
+    });
+
+    const webUrl = process.env.WEB_APP_URL ?? "http://localhost:3000";
+    const resetUrl = `${webUrl}/sifre-sifirla?token=${rawToken}`;
+    await sendEmail(
+      user.email,
+      "Şifre Sıfırlama Talebi",
+      `<p>Merhaba ${user.fullName},</p><p>Şifrenizi sıfırlamak için <a href="${resetUrl}">bu bağlantıya</a> tıklayın. Bağlantı 1 saat geçerlidir.</p><p>Bu talebi siz yapmadıysanız bu e-postayı yok sayabilirsiniz.</p>`
+    );
+  }
+
+  return res.json({ message: "Bu e-posta adresi sistemde kayıtlıysa bir sıfırlama bağlantısı gönderildi." });
+}
+
+const resetPasswordSchema = z.object({
+  token: z.string().min(1),
+  newPassword: z.string().min(8),
+});
+
+export async function resetPassword(req: Request, res: Response) {
+  const { token, newPassword } = resetPasswordSchema.parse(req.body);
+  const tokenHash = hashResetToken(token);
+
+  const resetToken = await prisma.passwordResetToken.findUnique({ where: { token: tokenHash } });
+  if (!resetToken || resetToken.usedAt || resetToken.expiresAt.getTime() < Date.now()) {
+    return res.status(400).json({ error: "Sıfırlama bağlantısı geçersiz veya süresi dolmuş" });
+  }
+
+  const passwordHash = await bcrypt.hash(newPassword, SALT_ROUNDS);
+
+  await prisma.$transaction([
+    prisma.user.update({
+      where: { id: resetToken.userId },
+      data: { passwordHash, mustChangePassword: false, tokenVersion: { increment: 1 } },
+    }),
+    prisma.passwordResetToken.update({ where: { id: resetToken.id }, data: { usedAt: new Date() } }),
+  ]);
+
+  return res.json({ message: "Şifreniz güncellendi, yeniden giriş yapabilirsiniz." });
+}
+
+const changePasswordSchema = z.object({
+  currentPassword: z.string().min(1),
+  newPassword: z.string().min(8),
+});
+
+/**
+ * Zorunlu şifre değiştirme ekranı (OWNER birinin şifresini sıfırladığında)
+ * VE isteğe bağlı kendi kendine şifre değiştirme için ortak uç. `currentPassword`
+ * her zaman zorunlu — çalıntı bir JWT'nin tek başına şifreyi değiştirebilmesini
+ * önler (geçici şifre zaten yalnızca OWNER'ın ekranında bir kereliğine
+ * gösterildiği için kullanıcı bunu biliyor olmalı).
+ */
+export async function changePassword(req: Request, res: Response) {
+  const { currentPassword, newPassword } = changePasswordSchema.parse(req.body);
+
+  const user = await prisma.user.findUnique({ where: { id: req.user!.sub } });
+  if (!user) {
+    return res.status(404).json({ error: "Kullanıcı bulunamadı" });
+  }
+
+  const valid = await bcrypt.compare(currentPassword, user.passwordHash);
+  if (!valid) {
+    return res.status(401).json({ error: "Mevcut şifre hatalı" });
+  }
+
+  const passwordHash = await bcrypt.hash(newPassword, SALT_ROUNDS);
+  await prisma.user.update({
+    where: { id: user.id },
+    data: { passwordHash, mustChangePassword: false, tokenVersion: { increment: 1 } },
+  });
+
+  const session = await prisma.userSession.create({
+    data: { userId: user.id, deviceInfo: req.headers["user-agent"] ?? undefined },
+  });
+  const token = signToken({
+    sub: user.id,
+    role: user.role,
+    email: user.email,
+    sessionId: session.id,
+    tokenVersion: user.tokenVersion + 1,
+  });
+
+  return res.json({ token, user: { id: user.id, email: user.email, fullName: user.fullName, role: user.role } });
 }

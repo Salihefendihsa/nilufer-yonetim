@@ -1,7 +1,133 @@
 import type { Request, Response } from "express";
+import bcrypt from "bcrypt";
+import { randomInt } from "crypto";
 import { z } from "zod";
+import { Role } from "@prisma/client";
 import { prisma } from "../lib/prisma";
 import { recordAuditLog } from "../lib/auditLog";
+import { signToken } from "../lib/jwt";
+import { idParam } from "../lib/params";
+
+const SALT_ROUNDS = 10;
+const TEMP_PASSWORD_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789!@#$%";
+
+/** Kriptografik olarak güvenli, insan tarafından okunabilir bir geçici şifre üretir. */
+function generateTemporaryPassword(length = 12): string {
+  let result = "";
+  for (let i = 0; i < length; i++) {
+    result += TEMP_PASSWORD_ALPHABET[randomInt(TEMP_PASSWORD_ALPHABET.length)];
+  }
+  return result;
+}
+
+/**
+ * OWNER, bir kullanıcının GERÇEK şifresini asla görmez/saklamaz — bunun
+ * yerine rastgele bir geçici şifre üretilir, hash'lenip kaydedilir, ve
+ * yalnızca bu API yanıtında bir kereliğine (loglanmadan) döner. Kullanıcı
+ * bir sonraki girişinde mustChangePassword nedeniyle zorunlu şifre
+ * değiştirme ekranına düşer (bkz. middleware/auth.ts).
+ */
+export async function resetUserPassword(req: Request, res: Response) {
+  const target = await prisma.user.findUnique({ where: { id: idParam(req) } });
+  if (!target) {
+    return res.status(404).json({ error: "Kullanıcı bulunamadı" });
+  }
+
+  const temporaryPassword = generateTemporaryPassword();
+  const passwordHash = await bcrypt.hash(temporaryPassword, SALT_ROUNDS);
+
+  await prisma.user.update({
+    where: { id: target.id },
+    data: { passwordHash, mustChangePassword: true, tokenVersion: { increment: 1 } },
+  });
+
+  await recordAuditLog({
+    actorUserId: req.user!.sub,
+    action: "auth.password_reset_by_owner",
+    targetUserId: target.id,
+    targetType: "User",
+    targetId: target.id,
+    detail: `${target.email} için OWNER tarafından şifre sıfırlandı`,
+  });
+
+  return res.json({ temporaryPassword });
+}
+
+const impersonateSchema = z.object({
+  targetUserId: z.string().uuid(),
+  reason: z.string().min(1, "Gerekçe zorunludur"),
+});
+
+/**
+ * Hedef bir OWNER OLAMAZ — hesap verebilirlik zinciri OWNER'ın OWNER'ı
+ * impersonate edip iz bırakmadan işlem yapmasını engellemek için kasıtlı.
+ * Token 1 saatte sona erer (bkz. lib/jwt.ts:signToken) ve /admin/impersonate/end
+ * ile hemen (süresinden önce) de geçersiz kılınabilir.
+ */
+export async function startImpersonation(req: Request, res: Response) {
+  const { targetUserId, reason } = impersonateSchema.parse(req.body);
+  const ownerUserId = req.user!.sub;
+
+  const target = await prisma.user.findUnique({ where: { id: targetUserId } });
+  if (!target) {
+    return res.status(404).json({ error: "Kullanıcı bulunamadı" });
+  }
+  if (target.role === Role.OWNER) {
+    return res.status(403).json({ error: "Bir OWNER hesabı impersonate edilemez" });
+  }
+
+  const session = await prisma.impersonationSession.create({
+    data: { ownerUserId, targetUserId, reason },
+  });
+
+  await recordAuditLog({
+    actorUserId: ownerUserId,
+    action: "admin.impersonation_started",
+    targetUserId: target.id,
+    targetType: "ImpersonationSession",
+    targetId: session.id,
+    detail: `Gerekçe: ${reason}`,
+  });
+
+  const token = signToken({
+    sub: target.id,
+    role: target.role,
+    email: target.email,
+    tokenVersion: target.tokenVersion,
+    impersonatedBy: ownerUserId,
+    impersonationSessionId: session.id,
+  });
+
+  return res.status(201).json({
+    token,
+    user: { id: target.id, email: target.email, fullName: target.fullName, role: target.role },
+    impersonation: { sessionId: session.id, reason, targetFullName: target.fullName },
+  });
+}
+
+/** Yalnızca requireAuth gerekir — bu istek gelirken req.user zaten hedef kullanıcıdır (OWNER değil). */
+export async function endImpersonation(req: Request, res: Response) {
+  const sessionId = req.user!.impersonationSessionId;
+  const ownerUserId = req.user!.impersonatedBy;
+  if (!sessionId || !ownerUserId) {
+    return res.status(400).json({ error: "Aktif bir impersonation oturumu yok" });
+  }
+
+  const session = await prisma.impersonationSession.update({
+    where: { id: sessionId },
+    data: { endedAt: new Date() },
+  });
+
+  await recordAuditLog({
+    actorUserId: ownerUserId,
+    action: "admin.impersonation_ended",
+    targetUserId: session.targetUserId,
+    targetType: "ImpersonationSession",
+    targetId: session.id,
+  });
+
+  return res.json({ ok: true });
+}
 
 const clearDemoDataSchema = z.object({
   confirm: z.literal("TEMIZLE"),

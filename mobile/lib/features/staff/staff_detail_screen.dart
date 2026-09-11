@@ -36,6 +36,8 @@ class _StaffDetailScreenState extends State<StaffDetailScreen> {
         role == AppRole.teamLead;
   }
 
+  bool get _isOwner => context.read<AuthProvider>().user?.role == AppRole.owner;
+
   bool get _isSelf =>
       _staff != null && _staff!.userId == context.read<AuthProvider>().user?.id;
 
@@ -265,6 +267,126 @@ class _StaffDetailScreenState extends State<StaffDetailScreen> {
     }
   }
 
+  /// web/src/app/(dashboard)/personel/ResetPasswordModal.tsx ile aynı akış —
+  /// gerçek şifre asla görülmez, yalnızca rastgele üretilen geçici şifre bir
+  /// kereliğine gösterilir.
+  Future<void> _resetPassword() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Şifreyi Sıfırla'),
+        content: Text(
+          '${_staff!.fullName} için yeni, rastgele bir geçici şifre oluşturulacak. '
+          'Kullanıcı bir sonraki girişinde şifresini değiştirmek zorunda kalacak.',
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.of(ctx).pop(false), child: const Text('Vazgeç')),
+          FilledButton(onPressed: () => Navigator.of(ctx).pop(true), child: const Text('Sıfırla')),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+
+    try {
+      final res = await ApiClient.instance.post<Map<String, dynamic>>(
+        '/admin/users/${_staff!.userId}/reset-password',
+      );
+      final temporaryPassword = res['temporaryPassword'] as String;
+      if (!mounted) return;
+      await showDialog<void>(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          title: const Text('Geçici Şifre'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'Bu şifre yalnızca burada, bir kereliğine gösteriliyor — kaydedilmiyor, '
+                'tekrar görüntülenemez. Kullanıcıya güvenli bir şekilde iletin.',
+                style: TextStyle(fontSize: 12.5),
+              ),
+              const SizedBox(height: 12),
+              SelectableText(
+                temporaryPassword,
+                style: const TextStyle(fontWeight: FontWeight.w700, fontFamily: 'monospace', fontSize: 15),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(onPressed: () => Navigator.of(ctx).pop(), child: const Text('Kapat')),
+          ],
+        ),
+      );
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(e is ApiException ? e.message : 'Şifre sıfırlanamadı')),
+        );
+      }
+    }
+  }
+
+  /// web/src/app/(dashboard)/personel/ImpersonateModal.tsx ile aynı akış.
+  Future<void> _impersonate() async {
+    final reasonController = TextEditingController();
+    final reason = await showDialog<String>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Bu Kullanıcı Olarak Gir'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              '${_staff!.fullName} hesabına giriş yapacaksınız. Bu oturumda yaptığınız her '
+              'işlem denetim kaydına gerçek aktör olarak sizi gösteren bir not ile işlenir.',
+              style: const TextStyle(fontSize: 12.5),
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: reasonController,
+              decoration: const InputDecoration(labelText: 'Gerekçe'),
+              minLines: 2,
+              maxLines: 4,
+              autofocus: true,
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.of(ctx).pop(), child: const Text('Vazgeç')),
+          FilledButton(
+            onPressed: () => Navigator.of(ctx).pop(reasonController.text.trim()),
+            child: const Text('Gir'),
+          ),
+        ],
+      ),
+    );
+    if (reason == null || reason.isEmpty) return;
+
+    try {
+      final res = await ApiClient.instance.post<Map<String, dynamic>>(
+        '/admin/impersonate',
+        body: {'targetUserId': _staff!.userId, 'reason': reason},
+      );
+      if (!mounted) return;
+      await context.read<AuthProvider>().beginImpersonation(
+        token: res['token'] as String,
+        targetUserJson: res['user'] as Map<String, dynamic>,
+        impersonationMetaJson: res['impersonation'] as Map<String, dynamic>,
+      );
+      // Hedef kullanıcının rolü tamamen farklı bir kabuk (Shell) gerektirebilir
+      // — kök widget'a (_AuthGate, artık yeni role göre yeniden render eder) dön.
+      if (mounted) Navigator.of(context).popUntil((route) => route.isFirst);
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(e is ApiException ? e.message : 'Impersonation başlatılamadı')),
+        );
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -272,6 +394,19 @@ class _StaffDetailScreenState extends State<StaffDetailScreen> {
       appBar: AppBar(
         title: Text(_staff?.fullName ?? 'Personel'),
         actions: [
+          if (_staff != null && _isOwner)
+            PopupMenuButton<String>(
+              icon: const Icon(Icons.admin_panel_settings_outlined),
+              tooltip: 'Yönetici işlemleri',
+              onSelected: (value) {
+                if (value == 'reset') _resetPassword();
+                if (value == 'impersonate') _impersonate();
+              },
+              itemBuilder: (ctx) => const [
+                PopupMenuItem(value: 'reset', child: Text('Şifreyi Sıfırla')),
+                PopupMenuItem(value: 'impersonate', child: Text('Bu Kullanıcı Olarak Gir')),
+              ],
+            ),
           if (_staff != null && _canManageStaff) ...[
             IconButton(
               icon: const Icon(Icons.edit_outlined),

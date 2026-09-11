@@ -75,6 +75,16 @@ model User {
   role         Role     @default(CUSTOMER)
   fullName     String
   phone        String?
+  /// Şifre sıfırlama sonrası (unutulan/OWNER tarafından sıfırlanan) tüm
+  /// mevcut JWT'leri geçersiz kılmak için — requireAuth her istekte bunu
+  /// token'daki tokenVersion ile karşılaştırır, uyuşmazsa 401 döner. Normal
+  /// logout bunu ARTIRMAZ (yalnızca o oturumu kapatır, diğer cihazları
+  /// etkilemez); yalnızca güvenlik olayları (şifre sıfırlama) artırır.
+  tokenVersion Int      @default(0)
+  /// OWNER birinin şifresini sıfırladığında true olur — login sonrası
+  /// kullanıcı zorunlu şifre değiştirme ekranına düşer, o ekranı/temel
+  /// auth uçlarını dışında hiçbir uca erişemez (bkz. middleware/auth.ts).
+  mustChangePassword Boolean @default(false)
   createdAt    DateTime @default(now())
 
   customer Customer?
@@ -94,8 +104,49 @@ model User {
   receivedPurchases  StockPurchaseRequest[] @relation("PurchaseReceivedBy")
   observerAccessGrants ObserverAccessGrant[]
   evaluationsGiven     Evaluation[]          @relation("EvaluationEvaluator")
+  passwordResetTokens  PasswordResetToken[]
+  impersonationsAsOwner  ImpersonationSession[] @relation("ImpersonationOwner")
+  impersonationsAsTarget ImpersonationSession[] @relation("ImpersonationTarget")
 
   @@index([role])
+}
+
+/// "Şifremi Unuttum" akışı — ham token asla DB'de durmaz, yalnızca hash'i
+/// (bkz. lib/passwordReset.ts). Token e-posta ile gönderilir, DB'de sadece
+/// hash tutulduğu için bir DB sızıntısı bile geçerli bir sıfırlama linki
+/// üretmeye yetmez.
+model PasswordResetToken {
+  id        String    @id @default(uuid())
+  userId    String
+  token     String    @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+  @@index([expiresAt])
+}
+
+/// OWNER'ın başka bir kullanıcı hesabına (OWNER hariç) "impersonate" ile
+/// girmesi — tam hesap verebilirlik için gerekçe zorunlu, başlangıç/bitiş
+/// zaman damgalı. bkz. middleware/auth.ts (impersonatedBy JWT claim'i) ve
+/// lib/auditLog.ts (impersonasyon sırasındaki her audit log kaydına not düşer).
+model ImpersonationSession {
+  id            String    @id @default(uuid())
+  ownerUserId   String
+  targetUserId  String
+  reason        String
+  startedAt     DateTime  @default(now())
+  endedAt       DateTime?
+
+  owner  User @relation("ImpersonationOwner", fields: [ownerUserId], references: [id])
+  target User @relation("ImpersonationTarget", fields: [targetUserId], references: [id])
+
+  @@index([ownerUserId])
+  @@index([targetUserId])
+  @@index([endedAt])
 }
 
 model Customer {

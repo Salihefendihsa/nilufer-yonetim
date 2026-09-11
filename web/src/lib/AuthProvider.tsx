@@ -1,7 +1,7 @@
 "use client";
 
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
-import { getCurrentUser, logout as logoutSession, type AuthUser } from "./auth";
+import { getCurrentUser, logout as logoutSession, mustChangePassword, type AuthUser } from "./auth";
 import { api } from "./api";
 
 interface AuthContextValue {
@@ -25,6 +25,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     setUser(getCurrentUser());
     setLoading(false);
+
+    // Backend zaten mustChangePassword=true iken bu ekran/temel auth uçları
+    // dışında her isteği 403'ler (bkz. middleware/auth.ts) — bu yalnızca
+    // istemci tarafında doğrudan başka bir sayfaya gitmeyi engelleyen bir
+    // rahatlık katmanı.
+    if (mustChangePassword() && window.location.pathname !== "/sifre-degistir-zorunlu") {
+      window.location.href = "/sifre-degistir-zorunlu";
+    }
   }, []);
 
   useEffect(() => {

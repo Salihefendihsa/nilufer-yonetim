@@ -3,6 +3,8 @@ import { Role } from "@prisma/client";
 import { verifyToken, type JwtPayload } from "../lib/jwt";
 import { hasPermission } from "../lib/access";
 import type { PermissionKey } from "../lib/permissions";
+import { prisma } from "../lib/prisma";
+import { runWithRequestContext } from "../lib/requestContext";
 
 declare global {
   namespace Express {
@@ -12,18 +14,57 @@ declare global {
   }
 }
 
-export function requireAuth(req: Request, res: Response, next: NextFunction) {
+// mustChangePassword=true iken bu tam yollara (mount path dahil) erişim serbest
+// kalır — geri kalan HER UÇ 403 döner (bkz. schema.prisma User.mustChangePassword).
+const FORCE_CHANGE_ALLOWED_PATHS = new Set(["/auth/me", "/auth/logout", "/auth/change-password"]);
+
+export async function requireAuth(req: Request, res: Response, next: NextFunction) {
   const header = req.headers.authorization;
   if (!header || !header.startsWith("Bearer ")) {
     return res.status(401).json({ error: "Yetkilendirme başlığı eksik veya geçersiz" });
   }
 
   const token = header.slice("Bearer ".length);
+  let payload: JwtPayload;
   try {
-    req.user = verifyToken(token);
-    next();
+    payload = verifyToken(token);
   } catch {
     return res.status(401).json({ error: "Geçersiz veya süresi dolmuş oturum" });
+  }
+
+  try {
+    // Şifre sıfırlama gibi güvenlik olayları User.tokenVersion'ı artırır —
+    // eski token'lar (imzaları hâlâ geçerli olsa bile) burada elenir. JWT'ler
+    // stateless olduğu için gerçek "oturum iptali" tek yolu budur.
+    const user = await prisma.user.findUnique({
+      where: { id: payload.sub },
+      select: { tokenVersion: true, mustChangePassword: true },
+    });
+    if (!user || user.tokenVersion !== payload.tokenVersion) {
+      return res.status(401).json({ error: "Oturumunuzun süresi doldu, tekrar giriş yapın" });
+    }
+
+    if (payload.impersonationSessionId) {
+      const impersonation = await prisma.impersonationSession.findUnique({
+        where: { id: payload.impersonationSessionId },
+        select: { endedAt: true },
+      });
+      if (!impersonation || impersonation.endedAt) {
+        return res.status(401).json({ error: "Impersonation oturumu sona erdi" });
+      }
+    }
+
+    if (user.mustChangePassword) {
+      const path = req.originalUrl.split("?")[0];
+      if (!FORCE_CHANGE_ALLOWED_PATHS.has(path)) {
+        return res.status(403).json({ error: "Önce şifrenizi değiştirmeniz gerekiyor", mustChangePassword: true });
+      }
+    }
+
+    req.user = payload;
+    runWithRequestContext({ impersonatedBy: payload.impersonatedBy }, next);
+  } catch (err) {
+    next(err);
   }
 }
 

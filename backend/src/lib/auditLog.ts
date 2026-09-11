@@ -1,4 +1,5 @@
 import { prisma } from "./prisma";
+import { getRequestContext } from "./requestContext";
 
 interface RecordAuditLogParams {
   actorUserId: string;
@@ -17,6 +18,16 @@ interface RecordAuditLogParams {
 export async function recordAuditLog(params: RecordAuditLogParams): Promise<void> {
   if (!params.targetUserId) return;
 
+  // actorUserId zaten impersonate edilen kullanıcıyı gösterir (JWT'nin
+  // sub'ı budur) — burada yalnızca "bu gerçekte OWNER tarafından, X kullanıcısı
+  // olarak yapıldı" notunu ekliyoruz ki hesap verebilirlik kaybolmasın.
+  const impersonatedBy = getRequestContext()?.impersonatedBy;
+  const detail = impersonatedBy
+    ? [params.detail, `(Patron tarafından impersonate edilerek — gerçek aktör: ${impersonatedBy})`]
+        .filter(Boolean)
+        .join(" ")
+    : params.detail;
+
   await prisma.auditLog.create({
     data: {
       actorUserId: params.actorUserId,
@@ -24,7 +35,7 @@ export async function recordAuditLog(params: RecordAuditLogParams): Promise<void
       targetUserId: params.targetUserId,
       targetType: params.targetType,
       targetId: params.targetId,
-      detail: params.detail,
+      detail,
     },
   });
 }

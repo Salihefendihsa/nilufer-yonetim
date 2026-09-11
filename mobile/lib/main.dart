@@ -4,7 +4,9 @@ import 'package:intl/date_symbol_data_local.dart';
 import 'package:provider/provider.dart';
 
 import 'auth/auth_provider.dart';
+import 'auth/force_change_password_screen.dart';
 import 'auth/login_screen.dart';
+import 'navigation/impersonation_banner.dart';
 import 'navigation/role_shell.dart';
 import 'theme/app_theme.dart';
 import 'widgets/state_views.dart';
@@ -51,7 +53,12 @@ class _AuthGate extends StatelessWidget {
       case AuthStatus.unauthenticated:
         return const LoginScreen();
       case AuthStatus.authenticated:
-        return const RoleShell();
+        if (auth.mustChangePassword) {
+          return const ForceChangePasswordScreen();
+        }
+        return const Column(
+          children: [ImpersonationBanner(), Expanded(child: RoleShell())],
+        );
     }
   }
 }

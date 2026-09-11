@@ -18,6 +18,8 @@ import {
   Network,
   ClipboardList,
   Workflow,
+  KeyRound,
+  UserCog,
 } from "lucide-react";
 import { RequireRole } from "@/components/RequireRole";
 import { PageHeader } from "@/components/PageHeader";
@@ -35,6 +37,8 @@ import { PermissionsModal } from "./PermissionsModal";
 import { CertificationsModal } from "./CertificationsModal";
 import { EvaluationsModal } from "./EvaluationsModal";
 import { OrgChartView } from "./OrgChartView";
+import { ResetPasswordModal } from "./ResetPasswordModal";
+import { ImpersonateModal } from "./ImpersonateModal";
 
 /**
  * Bugünkü iş sayısı, biten sertifika sayısı ve ortalama puan artık /staff
@@ -73,6 +77,8 @@ function StaffPageContent() {
   const [permissionsTarget, setPermissionsTarget] = useState<Staff | null>(null);
   const [certificationsTarget, setCertificationsTarget] = useState<Staff | null>(null);
   const [evaluationsTarget, setEvaluationsTarget] = useState<Staff | null>(null);
+  const [resetPasswordTarget, setResetPasswordTarget] = useState<Staff | null>(null);
+  const [impersonateTarget, setImpersonateTarget] = useState<Staff | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -355,6 +361,27 @@ function StaffPageContent() {
                   Yetkiler
                 </button>
               )}
+
+              {isOwner && (
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setResetPasswordTarget(staff)}
+                    className="flex flex-1 items-center justify-center gap-2 rounded-xl border border-border bg-surface-base px-3 py-2 text-xs font-medium text-text-secondary transition hover:border-border-strong hover:bg-surface-subtle hover:text-text-primary"
+                  >
+                    <KeyRound size={14} strokeWidth={1.75} />
+                    Şifreyi Sıfırla
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setImpersonateTarget(staff)}
+                    className="flex flex-1 items-center justify-center gap-2 rounded-xl border border-warning-100 bg-warning-50 px-3 py-2 text-xs font-medium text-warning-600 transition hover:bg-warning-100"
+                  >
+                    <UserCog size={14} strokeWidth={1.75} />
+                    Olarak Gir
+                  </button>
+                </div>
+              )}
             </div>
           ))}
         </div>
@@ -369,6 +396,10 @@ function StaffPageContent() {
       <CertificationsModal open={!!certificationsTarget} onClose={() => setCertificationsTarget(null)} staff={certificationsTarget} />
 
       <EvaluationsModal open={!!evaluationsTarget} onClose={() => setEvaluationsTarget(null)} staff={evaluationsTarget} />
+
+      <ResetPasswordModal open={!!resetPasswordTarget} onClose={() => setResetPasswordTarget(null)} staff={resetPasswordTarget} />
+
+      <ImpersonateModal open={!!impersonateTarget} onClose={() => setImpersonateTarget(null)} staff={impersonateTarget} />
 
       <ConfirmDialog
         open={!!deleteTarget}
