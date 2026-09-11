@@ -6,6 +6,7 @@ import '../../core/api_client.dart';
 import '../../models/staff.dart';
 import '../../models/user.dart';
 import '../../theme/app_colors.dart';
+import '../../widgets/staggered_fade_in.dart';
 import '../../widgets/state_views.dart';
 import 'staff_api.dart';
 import 'staff_detail_screen.dart';
@@ -122,140 +123,147 @@ class _StaffListScreenState extends State<StaffListScreen> {
               .take(2)
               .join()
               .toUpperCase();
-          return Material(
-            color: AppColors.surfaceCard,
-            borderRadius: BorderRadius.circular(AppRadius.card),
-            child: InkWell(
+          return StaggeredFadeIn(
+            index: i,
+            child: Material(
+              color: AppColors.surfaceCard,
               borderRadius: BorderRadius.circular(AppRadius.card),
-              onTap: () => Navigator.of(context).push(
-                MaterialPageRoute(
-                  builder: (_) => StaffDetailScreen(staffId: s.id),
+              child: InkWell(
+                borderRadius: BorderRadius.circular(AppRadius.card),
+                onTap: () => Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (_) => StaffDetailScreen(staffId: s.id),
+                  ),
                 ),
-              ),
-              child: Container(
-                padding: const EdgeInsets.all(14),
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(AppRadius.card),
-                  border: Border.all(color: AppColors.borderDefault),
-                ),
-                child: Row(
-                  children: [
-                    Stack(
-                      children: [
-                        CircleAvatar(
-                          radius: 22,
-                          backgroundColor: AppColors.primary100,
-                          child: Text(
-                            initials.isEmpty ? '?' : initials,
-                            style: const TextStyle(
-                              color: AppColors.primary700,
-                              fontWeight: FontWeight.w700,
-                            ),
-                          ),
-                        ),
-                        Positioned(
-                          right: 0,
-                          bottom: 0,
-                          child: Container(
-                            width: 12,
-                            height: 12,
-                            decoration: BoxDecoration(
-                              color: color,
-                              shape: BoxShape.circle,
-                              border: Border.all(color: Colors.white, width: 2),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
+                child: Container(
+                  padding: const EdgeInsets.all(14),
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(AppRadius.card),
+                    border: Border.all(color: AppColors.borderDefault),
+                  ),
+                  child: Row(
+                    children: [
+                      Stack(
                         children: [
-                          Text(
-                            s.fullName,
-                            style: const TextStyle(
-                              fontWeight: FontWeight.w700,
-                              fontSize: 14.5,
-                            ),
-                          ),
-                          const SizedBox(height: 2),
-                          Text(
-                            [
-                              s.position,
-                              if (s.vehiclePlate != null) s.vehiclePlate!,
-                            ].join(' · '),
-                            style: const TextStyle(
-                              fontSize: 12.5,
-                              color: AppColors.textSecondary,
-                            ),
-                          ),
-                          if (s.supervisor != null)
-                            Text(
-                              '${roleLabelTr(roleFromString(s.supervisor!.role))}: '
-                              '${s.supervisor!.fullName}',
+                          CircleAvatar(
+                            radius: 22,
+                            backgroundColor: AppColors.primary100,
+                            child: Text(
+                              initials.isEmpty ? '?' : initials,
                               style: const TextStyle(
-                                fontSize: 11.5,
-                                color: AppColors.textFaint,
+                                color: AppColors.primary700,
+                                fontWeight: FontWeight.w700,
                               ),
                             ),
-                          const SizedBox(height: 4),
-                          Wrap(
-                            spacing: 6,
-                            runSpacing: 4,
-                            children: [
-                              // Kapasite tanimliysa doluluk, degilse yalnizca
-                              // bugunku is sayisi gosterilir.
-                              _Pill(
-                                text: s.dailyJobCapacity != null
-                                    ? 'Bugün ${s.todaysJobsCount}/'
-                                          '${s.dailyJobCapacity}'
-                                    : 'Bugün ${s.todaysJobsCount} iş',
-                                color:
-                                    s.dailyJobCapacity != null &&
-                                        s.todaysJobsCount > s.dailyJobCapacity!
-                                    ? AppColors.danger600
-                                    : AppColors.textSecondary,
+                          ),
+                          Positioned(
+                            right: 0,
+                            bottom: 0,
+                            child: Container(
+                              width: 12,
+                              height: 12,
+                              decoration: BoxDecoration(
+                                color: color,
+                                shape: BoxShape.circle,
+                                border: Border.all(
+                                  color: Colors.white,
+                                  width: 2,
+                                ),
                               ),
-                              if (s.averageRating != null)
-                                _Pill(
-                                  text:
-                                      '★ ${s.averageRating!.toStringAsFixed(1)}'
-                                      ' (${s.ratedJobsCount})',
-                                  color: AppColors.warning600,
-                                ),
-                              if (s.expiringCertificationCount > 0)
-                                _Pill(
-                                  text:
-                                      '${s.expiringCertificationCount} belge '
-                                      'bitiyor',
-                                  color: AppColors.danger600,
-                                ),
-                            ],
+                            ),
                           ),
                         ],
                       ),
-                    ),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 8,
-                        vertical: 3,
-                      ),
-                      decoration: BoxDecoration(
-                        color: color.withValues(alpha: 0.12),
-                        borderRadius: BorderRadius.circular(AppRadius.pill),
-                      ),
-                      child: Text(
-                        staffStatusLabelTr(s.status),
-                        style: TextStyle(
-                          fontSize: 11,
-                          fontWeight: FontWeight.w700,
-                          color: color,
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              s.fullName,
+                              style: const TextStyle(
+                                fontWeight: FontWeight.w700,
+                                fontSize: 14.5,
+                              ),
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              [
+                                s.position,
+                                if (s.vehiclePlate != null) s.vehiclePlate!,
+                              ].join(' · '),
+                              style: const TextStyle(
+                                fontSize: 12.5,
+                                color: AppColors.textSecondary,
+                              ),
+                            ),
+                            if (s.supervisor != null)
+                              Text(
+                                '${roleLabelTr(roleFromString(s.supervisor!.role))}: '
+                                '${s.supervisor!.fullName}',
+                                style: const TextStyle(
+                                  fontSize: 11.5,
+                                  color: AppColors.textFaint,
+                                ),
+                              ),
+                            const SizedBox(height: 4),
+                            Wrap(
+                              spacing: 6,
+                              runSpacing: 4,
+                              children: [
+                                // Kapasite tanimliysa doluluk, degilse yalnizca
+                                // bugunku is sayisi gosterilir.
+                                _Pill(
+                                  text: s.dailyJobCapacity != null
+                                      ? 'Bugün ${s.todaysJobsCount}/'
+                                            '${s.dailyJobCapacity}'
+                                      : 'Bugün ${s.todaysJobsCount} iş',
+                                  color:
+                                      s.dailyJobCapacity != null &&
+                                          s.todaysJobsCount >
+                                              s.dailyJobCapacity!
+                                      ? AppColors.danger600
+                                      : AppColors.textSecondary,
+                                ),
+                                if (s.averageRating != null)
+                                  _Pill(
+                                    text:
+                                        '★ ${s.averageRating!.toStringAsFixed(1)}'
+                                        ' (${s.ratedJobsCount})',
+                                    color: AppColors.warning600,
+                                  ),
+                                if (s.expiringCertificationCount > 0)
+                                  _Pill(
+                                    text:
+                                        '${s.expiringCertificationCount} belge '
+                                        'bitiyor',
+                                    color: AppColors.danger600,
+                                  ),
+                              ],
+                            ),
+                          ],
                         ),
                       ),
-                    ),
-                  ],
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 3,
+                        ),
+                        decoration: BoxDecoration(
+                          color: color.withValues(alpha: 0.12),
+                          borderRadius: BorderRadius.circular(AppRadius.pill),
+                        ),
+                        child: Text(
+                          staffStatusLabelTr(s.status),
+                          style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w700,
+                            color: color,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ),

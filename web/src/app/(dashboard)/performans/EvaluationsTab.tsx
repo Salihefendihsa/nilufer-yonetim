@@ -150,7 +150,9 @@ export function EvaluationsTab() {
         )}
       </div>
 
-      {!selectedPeriodId ? (
+      {loading ? (
+        <p className="py-16 text-center text-sm text-text-faint">Yükleniyor...</p>
+      ) : !selectedPeriodId ? (
         <EmptyState icon={ClipboardList} title="Önce bir dönem oluşturun" description="Değerlendirme yapabilmek için bir dönem seçin." />
       ) : (
         <ul className="flex flex-col divide-y divide-border rounded-2xl border border-border bg-surface-card shadow-card">

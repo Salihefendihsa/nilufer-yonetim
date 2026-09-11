@@ -227,24 +227,33 @@ function OwnerDashboard() {
 
   return (
     <div className="flex flex-col gap-6">
-      <div className="flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-border bg-surface-card p-6 shadow-card">
-        <div className="flex items-start gap-3">
-          <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-primary-600 text-white">
+      <div className="relative flex flex-wrap items-center justify-between gap-4 overflow-hidden rounded-2xl bg-primary-700 p-6 shadow-pop">
+        <div className="pointer-events-none absolute inset-0 bg-gradient-to-br from-primary-500/40 via-transparent to-transparent" />
+        <div
+          className="pointer-events-none absolute inset-0 opacity-10"
+          style={{
+            backgroundImage: "radial-gradient(circle, #FFFFFF 1px, transparent 1px)",
+            backgroundSize: "24px 24px",
+          }}
+        />
+
+        <div className="relative flex items-start gap-3">
+          <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-white/15 text-white">
             <Activity size={20} strokeWidth={1.75} />
           </span>
           <div>
-            <h1 className="text-2xl font-bold tracking-tight text-text-primary">Komuta Merkezi</h1>
-            <p className="mt-1 text-sm text-text-secondary">Canlı operasyon özeti</p>
+            <h1 className="text-2xl font-bold tracking-tight text-white">Komuta Merkezi</h1>
+            <p className="mt-1 text-sm text-white/75">Canlı operasyon özeti</p>
             <div className="mt-3 flex flex-wrap items-center gap-2">
-              <span className="flex items-center gap-1.5 rounded-full bg-surface-subtle px-2.5 py-1 text-xs text-text-secondary">
-                <span className={`h-1.5 w-1.5 rounded-full ${data.health?.api === "healthy" ? "bg-primary-500" : "bg-danger-500"}`} />
+              <span className="flex items-center gap-1.5 rounded-full bg-white/10 px-2.5 py-1 text-xs text-white/85">
+                <span className={`h-1.5 w-1.5 rounded-full ${data.health?.api === "healthy" ? "bg-primary-300" : "bg-danger-500"}`} />
                 API
               </span>
-              <span className="flex items-center gap-1.5 rounded-full bg-surface-subtle px-2.5 py-1 text-xs text-text-secondary">
-                <span className={`h-1.5 w-1.5 rounded-full ${data.health?.database === "healthy" ? "bg-primary-500" : "bg-danger-500"}`} />
+              <span className="flex items-center gap-1.5 rounded-full bg-white/10 px-2.5 py-1 text-xs text-white/85">
+                <span className={`h-1.5 w-1.5 rounded-full ${data.health?.database === "healthy" ? "bg-primary-300" : "bg-danger-500"}`} />
                 Veritabanı
               </span>
-              <span className="rounded-full bg-surface-subtle px-2.5 py-1 font-mono text-xs text-text-faint">
+              <span className="rounded-full bg-white/10 px-2.5 py-1 font-mono text-xs text-white/70">
                 {clock.toLocaleTimeString("tr-TR", { hour: "2-digit", minute: "2-digit", second: "2-digit" })}
               </span>
             </div>
@@ -252,7 +261,7 @@ function OwnerDashboard() {
         </div>
         <Link
           href="/bekleyen-onaylar"
-          className="flex items-center gap-2 rounded-2xl bg-primary-600 px-4 py-2.5 text-sm font-semibold text-white shadow-card transition hover:bg-primary-700"
+          className="relative flex items-center gap-2 rounded-2xl bg-white px-4 py-2.5 text-sm font-semibold text-primary-700 shadow-card transition hover:bg-white/90"
         >
           <ClipboardCheck size={16} strokeWidth={1.75} />
           Bekleyen Onaylar

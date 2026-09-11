@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../theme/app_colors.dart';
+import 'animated_stat_value.dart';
 
 /// [AppStatCard] listelerini sabit `childAspectRatio` ile kırpan
 /// `GridView.count` yerine kullanılır — her kartın yüksekliği kendi
@@ -23,7 +24,8 @@ class StatCardGrid extends StatelessWidget {
     return LayoutBuilder(
       builder: (context, constraints) {
         final totalSpacing = spacing * (crossAxisCount - 1);
-        final itemWidth = (constraints.maxWidth - totalSpacing) / crossAxisCount;
+        final itemWidth =
+            (constraints.maxWidth - totalSpacing) / crossAxisCount;
         return Wrap(
           spacing: spacing,
           runSpacing: spacing,
@@ -110,8 +112,8 @@ class AppStatCard extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 12),
-          Text(
-            value,
+          AnimatedStatValue(
+            value: value,
             style: const TextStyle(
               fontSize: 22,
               fontWeight: FontWeight.w800,

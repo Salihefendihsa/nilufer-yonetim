@@ -1,7 +1,24 @@
 "use client";
 
-import { useId, useState, type ReactNode } from "react";
+import type { ReactNode } from "react";
 import type { LucideIcon } from "lucide-react";
+import {
+  Bar,
+  BarChart,
+  CartesianGrid,
+  Cell,
+  Legend as RechartsLegend,
+  Line,
+  LineChart,
+  Pie,
+  PieChart,
+  ResponsiveContainer,
+  Tooltip as RechartsTooltip,
+  XAxis as RechartsXAxis,
+  YAxis as RechartsYAxis,
+  Area,
+  AreaChart,
+} from "recharts";
 
 /**
  * Panel genelindeki tek grafik dili.
@@ -10,38 +27,29 @@ import type { LucideIcon } from "lucide-react";
  * aynı `ChartCard` sarmalayıcısından gelir; renkler CHART_COLORS'tan okunur.
  * Yeni bir grafik eklerken buradaki bileşenlerden birini kullanın.
  *
- * Grafikler bağımlılıksız, doğrudan SVG ile çizilir: bu makineden npm registry'ye
- * yapılan istekler ECONNRESET verdiği için recharts kurulamadı. Dışa açılan API
- * (ChartCard / SimpleBarChart / TrendChart / DonutChart / RankBars) recharts'ın veri
- * sözleşmesiyle aynı tutuldu — paket kurulabildiğinde yalnızca bu dosyanın gövdesi
- * değiştirilerek geçilebilir, çağıran sayfalarda hiçbir değişiklik gerekmez.
+ * recharts kullanır (önceki sürüm, npm registry erişimi başarısız olduğu için
+ * geçici olarak bağımlılıksız SVG ile çizilmişti — artık kurulabildi). Dışa
+ * açılan API (ChartCard / SimpleBarChart / TrendChart / DonutChart / RankBars)
+ * o sürümle birebir aynı veri sözleşmesini korur, çağıran sayfalarda hiçbir
+ * değişiklik gerekmedi.
  */
 
 export const CHART_COLORS = ["#2F5233", "#3D8A4E", "#61A870", "#94C79E", "#B57F13", "#1F6FA8"];
 
 const GRID = "#E3E8E3";
 const AXIS_TEXT = "#8B9A8E";
+const AXIS_STYLE = { fontSize: 10, fill: AXIS_TEXT };
 
 function formatValue(value: number, currency?: boolean): string {
   if (currency) return `${new Intl.NumberFormat("tr-TR", { maximumFractionDigits: 0 }).format(value)} ₺`;
   return new Intl.NumberFormat("tr-TR").format(value);
 }
 
-/** Eksen etiketleri için kısa gösterim (12.500 → 12,5B). */
+/** Y ekseni etiketleri için kısa gösterim (12.500 → 12,5B). */
 function compact(value: number): string {
   if (Math.abs(value) >= 1_000_000) return `${(value / 1_000_000).toFixed(1).replace(".0", "")}M`;
   if (Math.abs(value) >= 1_000) return `${(value / 1_000).toFixed(1).replace(".0", "")}B`;
   return String(Math.round(value));
-}
-
-/** Y ekseni için okunabilir "güzel" üst sınır ve ara değerler. */
-function niceScale(max: number, tickCount = 4): number[] {
-  if (max <= 0) return [0, 1];
-  const raw = max / tickCount;
-  const mag = Math.pow(10, Math.floor(Math.log10(raw)));
-  const step = ([1, 2, 2.5, 5, 10].find((m) => m * mag >= raw) ?? 10) * mag;
-  const top = Math.ceil(max / step) * step;
-  return Array.from({ length: Math.round(top / step) + 1 }, (_, i) => i * step);
 }
 
 /* ----------------------------------------------------------------- kabuk ---- */
@@ -59,7 +67,7 @@ interface ChartCardProps {
 
 export function ChartCard({ title, description, icon: Icon, action, height = 260, children, className = "" }: ChartCardProps) {
   return (
-    <div className={`flex flex-col rounded-2xl border border-border bg-surface-card p-5 shadow-card ${className}`}>
+    <div className={`flex flex-col rounded-2xl border border-border bg-surface-card p-5 shadow-card transition-shadow hover:shadow-cardHover ${className}`}>
       <div className="mb-4 flex items-start justify-between gap-3">
         <div className="flex items-start gap-3">
           {Icon && (
@@ -89,75 +97,41 @@ function EmptyChart({ label = "Gösterilecek veri yok" }: { label?: string }) {
   );
 }
 
-function Legend({ items }: { items: { name: string; color: string }[] }) {
-  if (items.length < 2) return null;
+/** recharts'ın varsayılan tooltip'i yerine panelin kart diline uyan özel gövde. */
+function ChartTooltip({
+  active,
+  label,
+  payload,
+  currency,
+}: {
+  active?: boolean;
+  label?: string;
+  payload?: { name?: string; value?: number | string; color?: string }[];
+  currency?: boolean;
+}) {
+  if (!active || !payload || payload.length === 0) return null;
+  return (
+    <div className="rounded-xl border border-border bg-surface-base px-3 py-2 text-xs shadow-pop">
+      <p className="mb-0.5 whitespace-nowrap font-semibold text-text-primary">{label}</p>
+      {payload.map((row, i) => (
+        <p key={`${row.name}-${i}`} className="flex items-center gap-1.5 whitespace-nowrap text-text-secondary">
+          <span className="h-1.5 w-1.5 rounded-full" style={{ background: row.color }} />
+          {row.name}: <span className="font-mono text-text-primary">{formatValue(Number(row.value ?? 0), currency)}</span>
+        </p>
+      ))}
+    </div>
+  );
+}
+
+function ChartLegend({ payload }: { payload?: { value?: string; color?: string }[] }) {
+  if (!payload || payload.length < 2) return null;
   return (
     <div className="mt-2 flex flex-wrap items-center justify-center gap-x-4 gap-y-1">
-      {items.map((item) => (
-        <span key={item.name} className="flex items-center gap-1.5 text-xs text-text-secondary">
+      {payload.map((item, i) => (
+        <span key={`${item.value}-${i}`} className="flex items-center gap-1.5 text-xs text-text-secondary">
           <span className="h-2 w-2 rounded-full" style={{ background: item.color }} />
-          {item.name}
+          {item.value}
         </span>
-      ))}
-    </div>
-  );
-}
-
-/** Y ekseni etiket sütunu — SVG ölçek bozulmasından etkilenmesin diye HTML katmanında. */
-function YAxis({ ticks }: { ticks: number[] }) {
-  return (
-    <div className="pointer-events-none absolute inset-y-0 -left-10 flex w-9 flex-col justify-between text-right">
-      {[...ticks].reverse().map((tick) => (
-        <span key={tick} className="text-[10px] leading-none" style={{ color: AXIS_TEXT }}>
-          {compact(tick)}
-        </span>
-      ))}
-    </div>
-  );
-}
-
-function XAxis({ labels, active }: { labels: string[]; active: number | null }) {
-  return (
-    <div className="mt-1.5 flex">
-      {labels.map((label, i) => (
-        <span
-          key={`${label}-${i}`}
-          className="flex-1 truncate px-0.5 text-center text-[10px]"
-          style={{ color: active === i ? "#16211A" : AXIS_TEXT }}
-        >
-          {label}
-        </span>
-      ))}
-    </div>
-  );
-}
-
-function Tooltip({
-  index,
-  count,
-  title,
-  rows,
-}: {
-  index: number;
-  count: number;
-  title: string;
-  rows: { name: string; color: string; value: string }[];
-}) {
-  const left = ((index + 0.5) / count) * 100;
-  return (
-    <div
-      className="pointer-events-none absolute top-1 z-10 rounded-xl border border-border bg-surface-base px-3 py-2 text-xs shadow-pop"
-      style={{
-        left: `${left}%`,
-        transform: `translateX(${left > 75 ? "-90%" : left < 25 ? "-10%" : "-50%"})`,
-      }}
-    >
-      <p className="mb-0.5 whitespace-nowrap font-semibold text-text-primary">{title}</p>
-      {rows.map((row) => (
-        <p key={row.name} className="flex items-center gap-1.5 whitespace-nowrap text-text-secondary">
-          <span className="h-1.5 w-1.5 rounded-full" style={{ background: row.color }} />
-          {row.name}: <span className="font-mono text-text-primary">{row.value}</span>
-        </p>
       ))}
     </div>
   );
@@ -189,98 +163,35 @@ export function SimpleBarChart<T extends object>({
   currency,
   emptyLabel,
 }: SimpleBarChartProps<T>) {
-  const [hover, setHover] = useState<number | null>(null);
-
   if (data.length === 0) return <EmptyChart label={emptyLabel} />;
-
-  const rows = data as unknown as Record<string, number | string>[];
   const colorOf = (i: number) => series[i].color ?? CHART_COLORS[i % CHART_COLORS.length];
 
-  const groupTotals = rows.map((row) =>
-    stacked
-      ? series.reduce((sum, s) => sum + Number(row[s.key] ?? 0), 0)
-      : Math.max(...series.map((s) => Number(row[s.key] ?? 0)))
-  );
-  const ticks = niceScale(Math.max(...groupTotals, 0));
-  const yMax = ticks[ticks.length - 1] || 1;
-
-  // viewBox 0-100; SVG preserveAspectRatio="none" ile kutuya yayılır.
-  const H = 100;
-  const slot = 100 / rows.length;
-
   return (
-    <div className="flex h-full flex-col pl-10">
-      <div className="relative min-h-0 flex-1">
-        <svg viewBox={`0 0 100 ${H}`} preserveAspectRatio="none" className="h-full w-full">
-          {ticks.map((tick) => {
-            const y = H - (tick / yMax) * H;
-            return (
-              <line
-                key={tick}
-                x1={0}
-                x2={100}
-                y1={y}
-                y2={y}
-                stroke={GRID}
-                strokeWidth={0.4}
-                strokeDasharray="1.5 1.5"
-                vectorEffect="non-scaling-stroke"
-              />
-            );
-          })}
-
-          {rows.map((row, gi) => {
-            let stackBottom = H;
-            return series.map((s, si) => {
-              const value = Number(row[s.key] ?? 0);
-              const h = (value / yMax) * H;
-              const barW = stacked ? slot * 0.5 : (slot * 0.62) / series.length;
-              const x = stacked ? gi * slot + slot * 0.25 : gi * slot + slot * 0.19 + si * barW;
-              const y = stacked ? stackBottom - h : H - h;
-              if (stacked) stackBottom -= h;
-
-              return (
-                <rect
-                  key={`${gi}-${s.key}`}
-                  x={x}
-                  y={y}
-                  width={barW}
-                  height={value > 0 ? Math.max(h, 0.8) : 0}
-                  fill={colorOf(si)}
-                  opacity={hover === null || hover === gi ? 1 : 0.4}
-                  rx={0.8}
-                />
-              );
-            });
-          })}
-        </svg>
-
-        {/* Fare yakalayıcı şeritler — SVG ölçeklemesinden bağımsız çalışsın diye ayrı katman. */}
-        <div className="absolute inset-0 flex">
-          {rows.map((_, i) => (
-            <div key={i} className="flex-1" onMouseEnter={() => setHover(i)} onMouseLeave={() => setHover(null)} />
-          ))}
-        </div>
-
-        <YAxis ticks={ticks} />
-
-        {hover !== null && (
-          <Tooltip
-            index={hover}
-            count={rows.length}
-            title={String(rows[hover][xKey])}
-            rows={series.map((s, si) => ({
-              name: s.name,
-              color: colorOf(si),
-              value: formatValue(Number(rows[hover][s.key] ?? 0), currency),
-            }))}
+    <ResponsiveContainer width="100%" height="100%">
+      <BarChart data={data} margin={{ top: 4, right: 4, left: -20, bottom: 0 }} barGap={4}>
+        <CartesianGrid stroke={GRID} strokeDasharray="3 3" vertical={false} />
+        <RechartsXAxis dataKey={xKey} tick={AXIS_STYLE} tickLine={false} axisLine={false} />
+        <RechartsYAxis tick={AXIS_STYLE} tickLine={false} axisLine={false} tickFormatter={compact} width={40} />
+        <RechartsTooltip
+          content={<ChartTooltip currency={currency} />}
+          cursor={{ fill: "rgba(22,33,26,0.04)" }}
+        />
+        {series.length > 1 && <RechartsLegend content={<ChartLegend />} />}
+        {series.map((s, i) => (
+          <Bar
+            key={s.key}
+            dataKey={s.key}
+            name={s.name}
+            fill={colorOf(i)}
+            stackId={stacked ? "stack" : undefined}
+            radius={stacked ? 0 : [4, 4, 0, 0]}
+            maxBarSize={40}
+            animationDuration={500}
+            animationEasing="ease-out"
           />
-        )}
-      </div>
-
-      <XAxis labels={rows.map((row) => String(row[xKey]))} active={hover} />
-      <Legend items={series.map((s, i) => ({ name: s.name, color: colorOf(i) }))} />
-    </div>
+        ))}
+      </BarChart>
+    </ResponsiveContainer>
   );
 }
 
@@ -297,112 +208,58 @@ interface TrendChartProps<T> {
 }
 
 export function TrendChart<T extends object>({ data, xKey, series, area = false, currency, emptyLabel }: TrendChartProps<T>) {
-  const gradientId = useId().replace(/:/g, "");
-  const [hover, setHover] = useState<number | null>(null);
-
   if (data.length === 0) return <EmptyChart label={emptyLabel} />;
-
-  const rows = data as unknown as Record<string, number | string>[];
   const colorOf = (i: number) => series[i].color ?? CHART_COLORS[i % CHART_COLORS.length];
-
-  const allValues = rows.flatMap((row) => series.map((s) => Number(row[s.key] ?? 0)));
-  const ticks = niceScale(Math.max(...allValues, 0));
-  const yMax = ticks[ticks.length - 1] || 1;
-
-  const H = 100;
-  // Uçtaki noktalar kırpılmasın diye çizim alanı iki yandan biraz içeriden başlar.
-  const xAt = (i: number) => (rows.length === 1 ? 50 : (i / (rows.length - 1)) * 100);
-  const yAt = (v: number) => H - (v / yMax) * H;
+  const Chart = area ? AreaChart : LineChart;
 
   return (
-    <div className="flex h-full flex-col pl-10">
-      <div className="relative min-h-0 flex-1">
-        <svg viewBox={`0 0 100 ${H}`} preserveAspectRatio="none" className="h-full w-full">
-          <defs>
-            {series.map((s, i) => (
-              <linearGradient key={s.key} id={`${gradientId}-${i}`} x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor={colorOf(i)} stopOpacity={0.3} />
-                <stop offset="100%" stopColor={colorOf(i)} stopOpacity={0.02} />
-              </linearGradient>
-            ))}
-          </defs>
-
-          {ticks.map((tick) => (
-            <line
-              key={tick}
-              x1={0}
-              x2={100}
-              y1={yAt(tick)}
-              y2={yAt(tick)}
-              stroke={GRID}
-              strokeWidth={0.4}
-              strokeDasharray="1.5 1.5"
-              vectorEffect="non-scaling-stroke"
-            />
+    <ResponsiveContainer width="100%" height="100%">
+      <Chart data={data} margin={{ top: 4, right: 8, left: -20, bottom: 0 }}>
+        <defs>
+          {series.map((s, i) => (
+            <linearGradient key={s.key} id={`trend-fill-${s.key}`} x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stopColor={colorOf(i)} stopOpacity={0.3} />
+              <stop offset="100%" stopColor={colorOf(i)} stopOpacity={0.02} />
+            </linearGradient>
           ))}
-
-          {hover !== null && (
-            <line x1={xAt(hover)} x2={xAt(hover)} y1={0} y2={H} stroke={GRID} strokeWidth={1} vectorEffect="non-scaling-stroke" />
-          )}
-
-          {series.map((s, si) => {
-            const points = rows.map((row, i) => `${xAt(i)},${yAt(Number(row[s.key] ?? 0))}`).join(" ");
-            return (
-              <g key={s.key}>
-                {area && <polygon points={`0,${H} ${points} 100,${H}`} fill={`url(#${gradientId}-${si})`} />}
-                <polyline
-                  points={points}
-                  fill="none"
-                  stroke={colorOf(si)}
-                  strokeWidth={2.25}
-                  strokeLinejoin="round"
-                  strokeLinecap="round"
-                  vectorEffect="non-scaling-stroke"
-                />
-              </g>
-            );
-          })}
-        </svg>
-
-        {/* Aktif noktalar: yüzde konumlandırma ölçek bozulmasından etkilenmez. */}
-        {hover !== null &&
-          series.map((s, si) => (
-            <span
+        </defs>
+        <CartesianGrid stroke={GRID} strokeDasharray="3 3" vertical={false} />
+        <RechartsXAxis dataKey={xKey} tick={AXIS_STYLE} tickLine={false} axisLine={false} />
+        <RechartsYAxis tick={AXIS_STYLE} tickLine={false} axisLine={false} tickFormatter={compact} width={40} />
+        <RechartsTooltip content={<ChartTooltip currency={currency} />} cursor={{ stroke: GRID, strokeWidth: 1 }} />
+        {series.length > 1 && <RechartsLegend content={<ChartLegend />} />}
+        {series.map((s, i) =>
+          area ? (
+            <Area
               key={s.key}
-              className="pointer-events-none absolute h-2.5 w-2.5 -translate-x-1/2 -translate-y-1/2 rounded-full ring-2 ring-white"
-              style={{
-                background: colorOf(si),
-                left: `${xAt(hover)}%`,
-                top: `${(yAt(Number(rows[hover][s.key] ?? 0)) / H) * 100}%`,
-              }}
+              type="monotone"
+              dataKey={s.key}
+              name={s.name}
+              stroke={colorOf(i)}
+              strokeWidth={2.25}
+              fill={`url(#trend-fill-${s.key})`}
+              dot={false}
+              activeDot={{ r: 4 }}
+              animationDuration={500}
+              animationEasing="ease-out"
             />
-          ))}
-
-        <div className="absolute inset-0 flex">
-          {rows.map((_, i) => (
-            <div key={i} className="flex-1" onMouseEnter={() => setHover(i)} onMouseLeave={() => setHover(null)} />
-          ))}
-        </div>
-
-        <YAxis ticks={ticks} />
-
-        {hover !== null && (
-          <Tooltip
-            index={hover}
-            count={rows.length}
-            title={String(rows[hover][xKey])}
-            rows={series.map((s, si) => ({
-              name: s.name,
-              color: colorOf(si),
-              value: formatValue(Number(rows[hover][s.key] ?? 0), currency),
-            }))}
-          />
+          ) : (
+            <Line
+              key={s.key}
+              type="monotone"
+              dataKey={s.key}
+              name={s.name}
+              stroke={colorOf(i)}
+              strokeWidth={2.25}
+              dot={false}
+              activeDot={{ r: 4 }}
+              animationDuration={500}
+              animationEasing="ease-out"
+            />
+          )
         )}
-      </div>
-
-      <XAxis labels={rows.map((row) => String(row[xKey]))} active={hover} />
-      <Legend items={series.map((s, i) => ({ name: s.name, color: colorOf(i) }))} />
-    </div>
+      </Chart>
+    </ResponsiveContainer>
   );
 }
 
@@ -423,85 +280,72 @@ interface DonutChartProps {
 }
 
 export function DonutChart({ data, centerValue, centerLabel, emptyLabel }: DonutChartProps) {
-  const [hover, setHover] = useState<string | null>(null);
   const total = data.reduce((sum, d) => sum + d.value, 0);
-
   if (total === 0) return <EmptyChart label={emptyLabel} />;
-
   const slices = data.filter((d) => d.value > 0);
-  const R = 42;
-  const STROKE = 15;
-  const circumference = 2 * Math.PI * R;
-  let offset = 0;
-
-  const active = hover ? slices.find((s) => s.name === hover) : undefined;
 
   return (
     <div className="flex h-full flex-col">
       <div className="relative min-h-0 flex-1">
-        <svg viewBox="0 0 120 120" className="h-full w-full">
-          <g transform="translate(60,60) rotate(-90)">
-            {slices.map((slice, i) => {
-              const color = slice.color ?? CHART_COLORS[i % CHART_COLORS.length];
-              const length = (slice.value / total) * circumference;
-              // Dilimler arasında 1.5 birimlik ince boşluk bırakılır.
-              const visible = Math.max(0, length - 1.5);
-              const el = (
-                <circle
-                  key={slice.name}
-                  r={R}
-                  fill="none"
-                  stroke={color}
-                  strokeWidth={hover === slice.name ? STROKE + 3 : STROKE}
-                  strokeDasharray={`${visible} ${circumference - visible}`}
-                  strokeDashoffset={-offset}
-                  opacity={hover === null || hover === slice.name ? 1 : 0.45}
-                  onMouseEnter={() => setHover(slice.name)}
-                  onMouseLeave={() => setHover(null)}
-                  style={{ transition: "stroke-width 0.15s, opacity 0.15s" }}
-                />
-              );
-              offset += length;
-              return el;
-            })}
-          </g>
-        </svg>
+        <ResponsiveContainer width="100%" height="100%">
+          <PieChart>
+            <Pie
+              data={slices}
+              dataKey="value"
+              nameKey="name"
+              innerRadius="62%"
+              outerRadius="88%"
+              paddingAngle={2}
+              startAngle={90}
+              endAngle={-270}
+              animationDuration={500}
+              animationEasing="ease-out"
+            >
+              {slices.map((slice, i) => (
+                <Cell key={slice.name} fill={slice.color ?? CHART_COLORS[i % CHART_COLORS.length]} stroke="none" />
+              ))}
+            </Pie>
+            <RechartsTooltip
+              content={({ active, payload }) => {
+                if (!active || !payload || payload.length === 0) return null;
+                const p = payload[0];
+                const value = Number(p.value ?? 0);
+                return (
+                  <div className="rounded-xl border border-border bg-surface-base px-3 py-2 text-xs shadow-pop">
+                    <p className="flex items-center gap-1.5 font-semibold text-text-primary">
+                      <span className="h-1.5 w-1.5 rounded-full" style={{ background: p.payload?.color ?? p.color }} />
+                      {p.name}
+                    </p>
+                    <p className="font-mono text-text-secondary">
+                      {formatValue(value)} (%{Math.round((value / total) * 100)})
+                    </p>
+                  </div>
+                );
+              }}
+            />
+          </PieChart>
+        </ResponsiveContainer>
 
         <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center px-8 text-center">
-          {active ? (
+          {centerValue && (
             <>
-              <span className="text-2xl font-bold tracking-tight text-text-primary">
-                %{Math.round((active.value / total) * 100)}
-              </span>
-              <span className="w-full truncate text-2xs uppercase tracking-wide text-text-faint">{active.name}</span>
+              <span className="text-2xl font-bold tracking-tight text-text-primary">{centerValue}</span>
+              {centerLabel && <span className="text-2xs uppercase tracking-wide text-text-faint">{centerLabel}</span>}
             </>
-          ) : (
-            centerValue && (
-              <>
-                <span className="text-2xl font-bold tracking-tight text-text-primary">{centerValue}</span>
-                {centerLabel && <span className="text-2xs uppercase tracking-wide text-text-faint">{centerLabel}</span>}
-              </>
-            )
           )}
         </div>
       </div>
 
       <div className="mt-2 flex flex-wrap items-center justify-center gap-x-3 gap-y-1">
         {slices.map((slice, i) => (
-          <button
-            key={slice.name}
-            type="button"
-            onMouseEnter={() => setHover(slice.name)}
-            onMouseLeave={() => setHover(null)}
-            className="flex items-center gap-1.5 text-xs text-text-secondary transition hover:text-text-primary"
-          >
+          <span key={slice.name} className="flex items-center gap-1.5 text-xs text-text-secondary">
             <span
               className="h-2 w-2 shrink-0 rounded-full"
               style={{ background: slice.color ?? CHART_COLORS[i % CHART_COLORS.length] }}
             />
             <span className="max-w-[9rem] truncate">{slice.name}</span>
             <span className="font-mono text-text-faint">{slice.value}</span>
-          </button>
+          </span>
         ))}
       </div>
     </div>
@@ -519,7 +363,9 @@ export interface RankRow {
 
 /**
  * Az satırlı sıralama listeleri için hafif çubuk gösterimi —
- * performans / ilçe / personel / stok kırılımlarında kullanılır.
+ * performans / ilçe / personel / stok kırılımlarında kullanılır. recharts'a
+ * geçmedi (bilinçli): bu bir eksen/tooltip gerektiren "grafik" değil, düz bir
+ * liste + doluluk çubuğu — mevcut CSS animasyonu (animate-grow-bar) yeterli.
  */
 export function RankBars({ rows, emptyLabel = "Veri yok" }: { rows: RankRow[]; emptyLabel?: string }) {
   if (rows.length === 0) return <EmptyChart label={emptyLabel} />;

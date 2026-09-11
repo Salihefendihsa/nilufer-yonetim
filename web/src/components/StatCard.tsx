@@ -2,6 +2,7 @@
 
 import { motion } from "framer-motion";
 import { ArrowDownRight, ArrowUpRight, Minus, type LucideIcon } from "lucide-react";
+import { AnimatedStatValue } from "./AnimatedStatValue";
 
 export interface StatBadge {
   label: string;
@@ -111,7 +112,13 @@ export function StatCard({
       </div>
 
       <div>
-        <p className={`text-3xl font-bold tracking-tight text-text-primary ${mono ? "font-mono" : ""}`}>{value}</p>
+        {value === "—" ? (
+          <div className="skeleton h-8 w-16" />
+        ) : (
+          <p className={`text-3xl font-bold tracking-tight text-text-primary ${mono ? "font-mono" : ""}`}>
+            <AnimatedStatValue value={value} />
+          </p>
+        )}
         <p className="mt-1 text-sm text-text-secondary">{label}</p>
         {(hint || (trend && trend.label)) && (
           <p className="mt-1 text-xs text-text-faint">{hint ?? trend?.label}</p>

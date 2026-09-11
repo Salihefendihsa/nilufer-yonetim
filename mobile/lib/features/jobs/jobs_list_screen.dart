@@ -10,6 +10,7 @@ import '../../models/job.dart';
 import '../../models/user.dart';
 import '../../theme/app_colors.dart';
 import '../../navigation/manager_nav.dart';
+import '../../widgets/staggered_fade_in.dart';
 import '../../widgets/state_views.dart';
 import 'jobs_api.dart';
 import 'job_detail_screen.dart';
@@ -179,16 +180,19 @@ class _JobsListScreenState extends State<JobsListScreen> {
         separatorBuilder: (_, __) => const SizedBox(height: 8),
         itemBuilder: (context, i) {
           final job = _jobs[i];
-          return _JobCard(
-            job: job,
-            onTap: () async {
-              final changed = await Navigator.of(context).push<bool>(
-                MaterialPageRoute(
-                  builder: (_) => JobDetailScreen(jobId: job.id),
-                ),
-              );
-              if (changed == true) _load();
-            },
+          return StaggeredFadeIn(
+            index: i,
+            child: _JobCard(
+              job: job,
+              onTap: () async {
+                final changed = await Navigator.of(context).push<bool>(
+                  MaterialPageRoute(
+                    builder: (_) => JobDetailScreen(jobId: job.id),
+                  ),
+                );
+                if (changed == true) _load();
+              },
+            ),
           );
         },
       ),
@@ -270,85 +274,87 @@ class _JobCard extends StatelessWidget {
                   child: Padding(
                     padding: const EdgeInsets.all(14),
                     child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Expanded(
-                    child: Text(
-                      job.customerName ?? 'Müşteri',
-                      style: const TextStyle(
-                        fontWeight: FontWeight.w700,
-                        fontSize: 14,
-                      ),
-                    ),
-                  ),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 8,
-                      vertical: 3,
-                    ),
-                    decoration: BoxDecoration(
-                      color: color.withValues(alpha: 0.12),
-                      borderRadius: BorderRadius.circular(AppRadius.pill),
-                    ),
-                    child: Text(
-                      jobStatusLabelTr(job.status),
-                      style: TextStyle(
-                        fontSize: 11,
-                        fontWeight: FontWeight.w700,
-                        color: color,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 4),
-              Text(
-                job.sequenceNo != null
-                    ? '#${job.sequenceNo} · ${job.serviceType}'
-                    : job.serviceType,
-                style: const TextStyle(
-                  fontSize: 12.5,
-                  color: AppColors.textSecondary,
-                ),
-              ),
-              const SizedBox(height: 4),
-              Row(
-                children: [
-                  const Icon(
-                    Icons.person_outline_rounded,
-                    size: 13,
-                    color: AppColors.textFaint,
-                  ),
-                  const SizedBox(width: 4),
-                  Text(
-                    job.assignedStaffName ?? 'Atanmadı',
-                    style: const TextStyle(
-                      fontSize: 11.5,
-                      color: AppColors.textFaint,
-                    ),
-                  ),
-                  if (job.scheduledAt != null) ...[
-                    const SizedBox(width: 10),
-                    const Icon(
-                      Icons.schedule_rounded,
-                      size: 13,
-                      color: AppColors.textFaint,
-                    ),
-                    const SizedBox(width: 4),
-                    Text(
-                      '${_timeFormat.format(job.scheduledAt!)}'
-                      '${job.scheduledEndAt != null ? ' – ${_timeFormat.format(job.scheduledEndAt!)}' : ''}',
-                      style: const TextStyle(
-                        fontSize: 11.5,
-                        color: AppColors.textFaint,
-                      ),
-                    ),
-                  ],
-                ],
-              ),
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Expanded(
+                              child: Text(
+                                job.customerName ?? 'Müşteri',
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.w700,
+                                  fontSize: 14,
+                                ),
+                              ),
+                            ),
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 8,
+                                vertical: 3,
+                              ),
+                              decoration: BoxDecoration(
+                                color: color.withValues(alpha: 0.12),
+                                borderRadius: BorderRadius.circular(
+                                  AppRadius.pill,
+                                ),
+                              ),
+                              child: Text(
+                                jobStatusLabelTr(job.status),
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w700,
+                                  color: color,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          job.sequenceNo != null
+                              ? '#${job.sequenceNo} · ${job.serviceType}'
+                              : job.serviceType,
+                          style: const TextStyle(
+                            fontSize: 12.5,
+                            color: AppColors.textSecondary,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Row(
+                          children: [
+                            const Icon(
+                              Icons.person_outline_rounded,
+                              size: 13,
+                              color: AppColors.textFaint,
+                            ),
+                            const SizedBox(width: 4),
+                            Text(
+                              job.assignedStaffName ?? 'Atanmadı',
+                              style: const TextStyle(
+                                fontSize: 11.5,
+                                color: AppColors.textFaint,
+                              ),
+                            ),
+                            if (job.scheduledAt != null) ...[
+                              const SizedBox(width: 10),
+                              const Icon(
+                                Icons.schedule_rounded,
+                                size: 13,
+                                color: AppColors.textFaint,
+                              ),
+                              const SizedBox(width: 4),
+                              Text(
+                                '${_timeFormat.format(job.scheduledAt!)}'
+                                '${job.scheduledEndAt != null ? ' – ${_timeFormat.format(job.scheduledEndAt!)}' : ''}',
+                                style: const TextStyle(
+                                  fontSize: 11.5,
+                                  color: AppColors.textFaint,
+                                ),
+                              ),
+                            ],
+                          ],
+                        ),
                       ],
                     ),
                   ),

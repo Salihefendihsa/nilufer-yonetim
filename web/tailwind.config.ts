@@ -161,10 +161,15 @@ const config: Config = {
           "0%": { transform: "scaleX(0)" },
           "100%": { transform: "scaleX(1)" },
         },
+        shimmer: {
+          "0%": { backgroundPosition: "-200% 0" },
+          "100%": { backgroundPosition: "200% 0" },
+        },
       },
       animation: {
         "fade-rise": "fade-rise 0.25s ease-out both",
         "grow-bar": "grow-bar 0.6s cubic-bezier(0.22,1,0.36,1) both",
+        shimmer: "shimmer 1.6s ease-in-out infinite",
       },
     },
   },

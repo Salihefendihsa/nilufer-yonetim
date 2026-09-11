@@ -2,12 +2,14 @@ import 'package:flutter/material.dart';
 
 import '../../core/api_client.dart';
 import '../../theme/app_colors.dart';
+import '../../widgets/charts.dart';
 import '../../widgets/state_views.dart';
 
 /// backend/src/controllers/analyticsController.ts ile birebir — yalnızca
-/// OWNER/MANAGER (routes/analytics.ts:13). Grafik kütüphanesi kullanılmadan
-/// (kapsam dışı bırakılan bağımlılık) basit yatay çubuklarla gösterilir;
-/// hesaplama backend'de zaten doğrulandı, burada yalnızca görselleştirilir.
+/// OWNER/MANAGER (routes/analytics.ts:13). Ciro trendi ve hizmet dağılımı
+/// fl_chart ile gerçek, animasyonlu grafikler olarak çizilir (bkz.
+/// widgets/charts.dart); hesaplama backend'de zaten doğrulandı, burada
+/// yalnızca görselleştirilir.
 class ReportsScreen extends StatefulWidget {
   const ReportsScreen({super.key});
 
@@ -119,17 +121,16 @@ class _ReportsScreenState extends State<ReportsScreen> {
                       icon: Icons.trending_up_rounded,
                     )
                   else
-                    ..._revenueTrend.map((m) {
-                      final maxTotal = _revenueTrend
-                          .map((e) => (e['total'] as num).toDouble())
-                          .reduce((a, b) => a > b ? a : b);
-                      final total = (m['total'] as num).toDouble();
-                      return _BarRow(
-                        label: m['label'] as String,
-                        value: maxTotal == 0 ? 0 : (total / maxTotal) * 100,
-                        caption: '₺${total.toStringAsFixed(0)}',
-                      );
-                    }),
+                    RevenueTrendChart(
+                      points: _revenueTrend
+                          .map(
+                            (m) => ChartPoint(
+                              m['label'] as String,
+                              (m['total'] as num).toDouble(),
+                            ),
+                          )
+                          .toList(),
+                    ),
                   const SizedBox(height: 20),
                   const Text(
                     'Hizmet Türü Dağılımı',
@@ -145,12 +146,15 @@ class _ReportsScreenState extends State<ReportsScreen> {
                       icon: Icons.pie_chart_outline_rounded,
                     )
                   else
-                    ..._serviceBreakdown.map(
-                      (s) => _BarRow(
-                        label: s['serviceType'] as String,
-                        value: (s['percentage'] as num).toDouble(),
-                        caption: '${s['count']} iş',
-                      ),
+                    CategoryPieChart(
+                      points: _serviceBreakdown
+                          .map(
+                            (s) => ChartPoint(
+                              s['serviceType'] as String,
+                              (s['percentage'] as num).toDouble(),
+                            ),
+                          )
+                          .toList(),
                     ),
                   const SizedBox(height: 20),
                   const Text(

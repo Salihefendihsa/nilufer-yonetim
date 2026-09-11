@@ -5,6 +5,7 @@ import '../../core/api_client.dart';
 import '../../core/file_download.dart';
 import '../../models/customer.dart';
 import '../../theme/app_colors.dart';
+import '../../widgets/charts.dart';
 import '../../widgets/state_views.dart';
 import '../../widgets/stat_card.dart';
 import '../../models/staff.dart';
@@ -229,17 +230,16 @@ class _FinanceScreenState extends State<FinanceScreen> {
               style: TextStyle(fontWeight: FontWeight.w700, fontSize: 14.5),
             ),
             const SizedBox(height: 8),
-            ..._revenueTrend.map((m) {
-              final maxTotal = _revenueTrend
-                  .map((e) => (e['total'] as num).toDouble())
-                  .reduce((a, b) => a > b ? a : b);
-              final total = (m['total'] as num).toDouble();
-              return _FinanceBarRow(
-                label: m['label'] as String,
-                value: maxTotal == 0 ? 0 : (total / maxTotal) * 100,
-                caption: _currency.format(total),
-              );
-            }),
+            RevenueTrendChart(
+              points: _revenueTrend
+                  .map(
+                    (m) => ChartPoint(
+                      m['label'] as String,
+                      (m['total'] as num).toDouble(),
+                    ),
+                  )
+                  .toList(),
+            ),
           ],
           if (s.paymentTypeBreakdown.isNotEmpty) ...[
             const SizedBox(height: 20),
@@ -393,51 +393,6 @@ class _FinanceScreenState extends State<FinanceScreen> {
   }
 }
 
-class _FinanceBarRow extends StatelessWidget {
-  final String label;
-  final double value;
-  final String caption;
-  const _FinanceBarRow({
-    required this.label,
-    required this.value,
-    required this.caption,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 10),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                label,
-                style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w600),
-              ),
-              Text(
-                caption,
-                style: const TextStyle(fontSize: 11.5, color: AppColors.textFaint),
-              ),
-            ],
-          ),
-          const SizedBox(height: 4),
-          ClipRRect(
-            borderRadius: BorderRadius.circular(AppRadius.pill),
-            child: LinearProgressIndicator(
-              value: (value / 100).clamp(0, 1),
-              minHeight: 8,
-              backgroundColor: AppColors.surfaceMuted,
-              color: AppColors.primary500,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
 
 class _PaymentFormScreen extends StatefulWidget {
   const _PaymentFormScreen();

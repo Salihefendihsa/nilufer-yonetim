@@ -136,6 +136,18 @@ body {
     @apply text-2xs font-semibold uppercase tracking-[0.08em] text-text-faint;
   }
 
+  /* ---- Yükleme durumu (shimmer skeleton) ---- */
+  .skeleton {
+    @apply animate-shimmer rounded-lg bg-surface-muted;
+    background-image: linear-gradient(
+      90deg,
+      var(--surface-muted) 25%,
+      var(--surface-subtle) 50%,
+      var(--surface-muted) 75%
+    );
+    background-size: 200% 100%;
+  }
+
   /* ---- Grafik yardımcıları ---- */
   .recharts-cartesian-grid line {
     stroke: var(--border);
