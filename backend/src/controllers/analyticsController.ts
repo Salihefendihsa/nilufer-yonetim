@@ -11,9 +11,14 @@ function monthsParam(req: Request, fallback: number): number {
   return Number.isFinite(raw) && raw > 0 ? Math.min(24, raw) : fallback;
 }
 
-export async function getRevenueTrend(req: Request, res: Response) {
+/**
+ * Aşağıdaki `compute*` fonksiyonları saf veri hesaplama katmanı — hem bu
+ * dosyadaki route handler'lar hem de exportController.ts'teki PDF rapor
+ * üretimi AYNI hesaplamayı kullanır (tek doğruluk kaynağı, kopya mantık yok).
+ */
+
+export async function computeRevenueTrend(monthCount: number) {
   const now = new Date();
-  const monthCount = monthsParam(req, 6);
   const months: { year: number; month: number }[] = [];
   for (let i = monthCount - 1; i >= 0; i--) {
     const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
@@ -26,18 +31,20 @@ export async function getRevenueTrend(req: Request, res: Response) {
     select: { amount: true, createdAt: true },
   });
 
-  const data = months.map(({ year, month }) => {
+  return months.map(({ year, month }) => {
     const total = payments
       .filter((p) => p.createdAt.getFullYear() === year && p.createdAt.getMonth() === month)
       .reduce((sum, p) => sum + Number(p.amount), 0);
     return { label: `${MONTH_LABELS[month]} ${year}`, total };
   });
+}
 
+export async function getRevenueTrend(req: Request, res: Response) {
+  const data = await computeRevenueTrend(monthsParam(req, 6));
   return res.json({ data });
 }
 
-export async function getServiceBreakdown(req: Request, res: Response) {
-  const monthCount = monthsParam(req, 3);
+export async function computeServiceBreakdown(monthCount: number) {
   const rangeStart = new Date();
   rangeStart.setMonth(rangeStart.getMonth() - monthCount);
 
@@ -60,10 +67,15 @@ export async function getServiceBreakdown(req: Request, res: Response) {
     }))
     .sort((a, b) => b.count - a.count);
 
-  return res.json({ data, total });
+  return { data, total };
 }
 
-export async function getTopDistricts(_req: Request, res: Response) {
+export async function getServiceBreakdown(req: Request, res: Response) {
+  const result = await computeServiceBreakdown(monthsParam(req, 3));
+  return res.json(result);
+}
+
+export async function computeTopDistricts() {
   // customer ilişkisini her iş satırı için tekrar tekrar çekmek yerine
   // müşteri bazında iş sayısını DB'de gruplayıp yalnızca ilgili
   // müşterilerin district'ini tek seferde çözüyoruz.
@@ -85,15 +97,18 @@ export async function getTopDistricts(_req: Request, res: Response) {
     counts.set(district, (counts.get(district) ?? 0) + _count._all);
   }
 
-  const data = Array.from(counts.entries())
+  return Array.from(counts.entries())
     .map(([district, count]) => ({ district, count }))
     .sort((a, b) => b.count - a.count)
     .slice(0, 5);
+}
 
+export async function getTopDistricts(_req: Request, res: Response) {
+  const data = await computeTopDistricts();
   return res.json({ data });
 }
 
-export async function getCustomerRetention(_req: Request, res: Response) {
+export async function computeCustomerRetention() {
   const now = new Date();
   const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
 
@@ -114,5 +129,10 @@ export async function getCustomerRetention(_req: Request, res: Response) {
   const returningCustomers = returningCustomerIds.size;
   const newCustomers = customerIds.length - returningCustomers;
 
-  return res.json({ newCustomers, returningCustomers });
+  return { newCustomers, returningCustomers };
+}
+
+export async function getCustomerRetention(_req: Request, res: Response) {
+  const result = await computeCustomerRetention();
+  return res.json(result);
 }

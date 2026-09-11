@@ -1,14 +1,14 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Plus, FileText, AlertTriangle, FileSignature, CalendarClock, Repeat, RefreshCw, Wallet } from "lucide-react";
+import { Plus, FileText, AlertTriangle, FileSignature, CalendarClock, Repeat, RefreshCw, Wallet, Download } from "lucide-react";
 import { RequireRole } from "@/components/RequireRole";
 import { PageHeader } from "@/components/PageHeader";
 import { StatCard } from "@/components/StatCard";
 import { StatusStrip } from "@/components/StatusStrip";
 import { Table, type Column } from "@/components/Table";
 import { EmptyState } from "@/components/EmptyState";
-import { api, ApiError } from "@/lib/api";
+import { api, ApiError, downloadFile } from "@/lib/api";
 import { useToast } from "@/lib/ToastProvider";
 import { formatDate, currencyFormatter } from "@/lib/format";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
@@ -46,6 +46,19 @@ function ContractsPageContent() {
   const [summary, setSummary] = useState<ContractsSummary | null>(null);
   const [renewTarget, setRenewTarget] = useState<Contract | null>(null);
   const [renewing, setRenewing] = useState(false);
+  const [downloadingId, setDownloadingId] = useState<string | null>(null);
+
+  async function handleDownloadContractPdf(contract: Contract) {
+    setDownloadingId(contract.id);
+    setError(null);
+    try {
+      await downloadFile(`/contracts/${contract.id}/pdf`, `sozlesme-${contract.id}.pdf`);
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : "PDF indirilemedi");
+    } finally {
+      setDownloadingId(null);
+    }
+  }
   const { showToast } = useToast();
 
   const load = useCallback(async () => {
@@ -140,17 +153,29 @@ function ContractsPageContent() {
     {
       header: "",
       className: "text-right",
-      accessor: (row) =>
-        row.status === "ACTIVE" ? (
+      accessor: (row) => (
+        <div className="flex justify-end gap-2">
           <button
             type="button"
-            onClick={() => setRenewTarget(row)}
-            className="flex items-center gap-1.5 rounded-xl border border-border bg-surface-base px-3 py-1.5 text-xs font-medium text-text-secondary transition hover:border-border-strong hover:bg-surface-subtle hover:text-text-primary"
+            disabled={downloadingId === row.id}
+            onClick={() => handleDownloadContractPdf(row)}
+            className="flex items-center gap-1.5 rounded-xl border border-border bg-surface-base px-3 py-1.5 text-xs font-medium text-text-secondary transition hover:border-border-strong hover:bg-surface-subtle hover:text-text-primary disabled:opacity-50"
           >
-            <RefreshCw size={13} strokeWidth={1.75} />
-            Yenile
+            <Download size={13} strokeWidth={1.75} />
+            {downloadingId === row.id ? "..." : "PDF"}
           </button>
-        ) : null,
+          {row.status === "ACTIVE" && (
+            <button
+              type="button"
+              onClick={() => setRenewTarget(row)}
+              className="flex items-center gap-1.5 rounded-xl border border-border bg-surface-base px-3 py-1.5 text-xs font-medium text-text-secondary transition hover:border-border-strong hover:bg-surface-subtle hover:text-text-primary"
+            >
+              <RefreshCw size={13} strokeWidth={1.75} />
+              Yenile
+            </button>
+          )}
+        </div>
+      ),
     },
   ];
 

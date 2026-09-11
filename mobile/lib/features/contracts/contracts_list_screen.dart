@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
 import '../../core/api_client.dart';
+import '../../core/file_download.dart';
 import '../../models/contract.dart';
 import '../../models/customer.dart';
 import '../../theme/app_colors.dart';
@@ -34,6 +35,22 @@ class _ContractsListScreenState extends State<ContractsListScreen> {
   bool _loading = true;
   String? _error;
   String? _busyId;
+  String? _pdfDownloadingId;
+
+  Future<void> _downloadContractPdf(Contract c) async {
+    setState(() => _pdfDownloadingId = c.id);
+    try {
+      await downloadAndShare('/contracts/${c.id}/pdf', 'sozlesme-${c.id}.pdf');
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(e is ApiException ? e.message : 'PDF indirilemedi')),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _pdfDownloadingId = null);
+    }
+  }
 
   @override
   void initState() {
@@ -255,19 +272,32 @@ class _ContractsListScreenState extends State<ContractsListScreen> {
                         ),
                       ),
                     ],
-                    if (c.status == 'ACTIVE') ...[
-                      const SizedBox(height: 8),
-                      SizedBox(
-                        width: double.infinity,
-                        child: OutlinedButton.icon(
-                          onPressed: _busyId == c.id ? null : () => _renew(c),
-                          icon: const Icon(Icons.refresh_rounded, size: 16),
-                          label: Text(
-                            _busyId == c.id ? 'İşleniyor...' : 'Yenile',
+                    const SizedBox(height: 8),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: OutlinedButton.icon(
+                            onPressed: _pdfDownloadingId == c.id ? null : () => _downloadContractPdf(c),
+                            icon: const Icon(Icons.picture_as_pdf_outlined, size: 16),
+                            label: Text(
+                              _pdfDownloadingId == c.id ? 'İndiriliyor...' : 'PDF İndir',
+                            ),
                           ),
                         ),
-                      ),
-                    ],
+                        if (c.status == 'ACTIVE') ...[
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: OutlinedButton.icon(
+                              onPressed: _busyId == c.id ? null : () => _renew(c),
+                              icon: const Icon(Icons.refresh_rounded, size: 16),
+                              label: Text(
+                                _busyId == c.id ? 'İşleniyor...' : 'Yenile',
+                              ),
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
                   ],
                 ),
               ),
@@ -528,6 +558,22 @@ class _MyContractsScreenState extends State<MyContractsScreen> {
   List<Contract> _contracts = [];
   bool _loading = true;
   String? _error;
+  String? _pdfDownloadingId;
+
+  Future<void> _downloadContractPdf(Contract c) async {
+    setState(() => _pdfDownloadingId = c.id);
+    try {
+      await downloadAndShare('/contracts/${c.id}/pdf', 'sozlesme-${c.id}.pdf');
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(e is ApiException ? e.message : 'PDF indirilemedi')),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _pdfDownloadingId = null);
+    }
+  }
 
   @override
   void initState() {
@@ -583,40 +629,58 @@ class _MyContractsScreenState extends State<MyContractsScreen> {
                       borderRadius: BorderRadius.circular(AppRadius.card),
                       border: Border.all(color: AppColors.borderDefault),
                     ),
-                    child: Column(
+                    child: Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
-                          c.serviceType ?? 'Sözleşme',
-                          style: const TextStyle(
-                            fontWeight: FontWeight.w700,
-                            fontSize: 14,
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                c.serviceType ?? 'Sözleşme',
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.w700,
+                                  fontSize: 14,
+                                ),
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                '${_dateFormat.format(DateTime.parse(c.startDate))} → ${_dateFormat.format(DateTime.parse(c.endDate))}',
+                                style: const TextStyle(
+                                  fontSize: 12,
+                                  color: AppColors.textSecondary,
+                                ),
+                              ),
+                              Text(
+                                contractStatusLabelTr(c.status),
+                                style: const TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                              if (c.amount != null)
+                                Text(
+                                  _currency.format(c.amount),
+                                  style: const TextStyle(
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w700,
+                                    color: AppColors.primary700,
+                                  ),
+                                ),
+                            ],
                           ),
                         ),
-                        const SizedBox(height: 4),
-                        Text(
-                          '${_dateFormat.format(DateTime.parse(c.startDate))} → ${_dateFormat.format(DateTime.parse(c.endDate))}',
-                          style: const TextStyle(
-                            fontSize: 12,
-                            color: AppColors.textSecondary,
-                          ),
+                        IconButton(
+                          icon: _pdfDownloadingId == c.id
+                              ? const SizedBox(
+                                  width: 16,
+                                  height: 16,
+                                  child: CircularProgressIndicator(strokeWidth: 2),
+                                )
+                              : const Icon(Icons.picture_as_pdf_outlined, size: 20),
+                          tooltip: 'PDF İndir',
+                          onPressed: _pdfDownloadingId == c.id ? null : () => _downloadContractPdf(c),
                         ),
-                        Text(
-                          contractStatusLabelTr(c.status),
-                          style: const TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                        if (c.amount != null)
-                          Text(
-                            _currency.format(c.amount),
-                            style: const TextStyle(
-                              fontSize: 13,
-                              fontWeight: FontWeight.w700,
-                              color: AppColors.primary700,
-                            ),
-                          ),
                       ],
                     ),
                   );

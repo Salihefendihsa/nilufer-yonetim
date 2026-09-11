@@ -10,6 +10,7 @@ import {
   getContractsSummary,
   renewContract,
 } from "../controllers/contractsController";
+import { exportContractPdf } from "../controllers/exportController";
 
 const router = Router();
 
@@ -19,6 +20,7 @@ router.get("/expiring", requireRole(Role.OWNER, Role.MANAGER), getExpiringContra
 router.get("/summary", requireRole(Role.OWNER, Role.MANAGER), getContractsSummary);
 router.get("/", requireRole(Role.OWNER, Role.MANAGER, Role.CUSTOMER), listContracts);
 router.get("/:id", requireRole(Role.OWNER, Role.MANAGER, Role.CUSTOMER), getContract);
+router.get("/:id/pdf", requireRole(Role.OWNER, Role.MANAGER, Role.CUSTOMER), exportContractPdf);
 router.post("/", requireRole(Role.OWNER, Role.MANAGER), createContract);
 router.patch("/:id", requireRole(Role.OWNER, Role.MANAGER), updateContract);
 router.post("/:id/renew", requireRole(Role.OWNER, Role.MANAGER), renewContract);

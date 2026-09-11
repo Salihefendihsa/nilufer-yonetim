@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../core/api_client.dart';
+import '../../core/file_download.dart';
 import '../../theme/app_colors.dart';
 import '../../widgets/charts.dart';
 import '../../widgets/state_views.dart';
@@ -24,11 +25,27 @@ class _ReportsScreenState extends State<ReportsScreen> {
   Map<String, dynamic>? _retention;
   bool _loading = true;
   String? _error;
+  bool _downloadingPdf = false;
 
   @override
   void initState() {
     super.initState();
     _load();
+  }
+
+  Future<void> _downloadPdf() async {
+    setState(() => _downloadingPdf = true);
+    try {
+      await downloadAndShare('/analytics/export/pdf', 'raporlar.pdf');
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(e is ApiException ? e.message : 'PDF indirilemedi')),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _downloadingPdf = false);
+    }
   }
 
   Future<void> _load() async {
@@ -66,7 +83,22 @@ class _ReportsScreenState extends State<ReportsScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.surfacePage,
-      appBar: AppBar(title: const Text('Raporlar')),
+      appBar: AppBar(
+        title: const Text('Raporlar'),
+        actions: [
+          IconButton(
+            icon: _downloadingPdf
+                ? const SizedBox(
+                    width: 18,
+                    height: 18,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                : const Icon(Icons.picture_as_pdf_outlined),
+            tooltip: 'PDF İndir',
+            onPressed: _downloadingPdf ? null : _downloadPdf,
+          ),
+        ],
+      ),
       body: _loading
           ? const LoadingView()
           : _error != null

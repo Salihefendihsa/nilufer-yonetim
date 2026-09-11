@@ -1,12 +1,12 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { TrendingUp, MapPin, Users2, BarChart3, Wallet, PieChart, Repeat } from "lucide-react";
+import { TrendingUp, MapPin, Users2, BarChart3, Wallet, PieChart, Repeat, Download } from "lucide-react";
 import { RequireRole } from "@/components/RequireRole";
 import { PageHeader } from "@/components/PageHeader";
 import { StatCard } from "@/components/StatCard";
 import { ChartCard, DonutChart, RankBars, TrendChart } from "@/components/ChartCard";
-import { api, ApiError } from "@/lib/api";
+import { api, ApiError, downloadFile } from "@/lib/api";
 import { currencyFormatter } from "@/lib/format";
 import type { RevenueTrendPoint, ServiceBreakdownEntry, TopDistrictEntry, CustomerRetention } from "@/lib/types";
 
@@ -28,6 +28,7 @@ export default function ReportsPage() {
 
 function ReportsPageContent() {
   const [range, setRange] = useState<RangeKey>("6m");
+  const [downloading, setDownloading] = useState(false);
   const [revenue, setRevenue] = useState<RevenueTrendPoint[]>([]);
   const [breakdown, setBreakdown] = useState<ServiceBreakdownEntry[]>([]);
   const [districts, setDistricts] = useState<TopDistrictEntry[]>([]);
@@ -91,6 +92,20 @@ function ReportsPageContent() {
     [districts]
   );
 
+  async function handleDownloadPdf() {
+    setDownloading(true);
+    setError(null);
+    try {
+      const months = RANGE_OPTIONS.find((r) => r.key === range)?.months ?? 6;
+      const dateStr = new Date().toISOString().slice(0, 10);
+      await downloadFile(`/analytics/export/pdf?months=${months}`, `nilufer-raporlar-${dateStr}.pdf`);
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : "PDF indirilemedi");
+    } finally {
+      setDownloading(false);
+    }
+  }
+
   return (
     <div className="flex flex-col gap-6">
       <PageHeader
@@ -98,19 +113,30 @@ function ReportsPageContent() {
         title="Raporlar"
         description="İşletmenizin performansını analiz edin."
         actions={
-          <div className="flex gap-1 rounded-2xl border border-border bg-surface-card p-1 shadow-card">
-            {RANGE_OPTIONS.map((opt) => (
-              <button
-                key={opt.key}
-                type="button"
-                onClick={() => setRange(opt.key)}
-                className={`rounded-xl px-3.5 py-2 text-sm font-medium transition ${
-                  range === opt.key ? "bg-primary-600 text-white shadow-card" : "text-text-secondary hover:bg-surface-subtle"
-                }`}
-              >
-                {opt.label}
-              </button>
-            ))}
+          <div className="flex flex-wrap items-center gap-3">
+            <div className="flex gap-1 rounded-2xl border border-border bg-surface-card p-1 shadow-card">
+              {RANGE_OPTIONS.map((opt) => (
+                <button
+                  key={opt.key}
+                  type="button"
+                  onClick={() => setRange(opt.key)}
+                  className={`rounded-xl px-3.5 py-2 text-sm font-medium transition ${
+                    range === opt.key ? "bg-primary-600 text-white shadow-card" : "text-text-secondary hover:bg-surface-subtle"
+                  }`}
+                >
+                  {opt.label}
+                </button>
+              ))}
+            </div>
+            <button
+              type="button"
+              onClick={handleDownloadPdf}
+              disabled={downloading}
+              className="flex items-center gap-2 rounded-2xl border border-border bg-surface-card px-4 py-2.5 text-sm font-medium text-text-secondary shadow-card transition hover:border-border-strong hover:bg-surface-subtle hover:text-text-primary disabled:opacity-50"
+            >
+              <Download size={16} strokeWidth={1.75} />
+              {downloading ? "İndiriliyor..." : "PDF İndir"}
+            </button>
           </div>
         }
       />

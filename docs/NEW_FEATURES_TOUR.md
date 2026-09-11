@@ -30,3 +30,28 @@ sözleşmelerini ve varsayılan (spec'te belirtilmemiş) iş kurallarını kayde
   olmadığı için (bkz. team_lead_shell.dart), yeni "İzinlerim" ekranı hem
   STAFF'ın kendi taleplerini hem TEAM_LEAD'in ekibinin bekleyen taleplerini
   tek ekranda birleştirir.
+
+## Bölüm B — Rapor/Sözleşme PDF İndirme
+
+- `GET /analytics/export/pdf?months=` (OWNER/MANAGER) — Raporlar sayfasının
+  4 kalemini (ciro trendi, hizmet dağılımı, bölge sıralaması, müşteri
+  sadakati) tek bir PDF'te toplar.
+- `GET /contracts/:id/pdf` (OWNER/MANAGER, ilgili CUSTOMER kendi sözleşmesi
+  için — `getContract`'taki AYNI erişim kontrolü tekrar kullanıldı).
+  `Contract.pdfUrl` şemada duruyor ama hâlâ hiç doldurulmuyor — mevcut
+  job-report-pdf deseninde olduğu gibi ON-DEMAND üretilir, diske
+  kaydedilmez.
+- Refactor: `analyticsController.ts`'teki 4 hesaplama fonksiyonu
+  (`getRevenueTrend` vb.) `compute*` yardımcılarına ayrıldı — hem mevcut
+  JSON uçları hem yeni PDF export'u AYNI hesaplamayı kullanır, kopya
+  mantık yok.
+- Web: Raporlar sayfasına "PDF İndir" (seçili tarih aralığını `months`
+  olarak geçirir), Sözleşmeler tablosundaki her satıra "PDF" butonu.
+- Mobile: mevcut `downloadAndShare()` yardımcısı kullanıldı — Raporlar
+  AppBar'ına bir ikon, Sözleşmeler listesindeki (hem OWNER/MANAGER hem
+  CUSTOMER'ın "Sözleşmelerim" görünümü — dosyada iki ayrı State sınıfı
+  var) her karta "PDF İndir" butonu.
+- Doğrulama: her iki uç curl ile çağrıldı, `Content-Type: application/pdf`
+  ve gerçek PDF byte'ları (`file` komutu "PDF document" doğruladı)
+  teyit edildi. Salt okunur uçlar olduğu için test verisi oluşturulmadı,
+  temizlik gerekmedi.

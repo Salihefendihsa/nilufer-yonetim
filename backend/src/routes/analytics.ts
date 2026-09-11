@@ -7,6 +7,7 @@ import {
   getTopDistricts,
   getCustomerRetention,
 } from "../controllers/analyticsController";
+import { exportAnalyticsPdf } from "../controllers/exportController";
 
 const router = Router();
 
@@ -16,5 +17,6 @@ router.get("/revenue-trend", getRevenueTrend);
 router.get("/service-breakdown", getServiceBreakdown);
 router.get("/top-districts", getTopDistricts);
 router.get("/customer-retention", getCustomerRetention);
+router.get("/export/pdf", exportAnalyticsPdf);
 
 export default router;
