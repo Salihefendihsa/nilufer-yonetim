@@ -99,6 +99,11 @@ model User {
   /// bu bayrakla gizlenir; POST /users/:id/reactivate ile geri açılır.
   isActive     Boolean  @default(true)
   createdAt    DateTime @default(now())
+  /// TOTP sırrı (base32) — yalnızca OWNER/MANAGER için kullanılabilir (bkz.
+  /// docs/NEW_FEATURES_TOUR.md Bölüm D). /2fa/setup ile üretilir ama
+  /// /2fa/enable ile kod doğrulanana kadar twoFactorEnabled false kalır.
+  twoFactorSecret  String?
+  twoFactorEnabled Boolean @default(false)
 
   customer Customer?
   staff    Staff?
@@ -122,8 +127,42 @@ model User {
   impersonationsAsTarget ImpersonationSession[] @relation("ImpersonationTarget")
   leaveRequestDecisions LeaveRequest[] @relation("LeaveRequestDecidedBy")
   recordedExpenses Expense[]
+  twoFactorRecoveryCodes TwoFactorRecoveryCode[]
+  twoFactorChallenges    TwoFactorChallenge[]
 
   @@index([role])
+}
+
+/// /2fa/enable sırasında üretilen 10 tek kullanımlık kurtarma kodu — ham kod
+/// yalnızca üretim anında bir kez döner, DB'de PasswordResetToken ile aynı
+/// prensiple yalnızca hash'i (sha256) durur.
+model TwoFactorRecoveryCode {
+  id        String    @id @default(uuid())
+  userId    String
+  codeHash  String    @unique
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+}
+
+/// Şifre doğru + twoFactorEnabled=true olduğunda login() JWT YERİNE bunu
+/// döner — yalnızca /auth/2fa/verify'de kullanılabilir, 5 dk geçerli, tek
+/// kullanımlık. PasswordResetToken ile aynı hash-only saklama prensibi.
+model TwoFactorChallenge {
+  id         String    @id @default(uuid())
+  userId     String
+  tokenHash  String    @unique
+  expiresAt  DateTime
+  consumedAt DateTime?
+  createdAt  DateTime  @default(now())
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+  @@index([expiresAt])
 }
 
 /// "Şifremi Unuttum" akışı — ham token asla DB'de durmaz, yalnızca hash'i

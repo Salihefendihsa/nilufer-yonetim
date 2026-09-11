@@ -2,8 +2,8 @@
 
 import { useState, type FormEvent } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Bug, ShieldCheck, Clock, Sparkles } from "lucide-react";
-import { login, logout, type Role } from "@/lib/auth";
+import { Bug, ShieldCheck, Clock, Sparkles, KeyRound } from "lucide-react";
+import { login, logout, verifyTwoFactorLogin, type Role, type AuthUser } from "@/lib/auth";
 import { ApiError } from "@/lib/api";
 import { getRecaptchaToken } from "@/lib/recaptcha";
 
@@ -33,27 +33,59 @@ export default function GirisPage() {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
+  const [preToken, setPreToken] = useState<string | null>(null);
+  const [twoFactorCode, setTwoFactorCode] = useState("");
+  const [useRecoveryCode, setUseRecoveryCode] = useState(false);
+
+  function finishLogin(user: AuthUser & { mustChangePassword: boolean }) {
+    if (user.role !== selectedTab.role) {
+      const actualLabel = ROLE_TABS.find((t) => t.role === user.role)?.label ?? user.role;
+      logout({ redirect: false });
+      setError(`Bu hesap "${actualLabel}" rolüne ait, lütfen doğru sekmeyi seçin.`);
+      setPreToken(null);
+      return;
+    }
+
+    // Full reload (not router.push) so AuthProvider remounts and re-reads the
+    // freshly-written localStorage session instead of keeping its stale
+    // pre-login (unauthenticated) React state.
+    window.location.href = user.mustChangePassword ? "/sifre-degistir-zorunlu" : "/";
+  }
+
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
     setError(null);
     setLoading(true);
     try {
       const recaptchaToken = await getRecaptchaToken("login");
-      const user = await login(email, password, recaptchaToken);
+      const result = await login(email, password, recaptchaToken);
 
-      if (user.role !== selectedTab.role) {
-        const actualLabel = ROLE_TABS.find((t) => t.role === user.role)?.label ?? user.role;
-        logout({ redirect: false });
-        setError(`Bu hesap "${actualLabel}" rolüne ait, lütfen doğru sekmeyi seçin.`);
+      if (result.twoFactorRequired) {
+        setPreToken(result.preToken);
         return;
       }
 
-      // Full reload (not router.push) so AuthProvider remounts and re-reads the
-      // freshly-written localStorage session instead of keeping its stale
-      // pre-login (unauthenticated) React state.
-      window.location.href = user.mustChangePassword ? "/sifre-degistir-zorunlu" : "/";
+      finishLogin(result);
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "Giriş yapılamadı, lütfen tekrar deneyin");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function handleVerifyTwoFactor(e: FormEvent) {
+    e.preventDefault();
+    if (!preToken) return;
+    setError(null);
+    setLoading(true);
+    try {
+      const user = await verifyTwoFactorLogin(
+        preToken,
+        useRecoveryCode ? { recoveryCode: twoFactorCode.trim() } : { code: twoFactorCode.trim() }
+      );
+      finishLogin(user);
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : "Kod hatalı, tekrar deneyin");
     } finally {
       setLoading(false);
     }
@@ -126,18 +158,87 @@ export default function GirisPage() {
 
           <AnimatePresence mode="wait">
             <motion.div
-              key={selectedTab.role}
+              key={preToken ? "2fa" : selectedTab.role}
               initial={{ opacity: 0, y: 6 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -6 }}
               transition={{ duration: 0.15 }}
               className="mb-8"
             >
-              <h2 className="text-2xl font-bold tracking-tight text-text-primary">{selectedTab.label} Girişi</h2>
-              <p className="mt-1 text-sm text-text-secondary">Devam etmek için hesap bilgilerinizi girin.</p>
+              {preToken ? (
+                <>
+                  <h2 className="text-2xl font-bold tracking-tight text-text-primary">İki Adımlı Doğrulama</h2>
+                  <p className="mt-1 text-sm text-text-secondary">
+                    {useRecoveryCode
+                      ? "Kurtarma kodlarınızdan birini girin."
+                      : "Authenticator uygulamanızdaki 6 haneli kodu girin."}
+                  </p>
+                </>
+              ) : (
+                <>
+                  <h2 className="text-2xl font-bold tracking-tight text-text-primary">{selectedTab.label} Girişi</h2>
+                  <p className="mt-1 text-sm text-text-secondary">Devam etmek için hesap bilgilerinizi girin.</p>
+                </>
+              )}
             </motion.div>
           </AnimatePresence>
 
+          {preToken ? (
+            <form onSubmit={handleVerifyTwoFactor} className="flex flex-col gap-4">
+              <div className="flex flex-col gap-1.5">
+                <label htmlFor="twoFactorCode" className="text-sm font-medium text-text-secondary">
+                  {useRecoveryCode ? "Kurtarma Kodu" : "Doğrulama Kodu"}
+                </label>
+                <input
+                  id="twoFactorCode"
+                  type="text"
+                  required
+                  autoFocus
+                  value={twoFactorCode}
+                  onChange={(e) => setTwoFactorCode(e.target.value)}
+                  placeholder={useRecoveryCode ? "XXXXX-XXXXX" : "123456"}
+                  className="input text-center font-mono text-lg tracking-widest"
+                />
+              </div>
+
+              {error && (
+                <p className="rounded-2xl border border-danger-100 bg-danger-50 px-4 py-3 text-sm text-danger-500">{error}</p>
+              )}
+
+              <button
+                type="submit"
+                disabled={loading}
+                className="mt-2 rounded-2xl bg-primary-600 px-4 py-3 text-sm font-semibold text-white shadow-card transition hover:bg-primary-700 disabled:opacity-60"
+              >
+                {loading ? "Doğrulanıyor..." : "Doğrula"}
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setUseRecoveryCode((v) => !v);
+                  setTwoFactorCode("");
+                  setError(null);
+                }}
+                className="flex items-center justify-center gap-1.5 text-xs font-medium text-text-secondary hover:text-text-primary"
+              >
+                <KeyRound size={13} strokeWidth={1.75} />
+                {useRecoveryCode ? "Authenticator kodu kullan" : "Kurtarma kodu kullan"}
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setPreToken(null);
+                  setTwoFactorCode("");
+                  setError(null);
+                }}
+                className="text-center text-xs font-medium text-text-faint hover:text-text-secondary"
+              >
+                Vazgeç, tekrar giriş yap
+              </button>
+            </form>
+          ) : (
           <form onSubmit={handleSubmit} className="flex flex-col gap-4">
             <div className="flex flex-col gap-1.5">
               <label htmlFor="email" className="text-sm font-medium text-text-secondary">
@@ -198,6 +299,7 @@ export default function GirisPage() {
               geçerlidir.
             </p>
           </form>
+          )}
         </motion.div>
       </div>
     </main>

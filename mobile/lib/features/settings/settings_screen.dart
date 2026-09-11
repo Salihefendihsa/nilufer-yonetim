@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -151,6 +153,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     ],
                   ),
                 ),
+                if (user?.role == AppRole.owner || user?.role == AppRole.manager) ...[
+                  const SizedBox(height: 12),
+                  const _TwoFactorCard(),
+                ],
                 const SizedBox(height: 12),
                 Container(
                   padding: const EdgeInsets.all(16),
@@ -214,6 +220,347 @@ class _SettingsScreenState extends State<SettingsScreen> {
       ],
     ),
   );
+}
+
+/// TOTP tabanlı 2FA — yalnızca OWNER/MANAGER (backend/src/routes/auth.ts).
+/// Backend QR kodu hazır bir PNG data URL olarak döndürdüğü için mobilde
+/// ek bir QR paketi gerekmez (`qrcode` npm paketi ile üretilir).
+class _TwoFactorCard extends StatefulWidget {
+  const _TwoFactorCard();
+
+  @override
+  State<_TwoFactorCard> createState() => _TwoFactorCardState();
+}
+
+class _TwoFactorCardState extends State<_TwoFactorCard> {
+  bool _loading = true;
+  bool? _enabled;
+  String? _error;
+  bool _busy = false;
+
+  String? _secret;
+  String? _qrCodeDataUrl;
+  final _codeController = TextEditingController();
+  List<String>? _recoveryCodes;
+
+  final _passwordController = TextEditingController();
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  @override
+  void dispose() {
+    _codeController.dispose();
+    _passwordController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _load() async {
+    setState(() {
+      _loading = true;
+      _error = null;
+    });
+    try {
+      final me = await ApiClient.instance.get<Map<String, dynamic>>('/auth/me');
+      if (!mounted) return;
+      setState(() {
+        _enabled = me['twoFactorEnabled'] == true;
+        _loading = false;
+      });
+    } on ApiException catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _error = e.message;
+        _loading = false;
+      });
+    }
+  }
+
+  Future<void> _startSetup() async {
+    setState(() {
+      _busy = true;
+      _error = null;
+    });
+    try {
+      final res = await ApiClient.instance.post<Map<String, dynamic>>('/auth/2fa/setup');
+      if (!mounted) return;
+      setState(() {
+        _secret = res['secret'] as String;
+        _qrCodeDataUrl = res['qrCodeDataUrl'] as String;
+      });
+    } on ApiException catch (e) {
+      if (!mounted) return;
+      setState(() => _error = e.message);
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
+  Future<void> _enable() async {
+    setState(() {
+      _busy = true;
+      _error = null;
+    });
+    try {
+      final res = await ApiClient.instance.post<Map<String, dynamic>>(
+        '/auth/2fa/enable',
+        body: {'code': _codeController.text.trim()},
+      );
+      if (!mounted) return;
+      setState(() {
+        _recoveryCodes = (res['recoveryCodes'] as List).cast<String>();
+        _secret = null;
+        _qrCodeDataUrl = null;
+        _codeController.clear();
+        _enabled = true;
+      });
+    } on ApiException catch (e) {
+      if (!mounted) return;
+      setState(() => _error = e.message);
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
+  Future<void> _disable() async {
+    setState(() {
+      _busy = true;
+      _error = null;
+    });
+    try {
+      await ApiClient.instance.post<Map<String, dynamic>>(
+        '/auth/2fa/disable',
+        body: {'currentPassword': _passwordController.text},
+      );
+      if (!mounted) return;
+      Navigator.of(context).pop();
+      setState(() {
+        _enabled = false;
+        _passwordController.clear();
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('İki adımlı doğrulama devre dışı bırakıldı.')),
+      );
+    } on ApiException catch (e) {
+      if (!mounted) return;
+      setState(() => _error = e.message);
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
+  void _openDisableSheet() {
+    _passwordController.clear();
+    setState(() => _error = null);
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      builder: (ctx) => Padding(
+        padding: EdgeInsets.only(
+          left: 20,
+          right: 20,
+          top: 20,
+          bottom: MediaQuery.of(ctx).viewInsets.bottom + 20,
+        ),
+        child: StatefulBuilder(
+          builder: (ctx, setSheetState) => Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              const Text(
+                'Devam etmek için mevcut şifrenizi girin.',
+                style: TextStyle(fontSize: 13.5, color: AppColors.textSecondary),
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: _passwordController,
+                obscureText: true,
+                decoration: const InputDecoration(labelText: 'Mevcut şifre'),
+              ),
+              if (_error != null) ...[
+                const SizedBox(height: 8),
+                Text(_error!, style: const TextStyle(color: AppColors.danger500, fontSize: 12.5)),
+              ],
+              const SizedBox(height: 16),
+              ElevatedButton(
+                onPressed: _busy
+                    ? null
+                    : () async {
+                        await _disable();
+                        setSheetState(() {});
+                      },
+                style: ElevatedButton.styleFrom(backgroundColor: AppColors.danger500),
+                child: _busy
+                    ? const SizedBox(
+                        width: 18,
+                        height: 18,
+                        child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                      )
+                    : const Text('Devre Dışı Bırak'),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_loading) {
+      return const _Card(title: 'İki Adımlı Doğrulama', child: LoadingView());
+    }
+
+    return _Card(
+      title: 'İki Adımlı Doğrulama',
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          if (_error != null && _recoveryCodes == null)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 10),
+              child: Text(_error!, style: const TextStyle(color: AppColors.danger500, fontSize: 12.5)),
+            ),
+          if (_recoveryCodes != null) ...[
+            const Text(
+              'Kurtarma Kodlarınız — bir daha gösterilmeyecek',
+              style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13),
+            ),
+            const SizedBox(height: 6),
+            const Text(
+              'Authenticator cihazınıza erişemediğinizde bu kodlardan birini kullanabilirsiniz.',
+              style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
+            ),
+            const SizedBox(height: 10),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: _recoveryCodes!
+                  .map(
+                    (c) => Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                      decoration: BoxDecoration(
+                        color: AppColors.surfaceSubtle,
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Text(c, style: const TextStyle(fontFamily: 'monospace', fontSize: 12)),
+                    ),
+                  )
+                  .toList(),
+            ),
+            const SizedBox(height: 10),
+            TextButton(
+              onPressed: () => setState(() => _recoveryCodes = null),
+              child: const Text('Kaydettim, kapat'),
+            ),
+          ] else if (_secret != null) ...[
+            const Text(
+              'Authenticator uygulamanızla QR kodu okutun veya sırrı manuel girin, ardından 6 haneli kodu yazın.',
+              style: TextStyle(fontSize: 12.5, color: AppColors.textSecondary),
+            ),
+            const SizedBox(height: 12),
+            Center(
+              child: Image.memory(
+                base64Decode(_qrCodeDataUrl!.split(',').last),
+                width: 160,
+                height: 160,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Center(
+              child: SelectableText(
+                _secret!,
+                style: const TextStyle(fontFamily: 'monospace', fontSize: 12.5),
+              ),
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: _codeController,
+              textAlign: TextAlign.center,
+              keyboardType: TextInputType.number,
+              decoration: const InputDecoration(labelText: '6 haneli kod'),
+            ),
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton(
+                    onPressed: () => setState(() {
+                      _secret = null;
+                      _qrCodeDataUrl = null;
+                    }),
+                    child: const Text('Vazgeç'),
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: ElevatedButton(
+                    onPressed: _busy ? null : _enable,
+                    child: _busy
+                        ? const SizedBox(
+                            width: 18,
+                            height: 18,
+                            child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                          )
+                        : const Text('Etkinleştir'),
+                  ),
+                ),
+              ],
+            ),
+          ] else ...[
+            Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    _enabled == true
+                        ? 'Girişte authenticator uygulamanızdan bir kod istenir.'
+                        : 'Girişte şifrenize ek olarak bir doğrulama kodu istensin.',
+                    style: const TextStyle(fontSize: 12.5, color: AppColors.textSecondary),
+                  ),
+                ),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: _enabled == true ? AppColors.primary50 : AppColors.surfaceSubtle,
+                    borderRadius: BorderRadius.circular(999),
+                  ),
+                  child: Text(
+                    _enabled == true ? 'Etkin' : 'Devre dışı',
+                    style: TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w700,
+                      color: _enabled == true ? AppColors.primary600 : AppColors.textFaint,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            if (_enabled == true)
+              OutlinedButton(
+                onPressed: _openDisableSheet,
+                style: OutlinedButton.styleFrom(foregroundColor: AppColors.danger500),
+                child: const Text('Devre Dışı Bırak'),
+              )
+            else
+              ElevatedButton(
+                onPressed: _busy ? null : _startSetup,
+                child: _busy
+                    ? const SizedBox(
+                        width: 18,
+                        height: 18,
+                        child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                      )
+                    : const Text('Kurulumu Başlat'),
+              ),
+          ],
+        ],
+      ),
+    );
+  }
 }
 
 class _Card extends StatelessWidget {

@@ -7,6 +7,7 @@ import { prisma } from "../lib/prisma";
 import { signToken } from "../lib/jwt";
 import { verifyRecaptcha } from "../lib/recaptcha";
 import { sendEmail } from "../lib/email";
+import { createTwoFactorChallenge } from "./twoFactorController";
 
 const SALT_ROUNDS = 10;
 const RESET_TOKEN_TTL_MS = 60 * 60 * 1000; // 1 saat — makul bir varsayılan, docs/SECURITY.md'de not edildi.
@@ -118,6 +119,14 @@ export async function login(req: Request, res: Response) {
     return res.status(403).json({ error: "Hesabınız devre dışı bırakılmış" });
   }
 
+  // Şifre doğru ama 2FA etkinse tam JWT YERİNE kısa ömürlü bir preToken
+  // döner — gerçek oturum yalnızca /auth/2fa/verify'den sonra açılır
+  // (bkz. docs/NEW_FEATURES_TOUR.md Bölüm D).
+  if (user.twoFactorEnabled) {
+    const preToken = await createTwoFactorChallenge(user.id);
+    return res.json({ twoFactorRequired: true, preToken });
+  }
+
   const session = await prisma.userSession.create({
     data: { userId: user.id, deviceInfo: req.headers["user-agent"] ?? undefined },
   });
@@ -177,6 +186,7 @@ export async function me(req: Request, res: Response) {
     role: user.role,
     createdAt: user.createdAt,
     mustChangePassword: user.mustChangePassword,
+    twoFactorEnabled: user.twoFactorEnabled,
   });
 }
 

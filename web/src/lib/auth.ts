@@ -27,10 +27,18 @@ export interface AuthUser {
 }
 
 interface LoginResponse {
-  token: string;
-  user: AuthUser;
+  token?: string;
+  user?: AuthUser;
   mustChangePassword?: boolean;
+  /** Şifre doğru ama hesapta 2FA etkinse token yerine bu döner (bkz.
+   * docs/NEW_FEATURES_TOUR.md Bölüm D). */
+  twoFactorRequired?: boolean;
+  preToken?: string;
 }
+
+export type LoginResult =
+  | (AuthUser & { mustChangePassword: boolean; twoFactorRequired?: false })
+  | { twoFactorRequired: true; preToken: string };
 
 const TOKEN_KEY = "token";
 const USER_KEY = "user";
@@ -47,15 +55,34 @@ function persistSession(token: string, user: AuthUser) {
   document.cookie = `token=${token}; path=/; max-age=${60 * 60 * 24 * 7}`;
 }
 
-export async function login(email: string, password: string, recaptchaToken?: string): Promise<AuthUser & { mustChangePassword: boolean }> {
+export async function login(email: string, password: string, recaptchaToken?: string): Promise<LoginResult> {
   const data = await api.post<LoginResponse>("/auth/login", { email, password, recaptchaToken });
-  persistSession(data.token, data.user);
+  if (data.twoFactorRequired && data.preToken) {
+    return { twoFactorRequired: true, preToken: data.preToken };
+  }
+  persistSession(data.token!, data.user!);
   if (data.mustChangePassword) {
     window.localStorage.setItem(MUST_CHANGE_PASSWORD_KEY, "1");
   } else {
     window.localStorage.removeItem(MUST_CHANGE_PASSWORD_KEY);
   }
-  return { ...data.user, mustChangePassword: !!data.mustChangePassword };
+  return { ...data.user!, mustChangePassword: !!data.mustChangePassword };
+}
+
+/** /auth/login "twoFactorRequired" döndüğünde ikinci adım — authenticator
+ * kodu veya kurtarma kodu ile gerçek oturumu açar. */
+export async function verifyTwoFactorLogin(
+  preToken: string,
+  options: { code?: string; recoveryCode?: string }
+): Promise<AuthUser & { mustChangePassword: boolean }> {
+  const data = await api.post<LoginResponse>("/auth/2fa/verify", { preToken, ...options });
+  persistSession(data.token!, data.user!);
+  if (data.mustChangePassword) {
+    window.localStorage.setItem(MUST_CHANGE_PASSWORD_KEY, "1");
+  } else {
+    window.localStorage.removeItem(MUST_CHANGE_PASSWORD_KEY);
+  }
+  return { ...data.user!, mustChangePassword: !!data.mustChangePassword };
 }
 
 export function mustChangePassword(): boolean {

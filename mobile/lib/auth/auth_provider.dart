@@ -7,7 +7,7 @@ import '../core/api_client.dart';
 import '../core/secure_storage.dart';
 import '../models/user.dart';
 
-enum AuthStatus { unknown, authenticated, unauthenticated }
+enum AuthStatus { unknown, authenticated, unauthenticated, twoFactorRequired }
 
 /// backend/src/controllers/authController.ts ile birebir akış:
 /// - login: POST /auth/login (7 günlük token, yenileme endpoint'i yok)
@@ -21,6 +21,9 @@ class AuthProvider extends ChangeNotifier {
   bool isBusy = false;
   bool mustChangePassword = false;
   Map<String, dynamic>? impersonationMeta;
+  /// /auth/login "twoFactorRequired" döndüğünde yalnızca /auth/2fa/verify'de
+  /// kullanılabilecek kısa ömürlü kimlik — bkz. docs/NEW_FEATURES_TOUR.md Bölüm D.
+  String? twoFactorPreToken;
 
   Timer? _heartbeatTimer;
 
@@ -84,6 +87,11 @@ class AuthProvider extends ChangeNotifier {
           if (recaptchaToken != null) 'recaptchaToken': recaptchaToken,
         },
       );
+      if (res['twoFactorRequired'] == true) {
+        twoFactorPreToken = res['preToken'] as String;
+        status = AuthStatus.twoFactorRequired;
+        return true;
+      }
       final token = res['token'] as String;
       final userJson = res['user'] as Map<String, dynamic>;
       mustChangePassword = res['mustChangePassword'] as bool? ?? false;
@@ -103,6 +111,52 @@ class AuthProvider extends ChangeNotifier {
       isBusy = false;
       notifyListeners();
     }
+  }
+
+  /// /auth/login "twoFactorRequired" döndükten sonraki ikinci adım —
+  /// authenticator kodu VEYA kurtarma kodu ile gerçek oturumu açar.
+  Future<bool> verifyTwoFactor({String? code, String? recoveryCode}) async {
+    if (twoFactorPreToken == null) return false;
+    isBusy = true;
+    loginError = null;
+    notifyListeners();
+    try {
+      final res = await ApiClient.instance.post<Map<String, dynamic>>(
+        '/auth/2fa/verify',
+        body: {
+          'preToken': twoFactorPreToken,
+          if (code != null) 'code': code,
+          if (recoveryCode != null) 'recoveryCode': recoveryCode,
+        },
+      );
+      final token = res['token'] as String;
+      final userJson = res['user'] as Map<String, dynamic>;
+      mustChangePassword = res['mustChangePassword'] as bool? ?? false;
+      await SecureStorage.saveSession(
+        token: token,
+        userJson: jsonEncode(userJson),
+        mustChangePassword: mustChangePassword,
+      );
+      user = AppUser.fromJson(userJson);
+      twoFactorPreToken = null;
+      status = AuthStatus.authenticated;
+      _startHeartbeat();
+      return true;
+    } on ApiException catch (e) {
+      loginError = e.message;
+      return false;
+    } finally {
+      isBusy = false;
+      notifyListeners();
+    }
+  }
+
+  /// 2FA ekranından "Vazgeç, tekrar giriş yap" — login ekranına döner.
+  void cancelTwoFactor() {
+    twoFactorPreToken = null;
+    loginError = null;
+    status = AuthStatus.unauthenticated;
+    notifyListeners();
   }
 
   /// Zorunlu (OWNER tarafından sıfırlanan) veya isteğe bağlı şifre değişimi —

@@ -87,3 +87,58 @@ sözleşmelerini ve varsayılan (spec'te belirtilmemiş) iş kurallarını kayde
   (800₺ eklenince -800 delta) değiştiği curl ile doğrulandı; ardından
   test kayıtları (2 gider + 1 audit log) ID bazlı silinip net kârın tam
   eski değerine (`-314500`) döndüğü tekrar doğrulandı.
+
+## Bölüm D — İki Adımlı Doğrulama (2FA)
+
+- TOTP tabanlı (SMS/e-posta YOK — spec'te zaten dışlanmıştı), yalnızca
+  OWNER/MANAGER. Kütüphane: `otplib` (v13, async fonksiyonel API —
+  `generateSecret`/`generateURI`/`generate`/`verify`) + `qrcode` (QR'ı
+  backend'de PNG data URL olarak üretip döner, istemcilerin ayrı bir QR
+  kütüphanesine ihtiyacı olmaz — mobilde bu sayede yeni paket eklenmedi).
+- `User`: `twoFactorSecret` (base32, yalnızca /setup ile yazılır),
+  `twoFactorEnabled` (varsayılan false). Yeni modeller:
+  `TwoFactorRecoveryCode` (10 adet, tek kullanımlık, `PasswordResetToken`
+  ile aynı "yalnızca hash saklanır" prensibi) ve `TwoFactorChallenge`
+  (login() sonrası JWT yerine dönen preToken'ın hash'i, 5 dk TTL, tek
+  kullanımlık).
+- **Tasarım kararı (spec'te detaylandırılmamıştı)**: pre-2FA token bir JWT
+  DEĞİL — ayrı bir DB tablosunda (`TwoFactorChallenge`) hash'lenmiş rastgele
+  bir string. Bu, `middleware/auth.ts`'in JWT/tokenVersion doğrulama
+  mantığına hiç dokunulmadan (risk sıfır) tamamen izole bir akış kurmayı
+  sağladı — PasswordResetToken deseninin bire bir tekrarı.
+- `POST /auth/2fa/setup` → sır + `otpauthUri` + `qrCodeDataUrl` döner,
+  `twoFactorEnabled`'ı henüz DEĞİŞTİRMEZ (yanlış kurulumda hesabın
+  kilitlenmesini önler — kullanıcı gerçek bir kodu doğrulayana kadar 2FA
+  aktif olmaz).
+- `POST /auth/2fa/enable { code }` → kod doğrulanırsa `twoFactorEnabled=true`
+  + 10 kurtarma kodu (ham hâlleri YALNIZCA bu yanıtta, bir kerelik).
+- `POST /auth/2fa/disable { currentPassword }` → mevcut şifre zorunlu
+  (çalıntı bir oturumun tek başına 2FA'yı kapatamaması için — `change-password`
+  ile aynı prensip).
+- `login()`: şifre doğru + `twoFactorEnabled=true` ise JWT yerine
+  `{ twoFactorRequired: true, preToken }` döner. `POST /auth/2fa/verify
+  { preToken, code | recoveryCode }` gerçek JWT'yi döner (session da bu
+  aşamada açılır).
+- **Yan düzeltme**: `GET /auth/me` yanıtına `twoFactorEnabled` eklendi —
+  daha önce yoktu, web/mobil ayarlar ekranı mevcut durumu bundan okur.
+  Ayarlar sayfasındaki eski "email yapılandırılmadığı için 2FA devre dışı"
+  notu da YANLIŞTI (gerçek TOTP 2FA e-postaya hiç bağımlı değil) —
+  metni SMTP'ye bağımlı diğer özelliklere (şifre sıfırlama, bildirim
+  e-postaları) atıfta bulunacak şekilde düzeltildi.
+- Web: Ayarlar → Kişisel bölümüne (yalnızca OWNER/MANAGER) kart — kurulum
+  (QR + sır + kod doğrulama), kurtarma kodlarını bir kerelik gösterme,
+  devre dışı bırakma (şifre modalı). Giriş sayfası artık `preToken`
+  geldiğinde form yerine kod giriş ekranını gösteriyor (authenticator kodu
+  veya kurtarma kodu seçilebilir).
+- Mobile: Ayarlar ekranına aynı kart (QR görüntüleme `Image.memory` ile
+  backend'in ürettiği base64 PNG'den — ek paket yok). `AuthProvider`'a
+  yeni `AuthStatus.twoFactorRequired` durumu ve `verifyTwoFactor()` eklendi;
+  `main.dart`'taki `_AuthGate` bu duruma göre yeni `TwoFactorVerifyScreen`'i
+  gösteriyor (mustChangePassword ile aynı desen).
+- Doğrulama: Node script içinde `otplib`'in kendisiyle GERÇEK TOTP kodları
+  hesaplanıp uçtan uca test edildi (curl yerine fetch) — setup → enable →
+  yanlış kod reddi → doğru kod ile giriş → preToken'ın tek kullanımlık
+  olduğu (ikinci kullanım reddedildi) → kurtarma kodu ile giriş → aynı
+  kurtarma kodunun tekrar kullanılamadığı → disable → disable sonrası
+  normal (2FA'sız) girişin çalıştığı — hepsi doğrulandı (11/11 adım
+  beklenen sonucu verdi).

@@ -6,6 +6,7 @@ import 'package:provider/provider.dart';
 import 'auth/auth_provider.dart';
 import 'auth/force_change_password_screen.dart';
 import 'auth/login_screen.dart';
+import 'auth/two_factor_verify_screen.dart';
 import 'navigation/impersonation_banner.dart';
 import 'navigation/role_shell.dart';
 import 'theme/app_theme.dart';
@@ -52,6 +53,8 @@ class _AuthGate extends StatelessWidget {
         return const Scaffold(body: LoadingView());
       case AuthStatus.unauthenticated:
         return const LoginScreen();
+      case AuthStatus.twoFactorRequired:
+        return const TwoFactorVerifyScreen();
       case AuthStatus.authenticated:
         if (auth.mustChangePassword) {
           return const ForceChangePasswordScreen();

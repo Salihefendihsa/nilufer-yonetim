@@ -5,14 +5,18 @@ import {
   AlertTriangle,
   Bell,
   Building2,
+  CheckCircle2,
   ClipboardList,
+  Copy,
   Download,
   HardDrive,
   Info,
+  KeyRound,
   MapPin,
   Pencil,
   Plus,
   Settings,
+  ShieldCheck,
   Sparkles,
   Target,
   Trash2,
@@ -37,6 +41,7 @@ import type {
 export default function SettingsPage() {
   const { user } = useAuth();
   const isOwner = user?.role === "OWNER";
+  const canUseTwoFactor = user?.role === "OWNER" || user?.role === "MANAGER";
 
   return (
     <RequireRole roles={["OWNER", "MANAGER", "TEAM_LEAD", "STAFF", "CUSTOMER"]}>
@@ -50,6 +55,7 @@ export default function SettingsPage() {
         {isOwner && <EmailStatusNote />}
 
         <NotificationPreferencesSection isOwner={isOwner} />
+        {canUseTwoFactor && <TwoFactorSection />}
 
         {isOwner && (
           <>
@@ -150,6 +156,225 @@ function NotificationPreferencesSection({ isOwner }: { isOwner: boolean }) {
   );
 }
 
+interface TwoFactorSetupData {
+  secret: string;
+  otpauthUri: string;
+  qrCodeDataUrl: string;
+}
+
+/**
+ * TOTP tabanlı 2FA — yalnızca OWNER/MANAGER (backend/src/routes/auth.ts).
+ * Üç aşama: kurulum (QR + sır göster) → kod ile etkinleştir (kurtarma
+ * kodları bir kerelik gösterilir) → devre dışı bırak (mevcut şifre ister).
+ */
+function TwoFactorSection() {
+  const [enabled, setEnabled] = useState<boolean | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const { showToast } = useToast();
+
+  const [setupData, setSetupData] = useState<TwoFactorSetupData | null>(null);
+  const [verifyCode, setVerifyCode] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [recoveryCodes, setRecoveryCodes] = useState<string[] | null>(null);
+
+  const [disableModalOpen, setDisableModalOpen] = useState(false);
+  const [currentPassword, setCurrentPassword] = useState("");
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    try {
+      const me = await api.get<{ twoFactorEnabled: boolean }>("/auth/me");
+      setEnabled(me.twoFactorEnabled);
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : "Durum yüklenemedi");
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    load();
+  }, [load]);
+
+  async function handleStartSetup() {
+    setBusy(true);
+    setError(null);
+    try {
+      const data = await api.post<TwoFactorSetupData>("/auth/2fa/setup");
+      setSetupData(data);
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : "Kurulum başlatılamadı");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function handleEnable(e: FormEvent) {
+    e.preventDefault();
+    setBusy(true);
+    setError(null);
+    try {
+      const res = await api.post<{ recoveryCodes: string[] }>("/auth/2fa/enable", { code: verifyCode.trim() });
+      setRecoveryCodes(res.recoveryCodes);
+      setSetupData(null);
+      setVerifyCode("");
+      setEnabled(true);
+      showToast("İki adımlı doğrulama etkinleştirildi.");
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : "Kod hatalı, tekrar deneyin");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function handleDisable(e: FormEvent) {
+    e.preventDefault();
+    setBusy(true);
+    setError(null);
+    try {
+      await api.post("/auth/2fa/disable", { currentPassword });
+      setEnabled(false);
+      setDisableModalOpen(false);
+      setCurrentPassword("");
+      showToast("İki adımlı doğrulama devre dışı bırakıldı.");
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : "Devre dışı bırakılamadı");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <SectionCard
+      icon={ShieldCheck}
+      title="İki Adımlı Doğrulama"
+      description="Girişte şifrenize ek olarak authenticator uygulamanızdan (Google Authenticator, Authy vb.) bir kod istenir."
+      action={
+        enabled !== null && (
+          <span
+            className={`rounded-full px-2.5 py-1 text-2xs font-semibold ${
+              enabled ? "bg-primary-50 text-primary-600" : "bg-surface-subtle text-text-faint"
+            }`}
+          >
+            {enabled ? "Etkin" : "Devre dışı"}
+          </span>
+        )
+      }
+    >
+      {loading ? (
+        <p className="text-sm text-text-secondary">Yükleniyor...</p>
+      ) : (
+        <div className="flex flex-col gap-4">
+          {error && <p className="rounded-2xl border border-danger-100 bg-danger-50 px-4 py-3 text-sm text-danger-500">{error}</p>}
+
+          {recoveryCodes && (
+            <div className="rounded-2xl border border-warning-100 bg-warning-50 p-4">
+              <p className="mb-2 flex items-center gap-1.5 text-sm font-semibold text-warning-700">
+                <CheckCircle2 size={15} strokeWidth={1.75} />
+                Kurtarma Kodlarınız — bir daha gösterilmeyecek
+              </p>
+              <p className="mb-3 text-xs text-text-secondary">
+                Authenticator cihazınıza erişemediğinizde bu kodlardan birini kullanabilirsiniz. Güvenli bir yerde
+                saklayın.
+              </p>
+              <div className="grid grid-cols-2 gap-2 sm:grid-cols-5">
+                {recoveryCodes.map((code) => (
+                  <code key={code} className="rounded-xl bg-white px-2 py-1.5 text-center text-xs font-mono">
+                    {code}
+                  </code>
+                ))}
+              </div>
+              <button
+                type="button"
+                onClick={() => setRecoveryCodes(null)}
+                className="mt-3 text-xs font-medium text-text-secondary hover:text-text-primary"
+              >
+                Kaydettim, kapat
+              </button>
+            </div>
+          )}
+
+          {enabled === false && !setupData && !recoveryCodes && (
+            <button type="button" disabled={busy} onClick={handleStartSetup} className="btn-primary w-fit">
+              <KeyRound size={16} strokeWidth={1.75} />
+              Kurulumu Başlat
+            </button>
+          )}
+
+          {setupData && (
+            <form onSubmit={handleEnable} className="flex flex-col gap-4 rounded-2xl border border-border bg-surface-subtle p-4">
+              <p className="text-sm text-text-secondary">
+                Authenticator uygulamanızla aşağıdaki QR kodu okutun veya sırrı manuel girin, ardından uygulamanın
+                gösterdiği 6 haneli kodu aşağıya yazın.
+              </p>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={setupData.qrCodeDataUrl} alt="2FA QR kodu" className="h-40 w-40 self-center rounded-xl border border-border bg-white p-2" />
+              <div className="flex items-center gap-2 self-center">
+                <code className="rounded-xl bg-white px-3 py-1.5 text-xs font-mono">{setupData.secret}</code>
+                <button
+                  type="button"
+                  onClick={() => navigator.clipboard.writeText(setupData.secret)}
+                  aria-label="Sırrı kopyala"
+                  className="flex h-7 w-7 items-center justify-center rounded-xl text-text-faint transition hover:bg-surface-base hover:text-text-primary"
+                >
+                  <Copy size={14} strokeWidth={1.75} />
+                </button>
+              </div>
+              <input
+                autoFocus
+                required
+                value={verifyCode}
+                onChange={(e) => setVerifyCode(e.target.value)}
+                placeholder="6 haneli kod"
+                className="input text-center font-mono tracking-widest"
+              />
+              <div className="flex justify-end gap-3">
+                <button type="button" onClick={() => setSetupData(null)} className="btn-ghost">
+                  Vazgeç
+                </button>
+                <button type="submit" disabled={busy} className="btn-primary">
+                  {busy ? "Doğrulanıyor..." : "Etkinleştir"}
+                </button>
+              </div>
+            </form>
+          )}
+
+          {enabled === true && (
+            <button type="button" onClick={() => setDisableModalOpen(true)} className="btn-danger w-fit">
+              Devre Dışı Bırak
+            </button>
+          )}
+        </div>
+      )}
+
+      <Modal open={disableModalOpen} onClose={() => setDisableModalOpen(false)} title="İki Adımlı Doğrulamayı Devre Dışı Bırak">
+        <form onSubmit={handleDisable} className="flex flex-col gap-4">
+          <p className="text-sm text-text-secondary">Devam etmek için mevcut şifrenizi girin.</p>
+          <input
+            autoFocus
+            required
+            type="password"
+            value={currentPassword}
+            onChange={(e) => setCurrentPassword(e.target.value)}
+            className="input"
+            placeholder="Mevcut şifre"
+          />
+          {error && <p className="rounded-2xl border border-danger-100 bg-danger-50 px-4 py-3 text-sm text-danger-500">{error}</p>}
+          <div className="mt-2 flex justify-end gap-3">
+            <button type="button" onClick={() => setDisableModalOpen(false)} className="btn-ghost">
+              Vazgeç
+            </button>
+            <button type="submit" disabled={busy} className="btn-danger">
+              {busy ? "İşleniyor..." : "Devre Dışı Bırak"}
+            </button>
+          </div>
+        </form>
+      </Modal>
+    </SectionCard>
+  );
+}
+
 function EmailStatusNote() {
   const [emailConfigured, setEmailConfigured] = useState<boolean | null>(null);
 
@@ -166,8 +391,8 @@ function EmailStatusNote() {
     <div className="flex items-start gap-3 rounded-2xl border border-warning-100 bg-warning-50 px-5 py-4">
       <Info size={18} strokeWidth={1.75} className="mt-0.5 shrink-0 text-warning-500" />
       <p className="text-sm text-text-secondary">
-        Email yapılandırılmadığı için giriş doğrulama kodu (2FA) şu an devre dışı — SMTP ayarları eklenince
-        otomatik aktifleşir.
+        Email yapılandırılmadığı için şifre sıfırlama ve bildirim e-postaları şu an gönderilemiyor — SMTP ayarları
+        eklenince otomatik aktifleşir.
       </p>
     </div>
   );
