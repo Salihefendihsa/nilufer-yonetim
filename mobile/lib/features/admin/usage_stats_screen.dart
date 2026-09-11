@@ -85,7 +85,6 @@ class _UsageStatsScreenState extends State<UsageStatsScreen> {
     final maxSessions = topUsers.isNotEmpty ? topUsers.first['totalSessions'] as int : 1;
 
     return Scaffold(
-      backgroundColor: AppColors.surfacePage,
       appBar: AppBar(title: const Text('Kullanım İstatistikleri')),
       body: Column(
         children: [

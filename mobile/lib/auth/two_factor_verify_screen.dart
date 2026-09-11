@@ -37,7 +37,6 @@ class _TwoFactorVerifyScreenState extends State<TwoFactorVerifyScreen> {
     final auth = context.watch<AuthProvider>();
 
     return Scaffold(
-      backgroundColor: AppColors.surfacePage,
       body: SafeArea(
         child: Center(
           child: SingleChildScrollView(

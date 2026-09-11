@@ -3,72 +3,326 @@
 @tailwind utilities;
 
 /*
- * Açık tema token'ları. Tailwind renk adlarıyla birebir aynı değerler —
- * CSS değişkenleri, Tailwind sınıfının yetmediği yerler (recharts SVG dolguları,
- * inline style, canvas) için tek kaynak.
+ * Bölüm D (2. tur): Karanlık mod. Bu dosya artık TEK renk kaynağı —
+ * tailwind.config.ts'teki TÜM renk token'ları (primary/neutral/success/
+ * warning/danger/info/surface/border/text) burada tanımlı CSS
+ * değişkenlerine işaret eder (önceden yalnızca background/foreground
+ * öyleydi, geri kalanı sabit hex'ti — bu yüzden tema değiştirmenin hiçbir
+ * etkisi olmuyordu, düzeltildi). Bir bileşen `bg-primary-600` yazınca artık
+ * gerçekten `var(--primary-600)` üretiliyor, dolayısıyla üç durumun
+ * (açık/koyu/sistem) hiçbirinde token'a bağlı TEK bir sınıfın bile elle
+ * değiştirilmesi gerekmiyor — yalnızca aşağıdaki değişken tanımları.
+ *
+ * Üç durum: `data-theme="light"` / `data-theme="dark"` (kullanıcının
+ * Ayarlar'dan açıkça seçtiği), ya da hiçbiri (varsayılan "Sistem" — o zaman
+ * yalnızca `prefers-color-scheme` karar verir). ThemeProvider (lib/theme.tsx)
+ * bu attribute'u <html>'e yazar ve localStorage'da saklar.
  */
 :root {
   color-scheme: light;
 
-  --background: #f4f7f4;
-  --foreground: #16211a;
+  --background: 244 247 244;
+  --foreground: 22 33 26;
 
-  /* Yeşil skala */
-  --primary-50: #f1f8f2;
-  --primary-100: #deefe1;
-  --primary-200: #bfdfc5;
-  --primary-300: #94c79e;
-  --primary-400: #61a870;
-  --primary-500: #3d8a4e;
-  --primary-600: #2f6b3d;
-  --primary-700: #2f5233;
-  --primary-800: #243f28;
-  --primary-900: #17281a;
+  /* Yeşil skala (marka rengi) */
+  --primary-50: 241 248 242;
+  --primary-100: 222 239 225;
+  --primary-200: 191 223 197;
+  --primary-300: 148 199 158;
+  --primary-400: 97 168 112;
+  --primary-500: 61 138 78;
+  --primary-600: 47 107 61;
+  --primary-700: 47 82 51;
+  --primary-800: 36 63 40;
+  --primary-900: 23 40 26;
+  /* Geriye dönük takma adlar (eski kod bunları kullanıyor olabilir) */
+  --primary-green: 47 82 51;
+  --primary-green-light: 61 138 78;
+  --primary-gold: 169 122 22;
+  --primary-red: 155 28 28;
+  --primary-red-light: 192 57 43;
+
+  /* Nötr griler (hafif yeşilimsi) */
+  --neutral-50: 247 249 247;
+  --neutral-100: 239 242 239;
+  --neutral-200: 227 232 227;
+  --neutral-300: 207 216 208;
+  --neutral-400: 163 176 165;
+  --neutral-500: 124 138 127;
+  --neutral-600: 90 107 94;
+  --neutral-700: 66 81 69;
+  --neutral-800: 42 53 44;
+  --neutral-900: 22 33 26;
 
   /* Yüzeyler */
-  --surface-page: #f4f7f4;
-  --surface-base: #ffffff;
-  --surface-card: #ffffff;
-  --surface-card-hover: #f7faf7;
-  --surface-subtle: #f2f6f2;
-  --surface-muted: #e8eee8;
+  --surface-page: 244 247 244;
+  --surface-base: 255 255 255;
+  --surface-card: 255 255 255;
+  --surface-card-hover: 247 250 247;
+  --surface-sidebar: 255 255 255;
+  --surface-subtle: 242 246 242;
+  --surface-muted: 232 238 232;
 
   /* Kenarlıklar */
-  --border: #e3e8e3;
-  --border-strong: #cfd8d0;
-  --border-accent: #bfdfc5;
+  --border: 227 232 227;
+  --border-strong: 207 216 208;
+  --border-accent: 191 223 197;
 
   /* Metin */
-  --text-primary: #16211a;
-  --text-secondary: #5a6b5e;
-  --text-faint: #8b9a8e;
+  --text-primary: 22 33 26;
+  --text-secondary: 90 107 94;
+  --text-faint: 139 154 142;
+  --text-inverse: 255 255 255;
 
-  /* Semantik */
-  --success: #15803d;
-  --success-soft: #ecfbf0;
-  --warning: #b57f13;
-  --warning-soft: #fef7e7;
-  --danger: #c0392b;
-  --danger-soft: #fdf0ef;
-  --info: #1f6fa8;
-  --info-soft: #edf5fb;
+  /* Semantik skalalar (50/100/500/600/700 — tailwind.config.ts ile birebir) */
+  --success-50: 236 251 240;
+  --success-100: 211 244 220;
+  --success-500: 21 128 61;
+  --success-600: 22 101 52;
+  --success-700: 20 83 45;
+
+  --warning-50: 254 247 231;
+  --warning-100: 252 237 201;
+  --warning-500: 181 127 19;
+  --warning-600: 150 105 15;
+  --warning-700: 120 84 12;
+
+  --danger-50: 253 240 239;
+  --danger-100: 250 218 215;
+  --danger-500: 192 57 43;
+  --danger-600: 155 28 28;
+  --danger-700: 122 31 38;
+
+  --info-50: 237 245 251;
+  --info-100: 213 231 245;
+  --info-500: 31 111 168;
+  --info-600: 23 90 138;
+  --info-700: 18 70 108;
+
+  /* Eski tekil semantik takma adlar (bazı yerlerde hâlâ kullanılıyor olabilir) */
+  --success: var(--success-500);
+  --success-soft: var(--success-50);
+  --warning: var(--warning-500);
+  --warning-soft: var(--warning-50);
+  --danger: var(--danger-500);
+  --danger-soft: var(--danger-50);
+  --info: var(--info-500);
+  --info-soft: var(--info-50);
 
   /* Grafik serileri — dashboard/raporlar genelinde aynı sırayla kullanılır */
-  --chart-1: #2f5233;
-  --chart-2: #3d8a4e;
-  --chart-3: #61a870;
-  --chart-4: #94c79e;
-  --chart-5: #b57f13;
-  --chart-6: #1f6fa8;
+  --chart-1: 47 82 51;
+  --chart-2: 61 138 78;
+  --chart-3: 97 168 112;
+  --chart-4: 148 199 158;
+  --chart-5: 181 127 19;
+  --chart-6: 31 111 168;
+  --chart-cursor-fill: rgba(22, 33, 26, 0.04);
 
   /* Gölgeler */
   --shadow-card: 0 1px 2px rgba(22, 33, 26, 0.04), 0 4px 16px rgba(22, 33, 26, 0.06);
   --shadow-pop: 0 8px 32px rgba(22, 33, 26, 0.14);
 }
 
+/* ---- Koyu tema ----
+ * `:root:not([data-theme="light"])` + `prefers-color-scheme: dark`: "Sistem"
+ * seçiliyken (hiç data-theme yokken) işletim sistemi koyu modda ise devreye
+ * girer. `[data-theme="dark"]`: kullanıcı Ayarlar'dan açıkça "Koyu" seçtiğinde
+ * — sistem ne olursa olsun kazanır. İkisi de AYNI değerleri taşır (tek
+ * kaynaktan iki tetikleyici), yeni bir token eklenince ikisi de güncellenmeli.
+ */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+
+    --background: 16 22 15;
+    --foreground: 234 242 235;
+
+    /*
+     * Bilinçli tasarım kararı: 400-900 şu ana kadarki AÇIK tema değerleriyle
+     * BİREBİR AYNI kalır — çünkü bu tonlar "hover:bg-primary-700 daha koyu
+     * olmalı" (btn-primary) ve "sabit koyu yeşil kahraman panel" (giriş/
+     * anasayfa) gibi yerlerde MUTLAK karanlıkla ilişkili bir anlam taşıyor;
+     * skalayı tersine çevirmek bu iki deseni bozardı. Yalnızca 50-200 (açık
+     * tema yalnızca "soluk rozet zemini" için kullanılan tonlar) koyu
+     * tonlara çevrilir.
+     */
+    --primary-50: 24 42 29;
+    --primary-100: 32 54 40;
+    --primary-200: 42 74 53;
+    --primary-300: 148 199 158;
+    --primary-400: 97 168 112;
+    --primary-500: 61 138 78;
+    --primary-600: 47 107 61;
+    --primary-700: 47 82 51;
+    --primary-800: 36 63 40;
+    --primary-900: 23 40 26;
+    --primary-green: 47 82 51;
+    --primary-green-light: 61 138 78;
+    --primary-gold: 169 122 22;
+    --primary-red: 155 28 28;
+    --primary-red-light: 192 57 43;
+
+    --neutral-50: 26 33 28;
+    --neutral-100: 35 44 37;
+    --neutral-200: 46 57 49;
+    --neutral-300: 60 74 63;
+    --neutral-400: 88 104 92;
+    --neutral-500: 124 138 127;
+    --neutral-600: 163 176 165;
+    --neutral-700: 207 216 208;
+    --neutral-800: 227 232 227;
+    --neutral-900: 247 249 247;
+
+    --surface-page: 16 22 15;
+    --surface-base: 23 32 26;
+    --surface-card: 23 32 26;
+    --surface-card-hover: 29 39 33;
+    --surface-sidebar: 20 28 23;
+    --surface-subtle: 28 38 32;
+    --surface-muted: 38 51 43;
+
+    --border: 42 54 46;
+    --border-strong: 58 74 63;
+    --border-accent: 53 81 61;
+
+    --text-primary: 234 242 235;
+    --text-secondary: 169 187 172;
+    --text-faint: 114 129 117;
+    --text-inverse: 255 255 255;
+
+    /* Aynı ilke: 500-700 (butonlar, rozet metni) sabit; yalnızca 50/100 (rozet zemini) koyulaşır. */
+    --success-50: 18 42 27;
+    --success-100: 22 51 33;
+    --success-500: 21 128 61;
+    --success-600: 22 101 52;
+    --success-700: 20 83 45;
+
+    --warning-50: 42 34 16;
+    --warning-100: 51 41 19;
+    --warning-500: 181 127 19;
+    --warning-600: 150 105 15;
+    --warning-700: 120 84 12;
+
+    --danger-50: 46 22 19;
+    --danger-100: 56 27 24;
+    --danger-500: 192 57 43;
+    --danger-600: 155 28 28;
+    --danger-700: 122 31 38;
+
+    --info-50: 18 34 46;
+    --info-100: 22 42 55;
+    --info-500: 31 111 168;
+    --info-600: 23 90 138;
+    --info-700: 18 70 108;
+
+    /*
+     * Grafikler AYRI bir açık/parlak palet kullanır (primary/success/vb.
+     * skalasıyla PAYLAŞILMAZ) — çünkü kart arka planının ÜZERİNE çizilirler
+     * (metin rengi/zemin rengi değil), bu yüzden butonlardaki "sabit kalsın"
+     * kuralı burada geçerli değil; okunabilir olmaları için parlaklaştırıldı.
+     */
+    --chart-1: 74 156 92;
+    --chart-2: 90 174 109;
+    --chart-3: 124 196 140;
+    --chart-4: 168 218 180;
+    --chart-5: 232 188 92;
+    --chart-6: 111 184 232;
+    --chart-cursor-fill: rgba(234, 242, 235, 0.06);
+
+    --shadow-card: 0 1px 2px rgba(0, 0, 0, 0.2), 0 4px 16px rgba(0, 0, 0, 0.28);
+    --shadow-pop: 0 8px 32px rgba(0, 0, 0, 0.4);
+  }
+}
+
+:root[data-theme="dark"] {
+  color-scheme: dark;
+
+  --background: 16 22 15;
+  --foreground: 234 242 235;
+
+  --primary-50: 24 42 29;
+  --primary-100: 32 54 40;
+  --primary-200: 42 74 53;
+  --primary-300: 148 199 158;
+  --primary-400: 97 168 112;
+  --primary-500: 61 138 78;
+  --primary-600: 47 107 61;
+  --primary-700: 47 82 51;
+  --primary-800: 36 63 40;
+  --primary-900: 23 40 26;
+  --primary-green: 47 82 51;
+  --primary-green-light: 61 138 78;
+  --primary-gold: 169 122 22;
+  --primary-red: 155 28 28;
+  --primary-red-light: 192 57 43;
+
+  --neutral-50: 26 33 28;
+  --neutral-100: 35 44 37;
+  --neutral-200: 46 57 49;
+  --neutral-300: 60 74 63;
+  --neutral-400: 88 104 92;
+  --neutral-500: 124 138 127;
+  --neutral-600: 163 176 165;
+  --neutral-700: 207 216 208;
+  --neutral-800: 227 232 227;
+  --neutral-900: 247 249 247;
+
+  --surface-page: 16 22 15;
+  --surface-base: 23 32 26;
+  --surface-card: 23 32 26;
+  --surface-card-hover: 29 39 33;
+  --surface-sidebar: 20 28 23;
+  --surface-subtle: 28 38 32;
+  --surface-muted: 38 51 43;
+
+  --border: 42 54 46;
+  --border-strong: 58 74 63;
+  --border-accent: 53 81 61;
+
+  --text-primary: 234 242 235;
+  --text-secondary: 169 187 172;
+  --text-faint: 114 129 117;
+  --text-inverse: 255 255 255;
+
+  --success-50: 18 42 27;
+  --success-100: 22 51 33;
+  --success-500: 21 128 61;
+  --success-600: 22 101 52;
+  --success-700: 20 83 45;
+
+  --warning-50: 42 34 16;
+  --warning-100: 51 41 19;
+  --warning-500: 181 127 19;
+  --warning-600: 150 105 15;
+  --warning-700: 120 84 12;
+
+  --danger-50: 46 22 19;
+  --danger-100: 56 27 24;
+  --danger-500: 192 57 43;
+  --danger-600: 155 28 28;
+  --danger-700: 122 31 38;
+
+  --info-50: 18 34 46;
+  --info-100: 22 42 55;
+  --info-500: 31 111 168;
+  --info-600: 23 90 138;
+  --info-700: 18 70 108;
+
+  --chart-1: 74 156 92;
+  --chart-2: 90 174 109;
+  --chart-3: 124 196 140;
+  --chart-4: 168 218 180;
+  --chart-5: 232 188 92;
+  --chart-6: 111 184 232;
+  --chart-cursor-fill: rgba(234, 242, 235, 0.06);
+
+  --shadow-card: 0 1px 2px rgba(0, 0, 0, 0.2), 0 4px 16px rgba(0, 0, 0, 0.28);
+  --shadow-pop: 0 8px 32px rgba(0, 0, 0, 0.4);
+}
+
 body {
-  color: var(--foreground);
-  background: var(--background);
+  color: rgb(var(--foreground));
+  background: rgb(var(--background));
   font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
   -webkit-font-smoothing: antialiased;
 }
@@ -76,14 +330,14 @@ body {
 /* İnce, tema ile uyumlu kaydırma çubuğu */
 * {
   scrollbar-width: thin;
-  scrollbar-color: var(--border-strong) transparent;
+  scrollbar-color: rgb(var(--border-strong)) transparent;
 }
 *::-webkit-scrollbar {
   width: 8px;
   height: 8px;
 }
 *::-webkit-scrollbar-thumb {
-  background: var(--border-strong);
+  background: rgb(var(--border-strong));
   border-radius: 999px;
 }
 *::-webkit-scrollbar-track {
@@ -141,19 +395,19 @@ body {
     @apply animate-shimmer rounded-lg bg-surface-muted;
     background-image: linear-gradient(
       90deg,
-      var(--surface-muted) 25%,
-      var(--surface-subtle) 50%,
-      var(--surface-muted) 75%
+      rgb(var(--surface-muted)) 25%,
+      rgb(var(--surface-subtle)) 50%,
+      rgb(var(--surface-muted)) 75%
     );
     background-size: 200% 100%;
   }
 
   /* ---- Grafik yardımcıları ---- */
   .recharts-cartesian-grid line {
-    stroke: var(--border);
+    stroke: rgb(var(--border));
   }
   .recharts-text {
-    fill: var(--text-faint);
+    fill: rgb(var(--text-faint));
     font-size: 11px;
   }
 }
@@ -179,14 +433,14 @@ body {
   position: absolute;
   top: 0;
   right: 50%;
-  border-top: 1px solid var(--border);
+  border-top: 1px solid rgb(var(--border));
   width: 50%;
   height: 20px;
 }
 .org-tree li::after {
   right: auto;
   left: 50%;
-  border-left: 1px solid var(--border);
+  border-left: 1px solid rgb(var(--border));
 }
 .org-tree li:only-child::before,
 .org-tree li:only-child::after {
@@ -200,7 +454,7 @@ body {
   border: 0 none;
 }
 .org-tree li:last-child::before {
-  border-right: 1px solid var(--border);
+  border-right: 1px solid rgb(var(--border));
   border-radius: 0 6px 0 0;
 }
 .org-tree li:first-child::after {

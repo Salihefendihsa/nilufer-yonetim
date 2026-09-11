@@ -238,7 +238,6 @@ class _QuotesListScreenState extends State<QuotesListScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.surfacePage,
       appBar: AppBar(
         title: Text(
           _summary?.conversionRate == null

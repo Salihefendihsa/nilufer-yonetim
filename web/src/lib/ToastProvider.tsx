@@ -65,8 +65,8 @@ export function ToastProvider({ children }: { children: ReactNode }) {
             role="status"
             className={`animate-fade-rise pointer-events-auto flex items-start gap-2.5 rounded-2xl border px-4 py-3 shadow-pop ${
               t.variant === "success"
-                ? "border-success-100 bg-white text-text-primary"
-                : "border-danger-100 bg-white text-text-primary"
+                ? "border-success-100 bg-surface-card text-text-primary"
+                : "border-danger-100 bg-surface-card text-text-primary"
             }`}
           >
             {t.variant === "success" ? (

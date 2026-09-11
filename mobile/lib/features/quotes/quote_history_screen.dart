@@ -58,7 +58,6 @@ class _QuoteHistoryScreenState extends State<QuoteHistoryScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.surfacePage,
       appBar: AppBar(title: Text('${widget.quote.fullName} — Tarihçe')),
       body: _loading
           ? const LoadingView()

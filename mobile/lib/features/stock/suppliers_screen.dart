@@ -177,7 +177,6 @@ class _SuppliersScreenState extends State<SuppliersScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.surfacePage,
       appBar: AppBar(
         title: const Text('Tedarikçiler'),
         actions: [

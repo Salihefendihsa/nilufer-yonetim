@@ -105,7 +105,6 @@ class _ManagerShellState extends State<ManagerShell> {
       openDrawer: () => _scaffoldKey.currentState?.openDrawer(),
       child: Scaffold(
         key: _scaffoldKey,
-        backgroundColor: AppColors.surfacePage,
         drawer: const AppDrawer(roleLabel: 'Müdür', groups: _groups),
         body: IndexedStack(
           index: _index,

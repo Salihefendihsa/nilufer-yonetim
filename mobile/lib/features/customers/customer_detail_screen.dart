@@ -150,7 +150,6 @@ class _CustomerDetailScreenState extends State<CustomerDetailScreen>
         Navigator.of(context).pop(_changed);
       },
       child: Scaffold(
-        backgroundColor: AppColors.surfacePage,
         appBar: AppBar(
           title: Text(_customer?.fullName ?? 'Müşteri'),
           actions: [

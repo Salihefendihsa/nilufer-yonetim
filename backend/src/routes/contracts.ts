@@ -8,6 +8,7 @@ import {
   createContract,
   updateContract,
   getContractsSummary,
+  getContractsHealthCheck,
   renewContract,
 } from "../controllers/contractsController";
 import { exportContractPdf } from "../controllers/exportController";
@@ -18,6 +19,7 @@ router.use(requireAuth);
 
 router.get("/expiring", requireRole(Role.OWNER, Role.MANAGER), getExpiringContracts);
 router.get("/summary", requireRole(Role.OWNER, Role.MANAGER), getContractsSummary);
+router.get("/health-check", requireRole(Role.OWNER, Role.MANAGER), getContractsHealthCheck);
 router.get("/", requireRole(Role.OWNER, Role.MANAGER, Role.CUSTOMER), listContracts);
 router.get("/:id", requireRole(Role.OWNER, Role.MANAGER, Role.CUSTOMER), getContract);
 router.get("/:id/pdf", requireRole(Role.OWNER, Role.MANAGER, Role.CUSTOMER), exportContractPdf);

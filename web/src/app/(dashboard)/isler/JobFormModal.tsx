@@ -14,9 +14,11 @@ interface JobFormModalProps {
   onSaved: () => void;
   customers: Customer[];
   staff: Staff[];
+  /** Bölüm E (2. tur): Sözleşmeler → "Şimdi İş Oluştur" kısayolundan önceden doldurulmuş değerler. */
+  prefill?: { customerId?: string; serviceType?: string };
 }
 
-export function JobFormModal({ open, onClose, onSaved, customers, staff }: JobFormModalProps) {
+export function JobFormModal({ open, onClose, onSaved, customers, staff, prefill }: JobFormModalProps) {
   const [customerId, setCustomerId] = useState("");
   const [assignedStaffId, setAssignedStaffId] = useState("");
   const [serviceTypes, setServiceTypes] = useState<ServiceType[]>([]);
@@ -32,10 +34,10 @@ export function JobFormModal({ open, onClose, onSaved, customers, staff }: JobFo
 
   useEffect(() => {
     if (open) {
-      setCustomerId("");
+      setCustomerId(prefill?.customerId ?? "");
       setAssignedStaffId("");
       setServiceTypeSelect("");
-      setServiceTypeOther("");
+      setServiceTypeOther(prefill?.serviceType ?? "");
       setScheduledAt("");
       setScheduledEndAt("");
       setNotes("");
@@ -43,9 +45,18 @@ export function JobFormModal({ open, onClose, onSaved, customers, staff }: JobFo
       setError(null);
       api
         .get<{ data: ServiceType[] }>("/service-types")
-        .then((res) => setServiceTypes(res.data.filter((s) => s.isActive)))
+        .then((res) => {
+          const active = res.data.filter((s) => s.isActive);
+          setServiceTypes(active);
+          // Sözleşmedeki hizmet türü mevcut listede varsa doğrudan seç, yoksa "Diğer" ile serbest metin olarak doldur.
+          if (prefill?.serviceType) {
+            const matched = active.find((s) => s.name === prefill.serviceType);
+            setServiceTypeSelect(matched ? matched.name : OTHER_SERVICE_TYPE);
+          }
+        })
         .catch(() => setServiceTypes([]));
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
 
   const serviceType = serviceTypeSelect === OTHER_SERVICE_TYPE ? serviceTypeOther : serviceTypeSelect;

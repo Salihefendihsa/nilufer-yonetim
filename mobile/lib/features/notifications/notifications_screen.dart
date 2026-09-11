@@ -246,7 +246,6 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.surfacePage,
       appBar: AppBar(
         leading: ManagerNav.maybeLeading(context),
         title: const Text('Bildirimler'),

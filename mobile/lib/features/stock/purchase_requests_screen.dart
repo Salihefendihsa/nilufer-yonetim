@@ -86,7 +86,6 @@ class _PurchaseRequestsScreenState extends State<PurchaseRequestsScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.surfacePage,
       appBar: AppBar(
         title: Text(
           'Satın Alma Talepleri'

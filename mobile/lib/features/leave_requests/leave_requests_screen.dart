@@ -190,7 +190,6 @@ class _LeaveRequestsScreenState extends State<LeaveRequestsScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.surfacePage,
       appBar: AppBar(
         title: const Text('İzin Taleplerim'),
         actions: [

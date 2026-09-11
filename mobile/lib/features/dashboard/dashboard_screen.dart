@@ -111,7 +111,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
     final user = context.watch<AuthProvider>().user;
 
     return Scaffold(
-      backgroundColor: AppColors.surfacePage,
       appBar: AppBar(
         leading: ManagerNav.maybeLeading(context),
         title: Column(

@@ -9,7 +9,15 @@ import 'jobs_api.dart';
 
 /// POST /jobs — backend OWNER/MANAGER'a kısıtlıyor (routes/jobs.ts:24).
 class JobFormScreen extends StatefulWidget {
-  const JobFormScreen({super.key});
+  /// Bölüm E (2. tur): Sözleşmeler → "Şimdi İş Oluştur" kısayolundan önceden doldurulmuş değerler.
+  final String? prefillCustomerId;
+  final String? prefillServiceType;
+
+  const JobFormScreen({
+    super.key,
+    this.prefillCustomerId,
+    this.prefillServiceType,
+  });
 
   @override
   State<JobFormScreen> createState() => _JobFormScreenState();
@@ -38,6 +46,10 @@ class _JobFormScreenState extends State<JobFormScreen> {
   @override
   void initState() {
     super.initState();
+    _selectedCustomerId = widget.prefillCustomerId;
+    if (widget.prefillServiceType != null) {
+      _serviceTypeController.text = widget.prefillServiceType!;
+    }
     _loadOptions();
   }
 

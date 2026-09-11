@@ -512,7 +512,6 @@ class _StaffDetailScreenState extends State<StaffDetailScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.surfacePage,
       appBar: AppBar(
         title: Text(_staff?.fullName ?? 'Personel'),
         actions: [

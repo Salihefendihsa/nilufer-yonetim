@@ -1,18 +1,36 @@
 import type { Config } from "tailwindcss";
 
 /**
- * Nilüfer İlaçlama — açık (light) tema tasarım sistemi.
+ * globals.css'teki her CSS değişkeni "R G B" (boşlukla ayrılmış ondalık
+ * kanal) olarak tanımlı — hex DEĞİL — çünkü Tailwind'in opacity modifier'ı
+ * (`bg-primary-600/40` gibi, bu kod tabanında yaygın kullanılıyor) yalnızca
+ * bu formatta çalışabiliyor: derleme anında CSS değişkeninin içini
+ * göremediği için `rgb(var(--x) / <alpha-value>)` kalıbına ihtiyaç duyuyor.
+ */
+function withOpacity(variable: string) {
+  return `rgb(var(${variable}) / <alpha-value>)`;
+}
+
+/**
+ * Nilüfer İlaçlama — tasarım sistemi (açık + koyu tema).
  *
- * Palet yeşil-beyaz: beyaz kart yüzeyleri, çok açık yeşilimsi gri sayfa zemini,
+ * Palet yeşil-beyaz: kart yüzeyleri, çok açık yeşilimsi gri sayfa zemini,
  * marka yeşili aksiyon/vurgu rengi. Semantik renkler (success/warning/danger/info)
  * yeşil skalasıyla aynı doygunluk-ışıklık ailesinden seçildi ki bir arada
  * kullanıldıklarında tek bir dil gibi okunsunlar.
  *
+ * Bölüm D (2. tur): Her renk artık `var(--token)` — GERÇEK değerler
+ * src/app/globals.css'te (açık `:root`, koyu `[data-theme="dark"]` +
+ * `prefers-color-scheme: dark`). Böylece `bg-primary-600` gibi HER
+ * kullanım, hangi bileşende olursa olsun, otomatik olarak temaya göre
+ * doğru rengi üretir — tek tek bileşen değiştirmeye gerek kalmaz.
+ *
  * Not: `primary.green` / `primary.greenLight` / `primary.gold` / `primary.red` /
  * `primary.redLight` takma adları eski kod tarafından yaygın kullanıldığı için
- * korundu; değerleri light temada okunabilir olacak şekilde yeniden bağlandı.
+ * korundu.
  */
 const config: Config = {
+  darkMode: ["selector", '[data-theme="dark"]'],
   content: [
     "./src/pages/**/*.{js,ts,jsx,tsx,mdx}",
     "./src/components/**/*.{js,ts,jsx,tsx,mdx}",
@@ -21,95 +39,95 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        background: "var(--background)",
-        foreground: "var(--foreground)",
+        background: withOpacity("--background"),
+        foreground: withOpacity("--foreground"),
 
         // Ana yeşil skala — 500 varsayılan aksiyon rengi, 700 marka koyu yeşili.
         primary: {
-          50: "#F1F8F2",
-          100: "#DEEFE1",
-          200: "#BFDFC5",
-          300: "#94C79E",
-          400: "#61A870",
-          500: "#3D8A4E",
-          600: "#2F6B3D",
-          700: "#2F5233",
-          800: "#243F28",
-          900: "#17281A",
-          // Geriye dönük takma adlar (light temaya göre yeniden bağlandı)
-          green: "#2F5233",
-          greenLight: "#3D8A4E",
-          gold: "#A97A16",
-          red: "#9B1C1C",
-          redLight: "#C0392B",
+          50: withOpacity("--primary-50"),
+          100: withOpacity("--primary-100"),
+          200: withOpacity("--primary-200"),
+          300: withOpacity("--primary-300"),
+          400: withOpacity("--primary-400"),
+          500: withOpacity("--primary-500"),
+          600: withOpacity("--primary-600"),
+          700: withOpacity("--primary-700"),
+          800: withOpacity("--primary-800"),
+          900: withOpacity("--primary-900"),
+          // Geriye dönük takma adlar
+          green: withOpacity("--primary-green"),
+          greenLight: withOpacity("--primary-green-light"),
+          gold: withOpacity("--primary-gold"),
+          red: withOpacity("--primary-red"),
+          redLight: withOpacity("--primary-red-light"),
         },
 
         // Nötr griler — hafif yeşilimsi (yüzeylerle aynı sıcaklıkta kalsın diye)
         neutral: {
-          50: "#F7F9F7",
-          100: "#EFF2EF",
-          200: "#E3E8E3",
-          300: "#CFD8D0",
-          400: "#A3B0A5",
-          500: "#7C8A7F",
-          600: "#5A6B5E",
-          700: "#425145",
-          800: "#2A352C",
-          900: "#16211A",
+          50: withOpacity("--neutral-50"),
+          100: withOpacity("--neutral-100"),
+          200: withOpacity("--neutral-200"),
+          300: withOpacity("--neutral-300"),
+          400: withOpacity("--neutral-400"),
+          500: withOpacity("--neutral-500"),
+          600: withOpacity("--neutral-600"),
+          700: withOpacity("--neutral-700"),
+          800: withOpacity("--neutral-800"),
+          900: withOpacity("--neutral-900"),
         },
 
         success: {
-          50: "#ECFBF0",
-          100: "#D3F4DC",
-          500: "#15803D",
-          600: "#166534",
-          700: "#14532D",
+          50: withOpacity("--success-50"),
+          100: withOpacity("--success-100"),
+          500: withOpacity("--success-500"),
+          600: withOpacity("--success-600"),
+          700: withOpacity("--success-700"),
         },
         warning: {
-          50: "#FEF7E7",
-          100: "#FCEDC9",
-          500: "#B57F13",
-          600: "#96690F",
-          700: "#78540C",
+          50: withOpacity("--warning-50"),
+          100: withOpacity("--warning-100"),
+          500: withOpacity("--warning-500"),
+          600: withOpacity("--warning-600"),
+          700: withOpacity("--warning-700"),
         },
         danger: {
-          50: "#FDF0EF",
-          100: "#FADAD7",
-          500: "#C0392B",
-          600: "#9B1C1C",
-          700: "#7A1F26",
+          50: withOpacity("--danger-50"),
+          100: withOpacity("--danger-100"),
+          500: withOpacity("--danger-500"),
+          600: withOpacity("--danger-600"),
+          700: withOpacity("--danger-700"),
         },
         info: {
-          50: "#EDF5FB",
-          100: "#D5E7F5",
-          500: "#1F6FA8",
-          600: "#175A8A",
-          700: "#12466C",
+          50: withOpacity("--info-50"),
+          100: withOpacity("--info-100"),
+          500: withOpacity("--info-500"),
+          600: withOpacity("--info-600"),
+          700: withOpacity("--info-700"),
         },
 
-        ink: "#16211A",
+        ink: withOpacity("--text-primary"),
 
         surface: {
-          page: "#F4F7F4",
-          base: "#FFFFFF",
-          card: "#FFFFFF",
-          cardHover: "#F7FAF7",
-          sidebar: "#FFFFFF",
-          subtle: "#F2F6F2",
-          muted: "#E8EEE8",
+          page: withOpacity("--surface-page"),
+          base: withOpacity("--surface-base"),
+          card: withOpacity("--surface-card"),
+          cardHover: withOpacity("--surface-card-hover"),
+          sidebar: withOpacity("--surface-sidebar"),
+          subtle: withOpacity("--surface-subtle"),
+          muted: withOpacity("--surface-muted"),
         },
 
         border: {
-          DEFAULT: "#E3E8E3",
-          strong: "#CFD8D0",
-          accent: "#BFDFC5",
+          DEFAULT: withOpacity("--border"),
+          strong: withOpacity("--border-strong"),
+          accent: withOpacity("--border-accent"),
         },
 
         text: {
-          primary: "#16211A",
-          secondary: "#5A6B5E",
-          faint: "#8B9A8E",
-          inverse: "#FFFFFF",
+          primary: withOpacity("--text-primary"),
+          secondary: withOpacity("--text-secondary"),
+          faint: withOpacity("--text-faint"),
+          inverse: withOpacity("--text-inverse"),
         },
       },
 

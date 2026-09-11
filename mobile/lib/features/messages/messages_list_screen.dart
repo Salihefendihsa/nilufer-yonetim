@@ -234,7 +234,6 @@ class _MessagesListScreenState extends State<MessagesListScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.surfacePage,
       appBar: AppBar(
         leading: ManagerNav.maybeLeading(context),
         title: const Text('Mesajlar'),

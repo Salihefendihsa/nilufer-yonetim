@@ -97,7 +97,6 @@ class _SystemHealthScreenState extends State<SystemHealthScreen> {
     final health = _health;
 
     return Scaffold(
-      backgroundColor: AppColors.surfacePage,
       appBar: AppBar(
         title: const Text('Sistem Durumu'),
         actions: [

@@ -38,7 +38,6 @@ class _AuditSettingsScreenState extends State<AuditSettingsScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.surfacePage,
       appBar: AppBar(
         title: const Text('Denetim & Ayarlar'),
         bottom: TabBar(

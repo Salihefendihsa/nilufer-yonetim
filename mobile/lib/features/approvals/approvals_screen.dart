@@ -204,7 +204,6 @@ class _ApprovalsScreenState extends State<ApprovalsScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.surfacePage,
       appBar: AppBar(
         leading: ManagerNav.maybeLeading(context),
         title: Text('Bekleyen Onaylar${_total > 0 ? ' ($_total)' : ''}'),

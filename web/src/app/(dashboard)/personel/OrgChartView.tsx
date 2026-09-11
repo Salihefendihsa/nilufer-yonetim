@@ -102,7 +102,7 @@ function TreeNode({ node, onSelectStaff }: { node: OrgChartNode; onSelectStaff: 
           {node.role === "OWNER" ? (
             <Crown size={22} strokeWidth={1.75} className="text-warning-600" />
           ) : (
-            <span className="flex h-9 w-9 items-center justify-center rounded-full bg-white/70 text-xs font-semibold">
+            <span className="flex h-9 w-9 items-center justify-center rounded-full bg-surface-card/70 text-xs font-semibold">
               {initials(node.fullName)}
             </span>
           )}
@@ -112,7 +112,7 @@ function TreeNode({ node, onSelectStaff }: { node: OrgChartNode; onSelectStaff: 
             {node.position ? ` · ${node.position}` : ""}
           </span>
           {node.assignedCustomers.length > 0 && (
-            <span className="mt-0.5 flex items-center gap-1 rounded-full bg-white/60 px-2 py-0.5 text-2xs font-semibold text-text-secondary">
+            <span className="mt-0.5 flex items-center gap-1 rounded-full bg-surface-card/60 px-2 py-0.5 text-2xs font-semibold text-text-secondary">
               <Users size={10} strokeWidth={2} />
               {node.assignedCustomers.length} müşteri
             </span>

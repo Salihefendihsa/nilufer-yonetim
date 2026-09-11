@@ -124,7 +124,6 @@ class _CustomersListScreenState extends State<CustomersListScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.surfacePage,
       appBar: AppBar(
         title: const Text('Müşteriler'),
         actions: [

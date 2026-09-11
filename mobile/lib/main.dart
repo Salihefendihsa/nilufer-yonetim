@@ -10,6 +10,7 @@ import 'auth/two_factor_verify_screen.dart';
 import 'navigation/impersonation_banner.dart';
 import 'navigation/role_shell.dart';
 import 'theme/app_theme.dart';
+import 'theme/theme_controller.dart';
 import 'widgets/state_views.dart';
 
 Future<void> main() async {
@@ -23,20 +24,27 @@ class NiluferApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ChangeNotifierProvider(
-      create: (_) => AuthProvider()..restoreSession(),
-      child: MaterialApp(
-        title: 'Nilüfer İlaçlama',
-        debugShowCheckedModeBanner: false,
-        theme: AppTheme.light(),
-        locale: const Locale('tr', 'TR'),
-        supportedLocales: const [Locale('tr', 'TR')],
-        localizationsDelegates: const [
-          GlobalMaterialLocalizations.delegate,
-          GlobalWidgetsLocalizations.delegate,
-          GlobalCupertinoLocalizations.delegate,
-        ],
-        home: const _AuthGate(),
+    return MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (_) => AuthProvider()..restoreSession()),
+        ChangeNotifierProvider(create: (_) => ThemeController()..load()),
+      ],
+      child: Consumer<ThemeController>(
+        builder: (context, themeController, _) => MaterialApp(
+          title: 'Nilüfer İlaçlama',
+          debugShowCheckedModeBanner: false,
+          theme: AppTheme.light(),
+          darkTheme: AppTheme.dark(),
+          themeMode: themeController.mode,
+          locale: const Locale('tr', 'TR'),
+          supportedLocales: const [Locale('tr', 'TR')],
+          localizationsDelegates: const [
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+            GlobalCupertinoLocalizations.delegate,
+          ],
+          home: const _AuthGate(),
+        ),
       ),
     );
   }

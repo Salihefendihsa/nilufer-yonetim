@@ -95,7 +95,6 @@ class _JobsListScreenState extends State<JobsListScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.surfacePage,
       appBar: AppBar(
         // Müdür kabuğunda çekmece butonu; diğer rollerde null (varsayılan geri oku).
         leading: ManagerNav.maybeLeading(context),

@@ -66,6 +66,79 @@ class AppColors {
   static const textInverse = Color(0xFFFFFFFF);
 }
 
+/// Bölüm D (2. tur): koyu tema karşılıkları. `AppColors` gibi bilerek
+/// `static const` — çünkü uygulama genelinde `const TextStyle(color:
+/// AppColors.x)` gibi YÜZLERCE `const` kullanım var; bunlar yalnızca
+/// derleme-zamanı sabitleriyle çalışır. Bu yüzden `AppTheme.dark()`
+/// (`ThemeData`/`darkTheme`) bu sınıfı kullanır — Scaffold/AppBar/Card/
+/// Input/Button gibi Material bileşenleri TEMA ÜZERİNDEN otomatik geçiş
+/// yapar. Ekranlarda DOĞRUDAN `AppColors.x` yazılan (Theme.of(context)
+/// ÜZERİNDEN DEĞİL) özel stiller — bu kod tabanının hâkim deseni — koyu
+/// modda hâlâ AÇIK tema rengini kullanmaya devam eder; bu, mevcut
+/// mimarinin (const renk sabitleri) bilinen ve kabul edilen bir sınırı
+/// (bkz. docs/NEW_FEATURES_TOUR_2.md Bölüm D — web tarafında CSS
+/// custom property'lerle bu sınır YOK, ama Flutter'da eşdeğer bir mekanizma
+/// binlerce satırlık bir refactor gerektirir).
+class AppDarkColors {
+  AppDarkColors._();
+
+  static const primary50 = Color(0xFF182A1D);
+  static const primary100 = Color(0xFF203628);
+  static const primary200 = Color(0xFF2A4A35);
+  static const primary300 = Color(0xFF94C79E);
+  static const primary400 = Color(0xFF61A870);
+  static const primary500 = Color(0xFF3D8A4E);
+  static const primary600 = Color(0xFF2F6B3D);
+  static const primary700 = Color(0xFF2F5233);
+  static const primary800 = Color(0xFF243F28);
+  static const primary900 = Color(0xFF17281A);
+
+  static const neutral50 = Color(0xFF1A211C);
+  static const neutral100 = Color(0xFF232C25);
+  static const neutral200 = Color(0xFF2E3931);
+  static const neutral300 = Color(0xFF3C4A3F);
+  static const neutral400 = Color(0xFF58685C);
+  static const neutral500 = Color(0xFF7C8A7F);
+  static const neutral600 = Color(0xFFA3B0A5);
+  static const neutral700 = Color(0xFFCFD8D0);
+  static const neutral800 = Color(0xFFE3E8E3);
+  static const neutral900 = Color(0xFFF7F9F7);
+
+  static const success50 = Color(0xFF122A1B);
+  static const success500 = Color(0xFF15803D);
+  static const success600 = Color(0xFF166534);
+
+  static const warning50 = Color(0xFF2A2210);
+  static const warning500 = Color(0xFFB57F13);
+  static const warning600 = Color(0xFF96690F);
+
+  static const danger50 = Color(0xFF2E1613);
+  static const danger500 = Color(0xFFC0392B);
+  static const danger600 = Color(0xFF9B1C1C);
+
+  static const info50 = Color(0xFF12222E);
+  static const info500 = Color(0xFF1F6FA8);
+  static const info600 = Color(0xFF175A8A);
+
+  static const ink = Color(0xFFEAF2EB);
+
+  static const surfacePage = Color(0xFF10160F);
+  static const surfaceBase = Color(0xFF17201A);
+  static const surfaceCard = Color(0xFF17201A);
+  static const surfaceCardHover = Color(0xFF1D2721);
+  static const surfaceSubtle = Color(0xFF1C2620);
+  static const surfaceMuted = Color(0xFF26332B);
+
+  static const borderDefault = Color(0xFF2A362E);
+  static const borderStrong = Color(0xFF3A4A3F);
+  static const borderAccent = Color(0xFF35513D);
+
+  static const textPrimary = Color(0xFFEAF2EB);
+  static const textSecondary = Color(0xFFA9BBAC);
+  static const textFaint = Color(0xFF728175);
+  static const textInverse = Color(0xFFFFFFFF);
+}
+
 /// Köşe yarıçapı token'ları — önceden ekran ekran serbestçe seçilen
 /// (14/16/18/vb.) değerler yerine, kavrama göre tek bir kaynak.
 class AppRadius {

@@ -54,7 +54,6 @@ class _OrgChartScreenState extends State<OrgChartScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.surfacePage,
       appBar: AppBar(title: const Text('Organizasyon Şeması')),
       body: _loading
           ? const LoadingView()

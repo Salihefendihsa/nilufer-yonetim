@@ -288,7 +288,6 @@ class _PerformanceScreenState extends State<PerformanceScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.surfacePage,
       appBar: AppBar(
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(48),

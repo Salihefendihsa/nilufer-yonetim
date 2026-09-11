@@ -152,7 +152,6 @@ class _NamedListSettingsScreenState extends State<NamedListSettingsScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.surfacePage,
       appBar: AppBar(title: Text(widget.title)),
       body: _loading
           ? const LoadingView()

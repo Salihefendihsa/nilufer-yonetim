@@ -70,6 +70,35 @@ class ContractsSummary {
       );
 }
 
+/// Bölüm E (2. tur) — GET /contracts/health-check.
+class ContractHealthCheckItem {
+  final String id;
+  final String customerId;
+  final String customerName;
+  final String? serviceType;
+  final String nextGenerationDate;
+  final int daysOverdue;
+
+  ContractHealthCheckItem({
+    required this.id,
+    required this.customerId,
+    required this.customerName,
+    required this.serviceType,
+    required this.nextGenerationDate,
+    required this.daysOverdue,
+  });
+
+  factory ContractHealthCheckItem.fromJson(Map<String, dynamic> json) =>
+      ContractHealthCheckItem(
+        id: json['id'] as String,
+        customerId: json['customerId'] as String,
+        customerName: json['customerName'] as String,
+        serviceType: json['serviceType'] as String?,
+        nextGenerationDate: json['nextGenerationDate'] as String,
+        daysOverdue: (json['daysOverdue'] as num?)?.toInt() ?? 0,
+      );
+}
+
 const List<String> contractStatusOptions = [
   'ACTIVE',
   'RENEWED',

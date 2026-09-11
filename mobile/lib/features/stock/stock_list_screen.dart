@@ -409,7 +409,6 @@ class _StockListScreenState extends State<StockListScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.surfacePage,
       appBar: AppBar(
         title: const Text('Stok'),
         actions: [

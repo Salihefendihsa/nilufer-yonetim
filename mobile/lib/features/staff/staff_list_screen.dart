@@ -72,7 +72,6 @@ class _StaffListScreenState extends State<StaffListScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.surfacePage,
       appBar: AppBar(
         title: Text(_showArchived ? 'Geçmiş Personel' : 'Personel'),
         actions: [

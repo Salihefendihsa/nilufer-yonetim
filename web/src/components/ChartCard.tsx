@@ -34,11 +34,23 @@ import {
  * değişiklik gerekmedi.
  */
 
-export const CHART_COLORS = ["#2F5233", "#3D8A4E", "#61A870", "#94C79E", "#B57F13", "#1F6FA8"];
+// Bölüm D (2. tur): recharts SVG dolgu/vuruş renklerini doğrudan CSS
+// değişkenlerine bağlar (Tailwind sınıfı DEĞİL, çünkü recharts prop'ları düz
+// bir renk string'i bekler) — böylece grafikler de tema değişince otomatik
+// güncellenir, ayrı bir "koyu grafik paleti" JS objesi tutmaya gerek kalmaz.
+export const CHART_COLORS = [
+  "rgb(var(--chart-1))",
+  "rgb(var(--chart-2))",
+  "rgb(var(--chart-3))",
+  "rgb(var(--chart-4))",
+  "rgb(var(--chart-5))",
+  "rgb(var(--chart-6))",
+];
 
-const GRID = "#E3E8E3";
-const AXIS_TEXT = "#8B9A8E";
+const GRID = "rgb(var(--border))";
+const AXIS_TEXT = "rgb(var(--text-faint))";
 const AXIS_STYLE = { fontSize: 10, fill: AXIS_TEXT };
+const CURSOR_FILL = "var(--chart-cursor-fill)";
 
 function formatValue(value: number, currency?: boolean): string {
   if (currency) return `${new Intl.NumberFormat("tr-TR", { maximumFractionDigits: 0 }).format(value)} ₺`;
@@ -174,7 +186,7 @@ export function SimpleBarChart<T extends object>({
         <RechartsYAxis tick={AXIS_STYLE} tickLine={false} axisLine={false} tickFormatter={compact} width={40} />
         <RechartsTooltip
           content={<ChartTooltip currency={currency} />}
-          cursor={{ fill: "rgba(22,33,26,0.04)" }}
+          cursor={{ fill: CURSOR_FILL }}
         />
         {series.length > 1 && <RechartsLegend content={<ChartLegend />} />}
         {series.map((s, i) => (

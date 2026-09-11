@@ -51,7 +51,6 @@ class _StockMovementsScreenState extends State<StockMovementsScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.surfacePage,
       appBar: AppBar(title: Text('${widget.product.name} — Hareketler')),
       body: _loading
           ? const LoadingView()

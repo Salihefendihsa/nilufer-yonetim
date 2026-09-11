@@ -1,6 +1,7 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { Suspense, useCallback, useEffect, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { Plus, Wrench, List, CalendarDays, ChevronLeft, ChevronRight, Search } from "lucide-react";
 import { EmptyState } from "@/components/EmptyState";
 import { PageHeader } from "@/components/PageHeader";
@@ -27,6 +28,17 @@ const STATUS_FILTER_LABELS: Record<"ALL" | JobStatus, string> = {
 };
 
 export default function JobsPage() {
+  // Bölüm E (2. tur): useSearchParams (?customerId=&serviceType= deep-link)
+  // Next.js'te bir Suspense sınırı gerektiriyor, aksi halde statik dışa
+  // aktarım sırasında derleme hatası veriyor.
+  return (
+    <Suspense fallback={null}>
+      <JobsPageContent />
+    </Suspense>
+  );
+}
+
+function JobsPageContent() {
   const { user } = useAuth();
   const { showToast } = useToast();
   const [view, setView] = useState<"list" | "calendar">("list");
@@ -41,6 +53,8 @@ export default function JobsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [formOpen, setFormOpen] = useState(false);
+  const [formPrefill, setFormPrefill] = useState<{ customerId?: string; serviceType?: string } | undefined>(undefined);
+  const searchParams = useSearchParams();
   const [updatingId, setUpdatingId] = useState<string | null>(null);
   const [statusCounts, setStatusCounts] = useState<Record<JobStatus, number> | null>(null);
   // İptal, gerekçe olmadan kaydedilmez — Stitch Müdür → İşler → "İptal Gerekçesi".
@@ -48,6 +62,16 @@ export default function JobsPage() {
   const [cancelReason, setCancelReason] = useState("");
 
   const canManage = user?.role === "OWNER" || user?.role === "MANAGER";
+
+  // Bölüm E (2. tur): Sözleşmeler → "Şimdi İş Oluştur" kısayolu (?customerId=&serviceType=).
+  useEffect(() => {
+    const customerId = searchParams.get("customerId");
+    if (customerId) {
+      setFormPrefill({ customerId, serviceType: searchParams.get("serviceType") ?? undefined });
+      setFormOpen(true);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -316,7 +340,17 @@ export default function JobsPage() {
         </>
       )}
 
-      <JobFormModal open={formOpen} onClose={() => setFormOpen(false)} onSaved={load} customers={customers} staff={staff} />
+      <JobFormModal
+        open={formOpen}
+        onClose={() => {
+          setFormOpen(false);
+          setFormPrefill(undefined);
+        }}
+        onSaved={load}
+        customers={customers}
+        staff={staff}
+        prefill={formPrefill}
+      />
 
       <Modal open={!!cancelTarget} onClose={() => setCancelTarget(null)} title="İşi iptal et">
         <div className="flex flex-col gap-4">

@@ -111,7 +111,6 @@ class _CalendarScreenState extends State<CalendarScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.surfacePage,
       appBar: AppBar(
         leading: ManagerNav.maybeLeading(context),
         title: const Text('Takvim'),

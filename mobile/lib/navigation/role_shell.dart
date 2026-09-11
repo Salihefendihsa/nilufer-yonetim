@@ -227,8 +227,8 @@ class _RoleShellState extends State<RoleShell> {
         ),
         bottomNavigationBar: NavigationBarTheme(
           data: NavigationBarThemeData(
-            backgroundColor: AppColors.surfaceBase,
-            indicatorColor: AppColors.primary50,
+            backgroundColor: Theme.of(context).colorScheme.surface,
+            indicatorColor: Theme.of(context).brightness == Brightness.dark ? AppDarkColors.primary50 : AppColors.primary50,
             labelTextStyle: WidgetStateProperty.resolveWith((states) {
               final selected = states.contains(WidgetState.selected);
               return TextStyle(

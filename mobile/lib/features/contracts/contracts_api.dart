@@ -53,6 +53,14 @@ class ContractsApi {
     return ContractsSummary.fromJson(json);
   }
 
+  Future<List<ContractHealthCheckItem>> healthCheck() async {
+    final json = await _api.get<Map<String, dynamic>>('/contracts/health-check');
+    return (json['data'] as List)
+        .cast<Map<String, dynamic>>()
+        .map(ContractHealthCheckItem.fromJson)
+        .toList();
+  }
+
   /// Yeni donemi eski sozlesmenin bitis tarihinden baslatir; eski kayit
   /// EXPIRED'a cekilir. Backend iyimser kilitle mukerrer yenilemeyi engeller.
   Future<Contract> renew(String id) async {

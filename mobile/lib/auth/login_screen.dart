@@ -41,7 +41,6 @@ class _LoginScreenState extends State<LoginScreen> {
     final auth = context.watch<AuthProvider>();
 
     return Scaffold(
-      backgroundColor: AppColors.surfacePage,
       body: SafeArea(
         child: Center(
           child: SingleChildScrollView(

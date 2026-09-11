@@ -313,7 +313,6 @@ class _EvaluationsScreenState extends State<EvaluationsScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.surfacePage,
       appBar: AppBar(title: const Text('Değerlendirmeler')),
       body: _loading
           ? const LoadingView()

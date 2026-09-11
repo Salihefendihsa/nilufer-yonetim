@@ -198,7 +198,6 @@ class _FinanceScreenState extends State<FinanceScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.surfacePage,
       appBar: AppBar(
         title: const Text('Para & Finans'),
         actions: [

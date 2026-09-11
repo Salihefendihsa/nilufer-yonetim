@@ -133,7 +133,7 @@ function CustomersPageContent() {
     return [
       { label: "bakiyesi olan", count: withDebt, color: "#C0392B" },
       { label: "güncel", count: withRecentJob, color: "#15803D" },
-      { label: "hiç iş almamış", count: Math.max(0, idle), color: "#CFD8D0" },
+      { label: "hiç iş almamış", count: Math.max(0, idle), color: "rgb(var(--border-strong))" },
     ];
   }, [rows]);
 

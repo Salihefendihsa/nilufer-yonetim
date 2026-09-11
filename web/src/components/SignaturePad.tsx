@@ -77,6 +77,8 @@ export function SignaturePad({ onChange }: SignaturePadProps) {
 
   return (
     <div className="flex flex-col gap-2">
+      {/* bg-white kasıtlı — imza her zaman kağıt üstüne siyah mürekkep gibi kaydedilir
+          (strokeStyle aşağıda sabit koyu renk), koyu modda bile zemin beyaz kalmalı. */}
       <div className="relative overflow-hidden rounded-2xl border border-border-strong bg-white">
         <canvas
           ref={canvasRef}

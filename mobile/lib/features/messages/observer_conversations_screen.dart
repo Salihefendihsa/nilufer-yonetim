@@ -60,7 +60,6 @@ class _ObserverConversationsScreenState
     final myId = context.read<AuthProvider>().user?.id;
 
     return Scaffold(
-      backgroundColor: AppColors.surfacePage,
       appBar: AppBar(title: const Text('Gözlemci Modu — Tüm Konuşmalar')),
       body: _loading
           ? const LoadingView()

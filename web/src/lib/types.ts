@@ -75,6 +75,17 @@ export interface Contract {
   customer?: { id: string; fullName: string; district: string | null };
 }
 
+/** Bölüm E (2. tur) — GET /contracts/health-check. */
+export interface ContractHealthCheckItem {
+  id: string;
+  customerId: string;
+  customerName: string;
+  serviceType: string | null;
+  recurrenceType: RecurrenceType | null;
+  nextGenerationDate: string;
+  daysOverdue: number;
+}
+
 export interface ContractsSummary {
   byStatus: Record<string, number>;
   totalCount: number;

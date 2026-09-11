@@ -115,7 +115,6 @@ class MoreMenuScreen extends StatelessWidget {
     ];
 
     return Scaffold(
-      backgroundColor: AppColors.surfacePage,
       appBar: AppBar(title: const Text('Diğer Modüller')),
       body: ListView.separated(
         padding: const EdgeInsets.all(16),

@@ -1,7 +1,8 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Plus, FileText, AlertTriangle, FileSignature, CalendarClock, Repeat, RefreshCw, Wallet, Download } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { Plus, FileText, AlertTriangle, FileSignature, CalendarClock, Repeat, RefreshCw, Wallet, Download, HeartPulse, Wrench } from "lucide-react";
 import { RequireRole } from "@/components/RequireRole";
 import { PageHeader } from "@/components/PageHeader";
 import { StatCard } from "@/components/StatCard";
@@ -12,7 +13,7 @@ import { api, ApiError, downloadFile } from "@/lib/api";
 import { useToast } from "@/lib/ToastProvider";
 import { formatDate, currencyFormatter } from "@/lib/format";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
-import type { Contract, ContractsSummary, Customer, Paginated } from "@/lib/types";
+import type { Contract, ContractHealthCheckItem, ContractsSummary, Customer, Paginated } from "@/lib/types";
 import { ContractFormModal } from "./ContractFormModal";
 
 const STATUS_LABELS: Record<string, string> = {
@@ -47,6 +48,9 @@ function ContractsPageContent() {
   const [renewTarget, setRenewTarget] = useState<Contract | null>(null);
   const [renewing, setRenewing] = useState(false);
   const [downloadingId, setDownloadingId] = useState<string | null>(null);
+  const [healthCheck, setHealthCheck] = useState<ContractHealthCheckItem[]>([]);
+  const [healthCheckOpen, setHealthCheckOpen] = useState(false);
+  const router = useRouter();
 
   async function handleDownloadContractPdf(contract: Contract) {
     setDownloadingId(contract.id);
@@ -65,17 +69,19 @@ function ContractsPageContent() {
     setLoading(true);
     setError(null);
     try {
-      const [contractsRes, customersRes, expiringRes, summaryRes] = await Promise.all([
+      const [contractsRes, customersRes, expiringRes, summaryRes, healthCheckRes] = await Promise.all([
         api.get<Paginated<Contract>>(`/contracts?page=${page}&limit=20`),
         api.get<Paginated<Customer>>("/customers?limit=100"),
         api.get<{ data: ExpiringContract[] }>("/contracts/expiring"),
         api.get<ContractsSummary>("/contracts/summary"),
+        api.get<{ data: ContractHealthCheckItem[] }>("/contracts/health-check"),
       ]);
       setContracts(contractsRes.data);
       setTotalPages(contractsRes.pagination.totalPages);
       setCustomers(customersRes.data);
       setExpiring(expiringRes.data);
       setSummary(summaryRes);
+      setHealthCheck(healthCheckRes.data);
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "Sözleşmeler yüklenemedi");
     } finally {
@@ -186,16 +192,76 @@ function ContractsPageContent() {
         title="Sözleşmeler"
         description="Müşteri sözleşmelerinizi ve sürelerini takip edin."
         actions={
-          <button
-            type="button"
-            onClick={() => setFormOpen(true)}
-            className="flex items-center gap-2 rounded-2xl bg-primary-600 px-4 py-2.5 text-sm font-semibold text-white shadow-card transition hover:bg-primary-700"
-          >
-            <Plus size={16} strokeWidth={2} />
-            Yeni Sözleşme
-          </button>
+          <>
+            {healthCheck.length > 0 && (
+              <button
+                type="button"
+                onClick={() => setHealthCheckOpen((v) => !v)}
+                className="flex items-center gap-2 rounded-2xl border border-warning-100 bg-warning-50 px-4 py-2.5 text-sm font-semibold text-warning-600 transition hover:bg-warning-100"
+              >
+                <HeartPulse size={16} strokeWidth={2} />
+                {healthCheck.length} otomasyon gecikmesi
+              </button>
+            )}
+            <button
+              type="button"
+              onClick={() => setFormOpen(true)}
+              className="flex items-center gap-2 rounded-2xl bg-primary-600 px-4 py-2.5 text-sm font-semibold text-white shadow-card transition hover:bg-primary-700"
+            >
+              <Plus size={16} strokeWidth={2} />
+              Yeni Sözleşme
+            </button>
+          </>
         }
       />
+
+      {/* Bölüm E (2. tur): sözleşme otomasyon sağlık kontrolü — beklenen
+          otomatik iş tarihi geçmiş ama iş hâlâ üretilmemiş sözleşmeler
+          (normalde gerçekleşmemeli, cron çalışmadıysa/sunucu kesintisinde
+          oluşur). bkz. GET /contracts/health-check. */}
+      {healthCheckOpen && healthCheck.length > 0 && (
+        <div className="flex flex-col gap-3 rounded-2xl border border-warning-100 bg-warning-50 p-5">
+          <div className="flex items-center gap-2.5">
+            <HeartPulse size={17} strokeWidth={1.75} className="text-warning-600" />
+            <h2 className="text-sm font-semibold text-text-primary">Otomasyon Gecikmeleri</h2>
+            <span className="rounded-full bg-warning-100 px-2 py-0.5 text-2xs font-semibold text-warning-700">
+              {healthCheck.length}
+            </span>
+          </div>
+          <p className="text-xs text-text-secondary">
+            Bu sözleşmeler için beklenen otomatik iş tarihi geçmiş ama iş henüz oluşturulmamış — normalde her gece
+            02:00&apos;deki otomatik görev bunu üretir; sunucu o sırada kapalıysa gecikme oluşabilir.
+          </p>
+          <ul className="flex flex-col gap-2">
+            {healthCheck.map((item) => (
+              <li
+                key={item.id}
+                className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-warning-100 bg-surface-card p-3"
+              >
+                <div>
+                  <p className="text-sm font-medium text-text-primary">{item.customerName}</p>
+                  <p className="text-xs text-text-secondary">
+                    {item.serviceType ?? "Hizmet belirtilmemiş"} · beklenen tarih {formatDate(item.nextGenerationDate)} ·{" "}
+                    <span className="font-semibold text-warning-600">{item.daysOverdue} gün gecikmiş</span>
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() =>
+                    router.push(
+                      `/isler?customerId=${item.customerId}${item.serviceType ? `&serviceType=${encodeURIComponent(item.serviceType)}` : ""}`
+                    )
+                  }
+                  className="flex items-center gap-1.5 rounded-xl bg-primary-600 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-primary-700"
+                >
+                  <Wrench size={13} strokeWidth={1.75} />
+                  Şimdi İş Oluştur
+                </button>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
 
       {/* [Özet kartlar] — sayfadaki kayıtlardan değil, /contracts/summary'den. */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
@@ -242,7 +308,7 @@ function ContractsPageContent() {
 
       {expiring.length > 0 && (
         <div className="flex items-start gap-4 rounded-2xl border border-danger-100 border-l-4 border-l-danger-500 bg-danger-50 p-5">
-          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white text-danger-500 ring-1 ring-danger-100">
+          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-surface-card text-danger-500 ring-1 ring-danger-100">
             <AlertTriangle size={20} strokeWidth={1.75} />
           </span>
           <div className="flex-1">
@@ -251,7 +317,7 @@ function ContractsPageContent() {
             </p>
             <ul className="mt-3 flex flex-col gap-2">
               {expiring.map((c) => (
-                <li key={c.id} className="rounded-xl border border-danger-100 bg-white p-3 text-sm text-text-secondary">
+                <li key={c.id} className="rounded-xl border border-danger-100 bg-surface-card p-3 text-sm text-text-secondary">
                   <span className="font-medium text-text-primary">{c.customer.fullName}</span> · {formatDate(c.endDate)}
                 </li>
               ))}

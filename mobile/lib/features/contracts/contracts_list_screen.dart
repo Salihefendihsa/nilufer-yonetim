@@ -9,6 +9,7 @@ import '../../theme/app_colors.dart';
 import '../../widgets/state_views.dart';
 import '../../widgets/stat_card.dart';
 import '../customers/customers_api.dart';
+import '../jobs/job_form_screen.dart';
 import 'contracts_api.dart';
 
 final _currency = NumberFormat.currency(
@@ -32,6 +33,8 @@ class _ContractsListScreenState extends State<ContractsListScreen> {
   List<Contract> _contracts = [];
   List<Contract> _expiring = [];
   ContractsSummary? _summary;
+  List<ContractHealthCheckItem> _healthCheck = [];
+  bool _healthCheckOpen = false;
   bool _loading = true;
   String? _error;
   String? _busyId;
@@ -68,12 +71,14 @@ class _ContractsListScreenState extends State<ContractsListScreen> {
         _api.list(),
         _api.expiring(),
         _api.summary(),
+        _api.healthCheck(),
       ]);
       if (!mounted) return;
       setState(() {
         _contracts = (results[0] as dynamic).data as List<Contract>;
         _expiring = results[1] as List<Contract>;
         _summary = results[2] as ContractsSummary;
+        _healthCheck = results[3] as List<ContractHealthCheckItem>;
       });
     } catch (e) {
       setState(
@@ -88,10 +93,19 @@ class _ContractsListScreenState extends State<ContractsListScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.surfacePage,
       appBar: AppBar(
         title: const Text('Sözleşmeler'),
         actions: [
+          if (_healthCheck.isNotEmpty)
+            IconButton(
+              icon: Badge(
+                label: Text('${_healthCheck.length}'),
+                backgroundColor: AppColors.warning600,
+                child: const Icon(Icons.favorite_border_rounded),
+              ),
+              tooltip: 'Otomasyon gecikmeleri',
+              onPressed: () => setState(() => _healthCheckOpen = !_healthCheckOpen),
+            ),
           IconButton(
             icon: const Icon(Icons.add_rounded),
             onPressed: () async {
@@ -206,6 +220,78 @@ class _ContractsListScreenState extends State<ContractsListScreen> {
                   fontWeight: FontWeight.w700,
                   fontSize: 12.5,
                 ),
+              ),
+            ),
+          if (_healthCheckOpen && _healthCheck.isNotEmpty)
+            Container(
+              margin: const EdgeInsets.only(bottom: 12),
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: AppColors.warning50,
+                borderRadius: BorderRadius.circular(AppRadius.card),
+                border: Border.all(color: AppColors.warning500),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    '${_healthCheck.length} sözleşmenin otomasyonu gecikmiş',
+                    style: const TextStyle(
+                      color: AppColors.warning600,
+                      fontWeight: FontWeight.w700,
+                      fontSize: 12.5,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  const Text(
+                    'Beklenen otomatik iş tarihi geçmiş ama iş henüz oluşturulmamış.',
+                    style: TextStyle(fontSize: 11.5, color: AppColors.textSecondary),
+                  ),
+                  const SizedBox(height: 10),
+                  for (final item in _healthCheck)
+                    Container(
+                      margin: const EdgeInsets.only(bottom: 8),
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        color: AppColors.surfaceCard,
+                        borderRadius: BorderRadius.circular(AppRadius.chip),
+                      ),
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  item.customerName,
+                                  style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 12.5),
+                                ),
+                                Text(
+                                  '${item.serviceType ?? "Hizmet belirtilmemiş"} · ${item.daysOverdue} gün gecikmiş',
+                                  style: const TextStyle(fontSize: 11, color: AppColors.textSecondary),
+                                ),
+                              ],
+                            ),
+                          ),
+                          TextButton.icon(
+                            onPressed: () async {
+                              final created = await Navigator.of(context).push<bool>(
+                                MaterialPageRoute(
+                                  builder: (_) => JobFormScreen(
+                                    prefillCustomerId: item.customerId,
+                                    prefillServiceType: item.serviceType,
+                                  ),
+                                ),
+                              );
+                              if (created == true) _load();
+                            },
+                            icon: const Icon(Icons.build_outlined, size: 16),
+                            label: const Text('Şimdi Oluştur', style: TextStyle(fontSize: 12)),
+                          ),
+                        ],
+                      ),
+                    ),
+                ],
               ),
             ),
           ..._contracts.map(
@@ -602,7 +688,6 @@ class _MyContractsScreenState extends State<MyContractsScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.surfacePage,
       appBar: AppBar(title: const Text('Sözleşmelerim')),
       body: _loading
           ? const LoadingView()

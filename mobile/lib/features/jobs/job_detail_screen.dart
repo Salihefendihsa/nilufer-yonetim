@@ -139,7 +139,6 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
         Navigator.of(context).pop(_changed);
       },
       child: Scaffold(
-        backgroundColor: AppColors.surfacePage,
         appBar: AppBar(title: const Text('İş Detayı')),
         body: _buildBody(),
       ),

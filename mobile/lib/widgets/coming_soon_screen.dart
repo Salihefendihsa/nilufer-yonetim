@@ -21,7 +21,6 @@ class ComingSoonScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.surfacePage,
       appBar: AppBar(title: Text(title)),
       body: Center(
         child: Padding(

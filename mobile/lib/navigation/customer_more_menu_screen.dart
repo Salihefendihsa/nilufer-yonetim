@@ -29,7 +29,6 @@ class CustomerMoreMenuScreen extends StatelessWidget {
     ];
 
     return Scaffold(
-      backgroundColor: AppColors.surfacePage,
       appBar: AppBar(title: const Text('Diğer')),
       body: ListView.separated(
         padding: const EdgeInsets.all(16),

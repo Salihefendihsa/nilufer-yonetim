@@ -272,7 +272,7 @@ function PendingBonusesSection() {
       </div>
       <ul className="flex flex-col gap-2">
         {bonuses.map((b) => (
-          <li key={b.id} className="flex flex-wrap items-center justify-between gap-3 rounded-xl bg-white px-4 py-3">
+          <li key={b.id} className="flex flex-wrap items-center justify-between gap-3 rounded-xl bg-surface-card px-4 py-3">
             <div>
               <p className="text-sm font-medium text-text-primary">{b.staff?.user.fullName ?? "Personel"}</p>
               <p className="text-xs text-text-secondary">

@@ -87,7 +87,6 @@ class _StaffShellState extends State<StaffShell> {
       openDrawer: () => _scaffoldKey.currentState?.openDrawer(),
       child: Scaffold(
         key: _scaffoldKey,
-        backgroundColor: AppColors.surfacePage,
         drawer: const AppDrawer(roleLabel: 'Personel', groups: _groups),
         body: IndexedStack(
           index: _index,
@@ -95,8 +94,8 @@ class _StaffShellState extends State<StaffShell> {
         ),
         bottomNavigationBar: NavigationBarTheme(
           data: NavigationBarThemeData(
-            backgroundColor: AppColors.surfaceBase,
-            indicatorColor: AppColors.primary50,
+            backgroundColor: Theme.of(context).colorScheme.surface,
+            indicatorColor: Theme.of(context).brightness == Brightness.dark ? AppDarkColors.primary50 : AppColors.primary50,
             labelTextStyle: WidgetStateProperty.resolveWith((states) {
               final selected = states.contains(WidgetState.selected);
               return TextStyle(

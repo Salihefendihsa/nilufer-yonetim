@@ -12,12 +12,15 @@ import {
   HardDrive,
   Info,
   KeyRound,
+  Laptop,
   MapPin,
+  Moon,
   Pencil,
   Plus,
   Settings,
   ShieldCheck,
   Sparkles,
+  Sun,
   Target,
   Trash2,
   type LucideIcon,
@@ -28,6 +31,7 @@ import { Modal } from "@/components/Modal";
 import { Toggle } from "@/components/Toggle";
 import { useAuth } from "@/lib/AuthProvider";
 import { useToast } from "@/lib/ToastProvider";
+import { useTheme, type ThemePreference } from "@/lib/theme";
 import { api, ApiError, downloadFile } from "@/lib/api";
 import type {
   District,
@@ -54,6 +58,7 @@ export default function SettingsPage() {
 
         {isOwner && <EmailStatusNote />}
 
+        <ThemeSection />
         <NotificationPreferencesSection isOwner={isOwner} />
         {canUseTwoFactor && <TwoFactorSection />}
 
@@ -72,6 +77,37 @@ export default function SettingsPage() {
         )}
       </div>
     </RequireRole>
+  );
+}
+
+const THEME_OPTIONS: { value: ThemePreference; label: string; icon: LucideIcon }[] = [
+  { value: "light", label: "Açık", icon: Sun },
+  { value: "dark", label: "Koyu", icon: Moon },
+  { value: "system", label: "Sistem", icon: Laptop },
+];
+
+/** Bölüm D (2. tur): herkese açık (kişisel tercih) — bkz. lib/theme.tsx. */
+function ThemeSection() {
+  const { theme, setTheme } = useTheme();
+
+  return (
+    <SectionCard icon={Sun} title="Görünüm" description="Panelin açık, koyu veya cihazınızın sistem ayarına uyan temada görünmesini seçin.">
+      <div className="flex w-fit gap-1 rounded-2xl border border-border bg-surface-subtle p-1">
+        {THEME_OPTIONS.map((opt) => (
+          <button
+            key={opt.value}
+            type="button"
+            onClick={() => setTheme(opt.value)}
+            className={`flex items-center gap-1.5 rounded-xl px-3.5 py-2 text-sm font-medium transition ${
+              theme === opt.value ? "bg-primary-600 text-white shadow-card" : "text-text-secondary hover:bg-surface-base"
+            }`}
+          >
+            <opt.icon size={14} strokeWidth={1.75} />
+            {opt.label}
+          </button>
+        ))}
+      </div>
+    </SectionCard>
   );
 }
 
@@ -280,7 +316,7 @@ function TwoFactorSection() {
               </p>
               <div className="grid grid-cols-2 gap-2 sm:grid-cols-5">
                 {recoveryCodes.map((code) => (
-                  <code key={code} className="rounded-xl bg-white px-2 py-1.5 text-center text-xs font-mono">
+                  <code key={code} className="rounded-xl bg-surface-card px-2 py-1.5 text-center text-xs font-mono">
                     {code}
                   </code>
                 ))}
@@ -308,10 +344,11 @@ function TwoFactorSection() {
                 Authenticator uygulamanızla aşağıdaki QR kodu okutun veya sırrı manuel girin, ardından uygulamanın
                 gösterdiği 6 haneli kodu aşağıya yazın.
               </p>
+              {/* bg-white kasıtlı — QR kod okunabilirliği için koyu modda bile beyaz zemin gerekir. */}
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img src={setupData.qrCodeDataUrl} alt="2FA QR kodu" className="h-40 w-40 self-center rounded-xl border border-border bg-white p-2" />
               <div className="flex items-center gap-2 self-center">
-                <code className="rounded-xl bg-white px-3 py-1.5 text-xs font-mono">{setupData.secret}</code>
+                <code className="rounded-xl bg-surface-card px-3 py-1.5 text-xs font-mono">{setupData.secret}</code>
                 <button
                   type="button"
                   onClick={() => navigator.clipboard.writeText(setupData.secret)}
@@ -1217,7 +1254,7 @@ function DangerZoneSection() {
   return (
     <div className="rounded-2xl border border-danger-100 bg-danger-50 p-6 shadow-card">
       <div className="flex items-start gap-3">
-        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-white text-danger-500 ring-1 ring-danger-100">
+        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-surface-card text-danger-500 ring-1 ring-danger-100">
           <AlertTriangle size={18} strokeWidth={1.75} />
         </div>
         <div>

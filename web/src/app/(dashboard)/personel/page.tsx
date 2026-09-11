@@ -248,7 +248,7 @@ function StaffPageContent() {
         totalLabel={`${rows.length} personel`}
         segments={[
           { label: "bugün işi var", count: workload.busy, color: "#3D8A4E" },
-          { label: "bugün boşta", count: workload.idle, color: "#CFD8D0" },
+          { label: "bugün boşta", count: workload.idle, color: "rgb(var(--border-strong))" },
         ]}
       />
 

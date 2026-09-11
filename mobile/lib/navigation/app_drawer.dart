@@ -39,7 +39,7 @@ class AppDrawer extends StatelessWidget {
     final user = context.watch<AuthProvider>().user;
 
     return Drawer(
-      backgroundColor: AppColors.surfaceBase,
+      backgroundColor: Theme.of(context).colorScheme.surface,
       child: SafeArea(
         bottom: false,
         child: Column(

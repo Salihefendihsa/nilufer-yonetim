@@ -7,6 +7,7 @@ import '../../auth/auth_provider.dart';
 import '../../core/api_client.dart';
 import '../../models/user.dart';
 import '../../theme/app_colors.dart';
+import '../../theme/theme_controller.dart';
 import '../../widgets/state_views.dart';
 
 /// Stitch Müdür → Ayarlar.
@@ -98,7 +99,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final user = context.watch<AuthProvider>().user;
 
     return Scaffold(
-      backgroundColor: AppColors.surfacePage,
       appBar: AppBar(title: const Text('Ayarlar')),
       body: _loading
           ? const LoadingView()
@@ -121,6 +121,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     ],
                   ),
                 ),
+                const SizedBox(height: 12),
+                const _ThemeCard(),
                 const SizedBox(height: 12),
                 _Card(
                   title: 'Bildirim Tercihleri',
@@ -557,6 +559,42 @@ class _TwoFactorCardState extends State<_TwoFactorCard> {
                     : const Text('Kurulumu Başlat'),
               ),
           ],
+        ],
+      ),
+    );
+  }
+}
+
+/// Bölüm D (2. tur): açık/koyu/sistem — bkz. theme/theme_controller.dart.
+class _ThemeCard extends StatelessWidget {
+  const _ThemeCard();
+
+  @override
+  Widget build(BuildContext context) {
+    final controller = context.watch<ThemeController>();
+    final options = <(ThemeMode, String, IconData)>[
+      (ThemeMode.light, 'Açık', Icons.light_mode_outlined),
+      (ThemeMode.dark, 'Koyu', Icons.dark_mode_outlined),
+      (ThemeMode.system, 'Sistem', Icons.smartphone_outlined),
+    ];
+    return _Card(
+      title: 'Görünüm',
+      child: Wrap(
+        spacing: 8,
+        runSpacing: 8,
+        children: [
+          for (final (mode, label, icon) in options)
+            ChoiceChip(
+              label: Text(label),
+              avatar: Icon(icon, size: 16),
+              selected: controller.mode == mode,
+              onSelected: (_) => context.read<ThemeController>().setMode(mode),
+              selectedColor: AppColors.primary600,
+              labelStyle: TextStyle(
+                color: controller.mode == mode ? Colors.white : AppColors.textSecondary,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
         ],
       ),
     );
