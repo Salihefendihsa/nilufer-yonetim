@@ -111,9 +111,7 @@ export async function getContractsSummary(_req: Request, res: Response) {
  * oluştu, vb.) doğrudan kanıtıdır. Yeni bir "beklenen tarih" hesaplama
  * mantığı İCAT EDİLMEDİ — mevcut alan aynen kullanıldı.
  */
-export async function getContractsHealthCheck(_req: Request, res: Response) {
-  const now = new Date();
-
+export async function findOverdueRecurringContracts(now = new Date()) {
   const overdue = await prisma.contract.findMany({
     where: {
       status: "ACTIVE",
@@ -124,7 +122,7 @@ export async function getContractsHealthCheck(_req: Request, res: Response) {
     include: { customer: { select: { id: true, fullName: true } } },
   });
 
-  const data = overdue.map((c) => ({
+  return overdue.map((c) => ({
     id: c.id,
     customerId: c.customerId,
     customerName: c.customer.fullName,
@@ -133,7 +131,10 @@ export async function getContractsHealthCheck(_req: Request, res: Response) {
     nextGenerationDate: c.nextGenerationDate,
     daysOverdue: Math.max(1, Math.ceil((now.getTime() - c.nextGenerationDate!.getTime()) / (1000 * 60 * 60 * 24))),
   }));
+}
 
+export async function getContractsHealthCheck(_req: Request, res: Response) {
+  const data = await findOverdueRecurringContracts();
   return res.json({ data, count: data.length });
 }
 

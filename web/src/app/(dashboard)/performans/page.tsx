@@ -11,6 +11,7 @@ import { Table, type Column } from "@/components/Table";
 import { api, ApiError } from "@/lib/api";
 import type { StaffLeaderboardEntry, StaffLeaderboardSummary, LeaderboardPeriod } from "@/lib/types";
 import { EvaluationsTab } from "./EvaluationsTab";
+import { useInitialQueryParam } from "@/lib/useDrillDownFilter";
 
 type PageTab = "leaderboard" | "evaluations";
 
@@ -37,6 +38,11 @@ export default function PerformancePage() {
 
 function PerformancePageContent() {
   const [tab, setTab] = useState<PageTab>("leaderboard");
+  // Bölüm G: Yönetici Özeti → değerlendirme/prim kartları (?tab=evaluations|bonuses).
+  const drillTab = useInitialQueryParam("tab");
+  useEffect(() => {
+    if (drillTab === "evaluations" || drillTab === "bonuses") setTab("evaluations");
+  }, [drillTab]);
   const [entries, setEntries] = useState<StaffLeaderboardEntry[]>([]);
   const [summary, setSummary] = useState<StaffLeaderboardSummary | null>(null);
   const [monthlyTarget, setMonthlyTarget] = useState<number | null>(null);

@@ -690,3 +690,39 @@ export interface Paginated<T> {
   data: T[];
   pagination: Pagination;
 }
+
+// --- Bölüm G (2. tur): Yönetici Özet Paneli ---
+
+export type ExecutiveRange = "today" | "week" | "month";
+
+export interface ExecutiveKpi {
+  key: string;
+  label: string;
+  value: number | null;
+  format: "currency" | "count" | "percent" | "score";
+  tone: "neutral" | "success" | "warning" | "danger" | "info";
+  hint?: string;
+  drillDown: { href: string; route: string; filter?: string };
+}
+
+export interface ExecutiveSummary {
+  range: ExecutiveRange;
+  rangeStart: string;
+  rangeEnd: string;
+  generatedAt: string;
+  sections: {
+    finance: ExecutiveKpi[];
+    operations: ExecutiveKpi[];
+    staff: ExecutiveKpi[];
+    customers: ExecutiveKpi[];
+    alerts: ExecutiveKpi[];
+  };
+  pendingApprovalsBreakdown: {
+    quotes: number;
+    advances: number;
+    leaveRequests: number;
+    expiringContracts: number;
+    jobReports: number;
+    staffBonuses: number;
+  };
+}

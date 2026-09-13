@@ -7,6 +7,7 @@ import '../features/admin/system_health_screen.dart';
 import '../features/admin/usage_stats_screen.dart';
 import '../features/contracts/contracts_list_screen.dart';
 import '../features/customers/customers_list_screen.dart';
+import '../features/executive/executive_summary_screen.dart';
 import '../features/finance/finance_screen.dart';
 import '../features/notifications/notifications_screen.dart';
 import '../features/performance/performance_screen.dart';
@@ -38,6 +39,12 @@ class MoreMenuScreen extends StatelessWidget {
     final isOwner = context.watch<AuthProvider>().user?.role == AppRole.owner;
 
     final items = <_MoreItem>[
+      // Bölüm G (2. tur): tüm KPI'lar tek ekranda, drill-down'lu.
+      _MoreItem(
+        'Yönetici Özeti',
+        Icons.dashboard_customize_outlined,
+        (_) => const ExecutiveSummaryScreen(),
+      ),
       _MoreItem(
         'Müşteriler',
         Icons.people_outline_rounded,

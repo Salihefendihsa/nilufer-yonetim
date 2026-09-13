@@ -83,7 +83,12 @@ export async function createPayment(req: Request, res: Response) {
   return res.status(201).json(payment);
 }
 
-export async function getPaymentsSummary(req: Request, res: Response) {
+/**
+ * Finansal özetin saf hesaplama kısmı — hem GET /payments/summary hem de
+ * Bölüm G yönetici özeti (analytics/executive-summary) bu TEK fonksiyonu
+ * kullanır; net kâr formülü iki yerde ayrı ayrı yaşamasın diye.
+ */
+export async function computePaymentsSummary(canViewFinance: boolean) {
   const now = new Date();
   const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
   const startOfNextMonth = new Date(now.getFullYear(), now.getMonth() + 1, 1);
@@ -163,8 +168,6 @@ export async function getPaymentsSummary(req: Request, res: Response) {
         : null,
   };
 
-  const canViewFinance = req.user!.role === Role.OWNER || (await hasPermission(req.user!.sub, "view_finance"));
-
   if (canViewFinance) {
     const totalStaffSalaryBase = Number(staffSalaryAgg._sum.salaryBase ?? 0);
     const totalExpensesThisMonth = Number(expensesThisMonthAgg._sum.amount ?? 0);
@@ -176,5 +179,14 @@ export async function getPaymentsSummary(req: Request, res: Response) {
     summary.profitMargin = thisMonthTotal > 0 ? (netProfitThisMonth / thisMonthTotal) * 100 : null;
   }
 
-  return res.json(summary);
+  return summary;
+}
+
+export async function canUserViewFinance(userId: string, role: Role): Promise<boolean> {
+  return role === Role.OWNER || (await hasPermission(userId, "view_finance"));
+}
+
+export async function getPaymentsSummary(req: Request, res: Response) {
+  const canViewFinance = await canUserViewFinance(req.user!.sub, req.user!.role);
+  return res.json(await computePaymentsSummary(canViewFinance));
 }

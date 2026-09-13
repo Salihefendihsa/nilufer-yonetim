@@ -7,7 +7,7 @@ import { EmptyState } from "@/components/EmptyState";
 import { PageHeader } from "@/components/PageHeader";
 import { StatusStrip } from "@/components/StatusStrip";
 import { StatusBadge, STATUS_COLORS, STATUS_TEXT } from "@/components/StatusBadge";
-import { getValidNextStatuses } from "@/lib/jobStatus";
+import { getValidNextStatuses, JOB_STATUS_VALUES } from "@/lib/jobStatus";
 import { useAuth } from "@/lib/AuthProvider";
 import { useToast } from "@/lib/ToastProvider";
 import { api, ApiError } from "@/lib/api";
@@ -64,11 +64,16 @@ function JobsPageContent() {
   const canManage = user?.role === "OWNER" || user?.role === "MANAGER";
 
   // Bölüm E (2. tur): Sözleşmeler → "Şimdi İş Oluştur" kısayolu (?customerId=&serviceType=).
+  // Bölüm G (2. tur): Yönetici Özeti → durum filtresiyle gelme (?status=COMPLETED).
   useEffect(() => {
     const customerId = searchParams.get("customerId");
     if (customerId) {
       setFormPrefill({ customerId, serviceType: searchParams.get("serviceType") ?? undefined });
       setFormOpen(true);
+    }
+    const status = searchParams.get("status");
+    if (status && (JOB_STATUS_VALUES as readonly string[]).includes(status)) {
+      setStatusFilter(status as JobStatus);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);

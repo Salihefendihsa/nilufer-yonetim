@@ -10,7 +10,11 @@ function dayBounds(date = new Date()) {
   return { start, end };
 }
 
-export async function getDashboardSummary(_req: Request, res: Response) {
+/**
+ * Ana sayfa özetinin saf hesaplama kısmı — Bölüm G yönetici özeti de
+ * (tamamlama oranı, bekleyen rapor onayı vb. için) bunu yeniden kullanır.
+ */
+export async function computeDashboardSummary() {
   const now = new Date();
   const { start: startOfDay, end: endOfDay } = dayBounds(now);
 
@@ -84,7 +88,7 @@ export async function getDashboardSummary(_req: Request, res: Response) {
     .map((g) => ({ serviceType: g.serviceType, count: g._count._all }))
     .sort((a, b) => b.count - a.count);
 
-  return res.json({
+  return {
     todaysJobsCount,
     thisMonthPaymentsTotal: Number(paymentsAgg._sum.amount ?? 0),
     newQuoteRequestsCount,
@@ -109,7 +113,11 @@ export async function getDashboardSummary(_req: Request, res: Response) {
         ? (completedJobsThisMonth / (completedJobsThisMonth + cancelledJobsThisMonth)) * 100
         : null,
     pendingReportApprovals,
-  });
+  };
+}
+
+export async function getDashboardSummary(_req: Request, res: Response) {
+  return res.json(await computeDashboardSummary());
 }
 
 interface ActivityEvent {

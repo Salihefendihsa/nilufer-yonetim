@@ -15,6 +15,8 @@ import { useAuth } from "@/lib/AuthProvider";
 import { useToast } from "@/lib/ToastProvider";
 import type { Product, ProductCategory, Paginated } from "@/lib/types";
 import { formatDateTime, decimalValue } from "@/lib/format";
+import { useInitialQueryParam } from "@/lib/useDrillDownFilter";
+import { DrillDownChip } from "@/components/DrillDownChip";
 import { ProductFormModal } from "./ProductFormModal";
 import { RestockModal } from "./RestockModal";
 import { PurchaseRequestModal } from "./PurchaseRequestModal";
@@ -71,6 +73,12 @@ function StockPageContent() {
   const [purchaseRefreshKey, setPurchaseRefreshKey] = useState(0);
   const [deleteTarget, setDeleteTarget] = useState<Product | null>(null);
   const [deleting, setDeleting] = useState(false);
+  // Bölüm G: Yönetici Özeti → "Kritik Stok" kartı (?filter=critical).
+  const drillFilter = useInitialQueryParam("filter");
+  const [criticalOnly, setCriticalOnly] = useState(false);
+  useEffect(() => {
+    if (drillFilter === "critical") setCriticalOnly(true);
+  }, [drillFilter]);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -115,6 +123,14 @@ function StockPageContent() {
     const critical = products.filter((p) => decimalValue(p.currentStock) <= decimalValue(p.criticalThreshold)).length;
     return { critical, healthy: products.length - critical };
   }, [products]);
+
+  const visibleProducts = useMemo(
+    () =>
+      criticalOnly
+        ? products.filter((p) => decimalValue(p.currentStock) <= decimalValue(p.criticalThreshold))
+        : products,
+    [products, criticalOnly]
+  );
 
   const stockRows = useMemo(
     () =>
@@ -342,9 +358,11 @@ function StockPageContent() {
         ))}
       </div>
 
+      {criticalOnly && <DrillDownChip label="Yalnızca kritik stok" onClear={() => setCriticalOnly(false)} />}
+
       <Table
         columns={columns}
-        data={products}
+        data={visibleProducts}
         keyField={(row) => row.id}
         loading={loading}
         search={search}

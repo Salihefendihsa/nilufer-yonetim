@@ -30,6 +30,8 @@ import { StatCard } from "@/components/StatCard";
 import { EmptyState } from "@/components/EmptyState";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { api, ApiError } from "@/lib/api";
+import { useInitialQueryParam } from "@/lib/useDrillDownFilter";
+import { DrillDownChip } from "@/components/DrillDownChip";
 import { useAuth } from "@/lib/AuthProvider";
 import { useToast } from "@/lib/ToastProvider";
 import { ROLE_LABELS } from "@/lib/auth";
@@ -73,6 +75,18 @@ function StaffPageContent() {
   const isOwner = user?.role === "OWNER";
   const [tab, setTab] = useState<PageTab>("list");
   const [rows, setRows] = useState<StaffRow[]>([]);
+  // Bölüm G: Yönetici Özeti → "İzinli Personel" (?filter=on_leave) /
+  // "Süresi Yaklaşan Sertifika" (?filter=expiring_certs).
+  const drillFilter = useInitialQueryParam("filter");
+  const [staffFilter, setStaffFilter] = useState<"on_leave" | "expiring_certs" | null>(null);
+  useEffect(() => {
+    if (drillFilter === "on_leave" || drillFilter === "expiring_certs") setStaffFilter(drillFilter);
+  }, [drillFilter]);
+  const visibleRows = useMemo(() => {
+    if (staffFilter === "on_leave") return rows.filter((r) => r.status === "ON_LEAVE");
+    if (staffFilter === "expiring_certs") return rows.filter((r) => r.expiringCertificationCount > 0);
+    return rows;
+  }, [rows, staffFilter]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -254,6 +268,13 @@ function StaffPageContent() {
 
       {error && <p className="rounded-2xl border border-danger-100 bg-danger-50 px-4 py-3 text-sm text-danger-500">{error}</p>}
 
+      {staffFilter && (
+        <DrillDownChip
+          label={staffFilter === "on_leave" ? "İzinli personel" : "Sertifikası 30 gün içinde dolacak personel"}
+          onClear={() => setStaffFilter(null)}
+        />
+      )}
+
       {loading ? (
         <p className="py-16 text-center text-sm text-text-faint">Yükleniyor...</p>
       ) : rows.length === 0 ? (
@@ -268,7 +289,7 @@ function StaffPageContent() {
         </div>
       ) : (
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {rows.map((staff) => (
+          {visibleRows.map((staff) => (
             <div
               key={staff.id}
               className="flex flex-col gap-4 rounded-2xl border border-border bg-surface-card p-5 shadow-card transition hover:shadow-cardHover"

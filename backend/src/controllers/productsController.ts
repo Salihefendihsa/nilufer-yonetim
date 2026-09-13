@@ -88,10 +88,14 @@ export async function listProducts(req: Request, res: Response) {
   return res.json(paginatedResponse(enriched, total, page, limit));
 }
 
-export async function getLowStockProducts(_req: Request, res: Response) {
+/** Kritik eşiğin altındaki ürünler — /products/low-stock ve yönetici özeti ortak kullanır. */
+export async function findLowStockProducts() {
   const products = await prisma.product.findMany({ orderBy: { name: "asc" } });
-  const lowStock = products.filter((p) => Number(p.currentStock) <= Number(p.criticalThreshold));
-  return res.json({ data: lowStock });
+  return products.filter((p) => Number(p.currentStock) <= Number(p.criticalThreshold));
+}
+
+export async function getLowStockProducts(_req: Request, res: Response) {
+  return res.json({ data: await findLowStockProducts() });
 }
 
 export async function createProduct(req: Request, res: Response) {

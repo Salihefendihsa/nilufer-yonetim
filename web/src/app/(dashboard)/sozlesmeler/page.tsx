@@ -12,6 +12,8 @@ import { EmptyState } from "@/components/EmptyState";
 import { api, ApiError, downloadFile } from "@/lib/api";
 import { useToast } from "@/lib/ToastProvider";
 import { formatDate, currencyFormatter } from "@/lib/format";
+import { useInitialQueryParam } from "@/lib/useDrillDownFilter";
+import { DrillDownChip } from "@/components/DrillDownChip";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
 import type { Contract, ContractHealthCheckItem, ContractsSummary, Customer, Paginated } from "@/lib/types";
 import { ContractFormModal } from "./ContractFormModal";
@@ -50,6 +52,24 @@ function ContractsPageContent() {
   const [downloadingId, setDownloadingId] = useState<string | null>(null);
   const [healthCheck, setHealthCheck] = useState<ContractHealthCheckItem[]>([]);
   const [healthCheckOpen, setHealthCheckOpen] = useState(false);
+  // Bölüm G: Yönetici Özeti → "Gecikmiş Sözleşme Otomasyonu" (?filter=overdue)
+  // paneli açar; "Yenileme Yaklaşan" (?filter=renewal) 7 gün içinde bitecek
+  // aktif sözleşmelere daraltır.
+  const drillFilter = useInitialQueryParam("filter");
+  const [renewalOnly, setRenewalOnly] = useState(false);
+  useEffect(() => {
+    if (drillFilter === "overdue") setHealthCheckOpen(true);
+    if (drillFilter === "renewal") setRenewalOnly(true);
+  }, [drillFilter]);
+  const visibleContracts = useMemo(() => {
+    if (!renewalOnly) return contracts;
+    const now = Date.now();
+    const in7Days = now + 7 * 24 * 60 * 60 * 1000;
+    return contracts.filter((c) => {
+      const end = new Date(c.endDate).getTime();
+      return c.status === "ACTIVE" && end >= now && end <= in7Days;
+    });
+  }, [contracts, renewalOnly]);
   const router = useRouter();
 
   async function handleDownloadContractPdf(contract: Contract) {
@@ -326,9 +346,11 @@ function ContractsPageContent() {
         </div>
       )}
 
+      {renewalOnly && <DrillDownChip label="7 gün içinde yenilenecek sözleşmeler" onClear={() => setRenewalOnly(false)} />}
+
       <Table
         columns={columns}
-        data={contracts}
+        data={visibleContracts}
         keyField={(row) => row.id}
         loading={loading}
         page={page}

@@ -270,3 +270,65 @@ isler/page.tsx`, mobile'daki birçok ekran dosyası) iç içe geliştiği için
 değişikliği dokunduğu için — iki bölüm git commit'lerinde TEMİZ AYRILAMADI.
 Bu yüzden Bölüm D ve E tek bir commit'te birleştirildi; commit mesajı her
 ikisini de ayrı ayrı açıklıyor.
+
+## Bölüm G — Yönetici Özet Paneli (Executive Dashboard)
+
+**Ne yapıldı:** OWNER/MANAGER için tüm kritik KPI'ları tek çağrıda
+toplayan `GET /analytics/executive-summary?range=today|week|month`
+endpoint'i; web'de `/yonetici-ozeti` sayfası (Sidebar → "Yönetici Özeti",
+Ana Sayfa'nın hemen altında); mobilde "Diğer Modüller" listesinin en
+üstünde "Yönetici Özeti" ekranı.
+
+**Tasarım kararları:**
+
+- **Mantık kopyalanmadı, mevcut fonksiyonlar dışa açıldı.** Bu uçtan önce
+  net kâr, düşük stok, gecikmiş sözleşme vb. hesapları route handler'ların
+  İÇİNDE (`res.json` ile bitişik) yaşıyordu. Handler'lar ikiye bölündü:
+  saf hesaplama fonksiyonu + onu çağıran ince handler:
+  - `paymentsController.computePaymentsSummary(canViewFinance)` +
+    `canUserViewFinance()` — `/payments/summary` aynı fonksiyonu çağırır.
+  - `dashboardController.computeDashboardSummary()`
+  - `productsController.findLowStockProducts()` (`/products/low-stock`)
+  - `contractsController.findOverdueRecurringContracts()` (`/contracts/health-check`, Bölüm E)
+  - `reminders.contractRenewalWindowWhere()` — Bölüm B'nin 7 günlük
+    penceresi; `sweepContractRenewalAlerts` de artık bu filtreyi kullanır.
+  - `staffCertificationsController.expiringCertificationsWhere()`
+  Böylece "yönetici özetindeki net kâr ≠ Para sayfasındaki net kâr" türü
+  bir tutarsızlık yapısal olarak imkânsız.
+- **Tüm alt sorgular tek `Promise.all` içinde** — 20 paralel sorgu, canlı
+  ölçümde ~85 ms.
+- **Drill-down hedefi backend'den gelir** (`drillDown.href` web,
+  `drillDown.route` + `filter` mobil). Web'de hedef sayfalar
+  `?filter=`/`?tab=`/`?status=` parametresini `useInitialQueryParam`
+  hook'u ile okur (`window.location` — `useSearchParams` DEĞİL, Bölüm E'de
+  görülen Suspense/`next build` sorununa girmemek için) ve
+  `DrillDownChip` ile "Filtre: … ✕" rozeti gösterir. Desteklenen hedefler:
+  `/stok?filter=critical`, `/sozlesmeler?filter=overdue|renewal`,
+  `/para?tab=payments|expenses`, `/performans?tab=evaluations|bonuses`,
+  `/personel?filter=on_leave|expiring_certs`,
+  `/musteriler?filter=debt|new`, `/isler?status=COMPLETED`.
+- **Mobil sınırı dürüstçe:** mobil liste ekranları dışarıdan filtre
+  parametresi almadığı için kart tıklaması ilgili EKRANA gider, filtre
+  uygulanmaz (`filter` modelde taşınır, ileride kullanılabilir).
+- **Bekleyen onay tanımı** web'deki "Bekleyen Onaylar" sayfasıyla birebir:
+  NEW teklif + PENDING avans + PENDING izin + 30 gün içinde bitecek
+  sözleşme + onaysız saha raporu + PENDING prim önerisi; kırılım
+  `pendingApprovalsBreakdown` alanında ayrıca döner.
+- **Tarih aralığı yalnızca operasyon kartlarını etkiler** (iş sayısı,
+  tamamlanma oranı). Finans kartları her zaman "bu ay / geçen ay"
+  (spesifikasyon böyle), "bu ay yeni müşteri" de takvim ayına bağlı.
+- **view_finance izni olmayan MANAGER**'a net kâr kartı `null` + "Finans
+  görüntüleme izni gerekli" ipucu döner — `/payments/summary` ile aynı
+  kural, aynı fonksiyon.
+
+**Doğrulama (canlı):** OWNER token'ıyla endpoint çağrıldı; `netProfitThisMonth`,
+`totalOutstandingBalance`, `thisMonthTotal`, `lastMonthTotal` birebir
+`/payments/summary` ile; kritik stok (3) `/products/low-stock` ile; gecikmiş
+otomasyon (0) `/contracts/health-check` ile; 30 gün sözleşme (1)
+`/contracts/expiring` ile; bugünkü iş/aktif personel/bekleyen rapor
+`/dashboard/summary` ile; NEW teklif (3) / PENDING avans (2) ilgili liste
+uçlarının `pagination.total`'ı ile eşleşti. `range=week/month` sınırları
+(Pazartesi başlangıç, ay başı) doğru; geçersiz `range` → `today`.
+RBAC: OWNER 200, MANAGER 200 (net kâr null), TEAM_LEAD 403, token'sız 401.
+Backend/web `tsc` ✓, `next build` ✓ (`/yonetici-ozeti` statik), `dart
+analyze` 72 (değişmedi), `flutter test` ✓. Test verisi oluşturulmadı.

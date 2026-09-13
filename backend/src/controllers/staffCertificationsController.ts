@@ -54,13 +54,16 @@ export async function deleteCertification(req: Request, res: Response) {
   return res.status(204).send();
 }
 
-export async function getExpiringCertifications(_req: Request, res: Response) {
-  const now = new Date();
-  const in30Days = new Date();
+/** 30 gün içinde süresi dolacak sertifikalar — liste ve yönetici özeti aynı pencereyi paylaşır. */
+export function expiringCertificationsWhere(now = new Date()) {
+  const in30Days = new Date(now);
   in30Days.setDate(now.getDate() + 30);
+  return { expiryDate: { gte: now, lte: in30Days } };
+}
 
+export async function getExpiringCertifications(_req: Request, res: Response) {
   const certifications = await prisma.staffCertification.findMany({
-    where: { expiryDate: { gte: now, lte: in30Days } },
+    where: expiringCertificationsWhere(),
     orderBy: { expiryDate: "asc" },
     include: { staff: { include: { user: { select: { fullName: true } } } } },
   });

@@ -27,6 +27,7 @@ import {
   BarChart3,
   Timer,
   CalendarOff,
+  LayoutDashboard,
 } from "lucide-react";
 import { useAuth } from "@/lib/AuthProvider";
 import { ROLE_LABELS, ROLE_SHORT_LABELS, type Role } from "@/lib/auth";
@@ -46,6 +47,7 @@ interface NavItem {
 
 const NAV_ITEMS: NavItem[] = [
   { href: "/", label: "Ana Sayfa", icon: Home, roles: ["OWNER", "MANAGER", "TEAM_LEAD", "STAFF", "CUSTOMER"], group: "genel" },
+  { href: "/yonetici-ozeti", label: "Yönetici Özeti", icon: LayoutDashboard, roles: ["OWNER", "MANAGER"], group: "genel" },
   { href: "/takvim", label: "Takvim", icon: Calendar, roles: ["OWNER", "MANAGER", "TEAM_LEAD", "STAFF", "CUSTOMER"], group: "genel" },
   { href: "/bildirimler", label: "Bildirimler", icon: Bell, roles: ["OWNER", "MANAGER", "TEAM_LEAD", "STAFF", "CUSTOMER"], group: "genel" },
   { href: "/mesajlar", label: "Mesajlar", icon: MessageCircle, roles: ["OWNER", "MANAGER", "TEAM_LEAD", "STAFF", "CUSTOMER"], group: "genel" },

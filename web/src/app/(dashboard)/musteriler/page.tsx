@@ -10,6 +10,8 @@ import { EmptyState } from "@/components/EmptyState";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { useToast } from "@/lib/ToastProvider";
 import { api, ApiError, downloadFile } from "@/lib/api";
+import { useInitialQueryParam } from "@/lib/useDrillDownFilter";
+import { DrillDownChip } from "@/components/DrillDownChip";
 import { formatDate, currencyFormatter } from "@/lib/format";
 import type { Customer, CustomerListItem, Paginated } from "@/lib/types";
 import { CustomerFormModal } from "./CustomerFormModal";
@@ -32,6 +34,21 @@ export default function CustomersPage() {
 
 function CustomersPageContent() {
   const [rows, setRows] = useState<CustomerRow[]>([]);
+  // Bölüm G: Yönetici Özeti → "Bekleyen Bakiye" (?filter=debt) / "Bu Ay Yeni Müşteri" (?filter=new).
+  const drillFilter = useInitialQueryParam("filter");
+  const [customerFilter, setCustomerFilter] = useState<"debt" | "new" | null>(null);
+  useEffect(() => {
+    if (drillFilter === "debt" || drillFilter === "new") setCustomerFilter(drillFilter);
+  }, [drillFilter]);
+  const visibleRows = useMemo(() => {
+    if (customerFilter === "debt") return rows.filter((r) => r.outstandingBalance > 0);
+    if (customerFilter === "new") {
+      const now = new Date();
+      const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).getTime();
+      return rows.filter((r) => new Date(r.createdAt).getTime() >= startOfMonth);
+    }
+    return rows;
+  }, [rows, customerFilter]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [search, setSearch] = useState("");
@@ -217,9 +234,16 @@ function CustomersPageContent() {
         ))}
       </div>
 
+      {customerFilter && (
+        <DrillDownChip
+          label={customerFilter === "debt" ? "Bakiyesi olan müşteriler" : "Bu ay eklenen müşteriler"}
+          onClear={() => setCustomerFilter(null)}
+        />
+      )}
+
       <Table
         columns={columns}
-        data={rows}
+        data={visibleRows}
         keyField={(row) => row.id}
         loading={loading}
         onRowClick={(row) => setDetailId(row.id)}

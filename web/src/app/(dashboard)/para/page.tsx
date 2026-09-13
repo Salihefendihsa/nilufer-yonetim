@@ -12,6 +12,7 @@ import { EmptyState } from "@/components/EmptyState";
 import { api, ApiError, downloadFile } from "@/lib/api";
 import { useToast } from "@/lib/ToastProvider";
 import { currencyFormatter, formatDate } from "@/lib/format";
+import { useInitialQueryParam } from "@/lib/useDrillDownFilter";
 import type {
   Customer,
   Payment,
@@ -40,6 +41,11 @@ type PageTab = "payments" | "expenses";
 
 function PaymentsPageContent() {
   const [tab, setTab] = useState<PageTab>("payments");
+  // Bölüm G: Yönetici Özeti → Net Kâr kartı (?tab=expenses).
+  const drillTab = useInitialQueryParam("tab");
+  useEffect(() => {
+    if (drillTab === "expenses" || drillTab === "payments") setTab(drillTab);
+  }, [drillTab]);
   const [summary, setSummary] = useState<PaymentsSummary | null>(null);
   const [payments, setPayments] = useState<Payment[]>([]);
   const [customers, setCustomers] = useState<Customer[]>([]);

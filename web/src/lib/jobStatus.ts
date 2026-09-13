@@ -17,3 +17,6 @@ export const VALID_JOB_STATUS_TRANSITIONS: Record<JobStatus, JobStatus[]> = {
 export function getValidNextStatuses(current: JobStatus): JobStatus[] {
   return VALID_JOB_STATUS_TRANSITIONS[current];
 }
+
+/** URL parametresi gibi dış kaynaklardan gelen durum dizesini doğrulamak için. */
+export const JOB_STATUS_VALUES = Object.keys(VALID_JOB_STATUS_TRANSITIONS) as JobStatus[];

@@ -326,13 +326,18 @@ const RENEWAL_ALERT_WINDOW_DAYS = 7;
  * günlük dedup'lı bir hatırlatma gönderir. İkisi birbirinin yerini almaz,
  * tamamlayıcıdır (30 gün = "haberin olsun", 7 gün = "acele et").
  */
-export async function sweepContractRenewalAlerts(): Promise<number> {
-  const now = new Date();
+/** 7 günlük yenileme penceresi — sweep ve yönetici özeti aynı filtreyi paylaşır. */
+export function contractRenewalWindowWhere(now = new Date()) {
   const windowEnd = new Date(now);
   windowEnd.setDate(windowEnd.getDate() + RENEWAL_ALERT_WINDOW_DAYS);
+  return { status: "ACTIVE", endDate: { gte: now, lte: windowEnd } };
+}
+
+export async function sweepContractRenewalAlerts(): Promise<number> {
+  const now = new Date();
 
   const contracts = await prisma.contract.findMany({
-    where: { status: "ACTIVE", endDate: { gte: now, lte: windowEnd } },
+    where: contractRenewalWindowWhere(now),
     include: { customer: { select: { fullName: true } } },
   });
 
