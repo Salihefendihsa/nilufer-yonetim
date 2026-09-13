@@ -332,3 +332,72 @@ uçlarının `pagination.total`'ı ile eşleşti. `range=week/month` sınırlar�
 RBAC: OWNER 200, MANAGER 200 (net kâr null), TEAM_LEAD 403, token'sız 401.
 Backend/web `tsc` ✓, `next build` ✓ (`/yonetici-ozeti` statik), `dart
 analyze` 72 (değişmedi), `flutter test` ✓. Test verisi oluşturulmadı.
+
+## Bölüm H — Otomatik Test Altyapısı (Backend öncelikli)
+
+**Ne yapıldı:** `backend/` için vitest 5 + supertest; `mobile/` için model
+parse birim testleri. Toplam 81 backend + 14 Flutter testi, hepsi yeşil.
+
+**Tasarım kararları:**
+
+- **`src/app.ts` ↔ `src/index.ts` ayrımı.** Express uygulaması `app.ts`'e
+  taşındı (`export default app`), `index.ts` yalnızca dotenv + `listen` +
+  cron başlatma. Testler `app`'i port'a bağlamadan supertest ile içeri alır;
+  cron'lar test sürecinde hiç başlamaz.
+- **Transaction-rollback DEĞİL, ID bazlı temizlik.** Prisma interactive
+  transaction'ı yalnızca `tx` client'ını gören kodu sarmalar; supertest →
+  Express → controller zinciri global `prisma`'yı kullandığı için HTTP
+  seviyesindeki bir testi transaction içine almak ya tüm controller'ları
+  client-enjeksiyonlu yapmayı ya da AsyncLocalStorage ile client'ı
+  değiştirmeyi gerektirirdi — ikisi de test için üretim kodunu bükmek.
+  Bunun yerine bugüne kadar elle yürütülen disiplin otomatikleştirildi:
+  `tests/helpers/fixtures.ts:TestContext` her kaydı `vt_` önekli + uuid'li
+  üretir, `cleanup()` FK sırasına göre ID bazlı siler (yan etkiyle oluşan
+  Notification/AuditLog/UserSession/Expense/PasswordResetToken/
+  TwoFactor*/ImpersonationSession satırları dahil). Suite sonunda dev
+  DB'de `vt_` önekli hiçbir satır kalmadığı SQL ile doğrulandı.
+- **Dış servisler test modunda kapalı** (`tests/helpers/setup.ts`):
+  RECAPTCHA_SECRET_KEY/SMTP_*/FIREBASE_* boş string'e çekilir (`delete`
+  değil — `@prisma/client` import edilirken .env'i yeniden yükleyip eksik
+  anahtarları dolduruyor, var olan boş değeri ezmiyor). Böylece web login
+  akışı token'sız test edilebilir ve gerçek e-posta/push gitmez.
+- **Genel rate limit `NODE_ENV=test`'te atlanır** (`app.ts`, tek satır
+  `skip`) — 81 test tek süreçte 300/15dk sınırını aşabilir. Login/şifre
+  sıfırlama limitleri (`middleware/loginRateLimit.ts`) testte de AYNEN
+  çalışır; test kullanıcıları benzersiz e-postalı olduğu için çakışmaz.
+- **RBAC matrisi veri odaklı** (`tests/rbac.test.ts:CASES`): 41 uç × 5 rol;
+  "izinli rol 401/403 almaz, izinsiz rol 403 alır" — iş mantığı değil route
+  zinciri test edilir, uydurma id ile 404/400 dönmesi "yetki geçti" sayılır.
+  Yeni bir korumalı uç eklerken bu listeye bir satır eklemek yeterli.
+- **Not:** İstekte geçen `admin/db-tables` ucu kod tabanında yok (böyle bir
+  route hiç eklenmemiş); yerine `admin/backup`, `admin/impersonate`,
+  `admin/users/:id/reset-password` OWNER-only olarak matrise alındı.
+- **İyimser kilit testi iki katmanlı:** (a) gerçek eşzamanlı iki PATCH
+  (COMPLETED vs CANCELLED) — tam olarak biri 200, diğeri 400/409, DB'de tek
+  zaman damgası; (b) deterministik: `updateMany where status=eski` sözleşmesi
+  doğrudan (yarış zamanlamasına bağlı olmadan) doğrulanır.
+- **Mobile:** `test/models/decimal_parsing_test.dart` — Decimal taşıyan her
+  modelin (Product, Job, Staff, Contract, Quote, Advance, StaffBonus,
+  EvaluationPeriod, ExecutiveSummary) string/sayı/null gösterimlerini kabul
+  ettiğini sabitler; biri `as num`'a dönerse kırılır. STAFF yanıtında
+  `salaryBase`'in hiç olmaması (redaction) da çökme yaratmıyor.
+
+**Kapsam (81 test):** auth (13: login başarılı/başarısız/pasif hesap, 2FA
+setup→enable→login→verify + preToken tek kullanım + kurtarma kodu, şifre
+sıfırlama geçerli/süresi dolmuş/kullanılmış/uydurma + eski JWT iptali,
+mustChangePassword zorlaması) · RBAC (43) · iş state machine + iyimser
+kilit (6) · personel yaşam döngüsü (6: terfi→arşiv+token iptali, düşürme→
+aynı kayıt canlanır maaş/pozisyon korunur, düşürmede yeni kayıt için
+pozisyon+maaş zorunlu, terminate→login 403 + JWT 401 + arşiv, reactivate→
+login OK, OWNER terminate edilemez, STAFF↔TEAM_LEAD swap) · finans (6:
+aktif maaş net kârı düşürür/arşivlenince çıkar, terminate de hariç tutar,
+gider/tahsilat, view_finance izni, executive-summary = payments/summary,
+prim onayı→Expense(BONUS) + ikinci onay 409 ve ikinci gider yok) ·
+güvenlik (7: OWNER impersonate edilemez, impersonation token OWNER uçlarına
+giremez ve end sonrası ölür, MANAGER impersonate başlatamaz, TEAM_LEAD
+ekip kapsamı liste/detay/yeniden atama, STAFF yalnızca kendini görür, maaş
+sızıntısı, evaluator kimliği sızıntısı).
+
+**Çalıştırma:** `cd backend && npm test` (~40 sn, Postgres ayakta olmalı),
+`npm run test:typecheck`; `cd mobile && flutter test`. CI yok —
+PROJECT_HANDOFF_TR.md §12.2.1'e "her önemli değişiklikten önce" kuralı eklendi.

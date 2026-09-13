@@ -397,6 +397,27 @@ npm run dev
 
 Backend `http://localhost:4000` adresinde çalışır. `curl http://localhost:4000/health` → `{"status":"ok"}` dönmeli.
 
+#### 12.2.1 Otomatik testler (ZORUNLU — her önemli değişiklikten önce)
+
+```bash
+cd backend
+npm test              # vitest + supertest: auth, RBAC, iş durumu, personel yaşam döngüsü, finans, güvenlik (~40 sn)
+npm run test:typecheck  # test dosyalarının tip kontrolü
+cd ../mobile
+flutter test          # model parse (Decimal serileşme) regresyon testleri + smoke test
+```
+
+**Kural: backend veya mobile'da herhangi bir önemli değişiklikten (özellikle
+auth/yetki/finans/personel akışlarında) önce `npm test` (backend) ve
+`flutter test` (mobile) çalıştırılmalı; kırmızı test varken commit/push
+yapılmamalı.** CI yoktur (altyapı yok) — bu adım geliştiricinin elindedir.
+
+Testler `.env`'deki gerçek dev veritabanına karşı koşar (ayrı test DB'si
+yoktur): her test dosyası kendi `vt_` önekli, uuid'li verisini üretir ve
+bitince ID bazlı siler (bkz. `backend/tests/helpers/fixtures.ts:TestContext`).
+Test sırasında reCAPTCHA/SMTP/Firebase devre dışıdır (`tests/helpers/setup.ts`),
+gerçek e-posta/push gitmez. Detay: `docs/NEW_FEATURES_TOUR_2.md` Bölüm H.
+
 ### 12.3 Web panelini çalıştırma (opsiyonel — mobil test için şart değil)
 
 ```bash
