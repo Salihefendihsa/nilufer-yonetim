@@ -804,3 +804,90 @@ imzalı/yetkili indirme ucu düşünülebilir.
 - Yeni migration: `customer_tags`, `job_warranty`, `customer_documents`.
 - Cron/toplu iş çağrısı yok; test verisi (etiket, ödeme, ürün, belge dosyaları
   dahil) ID/isim ile temizlendi; `uploads/` test sonrası boş.
+
+---
+
+# 7. Tur — Bölüm AC / AD / AE / AF / AG
+
+## Bölüm AC — KRİTİK GÜVENLİK: Kimlik Doğrulamalı Dosya İndirme
+
+**Sorun:** `/uploads` klasörü (iş fotoğrafları, imzalar, müşteri belgeleri,
+mesaj ekleri) `express.static` ile kimliksiz servis ediliyordu; güvenlik
+yalnızca rastgele dosya adına dayanıyordu.
+
+**Düzeltme:**
+- `app.ts`'teki statik mount **kaldırıldı**. `/uploads/*` artık hiçbir route'a
+  düşmez → Express 404. Test `fileAccess.test.ts` bunu diskte gerçek dosya
+  varken (token'lı ve token'sız) doğrular.
+- Tek yol: `GET /files/:type/:id` (`requireAuth`). `type` → yetki kuralı, ilgili
+  uçla birebir: `job-photo/:photoId` ve `job-signature/:jobId` → `canAccessJob`
+  (OWNER/MANAGER hepsi, TEAM_LEAD ekibi, STAFF kendi işi, CUSTOMER kendi işi);
+  `customer-document/:docId` → yalnızca OWNER/MANAGER (CUSTOMER kendi belgesi
+  bile olsa 403 — belge uçlarıyla aynı); `message-attachment/:messageId` →
+  konuşma katılımcısı. Yetkisiz 403 "Bu dosyaya erişim yetkiniz yok", yok 404
+  "Dosya bulunamadı" — tutarlı mesajlar, var/yok bilgisi sızmaz. Disk yolu
+  `path.basename` + `UPLOADS_DIR` sınırı (traversal testi). Content-Type bilinen
+  MIME/uzantı, Content-Disposition orijinal ad, `Cache-Control: private`.
+- **Karar (5. madde):** imzalı/kısa ömürlü token'sız URL (a) YERİNE (b)
+  seçildi: web'de `fetchFileBlob` + `AuthImage` (object URL; `useAuthFileUrl`
+  hook'u, revoke ile), indirmelerde zaten Authorization gönderen `downloadFile`;
+  mobilde `Image.network(headers: Authorization)` (`AuthImage` widget) ve
+  `getBytes` (token'lı). Gerekçe: mevcut istemci altyapısına en az değişiklik,
+  token'sız hiçbir URL yüzeyi açılmıyor, ek imza/anahtar yönetimi yok.
+- `resolveUploadUrl` web ve mobilde kaldırıldı → `fileUrl(type, id)`. DB'de
+  saklanan `/uploads/<ad>` değerleri korunur (yalnızca dosya adı referansı olarak
+  kullanılır); istemci bunları hiçbir yerde URL olarak kullanmaz.
+
+## Bölüm AD — KVKK: Veri Silme/Anonimleştirme Talebi
+
+`DataDeletionRequest` (PENDING/COMPLETED/REJECTED). Müşteri
+`POST /customers/me/deletion-request` (bekleyen varsa 409; yönetime bildirim);
+`/data-deletion-requests` **yalnızca OWNER**. Onay transaction'ı: Customer
+adı "Silinmiş Müşteri", telefon placeholder, e-posta/adres/semt/davet kodu null;
+belgeler ve etiket atamaları kaldırılır; User `isActive=false` +
+`tokenVersion++` (mevcut JWT'ler 401, login engellenir), ad anonim, e-posta
+`deleted-<id>@anonim.local`, oturumlar ve FCM token'ları silinir.
+**Job/Payment/Contract kayıtları silinmez** (mali/yasal zorunluluk;
+istatistikler bozulmaz) — testte sayılar önce/sonra eşit. Audit log
+"GERİ ALINAMAZ" detayıyla. Red → gerekçe + müşteriye bildirim; reddedilen
+müşteri yeniden talep açabilir.
+
+## Bölüm AE — Teklif→Dönüşüm Süresi (SLA)
+
+`QuoteRequest.firstContactedAt`: `updateQuote`'ta status NEW'den başka bir
+duruma **ilk** geçişte damgalanır, sonra sabit; `convert`te `convertedAt`
+(mevcut alan) ve temas damgası yoksa `firstContactedAt = dönüşüm anı`.
+`computeQuoteResponseTime(days, anchor)`: pencerede **oluşturulan**
+tekliflerde ortalama ilk temas / dönüşüm (saat, 1 ondalık); damgasız kayıt
+ortalamaya girmez; hiç yoksa null. Pencere `[since, now]` kapalı — ilk
+sürümde üst sınır yoktu, testte yakalandı. `GET /analytics/quote-response-time`
+→ `{ last30, last90 }`. Web Raporlar 2 StatCard, mobil "Yanıt Hızı" bloğu.
+
+## Bölüm AF — Haftalık Özet E-postası
+
+`lib/weeklyDigest.ts`: `sendWeeklyDigest(onlyOwnerIds?)` — Yönetici Özet
+Paneli'nin `computeExecutiveSummary("week", true)` hesabını yeniden kullanır;
+HTML şablonu bölümler + bekleyen onay kırılımı; OWNER + aktif +
+`weeklyDigestEnabled`; SMTP yoksa sessizce atlar. Cron `0 8 * * 1`.
+**Tercih alanı `NotificationPreference.weeklyDigestEnabled`** (spec'teki
+`User.weeklyDigestEnabled` yerine) — mevcut `dailyDigestEnabled` ile aynı
+model/uç/toggle UI'ı yeniden kullanılıyor; davranış aynı (OWNER kapatabilir).
+**Test:** cron global çağrılmadı; `onlyOwnerIds` ile yalnızca test OWNER'ları
+hedeflendi; test ortamında SMTP boş → `sent 0`, alıcı/atlama listesi ve HTML
+içeriği doğrulandı.
+
+## Bölüm AG — Düşük Memnuniyet Uyarısı
+
+`rateJob`: `rating ≤ 2` → `notifyManagement("Düşük memnuniyet", "<müşteri> -
+<iş>, puan: N/5")`; `submitJobFeedback`: `wouldRecommend === false` → aynı
+bildirim, kriter puanları özetli. Tür `low_satisfaction` (alert kategorisi).
+Normal/yüksek puanda bildirim yok (testle sabit).
+
+## 7. Tur Toplam
+
+- Backend vitest: 212 → **239** test (+27: AC 8, AD 7, AE 5, AF 4, AG 3).
+- Flutter: 52 → **54** test (+2).
+- Yeni migration: `data_deletion_requests`, `quote_first_contacted`,
+  `weekly_digest_pref`.
+- Cron/toplu iş: yalnızca `sendWeeklyDigest(onlyOwnerIds)` hedefli; test verisi
+  ID/isim ile temizlendi, `uploads/` boş.
