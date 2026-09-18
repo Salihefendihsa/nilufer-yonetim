@@ -25,6 +25,8 @@ class _ReportsScreenState extends State<ReportsScreen> {
   Map<String, dynamic>? _retention;
   /// Bölüm S (5. tur): /analytics/feedback-summary (null → blok gizli).
   Map<String, dynamic>? _feedback;
+  /// Bölüm AA (6. tur): /analytics/year-over-year — geçen yıl serisi.
+  List<Map<String, dynamic>> _yoy = [];
   bool _loading = true;
   String? _error;
   bool _downloadingPdf = false;
@@ -97,6 +99,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
         api.get<Map<String, dynamic>>('/analytics/customer-retention'),
         api.get<Map<String, dynamic>>('/analytics/revenue-trend'),
         api.get<Map<String, dynamic>>('/analytics/feedback-summary'),
+        api.get<Map<String, dynamic>>('/analytics/year-over-year'),
       ]);
       setState(() {
         _serviceBreakdown = (results[0]['data'] as List)
@@ -107,6 +110,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
         _revenueTrend = (results[3]['data'] as List)
             .cast<Map<String, dynamic>>();
         _feedback = results[4];
+        _yoy = ((results[5]['data'] as List?) ?? const []).cast<Map<String, dynamic>>();
       });
     } catch (e) {
       setState(
@@ -204,6 +208,24 @@ class _ReportsScreenState extends State<ReportsScreen> {
                             ),
                           )
                           .toList(),
+                      // Bölüm AA (6. tur): geçen yılın aynı ayları — gri kesikli çizgi.
+                      secondaryPoints: _yoy.isEmpty
+                          ? null
+                          : [
+                              for (final p in _yoy)
+                                ChartPoint(
+                                  p['month'] as String? ?? '',
+                                  ((p['lastYear'] as num?) ?? 0).toDouble(),
+                                ),
+                            ],
+                    ),
+                  if (_yoy.isNotEmpty)
+                    const Padding(
+                      padding: EdgeInsets.only(top: 4),
+                      child: Text(
+                        'Yeşil: bu yıl · Gri kesikli: geçen yılın aynı ayları',
+                        style: TextStyle(fontSize: 11, color: AppColors.textFaint),
+                      ),
                     ),
                   const SizedBox(height: 20),
                   const Text(

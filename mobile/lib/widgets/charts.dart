@@ -21,17 +21,20 @@ class RevenueTrendChart extends StatelessWidget {
   /// tooltip biçimi — verilmezse ciro davranışı (₺, otomatik üst sınır) korunur.
   final double? fixedMaxY;
   final String Function(double value)? valueFormatter;
+  /// Bölüm AA (6. tur): aynı eksende ikinci seri (örn. geçen yıl) — gri, kesikli.
+  final List<ChartPoint>? secondaryPoints;
   const RevenueTrendChart({
     super.key,
     required this.points,
     this.fixedMaxY,
     this.valueFormatter,
+    this.secondaryPoints,
   });
 
   @override
   Widget build(BuildContext context) {
     if (points.isEmpty) return const SizedBox.shrink();
-    final maxY = points
+    final maxY = [...points, ...?secondaryPoints]
         .map((p) => p.value)
         .fold<double>(0, (a, b) => a > b ? a : b);
     final safeMaxY = fixedMaxY ?? (maxY <= 0 ? 1.0 : maxY * 1.25);
@@ -101,6 +104,19 @@ class RevenueTrendChart extends StatelessWidget {
             ),
           ),
           lineBarsData: [
+            if (secondaryPoints != null && secondaryPoints!.isNotEmpty)
+              LineChartBarData(
+                spots: [
+                  for (var i = 0; i < secondaryPoints!.length; i++)
+                    FlSpot(i.toDouble(), secondaryPoints![i].value),
+                ],
+                isCurved: true,
+                curveSmoothness: 0.25,
+                color: AppColors.neutral400,
+                barWidth: 2,
+                dashArray: [6, 4],
+                dotData: const FlDotData(show: false),
+              ),
             LineChartBarData(
               spots: [
                 for (var i = 0; i < points.length; i++)

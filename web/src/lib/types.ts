@@ -747,6 +747,16 @@ export interface RevenueTrendPoint {
   total: number;
 }
 
+/** Bölüm AA (6. tur): GET /analytics/year-over-year satırı. */
+export interface YearOverYearPoint {
+  month: string;
+  thisYearLabel: string;
+  lastYearLabel: string;
+  thisYear: number;
+  lastYear: number;
+  changePercent: number | null;
+}
+
 export interface ServiceBreakdownEntry {
   serviceType: string;
   count: number;

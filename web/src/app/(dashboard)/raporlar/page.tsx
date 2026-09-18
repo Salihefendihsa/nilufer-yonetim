@@ -8,7 +8,7 @@ import { StatCard } from "@/components/StatCard";
 import { ChartCard, DonutChart, RankBars, TrendChart } from "@/components/ChartCard";
 import { api, ApiError, downloadFile } from "@/lib/api";
 import { currencyFormatter } from "@/lib/format";
-import type { RevenueTrendPoint, ServiceBreakdownEntry, TopDistrictEntry, CustomerRetention, FeedbackSummary } from "@/lib/types";
+import type { RevenueTrendPoint, ServiceBreakdownEntry, TopDistrictEntry, CustomerRetention, FeedbackSummary, YearOverYearPoint } from "@/lib/types";
 
 type RangeKey = "30d" | "3m" | "6m";
 
@@ -35,6 +35,9 @@ function ReportsPageContent() {
   const [retention, setRetention] = useState<CustomerRetention | null>(null);
   // Bölüm S (5. tur): yapılandırılmış geri bildirim ortalamaları.
   const [feedback, setFeedback] = useState<FeedbackSummary | null>(null);
+  // Bölüm AA (6. tur): geçen yılın aynı ayları — ikinci seri.
+  const [yoy, setYoy] = useState<YearOverYearPoint[]>([]);
+  const [compareLastYear, setCompareLastYear] = useState(true);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -43,18 +46,20 @@ function ReportsPageContent() {
     setError(null);
     try {
       const months = RANGE_OPTIONS.find((r) => r.key === range)?.months ?? 6;
-      const [revenueRes, breakdownRes, districtsRes, retentionRes, feedbackRes] = await Promise.all([
+      const [revenueRes, breakdownRes, districtsRes, retentionRes, feedbackRes, yoyRes] = await Promise.all([
         api.get<{ data: RevenueTrendPoint[] }>(`/analytics/revenue-trend?months=${months}`),
         api.get<{ data: ServiceBreakdownEntry[]; total: number }>(`/analytics/service-breakdown?months=${months}`),
         api.get<{ data: TopDistrictEntry[] }>("/analytics/top-districts"),
         api.get<CustomerRetention>("/analytics/customer-retention"),
         api.get<FeedbackSummary>("/analytics/feedback-summary").catch(() => null),
+        api.get<{ data: YearOverYearPoint[] }>(`/analytics/year-over-year?months=${months}`).catch(() => ({ data: [] as YearOverYearPoint[] })),
       ]);
       setRevenue(revenueRes.data);
       setBreakdown(breakdownRes.data);
       setDistricts(districtsRes.data);
       setRetention(retentionRes);
       setFeedback(feedbackRes);
+      setYoy(yoyRes.data);
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "Rapor verileri yüklenemedi");
     } finally {
@@ -187,14 +192,37 @@ function ReportsPageContent() {
           height={280}
           className="lg:col-span-2"
         >
-          <TrendChart
-            data={revenue}
-            xKey="label"
-            series={[{ key: "total", name: "Ciro" }]}
-            area
-            currency
-            emptyLabel={loading ? "Yükleniyor..." : "Veri yok"}
-          />
+          {/* Bölüm AA (6. tur): geçen yıl serisi aynı ay eksenine bindirilir */}
+          {compareLastYear && yoy.length > 0 ? (
+            <TrendChart
+              data={yoy.map((p) => ({ label: p.month, thisYear: p.thisYear, lastYear: p.lastYear }))}
+              xKey="label"
+              series={[
+                { key: "thisYear", name: `Bu yıl (${yoy[0].thisYearLabel.split(" ")[1]})` },
+                { key: "lastYear", name: `Geçen yıl (${yoy[0].lastYearLabel.split(" ")[1]})`, color: "#A3B0A5" },
+              ]}
+              currency
+              emptyLabel={loading ? "Yükleniyor..." : "Veri yok"}
+            />
+          ) : (
+            <TrendChart
+              data={revenue}
+              xKey="label"
+              series={[{ key: "total", name: "Ciro" }]}
+              area
+              currency
+              emptyLabel={loading ? "Yükleniyor..." : "Veri yok"}
+            />
+          )}
+          <div className="mt-2 flex items-center justify-end">
+            <button
+              type="button"
+              onClick={() => setCompareLastYear((v) => !v)}
+              className="rounded-full border border-border bg-surface-base px-3 py-1 text-2xs font-semibold text-text-secondary transition hover:bg-surface-subtle hover:text-text-primary"
+            >
+              {compareLastYear ? "Geçen yılı gizle" : "Geçen yılla karşılaştır"}
+            </button>
+          </div>
         </ChartCard>
 
         <ChartCard title="Hizmet Dağılımı" description="İş sayısına göre" icon={PieChart} height={280}>

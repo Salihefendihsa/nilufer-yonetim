@@ -17,17 +17,24 @@ function monthsParam(req: Request, fallback: number): number {
  * üretimi AYNI hesaplamayı kullanır (tek doğruluk kaynağı, kopya mantık yok).
  */
 
-export async function computeRevenueTrend(monthCount: number) {
-  const now = new Date();
+/**
+ * @param anchor Bölüm AA (6. tur): pencerenin bittiği ay (varsayılan: bugün).
+ *   Yıldan yıla karşılaştırma aynı fonksiyonu `anchor = bugün - 12 ay` ile
+ *   çağırır — hesap tek yerde kalır. Ödemeler [pencere başı, pencere sonu]
+ *   aralığıyla çekilir; iki yılın verisi birbirine karışmaz.
+ */
+export async function computeRevenueTrend(monthCount: number, anchor: Date = new Date()) {
   const months: { year: number; month: number }[] = [];
   for (let i = monthCount - 1; i >= 0; i--) {
-    const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+    const d = new Date(anchor.getFullYear(), anchor.getMonth() - i, 1);
     months.push({ year: d.getFullYear(), month: d.getMonth() });
   }
 
   const rangeStart = new Date(months[0].year, months[0].month, 1);
+  const last = months[months.length - 1];
+  const rangeEnd = new Date(last.year, last.month + 1, 1); // sonraki ayın ilk günü (hariç)
   const payments = await prisma.payment.findMany({
-    where: { createdAt: { gte: rangeStart } },
+    where: { createdAt: { gte: rangeStart, lt: rangeEnd } },
     select: { amount: true, createdAt: true },
   });
 
@@ -35,8 +42,35 @@ export async function computeRevenueTrend(monthCount: number) {
     const total = payments
       .filter((p) => p.createdAt.getFullYear() === year && p.createdAt.getMonth() === month)
       .reduce((sum, p) => sum + Number(p.amount), 0);
-    return { label: `${MONTH_LABELS[month]} ${year}`, total };
+    return { label: `${MONTH_LABELS[month]} ${year}`, month, year, total };
   });
+}
+
+/**
+ * Bölüm AA (6. tur): Yıldan yıla karşılaştırma — aynı ay penceresi bu yıl ve
+ * 12 ay öncesi için `computeRevenueTrend` ile hesaplanır, indeks bazında
+ * eşlenir. Geçen yıl ödeme yoksa `lastYear: 0` (gerçek toplam), uydurma yok.
+ */
+export async function computeYearOverYear(monthCount: number, anchor: Date = new Date()) {
+  const lastYearAnchor = new Date(anchor.getFullYear() - 1, anchor.getMonth(), 1);
+  const [thisYear, lastYear] = await Promise.all([
+    computeRevenueTrend(monthCount, anchor),
+    computeRevenueTrend(monthCount, lastYearAnchor),
+  ]);
+  return thisYear.map((row, i) => ({
+    month: MONTH_LABELS[row.month],
+    thisYearLabel: row.label,
+    lastYearLabel: lastYear[i].label,
+    thisYear: row.total,
+    lastYear: lastYear[i].total,
+    /** Geçen yıl 0 ise oran anlamsız → null. */
+    changePercent: lastYear[i].total > 0 ? Math.round(((row.total - lastYear[i].total) / lastYear[i].total) * 1000) / 10 : null,
+  }));
+}
+
+export async function getYearOverYear(req: Request, res: Response) {
+  const data = await computeYearOverYear(monthsParam(req, 6));
+  return res.json({ data });
 }
 
 export async function getRevenueTrend(req: Request, res: Response) {
