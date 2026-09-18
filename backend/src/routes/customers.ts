@@ -16,6 +16,7 @@ import { setCustomerTags } from "../controllers/customerTagsController";
 import { listCustomerDocuments, uploadCustomerDocument, deleteCustomerDocument } from "../controllers/customerDocumentsController";
 import { uploadDocument } from "../lib/upload";
 import { createMyDeletionRequest, getMyDeletionRequest } from "../controllers/dataDeletionController";
+import { exportMyData } from "../controllers/dataExportController";
 
 const router = Router();
 
@@ -28,6 +29,8 @@ router.get("/me/badges", requireRole(Role.CUSTOMER), getMyBadges);
 // Bölüm AD (7. tur): KVKK veri silme talebi (müşteri kendi adına).
 router.post("/me/deletion-request", requireRole(Role.CUSTOMER), createMyDeletionRequest);
 router.get("/me/deletion-request", requireRole(Role.CUSTOMER), getMyDeletionRequest);
+// Bölüm AJ (8. tur): müşteri kendi verisini JSON indirir (belge META, dosya değil).
+router.get("/me/data-export", requireRole(Role.CUSTOMER), exportMyData);
 router.get("/", requireRole(Role.OWNER, Role.MANAGER, Role.STAFF), listCustomers);
 router.get("/:id", requireRole(Role.OWNER, Role.MANAGER, Role.STAFF), getCustomer);
 router.post("/", requireRole(Role.OWNER, Role.MANAGER), createCustomer);

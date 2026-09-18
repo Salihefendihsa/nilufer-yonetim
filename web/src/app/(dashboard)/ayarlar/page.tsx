@@ -29,6 +29,7 @@ import { RequireRole } from "@/components/RequireRole";
 import { JobTemplatesSection } from "./JobTemplatesSection";
 import { CustomerTagsSection } from "./CustomerTagsSection";
 import { DataDeletionRequestsSection, CustomerDataDeletionSection } from "./DataDeletionSections";
+import { CustomerDataExportSection } from "./CustomerDataExportSection";
 import { PageHeader } from "@/components/PageHeader";
 import { Modal } from "@/components/Modal";
 import { Toggle } from "@/components/Toggle";
@@ -70,6 +71,8 @@ export default function SettingsPage() {
         {canManageTemplates && <CustomerTagsSection />}
 
         {/* Bölüm AD (7. tur): KVKK — müşteri talep açar, OWNER sonuçlandırır */}
+        {/* Bölüm AJ (8. tur): müşteri kendi verisini indirir */}
+        {user?.role === "CUSTOMER" && <CustomerDataExportSection />}
         {user?.role === "CUSTOMER" && <CustomerDataDeletionSection />}
         {isOwner && <DataDeletionRequestsSection />}
 

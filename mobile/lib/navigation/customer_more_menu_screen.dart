@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../features/appointment_requests/my_appointment_requests_screen.dart';
 import '../features/contracts/contracts_list_screen.dart';
 import '../features/admin/data_deletion_screens.dart';
+import '../features/customers/customer_data_export_screen.dart';
 import '../features/customers/referral_screen.dart';
 import '../features/notifications/notifications_screen.dart';
 import '../theme/app_colors.dart';
@@ -40,6 +41,12 @@ class CustomerMoreMenuScreen extends StatelessWidget {
         label: 'Bildirimler',
         icon: Icons.notifications_outlined,
         builder: (_) => const NotificationsScreen(),
+      ),
+      // Bölüm AJ (8. tur): KVKK veri taşınabilirliği — kendi verisini indir.
+      (
+        label: 'Verilerimi İndir',
+        icon: Icons.download_outlined,
+        builder: (_) => const CustomerDataExportScreen(),
       ),
       // Bölüm AD (7. tur): KVKK veri silme talebi.
       (
