@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../features/appointment_requests/my_appointment_requests_screen.dart';
 import '../features/contracts/contracts_list_screen.dart';
+import '../features/customers/referral_screen.dart';
 import '../features/notifications/notifications_screen.dart';
 import '../theme/app_colors.dart';
 
@@ -22,6 +23,12 @@ class CustomerMoreMenuScreen extends StatelessWidget {
         label: 'Randevu Taleplerim',
         icon: Icons.event_available_outlined,
         builder: (_) => const MyAppointmentRequestsScreen(),
+      ),
+      // Bölüm P (4. tur): davet kodu/linki — indirim/ödül yok, yalnızca takip.
+      (
+        label: 'Arkadaşını Davet Et',
+        icon: Icons.card_giftcard_outlined,
+        builder: (_) => const ReferralScreen(),
       ),
       (
         label: 'Sözleşmelerim',

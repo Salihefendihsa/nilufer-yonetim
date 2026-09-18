@@ -2,10 +2,11 @@ import type { Request, Response } from "express";
 import { z } from "zod";
 import { Role, type Prisma } from "@prisma/client";
 import { prisma } from "../lib/prisma";
+import { ensureReferralCode, generateReferralCode, referralInviteLink } from "../lib/referral";
 import { idParam } from "../lib/params";
 import { getPagination, paginatedResponse } from "../lib/pagination";
 import { recordAuditLog } from "../lib/auditLog";
-import { getStaffIdForUser } from "../lib/access";
+import { getCustomerIdForUser, getStaffIdForUser } from "../lib/access";
 
 const createSchema = z.object({
   fullName: z.string().min(1),
@@ -138,8 +139,33 @@ export async function getCustomer(req: Request, res: Response) {
 
 export async function createCustomer(req: Request, res: Response) {
   const data = createSchema.parse(req.body);
-  const customer = await prisma.customer.create({ data });
+  // Bölüm P: her yeni müşteri doğar doğmaz bir davet kodu alır.
+  const customer = await prisma.customer.create({ data: { ...data, referralCode: generateReferralCode() } });
   return res.status(201).json(customer);
+}
+
+/**
+ * Bölüm P (4. tur): Müşterinin "Arkadaşını Davet Et" kartı — kendi davet
+ * kodu, paylaşılabilir link ve davet ettiği (referredByCustomerId = kendi
+ * id'si) müşteri sayısı. Eski kayıtlarda kod yoksa burada üretilir.
+ * İndirim/ödül yok — yalnızca takip.
+ */
+export async function getMyReferral(req: Request, res: Response) {
+  const customerId = await getCustomerIdForUser(req.user!.sub);
+  if (!customerId) {
+    return res.status(400).json({ error: "Bu hesaba bağlı bir müşteri kaydı yok" });
+  }
+  const referralCode = await ensureReferralCode(customerId);
+  const [referredCount, referred] = await Promise.all([
+    prisma.customer.count({ where: { referredByCustomerId: customerId } }),
+    prisma.customer.findMany({
+      where: { referredByCustomerId: customerId },
+      select: { id: true, fullName: true, createdAt: true },
+      orderBy: { createdAt: "desc" },
+      take: 20,
+    }),
+  ]);
+  return res.json({ referralCode, inviteLink: referralInviteLink(referralCode), referredCount, referred });
 }
 
 export async function updateCustomer(req: Request, res: Response) {

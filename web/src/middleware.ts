@@ -3,7 +3,8 @@ import type { NextRequest } from "next/server";
 
 // "Şifremi Unuttum" akışı kimliksiz erişilebilir olmalı (henüz giriş
 // yapamıyor olmaları zaten sorunun kendisi).
-const PUBLIC_PATHS = new Set(["/giris", "/sifremi-unuttum", "/sifre-sifirla"]);
+// "/teklif-al": Bölüm P — davet linkinin (?ref=) hedefi olan anonim teklif formu.
+const PUBLIC_PATHS = new Set(["/giris", "/sifremi-unuttum", "/sifre-sifirla", "/teklif-al"]);
 
 export function middleware(request: NextRequest) {
   const token = request.cookies.get("token")?.value;

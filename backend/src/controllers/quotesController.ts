@@ -3,7 +3,8 @@ import { z } from "zod";
 import { prisma } from "../lib/prisma";
 import { getPagination, paginatedResponse } from "../lib/pagination";
 import { idParam } from "../lib/params";
-import { notifyManagement } from "../lib/notify";
+import { notifyManagement, notifyUser } from "../lib/notify";
+import { generateReferralCode, normalizeReferralCode } from "../lib/referral";
 import { verifyRecaptcha } from "../lib/recaptcha";
 import { recordAuditLog } from "../lib/auditLog";
 
@@ -16,6 +17,8 @@ const createSchema = z.object({
   address: z.string().optional(),
   district: z.string().optional(),
   recaptchaToken: z.string().optional(),
+  /// Bölüm P: davet linkinden gelen kod (?ref=) — istemci gövdeye koyar.
+  referralCode: z.string().optional(),
 });
 
 const updateSchema = z.object({
@@ -82,13 +85,20 @@ export async function getQuotesSummary(_req: Request, res: Response) {
 }
 
 export async function createQuote(req: Request, res: Response) {
-  const { recaptchaToken, ...data } = createSchema.parse(req.body);
+  const { recaptchaToken, referralCode: rawReferral, ...data } = createSchema.parse(req.body);
 
   if (!(await verifyRecaptcha(recaptchaToken, "quote_request"))) {
     return res.status(400).json({ error: "Doğrulama başarısız, lütfen tekrar deneyin" });
   }
 
-  const quote = await prisma.quoteRequest.create({ data });
+  // Bölüm P: ?ref= (query) veya gövde — geçerli biçimdeyse ve gerçek bir
+  // müşteriye aitse saklanır; aksi halde sessizce yoksayılır (form başarısız olmaz).
+  const referralCode = normalizeReferralCode(rawReferral ?? req.query.ref);
+  const referrerExists = referralCode
+    ? (await prisma.customer.findUnique({ where: { referralCode }, select: { id: true } })) !== null
+    : false;
+
+  const quote = await prisma.quoteRequest.create({ data: { ...data, referralCode: referrerExists ? referralCode : null } });
 
   await notifyManagement("Yeni teklif talebi alındı", `${quote.fullName} - ${quote.serviceType}`, {
     type: "quote_request",
@@ -171,26 +181,43 @@ export async function convertQuote(req: Request, res: Response) {
   // engellenir. Tek bir transaction içinde: guard başarısız olursa müşteri
   // hiç oluşturulmaz; müşteri oluşturma başarısız olursa durum bayrağı
   // (status=CONVERTED) geri alınır.
-  const customer = await prisma.$transaction(async (tx) => {
+  const result = await prisma.$transaction(async (tx) => {
     const guarded = await tx.quoteRequest.updateMany({
       where: { id: quote.id, status: { not: "CONVERTED" } },
       data: { status: "CONVERTED", convertedAt: new Date() },
     });
     if (guarded.count === 0) return null;
 
-    return tx.customer.create({
+    // Bölüm P: davet koduyla gelen teklif → yeni müşteri davet edene bağlanır.
+    const referrer = quote.referralCode
+      ? await tx.customer.findUnique({ where: { referralCode: quote.referralCode }, select: { id: true, userId: true, fullName: true } })
+      : null;
+
+    const created = await tx.customer.create({
       data: {
         fullName: quote.fullName,
         phone: quote.phone,
         email: quote.email,
         address: quote.address,
         district: quote.district,
+        referralCode: generateReferralCode(),
+        referredByCustomerId: referrer?.id ?? null,
       },
     });
+    return { created, referrer };
   });
 
-  if (!customer) {
+  if (!result) {
     return res.status(409).json({ error: "Bu teklif başka bir istekle zaten dönüştürüldü" });
+  }
+  const { created: customer, referrer } = result;
+
+  if (referrer?.userId) {
+    await notifyUser(referrer.userId, "Davetiniz kabul edildi!", `${customer.fullName} davet linkinizle müşterimiz oldu.`, {
+      type: "referral_converted",
+      relatedType: "Customer",
+      relatedId: customer.id,
+    });
   }
 
   await recordAuditLog({

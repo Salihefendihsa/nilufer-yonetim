@@ -221,9 +221,16 @@ model Customer {
   email     String?
   address   String?
   district  String?
+  /// Bölüm P (4. tur): Arkadaşını Davet Et — kısa alfanumerik davet kodu
+  /// (lib/referral.ts). Eski kayıtlar için null; ilk istendiğinde üretilir.
+  referralCode          String?  @unique
+  /// Bu müşteriyi davet eden müşteri (teklif ?ref= → convert akışında set edilir).
+  referredByCustomerId  String?
   createdAt DateTime @default(now())
 
   user      User?      @relation(fields: [userId], references: [id])
+  referredBy      Customer?  @relation("CustomerReferral", fields: [referredByCustomerId], references: [id])
+  referredCustomers Customer[] @relation("CustomerReferral")
   jobs      Job[]
   contracts Contract[]
   payments  Payment[]
@@ -231,6 +238,7 @@ model Customer {
 
   @@index([district])
   @@index([phone])
+  @@index([referredByCustomerId])
 }
 
 model Staff {
@@ -686,6 +694,8 @@ model QuoteRequest {
   surveyAt    DateTime?
   /// Müşteriye dönüştürüldüğü an — "ortalama dönüşüm süresi" hesabı için.
   convertedAt DateTime?
+  /// Bölüm P (4. tur): formun ?ref= parametresiyle gelen davet kodu.
+  referralCode String?
   status      String   @default("NEW")
   createdAt   DateTime @default(now())
 

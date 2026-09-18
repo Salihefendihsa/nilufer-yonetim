@@ -230,6 +230,14 @@ export interface StaffUnavailability {
   createdAt: string;
 }
 
+/** Bölüm P (4. tur): GET /customers/me/referral */
+export interface CustomerReferral {
+  referralCode: string;
+  inviteLink: string;
+  referredCount: number;
+  referred: { id: string; fullName: string; createdAt: string }[];
+}
+
 /** Bölüm J (3. tur): giriş yapmış müşterinin kendi randevu talebi. */
 export type AppointmentRequestStatus = "PENDING" | "SCHEDULED" | "DECLINED";
 

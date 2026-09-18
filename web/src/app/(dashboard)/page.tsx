@@ -44,6 +44,7 @@ import { currencyFormatter, formatDateTime, todayIsoDate, toIsoDate } from "@/li
 import type { Job, JobReport, JobPhoto, JobStatus, Staff, Paginated, Customer, ActivityEvent, SystemHealth, DashboardSummary, TeamSummary, TeamDailyBriefing, AppointmentRequest } from "@/lib/types";
 import { directionsUrl } from "@/lib/types";
 import { TeamBriefingCard } from "@/components/TeamBriefingCard";
+import { ReferralCard } from "@/components/ReferralCard";
 import { AppointmentRequestModal } from "./AppointmentRequestModal";
 import { JobReportModal } from "./JobReportModal";
 import { AdvanceRequestModal } from "./AdvanceRequestModal";
@@ -1062,6 +1063,9 @@ function CustomerDashboard() {
           Talebiniz alındı, en kısa sürede sizinle iletişime geçeceğiz.
         </p>
       )}
+
+      {/* Bölüm P (4. tur): Arkadaşını Davet Et */}
+      <ReferralCard />
 
       {/* Bölüm J (3. tur): Randevu taleplerim */}
       {appointmentRequests.length > 0 && (

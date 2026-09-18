@@ -10,6 +10,7 @@ import '../features/approvals/approvals_screen.dart';
 import '../features/calendar/calendar_screen.dart';
 import '../features/contracts/contracts_list_screen.dart';
 import '../features/customers/customers_list_screen.dart';
+import '../features/customers/referral_screen.dart';
 import '../features/dashboard/dashboard_screen.dart';
 import '../features/finance/finance_screen.dart';
 import '../features/jobs/jobs_list_screen.dart';
@@ -142,6 +143,11 @@ class _RoleShellState extends State<RoleShell> {
         'Sözleşmelerim',
         Icons.description_outlined,
         (_) => const MyContractsScreen(),
+      ),
+      AppDrawerEntry(
+        'Arkadaşını Davet Et',
+        Icons.card_giftcard_outlined,
+        (_) => const ReferralScreen(),
       ),
       AppDrawerEntry(
         'Bildirimler',
