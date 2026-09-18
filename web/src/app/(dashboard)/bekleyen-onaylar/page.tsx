@@ -401,7 +401,15 @@ function ApprovalQueueContent() {
                   <p className="mt-0.5 font-medium text-text-primary">{leave.staff?.user.fullName ?? "Personel"}</p>
                   <p className="text-sm text-text-secondary">
                     {formatDate(leave.startDate)} – {formatDate(leave.endDate)} · {leave.reason}
+                    {leave.requestedDays !== undefined ? ` · ${leave.requestedDays} gün` : ""}
                   </p>
+                  {/* Bölüm AH (7. tur): bakiye aşımı uyarısı — onayı engellemez */}
+                  {leave.exceedsBalance && (
+                    <span className="mt-1 inline-flex items-center gap-1 rounded-full bg-warning-50 px-2 py-0.5 text-2xs font-semibold text-warning-600 ring-1 ring-warning-100">
+                      <AlertTriangle size={11} strokeWidth={2} />
+                      Bakiyeyi aşıyor (kalan {leave.remainingDays ?? 0} gün)
+                    </span>
+                  )}
                 </div>
               </div>
               <div className="flex gap-2">

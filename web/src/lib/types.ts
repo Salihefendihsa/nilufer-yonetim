@@ -232,6 +232,8 @@ export interface Staff {
   user: StaffUser;
   vehiclePlate: string | null;
   dailyJobCapacity: number | null;
+  /** Bölüm AH (7. tur): yıllık izin hakkı (gün, varsayılan 14). */
+  annualLeaveQuotaDays?: number;
   /** Liste yanıtında sunucu tarafında hesaplanır (personel başına ek istek yok). */
   todaysJobsCount?: number;
   expiringCertificationCount?: number;
@@ -275,6 +277,20 @@ export interface LeaveRequest {
   decidedByUserId: string | null;
   decisionNote: string | null;
   staff?: { user: { fullName: string } };
+  /** Bölüm AH (7. tur): liste/decide yanıtında — bakiyeyi aşan bekleyen talep uyarısı. */
+  requestedDays?: number;
+  remainingDays?: number | null;
+  exceedsBalance?: boolean;
+}
+
+/** Bölüm AH (7. tur): GET /staff/:id/leave-balance */
+export interface LeaveBalance {
+  staffId: string;
+  year: number;
+  quotaDays: number;
+  usedDays: number;
+  remainingDays: number;
+  approvedRequestCount: number;
 }
 
 /** Bölüm K (3. tur): personelin hafif "müsait değilim" işareti (startTime/endTime null = tüm gün). */

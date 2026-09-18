@@ -27,6 +27,8 @@ class _StaffFormScreenState extends State<StaffFormScreen> {
   final _salaryController = TextEditingController();
   final _vehicleController = TextEditingController();
   final _capacityController = TextEditingController();
+  /// Bölüm AH (8. tur): yıllık izin hakkı (gün).
+  final _quotaController = TextEditingController(text: '14');
 
   String _staffRole = 'STAFF';
   String? _userId;
@@ -52,6 +54,7 @@ class _StaffFormScreenState extends State<StaffFormScreen> {
       _salaryController.text = s.salaryBase.toString();
       _vehicleController.text = s.vehiclePlate ?? '';
       _capacityController.text = s.dailyJobCapacity?.toString() ?? '';
+      _quotaController.text = s.annualLeaveQuotaDays.toString();
       _supervisorId = s.supervisorId;
     }
     _load();
@@ -63,6 +66,7 @@ class _StaffFormScreenState extends State<StaffFormScreen> {
     _salaryController.dispose();
     _vehicleController.dispose();
     _capacityController.dispose();
+    _quotaController.dispose();
     super.dispose();
   }
 
@@ -126,6 +130,7 @@ class _StaffFormScreenState extends State<StaffFormScreen> {
       final vehicle = _vehicleController.text.trim().isEmpty
           ? null
           : _vehicleController.text.trim();
+      final quota = int.tryParse(_quotaController.text.trim());
 
       if (_isEdit) {
         await _api.update(
@@ -135,6 +140,7 @@ class _StaffFormScreenState extends State<StaffFormScreen> {
           supervisorId: _supervisorId,
           vehiclePlate: vehicle,
           dailyJobCapacity: capacity,
+          annualLeaveQuotaDays: quota,
         );
       } else {
         await _api.create(
@@ -144,6 +150,7 @@ class _StaffFormScreenState extends State<StaffFormScreen> {
           supervisorId: _supervisorId,
           vehiclePlate: vehicle,
           dailyJobCapacity: capacity,
+          annualLeaveQuotaDays: quota,
         );
       }
       if (mounted) Navigator.of(context).pop(true);
@@ -277,6 +284,21 @@ class _StaffFormScreenState extends State<StaffFormScreen> {
                         ),
                       ),
                     ],
+                  ),
+                  const SizedBox(height: 12),
+                  // Bölüm AH (8. tur): yıllık izin hakkı
+                  TextFormField(
+                    controller: _quotaController,
+                    keyboardType: TextInputType.number,
+                    decoration: const InputDecoration(
+                      labelText: 'Yıllık İzin Hakkı (gün)',
+                      helperText: 'Türkiye asgari 14 gün. Bakiye takvim yılına göre hesaplanır.',
+                    ),
+                    validator: (v) {
+                      final n = int.tryParse((v ?? '').trim());
+                      if (n == null || n < 0 || n > 365) return '0–365 arası bir sayı girin';
+                      return null;
+                    },
                   ),
                   const SizedBox(height: 12),
                   DropdownButtonFormField<String>(

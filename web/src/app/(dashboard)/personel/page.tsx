@@ -41,6 +41,7 @@ import { StaffFormModal } from "./StaffFormModal";
 import { PermissionsModal } from "./PermissionsModal";
 import { CertificationsModal } from "./CertificationsModal";
 import { OnboardingModal } from "./OnboardingModal";
+import { LeaveBalanceCard } from "@/components/LeaveBalanceCard";
 import { EvaluationsModal } from "./EvaluationsModal";
 import { OrgChartView } from "./OrgChartView";
 import { ResetPasswordModal } from "./ResetPasswordModal";
@@ -406,6 +407,9 @@ function StaffPageContent() {
                   Sil
                 </button>
               </div>
+
+              {/* Bölüm AH (7. tur): izin bakiyesi */}
+              <LeaveBalanceCard staffId={staff.id} compact />
 
               <button
                 type="button"

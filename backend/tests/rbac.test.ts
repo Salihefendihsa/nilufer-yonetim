@@ -130,6 +130,8 @@ const CASES: EndpointCase[] = [
   { method: "post", path: `/data-deletion-requests/${NIL}/reject`, allowed: ["OWNER"], body: {} },
   // Bölüm AE (7. tur)
   { method: "get", path: "/analytics/quote-response-time", allowed: ["OWNER", "MANAGER"] },
+  // Bölüm AH (7. tur) — STAFF/TEAM_LEAD route'tan geçer ama uydurma id kendi kaydı değil → 403
+  { method: "get", path: `/staff/${NIL}/leave-balance`, allowed: ["OWNER", "MANAGER"] },
 ];
 
 describe("RBAC sınırları", () => {

@@ -30,6 +30,7 @@ import {
   listUnavailableStaffOnDate,
 } from "../controllers/staffUnavailabilityController";
 import { getOnboarding, updateOnboardingItem } from "../controllers/onboardingController";
+import { getStaffLeaveBalance } from "../controllers/staffController";
 
 const router = Router();
 
@@ -64,6 +65,8 @@ router.patch(
 router.get("/:id/unavailability", requireRole(Role.OWNER, Role.MANAGER, Role.TEAM_LEAD, Role.STAFF), listStaffUnavailability);
 // Bölüm U (5. tur): işe alım kontrol listesi — STAFF/TEAM_LEAD kendi kaydını salt-okunur görür.
 router.get("/:id/onboarding", requireRole(Role.OWNER, Role.MANAGER, Role.TEAM_LEAD, Role.STAFF), getOnboarding);
+// Bölüm AH (7. tur): yıllık izin bakiyesi (STAFF/TEAM_LEAD kendi kaydı).
+router.get("/:id/leave-balance", requireRole(Role.OWNER, Role.MANAGER, Role.TEAM_LEAD, Role.STAFF), getStaffLeaveBalance);
 router.patch("/:id/onboarding/:itemId", requireRole(Role.OWNER, Role.MANAGER), updateOnboardingItem);
 router.get("/:id/certifications", requireRole(Role.OWNER, Role.MANAGER), listCertifications);
 router.post("/:id/certifications", requireRole(Role.OWNER, Role.MANAGER), createCertification);

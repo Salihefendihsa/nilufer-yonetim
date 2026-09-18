@@ -67,6 +67,7 @@ class StaffApi {
     String? supervisorId,
     String? vehiclePlate,
     int? dailyJobCapacity,
+    int? annualLeaveQuotaDays,
   }) async {
     final json = await _api.post<Map<String, dynamic>>(
       '/staff',
@@ -77,6 +78,8 @@ class StaffApi {
         if (supervisorId != null) 'supervisorId': supervisorId,
         if (vehiclePlate != null) 'vehiclePlate': vehiclePlate,
         if (dailyJobCapacity != null) 'dailyJobCapacity': dailyJobCapacity,
+        // Bölüm AH (8. tur)
+        if (annualLeaveQuotaDays != null) 'annualLeaveQuotaDays': annualLeaveQuotaDays,
       },
     );
     return Staff.fromJson(json);
@@ -90,6 +93,7 @@ class StaffApi {
     String? supervisorId,
     String? vehiclePlate,
     int? dailyJobCapacity,
+    int? annualLeaveQuotaDays,
   }) async {
     final json = await _api.patch<Map<String, dynamic>>(
       '/staff/$id',
@@ -99,6 +103,7 @@ class StaffApi {
         'supervisorId': supervisorId,
         'vehiclePlate': vehiclePlate,
         'dailyJobCapacity': dailyJobCapacity,
+        if (annualLeaveQuotaDays != null) 'annualLeaveQuotaDays': annualLeaveQuotaDays,
       },
     );
     return Staff.fromJson(json);

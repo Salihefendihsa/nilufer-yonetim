@@ -11,6 +11,7 @@ import { resetExpiredStaffStatuses } from "../lib/cron";
 import { getMonthlyJobTarget } from "../lib/targets";
 import { achievementTier } from "../lib/badges";
 import { onboardingSeedRows } from "../lib/onboarding";
+import { computeLeaveBalance } from "../lib/leaveBalance";
 
 const createSchema = z.object({
   userId: z.string().uuid(),
@@ -19,6 +20,8 @@ const createSchema = z.object({
   supervisorId: z.string().uuid().nullable().optional(),
   vehiclePlate: z.string().min(1).nullable().optional(),
   dailyJobCapacity: z.number().int().positive().nullable().optional(),
+  // Bölüm AH (7. tur): yıllık izin hakkı (gün).
+  annualLeaveQuotaDays: z.number().int().min(0).max(365).optional(),
 });
 
 const updateSchema = z.object({
@@ -27,6 +30,7 @@ const updateSchema = z.object({
   supervisorId: z.string().uuid().nullable().optional(),
   vehiclePlate: z.string().nullable().optional(),
   dailyJobCapacity: z.number().int().positive().nullable().optional(),
+  annualLeaveQuotaDays: z.number().int().min(0).max(365).optional(),
 });
 
 const staffInclude = {
@@ -809,4 +813,26 @@ export async function getStaffLeaderboard(req: Request, res: Response) {
       jobsPerStaff: leaderboard.length > 0 ? totalCompletedThisMonth / leaderboard.length : 0,
     },
   });
+}
+
+/**
+ * Bölüm AH (7. tur): GET /staff/:id/leave-balance?year= — OWNER/MANAGER herkes;
+ * STAFF/TEAM_LEAD yalnızca kendi kaydı (aksi 403).
+ */
+export async function getStaffLeaveBalance(req: Request, res: Response) {
+  const user = req.user!;
+  const staffId = idParam(req);
+  if (user.role === Role.STAFF || user.role === Role.TEAM_LEAD) {
+    const ownId = await getStaffIdForUser(user.sub);
+    if (ownId !== staffId) {
+      return res.status(403).json({ error: "Yalnızca kendi izin bakiyenizi görebilirsiniz" });
+    }
+  }
+  const yearRaw = Number(req.query.year);
+  const year = Number.isInteger(yearRaw) && yearRaw >= 2000 && yearRaw <= 2100 ? yearRaw : new Date().getFullYear();
+  const balance = await computeLeaveBalance(staffId, year);
+  if (!balance) {
+    return res.status(404).json({ error: "Personel bulunamadı" });
+  }
+  return res.json({ staffId, ...balance });
 }

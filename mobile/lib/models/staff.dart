@@ -76,6 +76,8 @@ class Staff {
 
   /// Gunluk is kapasitesi; tanimli degilse doluluk yuzdesi gosterilmez.
   final int? dailyJobCapacity;
+  /// Bölüm AH (8. tur): yıllık izin hakkı (gün, varsayılan 14).
+  final int annualLeaveQuotaDays;
 
   /// Liste yanitinda sunucu tarafinda hesaplanir (personel basina ek istek yok).
   final int todaysJobsCount;
@@ -107,6 +109,7 @@ class Staff {
     required this.role,
     this.vehiclePlate,
     this.dailyJobCapacity,
+    this.annualLeaveQuotaDays = 14,
     this.todaysJobsCount = 0,
     this.expiringCertificationCount = 0,
     this.averageRating,
@@ -134,6 +137,7 @@ class Staff {
       role: user['role'] as String? ?? 'STAFF',
       vehiclePlate: json['vehiclePlate'] as String?,
       dailyJobCapacity: (json['dailyJobCapacity'] as num?)?.toInt(),
+      annualLeaveQuotaDays: (json['annualLeaveQuotaDays'] as num?)?.toInt() ?? 14,
       todaysJobsCount: (json['todaysJobsCount'] as num?)?.toInt() ?? 0,
       expiringCertificationCount:
           (json['expiringCertificationCount'] as num?)?.toInt() ?? 0,

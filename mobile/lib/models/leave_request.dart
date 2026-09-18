@@ -10,6 +10,10 @@ class LeaveRequest {
   final String? decidedAt;
   final String? decisionNote;
   final String? staffName;
+  /// Bölüm AH (8. tur): liste/decide yanıtında bakiye bilgisi (yalnızca bekleyenlerde bayrak).
+  final int? requestedDays;
+  final int? remainingDays;
+  final bool exceedsBalance;
 
   LeaveRequest({
     required this.id,
@@ -22,6 +26,9 @@ class LeaveRequest {
     this.decidedAt,
     this.decisionNote,
     this.staffName,
+    this.requestedDays,
+    this.remainingDays,
+    this.exceedsBalance = false,
   });
 
   factory LeaveRequest.fromJson(Map<String, dynamic> json) {
@@ -38,6 +45,9 @@ class LeaveRequest {
       decidedAt: json['decidedAt'] as String?,
       decisionNote: json['decisionNote'] as String?,
       staffName: user?['fullName'] as String?,
+      requestedDays: (json['requestedDays'] as num?)?.toInt(),
+      remainingDays: (json['remainingDays'] as num?)?.toInt(),
+      exceedsBalance: json['exceedsBalance'] == true,
     );
   }
 }

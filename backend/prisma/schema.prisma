@@ -339,6 +339,9 @@ model Staff {
   /// Günlük iş kapasitesi — "4/5 İş (%80)" göstergesinin paydası. Boşsa
   /// yüzde gösterilmez, yalnızca iş sayısı gösterilir (uydurma kapasite yok).
   dailyJobCapacity Int?
+  /// Bölüm AH (7. tur): yıllık izin hakkı (gün) — Türkiye asgari 14. Bakiye =
+  /// bu değer − takvim yılında APPROVED izinlerin toplam günü (lib/leaveBalance.ts).
+  annualLeaveQuotaDays Int @default(14)
   createdAt    DateTime @default(now())
   /// Doldurulmuşsa bu Staff kaydı "arşivlenmiş" sayılır — MÜDÜR'e terfi
   /// (Staff kaydına artık ihtiyaç yok) veya işten çıkarma sonucu. Hiçbir

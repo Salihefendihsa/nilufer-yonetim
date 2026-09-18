@@ -7,6 +7,7 @@ import '../../core/api_client.dart';
 import '../../models/leave_request.dart';
 import '../../models/user.dart';
 import '../../theme/app_colors.dart';
+import '../staff/leave_balance_card.dart';
 import '../../widgets/state_views.dart';
 import 'leave_requests_api.dart';
 
@@ -324,9 +325,16 @@ class _TeamLeaveCard extends StatelessWidget {
         children: [
           Text(leave.staffName ?? 'Personel', style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13.5)),
           Text(
-            '${_dateFormat.format(DateTime.parse(leave.startDate))} – ${_dateFormat.format(DateTime.parse(leave.endDate))} · ${leave.reason}',
+            '${_dateFormat.format(DateTime.parse(leave.startDate))} – ${_dateFormat.format(DateTime.parse(leave.endDate))} · ${leave.reason}'
+            '${leave.requestedDays != null ? ' · ${leave.requestedDays} gün' : ''}',
             style: const TextStyle(fontSize: 11.5, color: AppColors.textSecondary),
           ),
+          // Bölüm AH (8. tur): bakiye aşımı uyarısı — onayı engellemez.
+          if (leave.exceedsBalance)
+            Padding(
+              padding: const EdgeInsets.only(top: 4),
+              child: LeaveBalanceExceedBadge(remainingDays: leave.remainingDays),
+            ),
           const SizedBox(height: 8),
           Row(
             children: [

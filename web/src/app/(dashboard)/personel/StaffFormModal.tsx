@@ -27,6 +27,8 @@ export function StaffFormModal({ open, onClose, onSaved, staff }: StaffFormModal
   const [supervisorId, setSupervisorId] = useState("");
   const [vehiclePlate, setVehiclePlate] = useState("");
   const [dailyJobCapacity, setDailyJobCapacity] = useState("");
+  // Bölüm AH (7. tur): yıllık izin hakkı.
+  const [annualLeaveQuotaDays, setAnnualLeaveQuotaDays] = useState("14");
   const [unlinkedUsers, setUnlinkedUsers] = useState<UnlinkedUser[]>([]);
   const [teamLeads, setTeamLeads] = useState<Staff[]>([]);
   // Organizasyon zinciri STAFF → TEAM_LEAD → MANAGER → OWNER: MANAGER'ın
@@ -48,6 +50,7 @@ export function StaffFormModal({ open, onClose, onSaved, staff }: StaffFormModal
       setSupervisorId(staff?.supervisorId ?? "");
       setVehiclePlate(staff?.vehiclePlate ?? "");
       setDailyJobCapacity(staff?.dailyJobCapacity != null ? String(staff.dailyJobCapacity) : "");
+      setAnnualLeaveQuotaDays(staff?.annualLeaveQuotaDays != null ? String(staff.annualLeaveQuotaDays) : "14");
       setError(null);
 
       api
@@ -95,6 +98,7 @@ export function StaffFormModal({ open, onClose, onSaved, staff }: StaffFormModal
           supervisorId: supervisorId || null,
           vehiclePlate: vehiclePlate.trim() || null,
           dailyJobCapacity: dailyJobCapacity ? Number(dailyJobCapacity) : null,
+          annualLeaveQuotaDays: annualLeaveQuotaDays ? Number(annualLeaveQuotaDays) : undefined,
         });
       } else {
         await api.post("/staff", {
@@ -104,6 +108,7 @@ export function StaffFormModal({ open, onClose, onSaved, staff }: StaffFormModal
           supervisorId: supervisorId || undefined,
           vehiclePlate: vehiclePlate.trim() || undefined,
           dailyJobCapacity: dailyJobCapacity ? Number(dailyJobCapacity) : undefined,
+          annualLeaveQuotaDays: annualLeaveQuotaDays ? Number(annualLeaveQuotaDays) : undefined,
         });
       }
       onSaved();
@@ -201,6 +206,13 @@ export function StaffFormModal({ open, onClose, onSaved, staff }: StaffFormModal
             />
             <p className="text-xs text-text-faint">Boş bırakılırsa doluluk yüzdesi gösterilmez.</p>
           </div>
+        </div>
+
+        {/* Bölüm AH (7. tur): yıllık izin hakkı */}
+        <div className="flex flex-col gap-1.5">
+          <label className="text-sm font-medium text-text-secondary">Yıllık İzin Hakkı (gün)</label>
+          <input type="number" min={0} max={365} value={annualLeaveQuotaDays} onChange={(e) => setAnnualLeaveQuotaDays(e.target.value)} className="input" />
+          <p className="text-xs text-text-faint">Türkiye asgari 14 gün. Bakiye takvim yılına göre hesaplanır.</p>
         </div>
 
         <div className="flex flex-col gap-1.5">

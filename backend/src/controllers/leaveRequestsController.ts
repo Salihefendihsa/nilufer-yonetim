@@ -7,6 +7,27 @@ import { getStaffIdForUser, getTeamStaffIds } from "../lib/access";
 import { idParam } from "../lib/params";
 import { recordAuditLog } from "../lib/auditLog";
 import { notifyUser, notifyManagement } from "../lib/notify";
+import { computeLeaveBalance, leaveDaysInYear } from "../lib/leaveBalance";
+
+/**
+ * Bölüm AH (7. tur): talebin gün sayısı ve o yılın kalan bakiyesine göre aşım
+ * bayrağı — REDDETMEZ, yalnızca bilgi (yönetim yine onaylayabilir).
+ */
+async function withBalanceFlag<T extends { staffId: string; startDate: Date; endDate: Date; status: LeaveRequestStatus }>(rows: T[]) {
+  const cache = new Map<string, Awaited<ReturnType<typeof computeLeaveBalance>>>();
+  const out = [];
+  for (const r of rows) {
+    const year = r.startDate.getFullYear();
+    const key = `${r.staffId}:${year}`;
+    if (!cache.has(key)) cache.set(key, await computeLeaveBalance(r.staffId, year));
+    const balance = cache.get(key) ?? null;
+    const requestedDays = leaveDaysInYear(r.startDate, r.endDate, year);
+    // Bekleyen talep için "onaylanırsa aşar mı"; onaylanmış talep zaten bakiyeye dahil.
+    const exceedsBalance = balance !== null && r.status === LeaveRequestStatus.PENDING ? requestedDays > balance.remainingDays : false;
+    out.push({ ...r, requestedDays, remainingDays: balance?.remainingDays ?? null, exceedsBalance });
+  }
+  return out;
+}
 
 const createSchema = z
   .object({
@@ -91,7 +112,7 @@ export async function listLeaveRequests(req: Request, res: Response) {
     prisma.leaveRequest.count({ where }),
   ]);
 
-  return res.json(paginatedResponse(data, total, page, limit));
+  return res.json(paginatedResponse(await withBalanceFlag(data), total, page, limit));
 }
 
 const decideSchema = z.object({
@@ -120,6 +141,12 @@ export async function decideLeaveRequest(req: Request, res: Response) {
   }
 
   const { status, decisionNote } = decideSchema.parse(req.body);
+
+  // Bölüm AH: karar ÖNCESİ bakiye — aşım yalnızca uyarı bayrağı olarak yanıtta.
+  const year = existing.startDate.getFullYear();
+  const balanceBefore = await computeLeaveBalance(existing.staffId, year);
+  const requestedDays = leaveDaysInYear(existing.startDate, existing.endDate, year);
+  const exceedsBalance = balanceBefore !== null && requestedDays > balanceBefore.remainingDays;
 
   const leaveRequest = await prisma.$transaction(async (tx) => {
     const updated = await tx.leaveRequest.update({
@@ -151,5 +178,10 @@ export async function decideLeaveRequest(req: Request, res: Response) {
     { type: "leave_request_decision", relatedType: "LeaveRequest", relatedId: leaveRequest.id }
   );
 
-  return res.json(leaveRequest);
+  return res.json({
+    ...leaveRequest,
+    requestedDays,
+    exceedsBalance,
+    remainingDaysAfter: balanceBefore ? balanceBefore.remainingDays - (status === LeaveRequestStatus.APPROVED ? requestedDays : 0) : null,
+  });
 }

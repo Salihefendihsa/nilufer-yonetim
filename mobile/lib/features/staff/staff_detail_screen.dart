@@ -9,6 +9,7 @@ import '../../models/user.dart';
 import '../../theme/app_colors.dart';
 import '../../widgets/state_views.dart';
 import 'evaluation_trend_card.dart';
+import 'leave_balance_card.dart';
 import 'onboarding_card.dart';
 import 'staff_api.dart';
 import 'staff_form_screen.dart';
@@ -702,6 +703,8 @@ class _StaffDetailScreenState extends State<StaffDetailScreen> {
           OnboardingCard(staffId: s.id, editable: _canManageStaff),
           // Bölüm V (5. tur): dönemden döneme değerlendirme trendi (yetki yoksa gizli).
           EvaluationTrendCard(staffId: s.id),
+          // Bölüm AH (8. tur): izin bakiyesi
+          LeaveBalanceCard(staffId: s.id),
 
           if (canChangeStatus) ...[
             const SizedBox(height: 14),
