@@ -117,7 +117,11 @@ export async function updateQuote(req: Request, res: Response) {
     return res.status(404).json({ error: "Teklif talebi bulunamadı" });
   }
 
-  const quote = await prisma.quoteRequest.update({ where: { id: idParam(req) }, data });
+  // Bölüm AE (7. tur): ilk temas damgası — NEW'den başka bir duruma İLK geçişte,
+  // bir kez; sonraki durum değişimleri dokunmaz.
+  const firstContact =
+    data.status && data.status !== "NEW" && existing.status === "NEW" && !existing.firstContactedAt ? { firstContactedAt: new Date() } : {};
+  const quote = await prisma.quoteRequest.update({ where: { id: idParam(req) }, data: { ...data, ...firstContact } });
 
   // QuoteRequest bir kullanıcıya bağlı değil — hedef olarak eylemi yapan aktör
   // kullanılır, targetType="QuoteRequest" ile filtrelenebilir bir iz bırakır
@@ -184,7 +188,8 @@ export async function convertQuote(req: Request, res: Response) {
   const result = await prisma.$transaction(async (tx) => {
     const guarded = await tx.quoteRequest.updateMany({
       where: { id: quote.id, status: { not: "CONVERTED" } },
-      data: { status: "CONVERTED", convertedAt: new Date() },
+      // Bölüm AE: doğrudan dönüştürülen (hiç temas damgası olmayan) teklifte ilk temas = dönüşüm anı.
+      data: { status: "CONVERTED", convertedAt: new Date(), ...(quote.firstContactedAt ? {} : { firstContactedAt: new Date() }) },
     });
     if (guarded.count === 0) return null;
 

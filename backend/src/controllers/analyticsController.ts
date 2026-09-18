@@ -204,3 +204,34 @@ export async function computeFeedbackSummary() {
 export async function getFeedbackSummary(_req: Request, res: Response) {
   return res.json(await computeFeedbackSummary());
 }
+
+/**
+ * Bölüm AE (7. tur): Teklif yanıt hızı (SLA) — son N günde OLUŞTURULAN
+ * tekliflerde ortalama ilk temas süresi ve ortalama dönüşüm süresi (saat).
+ * Yalnızca damgası olan kayıtlar ortalamaya girer; hiç yoksa null (uydurma
+ * yok). Varsayılan pencereler 30 ve 90 gün.
+ */
+export async function computeQuoteResponseTime(days: number, now = new Date()) {
+  const since = new Date(now.getTime() - days * 24 * 3600 * 1000);
+  const quotes = await prisma.quoteRequest.findMany({
+    where: { createdAt: { gte: since, lte: now } },
+    select: { createdAt: true, firstContactedAt: true, convertedAt: true },
+  });
+  const hours = (a: Date, b: Date) => (b.getTime() - a.getTime()) / 3600000;
+  const contact = quotes.filter((q) => q.firstContactedAt).map((q) => hours(q.createdAt, q.firstContactedAt!));
+  const convert = quotes.filter((q) => q.convertedAt).map((q) => hours(q.createdAt, q.convertedAt!));
+  const avg = (xs: number[]) => (xs.length > 0 ? Math.round((xs.reduce((s, x) => s + x, 0) / xs.length) * 10) / 10 : null);
+  return {
+    days,
+    quoteCount: quotes.length,
+    contactedCount: contact.length,
+    convertedCount: convert.length,
+    avgFirstContactHours: avg(contact),
+    avgConversionHours: avg(convert),
+  };
+}
+
+export async function getQuoteResponseTime(_req: Request, res: Response) {
+  const [last30, last90] = await Promise.all([computeQuoteResponseTime(30), computeQuoteResponseTime(90)]);
+  return res.json({ last30, last90 });
+}

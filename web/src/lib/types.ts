@@ -772,6 +772,20 @@ export interface RevenueTrendPoint {
   total: number;
 }
 
+/** Bölüm AE (7. tur): GET /analytics/quote-response-time penceresi. */
+export interface QuoteResponseWindow {
+  days: number;
+  quoteCount: number;
+  contactedCount: number;
+  convertedCount: number;
+  avgFirstContactHours: number | null;
+  avgConversionHours: number | null;
+}
+export interface QuoteResponseTime {
+  last30: QuoteResponseWindow;
+  last90: QuoteResponseWindow;
+}
+
 /** Bölüm AA (6. tur): GET /analytics/year-over-year satırı. */
 export interface YearOverYearPoint {
   month: string;

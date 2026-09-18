@@ -808,6 +808,9 @@ model QuoteRequest {
   surveyAt    DateTime?
   /// Müşteriye dönüştürüldüğü an — "ortalama dönüşüm süresi" hesabı için.
   convertedAt DateTime?
+  /// Bölüm AE (7. tur): status ilk kez NEW dışına (CONTACTED vb.) geçtiğinde
+  /// damgalanır — "ortalama ilk temas süresi" (SLA) hesabı için; bir kez yazılır.
+  firstContactedAt DateTime?
   /// Bölüm P (4. tur): formun ?ref= parametresiyle gelen davet kodu.
   referralCode String?
   status      String   @default("NEW")

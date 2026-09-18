@@ -8,6 +8,7 @@ import {
   getCustomerRetention,
   getFeedbackSummary,
   getYearOverYear,
+  getQuoteResponseTime,
 } from "../controllers/analyticsController";
 import { exportAnalyticsPdf } from "../controllers/exportController";
 import { getExecutiveSummary } from "../controllers/executiveSummaryController";
@@ -24,6 +25,8 @@ router.get("/customer-retention", getCustomerRetention);
 router.get("/feedback-summary", getFeedbackSummary);
 // Bölüm AA (6. tur): bu yıl / geçen yıl aynı aylar.
 router.get("/year-over-year", getYearOverYear);
+// Bölüm AE (7. tur): teklif yanıt hızı (SLA).
+router.get("/quote-response-time", getQuoteResponseTime);
 router.get("/export/pdf", exportAnalyticsPdf);
 // Bölüm G (2. tur): yönetici özet paneli — tüm KPI'lar tek çağrıda, drill-down hedefleriyle.
 router.get("/executive-summary", getExecutiveSummary);

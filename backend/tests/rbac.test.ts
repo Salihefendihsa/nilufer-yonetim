@@ -128,6 +128,8 @@ const CASES: EndpointCase[] = [
   { method: "get", path: "/data-deletion-requests", allowed: ["OWNER"] },
   { method: "post", path: `/data-deletion-requests/${NIL}/approve`, allowed: ["OWNER"] },
   { method: "post", path: `/data-deletion-requests/${NIL}/reject`, allowed: ["OWNER"], body: {} },
+  // Bölüm AE (7. tur)
+  { method: "get", path: "/analytics/quote-response-time", allowed: ["OWNER", "MANAGER"] },
 ];
 
 describe("RBAC sınırları", () => {

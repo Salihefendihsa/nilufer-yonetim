@@ -1,14 +1,14 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { TrendingUp, MapPin, Users2, BarChart3, Wallet, PieChart, Repeat, Download, MessageSquareHeart } from "lucide-react";
+import { TrendingUp, MapPin, Users2, BarChart3, Wallet, PieChart, Repeat, Download, MessageSquareHeart, Timer } from "lucide-react";
 import { RequireRole } from "@/components/RequireRole";
 import { PageHeader } from "@/components/PageHeader";
 import { StatCard } from "@/components/StatCard";
 import { ChartCard, DonutChart, RankBars, TrendChart } from "@/components/ChartCard";
 import { api, ApiError, downloadFile } from "@/lib/api";
 import { currencyFormatter } from "@/lib/format";
-import type { RevenueTrendPoint, ServiceBreakdownEntry, TopDistrictEntry, CustomerRetention, FeedbackSummary, YearOverYearPoint } from "@/lib/types";
+import type { RevenueTrendPoint, ServiceBreakdownEntry, TopDistrictEntry, CustomerRetention, FeedbackSummary, YearOverYearPoint, QuoteResponseTime } from "@/lib/types";
 
 type RangeKey = "30d" | "3m" | "6m";
 
@@ -38,6 +38,8 @@ function ReportsPageContent() {
   // Bölüm AA (6. tur): geçen yılın aynı ayları — ikinci seri.
   const [yoy, setYoy] = useState<YearOverYearPoint[]>([]);
   const [compareLastYear, setCompareLastYear] = useState(true);
+  // Bölüm AE (7. tur): teklif yanıt hızı (SLA).
+  const [responseTime, setResponseTime] = useState<QuoteResponseTime | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -46,13 +48,14 @@ function ReportsPageContent() {
     setError(null);
     try {
       const months = RANGE_OPTIONS.find((r) => r.key === range)?.months ?? 6;
-      const [revenueRes, breakdownRes, districtsRes, retentionRes, feedbackRes, yoyRes] = await Promise.all([
+      const [revenueRes, breakdownRes, districtsRes, retentionRes, feedbackRes, yoyRes, responseRes] = await Promise.all([
         api.get<{ data: RevenueTrendPoint[] }>(`/analytics/revenue-trend?months=${months}`),
         api.get<{ data: ServiceBreakdownEntry[]; total: number }>(`/analytics/service-breakdown?months=${months}`),
         api.get<{ data: TopDistrictEntry[] }>("/analytics/top-districts"),
         api.get<CustomerRetention>("/analytics/customer-retention"),
         api.get<FeedbackSummary>("/analytics/feedback-summary").catch(() => null),
         api.get<{ data: YearOverYearPoint[] }>(`/analytics/year-over-year?months=${months}`).catch(() => ({ data: [] as YearOverYearPoint[] })),
+        api.get<QuoteResponseTime>("/analytics/quote-response-time").catch(() => null),
       ]);
       setRevenue(revenueRes.data);
       setBreakdown(breakdownRes.data);
@@ -60,6 +63,7 @@ function ReportsPageContent() {
       setRetention(retentionRes);
       setFeedback(feedbackRes);
       setYoy(yoyRes.data);
+      setResponseTime(responseRes);
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "Rapor verileri yüklenemedi");
     } finally {
@@ -271,6 +275,34 @@ function ReportsPageContent() {
             emptyLabel={loading ? "Yükleniyor..." : "Veri yok"}
           />
         </ChartCard>
+
+        {/* Bölüm AE (7. tur): teklif yanıt hızı — son 30 gün, 90 günlük kıyasla */}
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <StatCard
+            label="Ort. ilk temas"
+            value={loading ? "—" : responseTime?.last30.avgFirstContactHours !== null && responseTime?.last30.avgFirstContactHours !== undefined ? `${responseTime.last30.avgFirstContactHours} sa` : "Veri yok"}
+            icon={Timer}
+            accent="blue"
+            mono
+            hint={
+              responseTime
+                ? `Son 30 gün · ${responseTime.last30.contactedCount}/${responseTime.last30.quoteCount} teklif${responseTime.last90.avgFirstContactHours !== null ? ` · 90 gün: ${responseTime.last90.avgFirstContactHours} sa` : ""}`
+                : "Teklif → ilk temas"
+            }
+          />
+          <StatCard
+            label="Ort. dönüşüm süresi"
+            value={loading ? "—" : responseTime?.last30.avgConversionHours !== null && responseTime?.last30.avgConversionHours !== undefined ? `${responseTime.last30.avgConversionHours} sa` : "Veri yok"}
+            icon={Timer}
+            accent="gold"
+            mono
+            hint={
+              responseTime
+                ? `Son 30 gün · ${responseTime.last30.convertedCount} dönüşüm${responseTime.last90.avgConversionHours !== null ? ` · 90 gün: ${responseTime.last90.avgConversionHours} sa` : ""}`
+                : "Teklif → müşteri"
+            }
+          />
+        </div>
 
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <StatCard

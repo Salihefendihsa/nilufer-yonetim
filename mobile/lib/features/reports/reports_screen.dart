@@ -27,6 +27,8 @@ class _ReportsScreenState extends State<ReportsScreen> {
   Map<String, dynamic>? _feedback;
   /// Bölüm AA (6. tur): /analytics/year-over-year — geçen yıl serisi.
   List<Map<String, dynamic>> _yoy = [];
+  /// Bölüm AE (7. tur): /analytics/quote-response-time (null → blok gizli).
+  Map<String, dynamic>? _responseTime;
   bool _loading = true;
   String? _error;
   bool _downloadingPdf = false;
@@ -50,6 +52,48 @@ class _ReportsScreenState extends State<ReportsScreen> {
     } finally {
       if (mounted) setState(() => _downloadingPdf = false);
     }
+  }
+
+  /// Bölüm AE (7. tur): teklif yanıt hızı — son 30 gün (90 günle kıyas).
+  Widget _buildResponseTime(Map<String, dynamic> rt) {
+    final last30 = (rt['last30'] as Map<String, dynamic>?) ?? const {};
+    final last90 = (rt['last90'] as Map<String, dynamic>?) ?? const {};
+    String fmt(Map<String, dynamic> w, String key) {
+      final v = w[key] as num?;
+      return v == null ? 'Veri yok' : '${v.toStringAsFixed(1)} sa';
+    }
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text('Yanıt Hızı (Teklifler)', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 14.5)),
+        const SizedBox(height: 8),
+        Row(
+          children: [
+            Expanded(
+              child: _MiniStat(
+                label: 'Ort. ilk temas · 30g',
+                value: fmt(last30, 'avgFirstContactHours'),
+                color: AppColors.info500,
+              ),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: _MiniStat(
+                label: 'Ort. dönüşüm · 30g',
+                value: fmt(last30, 'avgConversionHours'),
+                color: AppColors.warning500,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 4),
+        Text(
+          '90 gün: ilk temas ${fmt(last90, 'avgFirstContactHours')} · dönüşüm ${fmt(last90, 'avgConversionHours')} '
+          '(${last30['quoteCount'] ?? 0} teklif / 30g)',
+          style: const TextStyle(fontSize: 11.5, color: AppColors.textFaint),
+        ),
+      ],
+    );
   }
 
   Widget _buildFeedbackSummary(Map<String, dynamic> f) {
@@ -100,6 +144,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
         api.get<Map<String, dynamic>>('/analytics/revenue-trend'),
         api.get<Map<String, dynamic>>('/analytics/feedback-summary'),
         api.get<Map<String, dynamic>>('/analytics/year-over-year'),
+        api.get<Map<String, dynamic>>('/analytics/quote-response-time'),
       ]);
       setState(() {
         _serviceBreakdown = (results[0]['data'] as List)
@@ -111,6 +156,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
             .cast<Map<String, dynamic>>();
         _feedback = results[4];
         _yoy = ((results[5]['data'] as List?) ?? const []).cast<Map<String, dynamic>>();
+        _responseTime = results[6];
       });
     } catch (e) {
       setState(
@@ -178,6 +224,10 @@ class _ReportsScreenState extends State<ReportsScreen> {
                         ),
                       ],
                     ),
+                    const SizedBox(height: 20),
+                  ],
+                  if (_responseTime != null) ...[
+                    _buildResponseTime(_responseTime!),
                     const SizedBox(height: 20),
                   ],
                   if (_feedback != null &&
