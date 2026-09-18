@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../features/admin/job_templates_screen.dart';
 import '../features/approvals/approvals_screen.dart';
 import '../features/calendar/calendar_screen.dart';
 import '../features/contracts/contracts_list_screen.dart';
@@ -79,6 +80,12 @@ class _ManagerShellState extends State<ManagerShell> {
         _buildPerformance,
       ),
       AppDrawerEntry('Stok', Icons.inventory_2_outlined, _buildStock),
+      // Bölüm T (5. tur): MANAGER de şablon yönetir.
+      AppDrawerEntry(
+        'İş Şablonları',
+        Icons.dashboard_customize_outlined,
+        _buildJobTemplates,
+      ),
     ], title: 'Operasyon'),
     AppDrawerGroup([
       AppDrawerEntry('Sözleşmeler', Icons.description_outlined, _buildContracts),
@@ -94,6 +101,7 @@ class _ManagerShellState extends State<ManagerShell> {
   static Widget _buildStaff(BuildContext _) => const StaffListScreen();
   static Widget _buildPerformance(BuildContext _) => const PerformanceScreen();
   static Widget _buildStock(BuildContext _) => const StockListScreen();
+  static Widget _buildJobTemplates(BuildContext _) => const JobTemplatesScreen();
   static Widget _buildContracts(BuildContext _) => const ContractsListScreen();
   static Widget _buildQuotes(BuildContext _) => const QuotesListScreen();
   static Widget _buildFinance(BuildContext _) => const FinanceScreen();

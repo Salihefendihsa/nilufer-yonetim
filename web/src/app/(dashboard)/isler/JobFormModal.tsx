@@ -5,7 +5,7 @@ import { AlertTriangle } from "lucide-react";
 import { Modal } from "@/components/Modal";
 import { useToast } from "@/lib/ToastProvider";
 import { api, ApiError } from "@/lib/api";
-import type { Customer, Job, ServiceType, Staff, StaffUnavailability } from "@/lib/types";
+import type { Customer, Job, JobTemplate, ServiceType, Staff, StaffUnavailability } from "@/lib/types";
 
 /** Bölüm K: seçilen gün için müsait olmayan personel — staffId → kayıtlar. */
 type UnavailabilityMap = Record<string, Pick<StaffUnavailability, "startTime" | "endTime" | "reason">[]>;
@@ -39,6 +39,27 @@ export function JobFormModal({ open, onClose, onSaved, customers, staff, prefill
   const [scheduledEndAt, setScheduledEndAt] = useState("");
   const [notes, setNotes] = useState("");
   const [price, setPrice] = useState("");
+  // Bölüm T (5. tur): "Şablondan Doldur" — serviceType/price/notes/bitiş saatini
+  // önceden doldurur; kullanıcı her alanı yine değiştirebilir.
+  const [templates, setTemplates] = useState<JobTemplate[]>([]);
+  const [templateId, setTemplateId] = useState("");
+
+  function applyTemplate(id: string) {
+    setTemplateId(id);
+    const t = templates.find((x) => x.id === id);
+    if (!t) return;
+    const matched = serviceTypes.find((s) => s.name === t.serviceType);
+    setServiceTypeSelect(matched ? matched.name : OTHER_SERVICE_TYPE);
+    if (!matched) setServiceTypeOther(t.serviceType);
+    if (t.defaultPrice !== null) setPrice(String(Number(t.defaultPrice)));
+    if (t.defaultNotes) setNotes(t.defaultNotes);
+    if (t.defaultDurationMinutes && scheduledAt) {
+      const end = new Date(scheduledAt);
+      end.setMinutes(end.getMinutes() + t.defaultDurationMinutes);
+      const pad = (n: number) => String(n).padStart(2, "0");
+      setScheduledEndAt(`${end.getFullYear()}-${pad(end.getMonth() + 1)}-${pad(end.getDate())}T${pad(end.getHours())}:${pad(end.getMinutes())}`);
+    }
+  }
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const { showToast } = useToast();
@@ -81,7 +102,12 @@ export function JobFormModal({ open, onClose, onSaved, customers, staff, prefill
       setScheduledEndAt("");
       setNotes(prefill?.notes ?? "");
       setPrice("");
+      setTemplateId("");
       setError(null);
+      api
+        .get<{ data: JobTemplate[] }>("/job-templates")
+        .then((res) => setTemplates(res.data))
+        .catch(() => setTemplates([]));
       api
         .get<{ data: ServiceType[] }>("/service-types")
         .then((res) => {
@@ -128,6 +154,22 @@ export function JobFormModal({ open, onClose, onSaved, customers, staff, prefill
   return (
     <Modal open={open} onClose={onClose} title="Yeni İş">
       <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+        {templates.length > 0 && (
+          <div className="flex flex-col gap-1.5 rounded-xl border border-border bg-surface-subtle p-3">
+            <label className="text-xs font-semibold text-text-secondary">Şablondan Doldur (opsiyonel)</label>
+            <select value={templateId} onChange={(e) => applyTemplate(e.target.value)} className="input">
+              <option value="">Şablon seçin...</option>
+              {templates.map((t) => (
+                <option key={t.id} value={t.id}>
+                  {t.name} — {t.serviceType}
+                  {t.defaultPrice !== null ? ` · ${Number(t.defaultPrice).toLocaleString("tr-TR")} ₺` : ""}
+                </option>
+              ))}
+            </select>
+            <p className="text-2xs text-text-faint">Hizmet türü, fiyat ve not otomatik dolar; süre tanımlıysa planlanan saate göre bitiş de hesaplanır.</p>
+          </div>
+        )}
+
         <div className="flex flex-col gap-1.5">
           <label className="text-sm font-medium text-text-secondary">Müşteri</label>
           <select required value={customerId} onChange={(e) => setCustomerId(e.target.value)} className="input">

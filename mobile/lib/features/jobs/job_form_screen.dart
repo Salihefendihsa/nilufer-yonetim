@@ -8,6 +8,7 @@ import '../../theme/app_colors.dart';
 import '../customers/customers_api.dart';
 import '../staff/staff_api.dart';
 import '../staff/staff_unavailability_api.dart';
+import '../admin/job_templates_screen.dart';
 import 'jobs_api.dart';
 
 /// POST /jobs — backend OWNER/MANAGER'a kısıtlıyor (routes/jobs.ts:24).
@@ -102,15 +103,48 @@ class _JobFormScreenState extends State<JobFormScreen> {
     super.dispose();
   }
 
+  /// Bölüm T (5. tur): "Şablondan Doldur" — seçilince hizmet türü/fiyat/not
+  /// dolar (süre tanımlıysa ve plan saati seçiliyse bitiş de hesaplanır);
+  /// kullanıcı yine değiştirebilir.
+  final _templatesApi = JobTemplatesApi();
+  List<JobTemplate> _templates = [];
+  String? _selectedTemplateId;
+
+  void _applyTemplate(String? id) {
+    setState(() => _selectedTemplateId = id);
+    if (id == null) return;
+    final t = _templates.where((x) => x.id == id).firstOrNull;
+    if (t == null) return;
+    setState(() {
+      _serviceTypeController.text = t.serviceType;
+      if (t.defaultPrice != null) {
+        _priceController.text = t.defaultPrice!.toStringAsFixed(0);
+      }
+      if (t.defaultNotes != null && t.defaultNotes!.isNotEmpty) {
+        _notesController.text = t.defaultNotes!;
+      }
+      if (t.defaultDurationMinutes != null && _scheduledAt != null) {
+        _scheduledEndAt = _scheduledAt!.add(Duration(minutes: t.defaultDurationMinutes!));
+      }
+    });
+  }
+
   Future<void> _loadOptions() async {
     try {
       final results = await Future.wait([
         _customersApi.list(page: 1),
         _staffApi.list(page: 1),
       ]);
+      List<JobTemplate> templates = [];
+      try {
+        templates = await _templatesApi.list();
+      } on ApiException {
+        templates = []; // şablonlar alınamazsa form yine çalışır
+      }
       setState(() {
         _customers = (results[0] as dynamic).data as List<Customer>;
         _staff = (results[1] as dynamic).data as List<Staff>;
+        _templates = templates;
       });
     } catch (e) {
       setState(
@@ -216,6 +250,29 @@ class _JobFormScreenState extends State<JobFormScreen> {
               child: ListView(
                 padding: const EdgeInsets.all(16),
                 children: [
+                  if (_templates.isNotEmpty) ...[
+                    DropdownButtonFormField<String>(
+                      initialValue: _selectedTemplateId,
+                      isExpanded: true,
+                      decoration: const InputDecoration(
+                        labelText: 'Şablondan Doldur (opsiyonel)',
+                        prefixIcon: Icon(Icons.dashboard_customize_outlined),
+                      ),
+                      items: _templates
+                          .map(
+                            (t) => DropdownMenuItem(
+                              value: t.id,
+                              child: Text(
+                                '${t.name} — ${t.summary}',
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                          )
+                          .toList(),
+                      onChanged: _applyTemplate,
+                    ),
+                    const SizedBox(height: 12),
+                  ],
                   DropdownButtonFormField<String>(
                     initialValue: _selectedCustomerId,
                     isExpanded: true,

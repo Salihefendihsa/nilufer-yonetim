@@ -26,6 +26,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { RequireRole } from "@/components/RequireRole";
+import { JobTemplatesSection } from "./JobTemplatesSection";
 import { PageHeader } from "@/components/PageHeader";
 import { Modal } from "@/components/Modal";
 import { Toggle } from "@/components/Toggle";
@@ -46,6 +47,8 @@ export default function SettingsPage() {
   const { user } = useAuth();
   const isOwner = user?.role === "OWNER";
   const canUseTwoFactor = user?.role === "OWNER" || user?.role === "MANAGER";
+  // Bölüm T (5. tur): iş şablonları OWNER ve MANAGER tarafından yönetilir.
+  const canManageTemplates = canUseTwoFactor;
 
   return (
     <RequireRole roles={["OWNER", "MANAGER", "TEAM_LEAD", "STAFF", "CUSTOMER"]}>
@@ -61,6 +64,7 @@ export default function SettingsPage() {
         <ThemeSection />
         <NotificationPreferencesSection isOwner={isOwner} />
         {canUseTwoFactor && <TwoFactorSection />}
+        {canManageTemplates && <JobTemplatesSection />}
 
         {isOwner && (
           <>

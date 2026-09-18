@@ -783,6 +783,22 @@ model AppointmentRequest {
   @@index([status])
 }
 
+/// Bölüm T (5. tur): sık kullanılan iş türleri için şablon — iş formunda
+/// "Şablondan Doldur" ile serviceType/price/notes önceden dolar, kullanıcı
+/// yine değiştirebilir. Silme = isActive=false (geçmiş işler etkilenmez).
+model JobTemplate {
+  id                     String   @id @default(uuid())
+  name                   String
+  serviceType            String
+  defaultPrice           Decimal? @db.Decimal(10, 2)
+  defaultDurationMinutes Int?
+  defaultNotes           String?
+  isActive               Boolean  @default(true)
+  createdAt              DateTime @default(now())
+
+  @@index([isActive])
+}
+
 model District {
   id       String  @id @default(uuid())
   name     String  @unique

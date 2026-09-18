@@ -518,6 +518,18 @@ export interface SearchResponse {
   results: SearchResult[];
 }
 
+/** Bölüm T (5. tur): iş şablonu (GET /job-templates). */
+export interface JobTemplate {
+  id: string;
+  name: string;
+  serviceType: string;
+  defaultPrice: number | string | null;
+  defaultDurationMinutes: number | null;
+  defaultNotes: string | null;
+  isActive: boolean;
+  createdAt: string;
+}
+
 export interface ServiceType {
   id: string;
   name: string;
