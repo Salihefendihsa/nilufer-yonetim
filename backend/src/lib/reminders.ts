@@ -14,7 +14,7 @@ interface UserForEmail {
   email: string;
 }
 
-async function shouldEmail(userId: string, field: "emailEnabled" | "dailyDigestEnabled"): Promise<boolean> {
+async function shouldEmail(userId: string, field: "emailEnabled" | "dailyDigestEnabled" | "weeklyDigestEnabled"): Promise<boolean> {
   const preference = await prisma.notificationPreference.findUnique({ where: { userId } });
   if (!preference) return true; // no row yet — schema default is enabled
   return preference[field];

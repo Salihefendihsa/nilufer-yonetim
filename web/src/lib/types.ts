@@ -839,6 +839,8 @@ export interface NotificationPreference {
   userId: string;
   emailEnabled: boolean;
   dailyDigestEnabled: boolean;
+  /** Bölüm AF (7. tur): Pazartesi 08:00 haftalık yönetici özeti (OWNER). */
+  weeklyDigestEnabled: boolean;
   updatedAt: string;
 }
 

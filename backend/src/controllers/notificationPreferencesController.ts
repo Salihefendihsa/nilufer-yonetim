@@ -5,6 +5,7 @@ import { prisma } from "../lib/prisma";
 const updateSchema = z.object({
   emailEnabled: z.boolean().optional(),
   dailyDigestEnabled: z.boolean().optional(),
+  weeklyDigestEnabled: z.boolean().optional(),
 });
 
 export async function getMyNotificationPreferences(req: Request, res: Response) {

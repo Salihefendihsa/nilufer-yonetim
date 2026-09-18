@@ -1,6 +1,7 @@
 import cron from "node-cron";
 import { JobStatus, StaffStatus } from "@prisma/client";
 import { prisma } from "./prisma";
+import { sendWeeklyDigest } from "./weeklyDigest";
 import { addRecurrencePeriod } from "./recurrence";
 import {
   sendUpcomingJobReminders,
@@ -103,5 +104,11 @@ export function startReminderCrons() {
   // Günlük özet emaili — 07:00.
   cron.schedule("0 7 * * *", () => {
     sendDailyDigest().catch((err) => console.error("Günlük özet emaili başarısız:", err));
+  });
+
+  // Bölüm AF (7. tur): haftalık yönetici özeti — Pazartesi 08:00 (OWNER,
+  // weeklyDigestEnabled). SMTP yoksa sessizce atlar.
+  cron.schedule("0 8 * * 1", () => {
+    sendWeeklyDigest().catch((err) => console.error("Haftalık özet emaili başarısız:", err));
   });
 }

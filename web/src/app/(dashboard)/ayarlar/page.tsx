@@ -138,7 +138,7 @@ function NotificationPreferencesSection({ isOwner }: { isOwner: boolean }) {
 
   const { showToast } = useToast();
 
-  async function handleChange(field: "emailEnabled" | "dailyDigestEnabled", value: boolean) {
+  async function handleChange(field: "emailEnabled" | "dailyDigestEnabled" | "weeklyDigestEnabled", value: boolean) {
     if (!preference) return;
     setSaving(true);
     setError(null);
@@ -194,6 +194,21 @@ function NotificationPreferencesSection({ isOwner }: { isOwner: boolean }) {
                 disabled={saving}
                 onChange={(value) => handleChange("dailyDigestEnabled", value)}
                 label="Günlük Özet"
+              />
+            </div>
+          )}
+          {/* Bölüm AF (7. tur): haftalık yönetici özeti */}
+          {isOwner && (
+            <div className="flex items-center justify-between gap-4">
+              <div>
+                <p className="text-sm font-medium text-text-primary">Haftalık Özet E-postası</p>
+                <p className="text-sm text-text-secondary">Her Pazartesi 08:00&apos;de geçen haftanın yönetici özetini (finans, operasyon, personel, uyarılar) email olarak alın.</p>
+              </div>
+              <Toggle
+                checked={preference.weeklyDigestEnabled ?? true}
+                disabled={saving}
+                onChange={(value) => handleChange("weeklyDigestEnabled", value)}
+                label="Haftalık Özet E-postası"
               />
             </div>
           )}

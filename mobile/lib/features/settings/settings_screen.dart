@@ -32,6 +32,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
   String? _error;
   bool _emailEnabled = false;
   bool _dailyDigestEnabled = false;
+  /// Bölüm AF (7. tur): haftalık yönetici özeti (OWNER).
+  bool _weeklyDigestEnabled = true;
 
   @override
   void initState() {
@@ -52,6 +54,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       setState(() {
         _emailEnabled = data['emailEnabled'] == true;
         _dailyDigestEnabled = data['dailyDigestEnabled'] == true;
+        _weeklyDigestEnabled = data['weeklyDigestEnabled'] != false;
         _loading = false;
       });
     } on ApiException catch (e) {
@@ -66,10 +69,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
   Future<void> _update(String field, bool value) async {
     final previousEmail = _emailEnabled;
     final previousDigest = _dailyDigestEnabled;
+    final previousWeekly = _weeklyDigestEnabled;
     setState(() {
       _saving = true;
       if (field == 'emailEnabled') {
         _emailEnabled = value;
+      } else if (field == 'weeklyDigestEnabled') {
+        _weeklyDigestEnabled = value;
       } else {
         _dailyDigestEnabled = value;
       }
@@ -85,6 +91,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       setState(() {
         _emailEnabled = previousEmail;
         _dailyDigestEnabled = previousDigest;
+        _weeklyDigestEnabled = previousWeekly;
       });
       ScaffoldMessenger.of(
         context,
@@ -152,6 +159,20 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         ),
                         activeThumbColor: AppColors.primary600,
                       ),
+                      // Bölüm AF (7. tur): haftalık yönetici özeti (yalnızca OWNER'a gönderilir).
+                      if (user?.role == AppRole.owner)
+                        SwitchListTile(
+                          contentPadding: EdgeInsets.zero,
+                          value: _weeklyDigestEnabled,
+                          onChanged: _saving
+                              ? null
+                              : (v) => _update('weeklyDigestEnabled', v),
+                          title: const Text('Haftalık özet e-postası'),
+                          subtitle: const Text(
+                            'Her Pazartesi 08:00 — geçen haftanın yönetici özeti.',
+                          ),
+                          activeThumbColor: AppColors.primary600,
+                        ),
                     ],
                   ),
                 ),
