@@ -374,3 +374,67 @@ export async function getEvaluation(req: Request, res: Response) {
 
   return res.json(serializeEvaluation(evaluation, req.user!.role));
 }
+
+/**
+ * Bölüm V (5. tur): Bir personelin TÜM dönemlerdeki değerlendirme geçmişi —
+ * dönem başlangıcına göre kronolojik, her nokta { periodId, periodLabel,
+ * periodStart, periodEnd, averageScore, status, achievementTier }. OWNER/
+ * MANAGER herkes; STAFF/TEAM_LEAD yalnızca kendisi (aksi 403). Evaluator
+ * kimliği redactEvaluatorForRole ile aynı kuralla gizlenir (yönetim dışı
+ * rollere evaluatorUserId/evaluator dönmez). Yalnızca gönderilmiş/kilitli
+ * değerlendirmeler dahildir — taslaklar trendi bozmaz.
+ */
+export async function getStaffEvaluationHistory(req: Request, res: Response) {
+  const user = req.user!;
+  const staffId = req.params.staffId as string;
+
+  const scope = await resolveViewScope(req);
+  if (scope === null) {
+    return res.status(403).json({ error: "Bu işlem için yetkiniz yok" });
+  }
+  if (scope.targetStaffId && scope.targetStaffId !== staffId) {
+    return res.status(403).json({ error: "Yalnızca kendi değerlendirme geçmişinizi görebilirsiniz" });
+  }
+
+  const staff = await prisma.staff.findUnique({ where: { id: staffId }, select: { id: true, user: { select: { fullName: true } } } });
+  if (!staff) {
+    return res.status(404).json({ error: "Personel bulunamadı" });
+  }
+
+  const evaluations = await prisma.evaluation.findMany({
+    where: { targetStaffId: staffId, status: { in: [EvaluationStatus.SUBMITTED, EvaluationStatus.LOCKED] } },
+    include: {
+      period: { select: { id: true, label: true, startDate: true, endDate: true } },
+      scores: { select: { score: true } },
+      evaluator: { select: { id: true, fullName: true } },
+    },
+    orderBy: [{ period: { startDate: "asc" } }, { submittedAt: "asc" }],
+  });
+
+  const data = evaluations.map((e) => {
+    const base = {
+      evaluationId: e.id,
+      periodId: e.period.id,
+      periodLabel: e.period.label,
+      periodStart: e.period.startDate,
+      periodEnd: e.period.endDate,
+      status: e.status,
+      submittedAt: e.submittedAt,
+      averageScore: computeAverage(e.scores),
+      achievementTier: achievementTier(computeAverage(e.scores)),
+      evaluatorUserId: e.evaluatorUserId,
+      evaluator: e.evaluator,
+    };
+    return redactEvaluatorForRole(base, user.role);
+  });
+
+  const scored = data.map((d) => d.averageScore).filter((v): v is number => v !== null);
+  return res.json({
+    staffId,
+    staffName: staff.user.fullName,
+    data,
+    overallAverage: scored.length > 0 ? Math.round((scored.reduce((a, b) => a + b, 0) / scored.length) * 100) / 100 : null,
+    // Son iki dönem farkı — tek dönem varsa null (trend uydurulmaz).
+    lastDelta: scored.length >= 2 ? Math.round((scored[scored.length - 1] - scored[scored.length - 2]) * 100) / 100 : null,
+  });
+}

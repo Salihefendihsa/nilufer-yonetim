@@ -10,6 +10,7 @@ import {
   createEvaluationPeriod,
   updateEvaluationPeriod,
   listEvaluations,
+  getStaffEvaluationHistory,
   getEvaluation,
   createEvaluation,
   updateEvaluation,
@@ -24,6 +25,8 @@ const MANAGEMENT = [Role.OWNER, Role.MANAGER];
 const VIEWERS = [Role.OWNER, Role.MANAGER, Role.TEAM_LEAD, Role.STAFF];
 
 router.get("/", requireRole(...VIEWERS), listEvaluations);
+// Bölüm V (5. tur): personelin dönemler arası averageScore geçmişi — /:id'den ÖNCE.
+router.get("/staff/:staffId/history", requireRole(...VIEWERS), getStaffEvaluationHistory);
 router.post("/", requireRole(...MANAGEMENT), createEvaluation);
 router.get("/:id", requireRole(...VIEWERS), getEvaluation);
 router.patch("/:id", requireRole(...MANAGEMENT), updateEvaluation);

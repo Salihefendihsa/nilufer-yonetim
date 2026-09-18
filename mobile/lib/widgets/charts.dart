@@ -17,7 +17,16 @@ class ChartPoint {
 /// sürüm basit yatay çubuklardı — artık gerçek, animasyonlu bir çizgi grafik.
 class RevenueTrendChart extends StatelessWidget {
   final List<ChartPoint> points;
-  const RevenueTrendChart({super.key, required this.points});
+  /// Bölüm V (5. tur): Y ekseni sabit üst sınırı (örn. 20 puanlık ölçek) ve
+  /// tooltip biçimi — verilmezse ciro davranışı (₺, otomatik üst sınır) korunur.
+  final double? fixedMaxY;
+  final String Function(double value)? valueFormatter;
+  const RevenueTrendChart({
+    super.key,
+    required this.points,
+    this.fixedMaxY,
+    this.valueFormatter,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -25,7 +34,8 @@ class RevenueTrendChart extends StatelessWidget {
     final maxY = points
         .map((p) => p.value)
         .fold<double>(0, (a, b) => a > b ? a : b);
-    final safeMaxY = maxY <= 0 ? 1.0 : maxY * 1.25;
+    final safeMaxY = fixedMaxY ?? (maxY <= 0 ? 1.0 : maxY * 1.25);
+    final fmt = valueFormatter ?? (double v) => '₺${v.toStringAsFixed(0)}';
 
     return SizedBox(
       height: 180,
@@ -79,7 +89,7 @@ class RevenueTrendChart extends StatelessWidget {
               getTooltipItems: (spots) => spots
                   .map(
                     (s) => LineTooltipItem(
-                      '₺${s.y.toStringAsFixed(0)}',
+                      fmt(s.y),
                       const TextStyle(
                         color: Colors.white,
                         fontWeight: FontWeight.w700,

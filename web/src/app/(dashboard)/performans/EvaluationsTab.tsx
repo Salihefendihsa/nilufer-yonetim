@@ -6,6 +6,7 @@ import { EmptyState } from "@/components/EmptyState";
 import { Modal } from "@/components/Modal";
 import { api, ApiError } from "@/lib/api";
 import { useAuth } from "@/lib/AuthProvider";
+import { EvaluationTrendCard } from "@/components/EvaluationTrendCard";
 import { useToast } from "@/lib/ToastProvider";
 import { currencyFormatter } from "@/lib/format";
 import type { Evaluation, EvaluationCriterion, EvaluationPeriod, Paginated, Staff, StaffBonus } from "@/lib/types";
@@ -104,13 +105,9 @@ export function EvaluationsTab() {
   }
 
   if (!canManage) {
-    return (
-      <EmptyState
-        icon={ClipboardList}
-        title="Bu bölüm yönetim içindir"
-        description="Aldığınız değerlendirmeleri personel detay sayfanızdan görebilirsiniz."
-      />
-    );
+    // Bölüm V (5. tur): STAFF/TEAM_LEAD kendi trendini görür (evaluator kimliği
+    // sunucuda zaten gizli); ekip/dönem yönetimi yine yönetim içindir.
+    return <SelfEvaluationTrend />;
   }
 
   return (
@@ -565,5 +562,30 @@ function EvaluationFormModal({
         )}
       </div>
     </Modal>
+  );
+}
+
+/** Kendi personel kaydını (/staff STAFF için yalnızca kendini döner) bulup trendi gösterir. */
+function SelfEvaluationTrend() {
+  const [staffId, setStaffId] = useState<string | null>(null);
+  const [resolved, setResolved] = useState(false);
+
+  useEffect(() => {
+    api
+      .get<Paginated<Staff>>("/staff?limit=1")
+      .then((res) => setStaffId(res.data[0]?.id ?? null))
+      .catch(() => setStaffId(null))
+      .finally(() => setResolved(true));
+  }, []);
+
+  if (!resolved) return <p className="py-8 text-center text-sm text-text-faint">Yükleniyor...</p>;
+  if (!staffId) {
+    return <EmptyState icon={ClipboardList} title="Personel kaydı bulunamadı" description="Hesabınıza bağlı bir personel kaydı yok." />;
+  }
+  return (
+    <div className="flex flex-col gap-4">
+      <EvaluationTrendCard staffId={staffId} height={240} />
+      <p className="text-xs text-text-faint">Değerlendirmeleri yönetim oluşturur; burada yalnızca kendi dönem ortalamalarınızı görürsünüz.</p>
+    </div>
   );
 }

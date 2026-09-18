@@ -518,6 +518,30 @@ export interface SearchResponse {
   results: SearchResult[];
 }
 
+/** Bölüm V (5. tur): GET /evaluations/staff/:staffId/history */
+export interface EvaluationHistoryPoint {
+  evaluationId: string;
+  periodId: string;
+  periodLabel: string;
+  periodStart: string;
+  periodEnd: string;
+  status: string;
+  submittedAt: string | null;
+  averageScore: number | null;
+  achievementTier: AchievementTier | null;
+  /** Yalnızca OWNER/MANAGER'a döner. */
+  evaluatorUserId?: string;
+  evaluator?: { id: string; fullName: string };
+}
+
+export interface EvaluationHistory {
+  staffId: string;
+  staffName: string;
+  data: EvaluationHistoryPoint[];
+  overallAverage: number | null;
+  lastDelta: number | null;
+}
+
 /** Bölüm U (5. tur): işe alım kontrol listesi (GET /staff/:id/onboarding). */
 export interface OnboardingItem {
   id: string;

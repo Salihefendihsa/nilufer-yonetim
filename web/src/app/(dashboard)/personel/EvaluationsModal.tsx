@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import { Star } from "lucide-react";
 import { Modal } from "@/components/Modal";
 import { EmptyState } from "@/components/EmptyState";
+import { EvaluationTrendCard } from "@/components/EvaluationTrendCard";
 import { api, ApiError } from "@/lib/api";
 import { formatDate } from "@/lib/format";
 import type { Evaluation, Staff } from "@/lib/types";
@@ -50,6 +51,11 @@ export function EvaluationsModal({ open, onClose, staff }: EvaluationsModalProps
   return (
     <Modal open={open} onClose={onClose} title={`${staff.user.fullName} — Değerlendirmeler`}>
       {error && <p className="mb-3 rounded-2xl border border-danger-100 bg-danger-50 px-4 py-3 text-sm text-danger-500">{error}</p>}
+
+      {/* Bölüm V (5. tur): dönemden döneme trend */}
+      <div className="mb-4">
+        <EvaluationTrendCard staffId={staff.id} height={180} />
+      </div>
 
       {loading ? (
         <p className="py-8 text-center text-sm text-text-faint">Yükleniyor...</p>
