@@ -398,6 +398,15 @@ model Job {
   price            Decimal?  @db.Decimal(10, 2)
   rating           Int?
   ratingComment    String?
+  /// Bölüm S (5. tur): yapılandırılmış müşteri geri bildirimi — rating/
+  /// ratingComment GENEL puan olarak kalır, bunlar ek detaydır. Bir kez verilir
+  /// (feedbackSubmittedAt doluysa 409).
+  serviceQualityScore       Int?
+  punctualityScore          Int?
+  staffProfessionalismScore Int?
+  wouldRecommend            Boolean?
+  feedbackComment           String?
+  feedbackSubmittedAt       DateTime?
   /// Bölüm N (4. tur): personelin iş öncesi günlük kontrol listesi —
   /// [{ item, isChecked, checkedAt }] (sabit şablon: lib/checklist.ts).
   /// Rapor oluşturulurken JobReport.checklist'e kopyalanır.

@@ -120,6 +120,8 @@ class Job {
   final double? price;
   final int? rating;
   final String? ratingComment;
+  /// Bölüm S (5. tur): detaylı geri bildirim gönderildi mi (bir kez).
+  final String? feedbackSubmittedAt;
   final String createdAt;
   final String? calendarLink;
   /// Bölüm N (4. tur): iş öncesi kontrol listesi — GET /jobs/:id her zaman
@@ -153,6 +155,7 @@ class Job {
     required this.price,
     required this.rating,
     required this.ratingComment,
+    this.feedbackSubmittedAt,
     required this.createdAt,
     required this.calendarLink,
     this.checklist = const [],
@@ -194,6 +197,7 @@ class Job {
     notes: json['notes'] as String?,
     price: decimalOrNull(json['price']),
     rating: json['rating'] as int?,
+    feedbackSubmittedAt: json['feedbackSubmittedAt'] as String?,
     ratingComment: json['ratingComment'] as String?,
     createdAt: json['createdAt'] as String,
     calendarLink: json['calendarLink'] as String?,

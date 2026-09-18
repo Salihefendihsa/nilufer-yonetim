@@ -1,14 +1,14 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { TrendingUp, MapPin, Users2, BarChart3, Wallet, PieChart, Repeat, Download } from "lucide-react";
+import { TrendingUp, MapPin, Users2, BarChart3, Wallet, PieChart, Repeat, Download, MessageSquareHeart } from "lucide-react";
 import { RequireRole } from "@/components/RequireRole";
 import { PageHeader } from "@/components/PageHeader";
 import { StatCard } from "@/components/StatCard";
 import { ChartCard, DonutChart, RankBars, TrendChart } from "@/components/ChartCard";
 import { api, ApiError, downloadFile } from "@/lib/api";
 import { currencyFormatter } from "@/lib/format";
-import type { RevenueTrendPoint, ServiceBreakdownEntry, TopDistrictEntry, CustomerRetention } from "@/lib/types";
+import type { RevenueTrendPoint, ServiceBreakdownEntry, TopDistrictEntry, CustomerRetention, FeedbackSummary } from "@/lib/types";
 
 type RangeKey = "30d" | "3m" | "6m";
 
@@ -33,6 +33,8 @@ function ReportsPageContent() {
   const [breakdown, setBreakdown] = useState<ServiceBreakdownEntry[]>([]);
   const [districts, setDistricts] = useState<TopDistrictEntry[]>([]);
   const [retention, setRetention] = useState<CustomerRetention | null>(null);
+  // Bölüm S (5. tur): yapılandırılmış geri bildirim ortalamaları.
+  const [feedback, setFeedback] = useState<FeedbackSummary | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -41,16 +43,18 @@ function ReportsPageContent() {
     setError(null);
     try {
       const months = RANGE_OPTIONS.find((r) => r.key === range)?.months ?? 6;
-      const [revenueRes, breakdownRes, districtsRes, retentionRes] = await Promise.all([
+      const [revenueRes, breakdownRes, districtsRes, retentionRes, feedbackRes] = await Promise.all([
         api.get<{ data: RevenueTrendPoint[] }>(`/analytics/revenue-trend?months=${months}`),
         api.get<{ data: ServiceBreakdownEntry[]; total: number }>(`/analytics/service-breakdown?months=${months}`),
         api.get<{ data: TopDistrictEntry[] }>("/analytics/top-districts"),
         api.get<CustomerRetention>("/analytics/customer-retention"),
+        api.get<FeedbackSummary>("/analytics/feedback-summary").catch(() => null),
       ]);
       setRevenue(revenueRes.data);
       setBreakdown(breakdownRes.data);
       setDistricts(districtsRes.data);
       setRetention(retentionRes);
+      setFeedback(feedbackRes);
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "Rapor verileri yüklenemedi");
     } finally {
@@ -204,6 +208,31 @@ function ReportsPageContent() {
 
         <ChartCard title="En Yoğun Bölgeler" description="İlçe bazında iş sayısı" icon={MapPin} height={280}>
           <RankBars rows={districtRows} emptyLabel={loading ? "Yükleniyor..." : "Veri yok"} />
+        </ChartCard>
+
+        {/* Bölüm S (5. tur): 3 kriterin ortalaması (1–5) + tavsiye oranı */}
+        <ChartCard
+          title="Müşteri Geri Bildirimi"
+          description={
+            feedback && feedback.responseCount > 0
+              ? `${feedback.responseCount} detaylı değerlendirme${feedback.recommendRate !== null ? ` · %${Math.round(feedback.recommendRate)} tavsiye eder` : ""}`
+              : "Tamamlanan işlerden gelen kriter puanları"
+          }
+          icon={MessageSquareHeart}
+          height={220}
+        >
+          <RankBars
+            rows={
+              feedback && feedback.responseCount > 0
+                ? [
+                    { label: "Hizmet Kalitesi", value: feedback.serviceQualityAvg ?? 0, meta: `${(feedback.serviceQualityAvg ?? 0).toFixed(1)} / 5` },
+                    { label: "Dakiklik", value: feedback.punctualityAvg ?? 0, meta: `${(feedback.punctualityAvg ?? 0).toFixed(1)} / 5` },
+                    { label: "Personel Profesyonelliği", value: feedback.staffProfessionalismAvg ?? 0, meta: `${(feedback.staffProfessionalismAvg ?? 0).toFixed(1)} / 5` },
+                  ]
+                : []
+            }
+            emptyLabel={loading ? "Yükleniyor..." : "Henüz detaylı değerlendirme yok"}
+          />
         </ChartCard>
 
         <ChartCard title="Müşteri Sadakati (Bu Ay)" icon={Users2} height={220}>

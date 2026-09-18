@@ -12,6 +12,7 @@ import {
   approveJobReport,
   rateJob,
   updateJobChecklist,
+  submitJobFeedback,
 } from "../controllers/jobsController";
 import { exportJobReportPdf } from "../controllers/exportController";
 import { listJobPhotos, uploadJobPhoto, deleteJobPhoto } from "../controllers/jobPhotosController";
@@ -35,6 +36,8 @@ router.get("/:id/report", getJobReport);
 router.post("/:id/report/approve", requireRole(Role.OWNER, Role.MANAGER), approveJobReport);
 router.get("/:id/report/pdf", exportJobReportPdf);
 router.patch("/:id/rate", requireRole(Role.CUSTOMER), rateJob);
+// Bölüm S (5. tur): yapılandırılmış geri bildirim (bir kez, yalnızca COMPLETED).
+router.patch("/:id/feedback", requireRole(Role.CUSTOMER), submitJobFeedback);
 
 router.get("/:id/photos", listJobPhotos);
 router.post("/:id/photos", upload.single("photo"), uploadJobPhoto);

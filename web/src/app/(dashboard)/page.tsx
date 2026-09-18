@@ -47,6 +47,7 @@ import { TeamBriefingCard } from "@/components/TeamBriefingCard";
 import { ReferralCard } from "@/components/ReferralCard";
 import { MyContractsCard } from "@/components/MyContractsCard";
 import { LoyalCustomerBadge } from "@/components/Badges";
+import { FeedbackModal } from "./FeedbackModal";
 import { AppointmentRequestModal } from "./AppointmentRequestModal";
 import { JobReportModal } from "./JobReportModal";
 import { AdvanceRequestModal } from "./AdvanceRequestModal";
@@ -947,6 +948,8 @@ function CustomerDashboard() {
   const [appointmentRequests, setAppointmentRequests] = useState<AppointmentRequest[]>([]);
   // Bölüm Q (4. tur): "Sadık Müşteri" rozeti — backend hesaplar (≥5 tamamlanmış iş).
   const [isLoyal, setIsLoyal] = useState(false);
+  // Bölüm S (5. tur): detaylı geri bildirim modalı (iş id'si).
+  const [feedbackJob, setFeedbackJob] = useState<Job | null>(null);
   const [expandedJobId, setExpandedJobId] = useState<string | null>(null);
   const [reports, setReports] = useState<Record<string, JobReport | "loading" | "none">>({});
   const [photos, setPhotos] = useState<Record<string, JobPhoto[]>>({});
@@ -1186,7 +1189,7 @@ function CustomerDashboard() {
                   </button>
 
                   {isCompleted && (
-                    <div className="mt-2 flex items-center gap-2">
+                    <div className="mt-2 flex flex-wrap items-center gap-2">
                       {job.rating ? (
                         <p className="text-xs text-text-faint">Puanınız: {"★".repeat(job.rating)}</p>
                       ) : (
@@ -1194,6 +1197,18 @@ function CustomerDashboard() {
                           <span className="text-xs text-text-faint">Bu hizmeti puanlayın:</span>
                           <StarRating onRate={(rating) => handleRate(job.id, rating)} />
                         </>
+                      )}
+                      {/* Bölüm S: 3 kriter + öneri + yorum — bir kez */}
+                      {job.feedbackSubmittedAt ? (
+                        <span className="rounded-full bg-primary-50 px-2 py-0.5 text-2xs font-semibold text-primary-700">Detaylı değerlendirme alındı · teşekkürler</span>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={() => setFeedbackJob(job)}
+                          className="rounded-full border border-border bg-surface-base px-2.5 py-0.5 text-2xs font-semibold text-text-secondary transition hover:bg-surface-subtle hover:text-text-primary"
+                        >
+                          Detaylı Değerlendir
+                        </button>
                       )}
                     </div>
                   )}
@@ -1263,6 +1278,14 @@ function CustomerDashboard() {
       />
 
       <PhotoLightbox src={lightboxSrc} onClose={() => setLightboxSrc(null)} />
+
+      <FeedbackModal
+        open={!!feedbackJob}
+        jobId={feedbackJob?.id ?? null}
+        serviceType={feedbackJob?.serviceType}
+        onClose={() => setFeedbackJob(null)}
+        onSubmitted={load}
+      />
     </div>
   );
 }

@@ -136,3 +136,37 @@ export async function getCustomerRetention(_req: Request, res: Response) {
   const result = await computeCustomerRetention();
   return res.json(result);
 }
+
+/**
+ * Bölüm S (5. tur): Yapılandırılmış müşteri geri bildirimi özeti — 3 kriterin
+ * ortalaması (1–5), öneri oranı ve toplam yanıt sayısı. Geri bildirim yoksa
+ * ortalamalar null döner (uydurma sayı yok).
+ */
+export async function computeFeedbackSummary() {
+  const agg = await prisma.job.aggregate({
+    where: { feedbackSubmittedAt: { not: null } },
+    _avg: { serviceQualityScore: true, punctualityScore: true, staffProfessionalismScore: true },
+    _count: { _all: true },
+  });
+  const recommendCounts = await prisma.job.groupBy({
+    by: ["wouldRecommend"],
+    where: { feedbackSubmittedAt: { not: null }, wouldRecommend: { not: null } },
+    _count: { _all: true },
+  });
+  const yes = recommendCounts.find((r) => r.wouldRecommend === true)?._count._all ?? 0;
+  const no = recommendCounts.find((r) => r.wouldRecommend === false)?._count._all ?? 0;
+  const answered = yes + no;
+
+  return {
+    responseCount: agg._count._all,
+    serviceQualityAvg: agg._avg.serviceQualityScore,
+    punctualityAvg: agg._avg.punctualityScore,
+    staffProfessionalismAvg: agg._avg.staffProfessionalismScore,
+    recommendRate: answered > 0 ? (yes / answered) * 100 : null,
+    recommendAnswered: answered,
+  };
+}
+
+export async function getFeedbackSummary(_req: Request, res: Response) {
+  return res.json(await computeFeedbackSummary());
+}

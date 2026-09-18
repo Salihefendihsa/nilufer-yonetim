@@ -134,6 +134,15 @@ const rateSchema = z.object({
   ratingComment: z.string().optional(),
 });
 
+// Bölüm S (5. tur): yapılandırılmış geri bildirim — 3 kriter + öneri + yorum.
+const feedbackSchema = z.object({
+  serviceQualityScore: z.number().int().min(1).max(5),
+  punctualityScore: z.number().int().min(1).max(5),
+  staffProfessionalismScore: z.number().int().min(1).max(5),
+  wouldRecommend: z.boolean().optional(),
+  feedbackComment: z.string().trim().max(2000).optional(),
+});
+
 export async function listJobs(req: Request, res: Response) {
   const { skip, take, page, limit } = getPagination(req);
   const user = req.user!;
@@ -691,5 +700,43 @@ export async function rateJob(req: Request, res: Response) {
 
   const data = rateSchema.parse(req.body);
   const updated = await prisma.job.update({ where: { id: job.id }, data });
+  return res.json(updated);
+}
+
+/**
+ * Bölüm S (5. tur): Müşterinin tamamlanmış işine yapılandırılmış geri bildirimi
+ * (hizmet kalitesi / dakiklik / personel profesyonelliği + öneri + yorum).
+ * Genel puan (rating) akışından bağımsızdır; bir kez verilir (409).
+ */
+export async function submitJobFeedback(req: Request, res: Response) {
+  const user = req.user!;
+  const job = await prisma.job.findUnique({ where: { id: idParam(req) } });
+  if (!job) {
+    return res.status(404).json({ error: "İş bulunamadı" });
+  }
+
+  const customerId = await getCustomerIdForUser(user.sub);
+  if (!customerId || customerId !== job.customerId) {
+    return res.status(403).json({ error: "Bu işlem için yetkiniz yok" });
+  }
+
+  if (job.status !== JobStatus.COMPLETED) {
+    return res.status(400).json({ error: "Sadece tamamlanmış işler için geri bildirim verilebilir" });
+  }
+
+  if (job.feedbackSubmittedAt) {
+    return res.status(409).json({ error: "Bu iş için geri bildirim zaten gönderilmiş" });
+  }
+
+  const data = feedbackSchema.parse(req.body);
+  // İyimser kilit: aynı anda iki gönderimden yalnızca biri yazar.
+  const result = await prisma.job.updateMany({
+    where: { id: job.id, feedbackSubmittedAt: null },
+    data: { ...data, feedbackComment: data.feedbackComment || null, feedbackSubmittedAt: new Date() },
+  });
+  if (result.count === 0) {
+    return res.status(409).json({ error: "Bu iş için geri bildirim zaten gönderilmiş" });
+  }
+  const updated = await prisma.job.findUniqueOrThrow({ where: { id: job.id } });
   return res.json(updated);
 }

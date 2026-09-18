@@ -23,6 +23,8 @@ class _ReportsScreenState extends State<ReportsScreen> {
   List<Map<String, dynamic>> _topDistricts = [];
   List<Map<String, dynamic>> _revenueTrend = [];
   Map<String, dynamic>? _retention;
+  /// Bölüm S (5. tur): /analytics/feedback-summary (null → blok gizli).
+  Map<String, dynamic>? _feedback;
   bool _loading = true;
   String? _error;
   bool _downloadingPdf = false;
@@ -48,6 +50,40 @@ class _ReportsScreenState extends State<ReportsScreen> {
     }
   }
 
+  Widget _buildFeedbackSummary(Map<String, dynamic> f) {
+    final rate = f['recommendRate'] as num?;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          'Müşteri Geri Bildirimi',
+          style: TextStyle(fontWeight: FontWeight.w700, fontSize: 14.5),
+        ),
+        Text(
+          '${f['responseCount']} detaylı değerlendirme'
+          '${rate != null ? ' · %${rate.round()} tavsiye eder' : ''}',
+          style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
+        ),
+        const SizedBox(height: 8),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+          decoration: BoxDecoration(
+            color: AppColors.surfaceCard,
+            borderRadius: BorderRadius.circular(AppRadius.card),
+            border: Border.all(color: AppColors.borderDefault),
+          ),
+          child: Column(
+            children: [
+              _feedbackRow('Hizmet Kalitesi', f['serviceQualityAvg'] as num?),
+              _feedbackRow('Dakiklik', f['punctualityAvg'] as num?),
+              _feedbackRow('Personel Profesyonelliği', f['staffProfessionalismAvg'] as num?),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
   Future<void> _load() async {
     setState(() {
       _loading = true;
@@ -60,6 +96,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
         api.get<Map<String, dynamic>>('/analytics/top-districts'),
         api.get<Map<String, dynamic>>('/analytics/customer-retention'),
         api.get<Map<String, dynamic>>('/analytics/revenue-trend'),
+        api.get<Map<String, dynamic>>('/analytics/feedback-summary'),
       ]);
       setState(() {
         _serviceBreakdown = (results[0]['data'] as List)
@@ -69,6 +106,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
         _retention = results[2];
         _revenueTrend = (results[3]['data'] as List)
             .cast<Map<String, dynamic>>();
+        _feedback = results[4];
       });
     } catch (e) {
       setState(
@@ -136,6 +174,11 @@ class _ReportsScreenState extends State<ReportsScreen> {
                         ),
                       ],
                     ),
+                    const SizedBox(height: 20),
+                  ],
+                  if (_feedback != null &&
+                      ((_feedback!['responseCount'] as num?) ?? 0) > 0) ...[
+                    _buildFeedbackSummary(_feedback!),
                     const SizedBox(height: 20),
                   ],
                   const Text(
@@ -217,6 +260,32 @@ class _ReportsScreenState extends State<ReportsScreen> {
             ),
     );
   }
+}
+
+/// Bölüm S (5. tur): 3 kriterin ortalaması (1–5) + tavsiye oranı.
+Widget _feedbackRow(String label, num? avg) {
+  final v = (avg ?? 0).toDouble();
+  return Padding(
+    padding: const EdgeInsets.symmetric(vertical: 5),
+    child: Row(
+      children: [
+        SizedBox(width: 150, child: Text(label, style: const TextStyle(fontSize: 12.5))),
+        Expanded(
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(AppRadius.pill),
+            child: LinearProgressIndicator(
+              value: (v / 5).clamp(0, 1),
+              minHeight: 8,
+              backgroundColor: AppColors.surfaceMuted,
+              color: AppColors.primary500,
+            ),
+          ),
+        ),
+        const SizedBox(width: 10),
+        Text('${v.toStringAsFixed(1)} / 5', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700)),
+      ],
+    ),
+  );
 }
 
 class _MiniStat extends StatelessWidget {

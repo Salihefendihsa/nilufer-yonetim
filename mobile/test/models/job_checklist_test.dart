@@ -49,4 +49,14 @@ void main() {
       expect(uri.queryParameters['query'], 'Çınar Sk. No:5, Nilüfer');
     });
   });
+
+  group('Job.feedbackSubmittedAt (Bölüm S)', () {
+    test('yoksa null, varsa okunur', () {
+      expect(Job.fromJson(_baseJob()).feedbackSubmittedAt, isNull);
+      expect(
+        Job.fromJson({..._baseJob(), 'feedbackSubmittedAt': '2026-09-18T10:00:00.000Z'}).feedbackSubmittedAt,
+        '2026-09-18T10:00:00.000Z',
+      );
+    });
+  });
 }

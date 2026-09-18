@@ -93,6 +93,9 @@ const CASES: EndpointCase[] = [
   { method: "get", path: "/customers/me/badges", allowed: ["CUSTOMER"] },
   { method: "post", path: `/contracts/${NIL}/pause`, allowed: ["CUSTOMER", "OWNER", "MANAGER"] },
   { method: "post", path: `/contracts/${NIL}/resume`, allowed: ["CUSTOMER", "OWNER", "MANAGER"] },
+  // Bölüm S (5. tur)
+  { method: "patch", path: `/jobs/${NIL}/feedback`, allowed: ["CUSTOMER"], body: {} },
+  { method: "get", path: "/analytics/feedback-summary", allowed: ["OWNER", "MANAGER"] },
 ];
 
 describe("RBAC sınırları", () => {

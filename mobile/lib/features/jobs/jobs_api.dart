@@ -185,6 +185,28 @@ class JobsApi {
     return Job.fromJson(json);
   }
 
+  /// Bölüm S (5. tur): PATCH /jobs/:id/feedback — 3 kriter + öneri + yorum.
+  Future<Job> submitFeedback(
+    String jobId, {
+    required int serviceQualityScore,
+    required int punctualityScore,
+    required int staffProfessionalismScore,
+    bool? wouldRecommend,
+    String? comment,
+  }) async {
+    final json = await _api.patch<Map<String, dynamic>>(
+      '/jobs/$jobId/feedback',
+      body: {
+        'serviceQualityScore': serviceQualityScore,
+        'punctualityScore': punctualityScore,
+        'staffProfessionalismScore': staffProfessionalismScore,
+        'wouldRecommend': ?wouldRecommend,
+        if (comment != null && comment.isNotEmpty) 'feedbackComment': comment,
+      },
+    );
+    return Job.fromJson(json);
+  }
+
   String resolveUploadUrl(String url) => _api.resolveUploadUrl(url);
 }
 

@@ -41,6 +41,13 @@ export interface Job {
   price: number | null;
   rating: number | null;
   ratingComment: string | null;
+  /** Bölüm S (5. tur): yapılandırılmış geri bildirim (genel puandan bağımsız, bir kez). */
+  serviceQualityScore?: number | null;
+  punctualityScore?: number | null;
+  staffProfessionalismScore?: number | null;
+  wouldRecommend?: boolean | null;
+  feedbackComment?: string | null;
+  feedbackSubmittedAt?: string | null;
   createdAt: string;
   calendarLink: string | null;
   /** Bölüm N (4. tur): iş öncesi kontrol listesi (GET /jobs/:id her zaman tam şablonu döner). */
@@ -643,6 +650,16 @@ export interface ServiceBreakdownEntry {
 export interface TopDistrictEntry {
   district: string;
   count: number;
+}
+
+/** Bölüm S (5. tur): GET /analytics/feedback-summary */
+export interface FeedbackSummary {
+  responseCount: number;
+  serviceQualityAvg: number | null;
+  punctualityAvg: number | null;
+  staffProfessionalismAvg: number | null;
+  recommendRate: number | null;
+  recommendAnswered: number;
 }
 
 export interface CustomerRetention {

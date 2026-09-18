@@ -308,6 +308,14 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
               currentRating: job.rating,
               onRated: _load,
             ),
+            const SizedBox(height: 10),
+            // Bölüm S (5. tur): 3 kriter + öneri + yorum — bir kez.
+            _FeedbackCard(
+              jobId: job.id,
+              api: _api,
+              submitted: job.feedbackSubmittedAt != null,
+              onSubmitted: _load,
+            ),
           ],
 
           const SizedBox(height: 18),
@@ -440,6 +448,160 @@ class _Pill extends StatelessWidget {
               color: AppColors.textSecondary,
             ),
           ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Bölüm S (5. tur): Detaylı değerlendirme kartı — gönderilmişse teşekkür
+/// metni, değilse alt sayfada form (hizmet kalitesi / dakiklik / personel +
+/// tavsiye + yorum). Genel yıldız puanından bağımsız.
+class _FeedbackCard extends StatelessWidget {
+  final String jobId;
+  final JobsApi api;
+  final bool submitted;
+  final VoidCallback onSubmitted;
+  const _FeedbackCard({
+    required this.jobId,
+    required this.api,
+    required this.submitted,
+    required this.onSubmitted,
+  });
+
+  static const _criteria = <({String key, String label, String hint})>[
+    (key: 'quality', label: 'Hizmet Kalitesi', hint: 'Uygulamanın etkinliği ve özeni'),
+    (key: 'punctuality', label: 'Dakiklik', hint: 'Randevu saatine uyum'),
+    (key: 'staff', label: 'Personel Profesyonelliği', hint: 'İletişim, nezaket, bilgilendirme'),
+  ];
+
+  Future<void> _openForm(BuildContext context) async {
+    final scores = <String, int>{};
+    bool? recommend;
+    final commentController = TextEditingController();
+    var submitting = false;
+
+    final done = await showModalBottomSheet<bool>(
+      context: context,
+      isScrollControlled: true,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setSheetState) => Padding(
+          padding: EdgeInsets.only(
+            bottom: MediaQuery.of(ctx).viewInsets.bottom,
+            left: 20,
+            right: 20,
+            top: 20,
+          ),
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Detaylı Değerlendirme',
+                  style: TextStyle(fontWeight: FontWeight.w700, fontSize: 15),
+                ),
+                const SizedBox(height: 12),
+                for (final c in _criteria) ...[
+                  Text(c.label, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
+                  Text(c.hint, style: const TextStyle(fontSize: 11.5, color: AppColors.textFaint)),
+                  Row(
+                    children: [
+                      for (var n = 1; n <= 5; n++)
+                        IconButton(
+                          visualDensity: VisualDensity.compact,
+                          onPressed: () => setSheetState(() => scores[c.key] = n),
+                          icon: Icon(
+                            n <= (scores[c.key] ?? 0) ? Icons.star_rounded : Icons.star_outline_rounded,
+                            color: n <= (scores[c.key] ?? 0) ? AppColors.warning500 : AppColors.textFaint,
+                          ),
+                        ),
+                    ],
+                  ),
+                  const SizedBox(height: 6),
+                ],
+                const Text('Bizi tavsiye eder misiniz?', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
+                const SizedBox(height: 6),
+                SegmentedButton<bool>(
+                  emptySelectionAllowed: true,
+                  segments: const [
+                    ButtonSegment(value: true, label: Text('Evet'), icon: Icon(Icons.thumb_up_outlined, size: 16)),
+                    ButtonSegment(value: false, label: Text('Hayır'), icon: Icon(Icons.thumb_down_outlined, size: 16)),
+                  ],
+                  selected: recommend == null ? const {} : {recommend!},
+                  onSelectionChanged: (s) => setSheetState(() => recommend = s.isEmpty ? null : s.first),
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: commentController,
+                  decoration: const InputDecoration(labelText: 'Yorumunuz (opsiyonel)'),
+                  minLines: 2,
+                  maxLines: 4,
+                  maxLength: 2000,
+                ),
+                const SizedBox(height: 8),
+                ElevatedButton(
+                  onPressed: submitting || scores.length < _criteria.length
+                      ? null
+                      : () async {
+                          setSheetState(() => submitting = true);
+                          try {
+                            await api.submitFeedback(
+                              jobId,
+                              serviceQualityScore: scores['quality']!,
+                              punctualityScore: scores['punctuality']!,
+                              staffProfessionalismScore: scores['staff']!,
+                              wouldRecommend: recommend,
+                              comment: commentController.text.trim(),
+                            );
+                            if (ctx.mounted) Navigator.of(ctx).pop(true);
+                          } catch (e) {
+                            if (ctx.mounted) {
+                              setSheetState(() => submitting = false);
+                              ScaffoldMessenger.of(ctx).showSnackBar(
+                                SnackBar(content: Text(e is ApiException ? e.message : 'Gönderilemedi')),
+                              );
+                            }
+                          }
+                        },
+                  child: Text(submitting ? 'Gönderiliyor...' : 'Gönder'),
+                ),
+                const SizedBox(height: 12),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+    if (done == true) onSubmitted();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: AppColors.surfaceCard,
+        borderRadius: BorderRadius.circular(AppRadius.card),
+        border: Border.all(color: AppColors.borderDefault),
+      ),
+      child: Row(
+        children: [
+          const Icon(Icons.rate_review_outlined, color: AppColors.primary600, size: 20),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              submitted
+                  ? 'Detaylı değerlendirmeniz alındı — teşekkürler.'
+                  : 'Hizmeti birkaç açıdan değerlendirin (kalite, dakiklik, personel).',
+              style: const TextStyle(fontSize: 12.5, color: AppColors.textSecondary),
+            ),
+          ),
+          if (!submitted)
+            TextButton(
+              onPressed: () => _openForm(context),
+              child: const Text('Detaylı Değerlendir'),
+            ),
         ],
       ),
     );
