@@ -705,7 +705,28 @@ export async function rateJob(req: Request, res: Response) {
 
   const data = rateSchema.parse(req.body);
   const updated = await prisma.job.update({ where: { id: job.id }, data });
+  // Bölüm AG (7. tur): düşük puan → yönetime anında uyarı.
+  if (data.rating <= LOW_SATISFACTION_RATING) {
+    await notifyLowSatisfaction(job.id, job.customerId, job.serviceType, `puan: ${data.rating}/5`);
+  }
   return res.json(updated);
+}
+
+/** Bölüm AG: bu değer ve altındaki genel puan "düşük memnuniyet" sayılır. */
+export const LOW_SATISFACTION_RATING = 2;
+
+/**
+ * Bölüm AG (7. tur): Düşük memnuniyet uyarısı — OWNER/MANAGER'a bildirim.
+ * Tetikleyiciler: genel puan ≤ 2 (rateJob) veya "tavsiye eder misiniz?" = hayır
+ * (submitJobFeedback). Müşteri adı bildirim gövdesinde; iş bağlantısıyla.
+ */
+async function notifyLowSatisfaction(jobId: string, customerId: string, serviceType: string, detail: string) {
+  const customer = await prisma.customer.findUnique({ where: { id: customerId }, select: { fullName: true } });
+  await notifyManagement(
+    "Düşük memnuniyet",
+    `${customer?.fullName ?? "Müşteri"} - ${serviceType}, ${detail}`,
+    { type: "low_satisfaction", relatedType: "Job", relatedId: jobId }
+  );
 }
 
 /**
@@ -743,5 +764,14 @@ export async function submitJobFeedback(req: Request, res: Response) {
     return res.status(409).json({ error: "Bu iş için geri bildirim zaten gönderilmiş" });
   }
   const updated = await prisma.job.findUniqueOrThrow({ where: { id: job.id } });
+  // Bölüm AG (7. tur): olumsuz öneri → yönetime uyarı (kriter puanları da özetlenir).
+  if (data.wouldRecommend === false) {
+    await notifyLowSatisfaction(
+      job.id,
+      job.customerId,
+      job.serviceType,
+      `tavsiye etmiyor (kalite ${data.serviceQualityScore}, dakiklik ${data.punctualityScore}, personel ${data.staffProfessionalismScore})`
+    );
+  }
   return res.json(updated);
 }
