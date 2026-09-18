@@ -50,8 +50,18 @@ export interface Job {
   cancelledAt: string | null;
   cancellationReason: string | null;
   /** Liste/detay yanıtına gömülü — ayrıca /customers veya /staff çağırmaya gerek bırakmaz. */
-  customer?: { fullName: string };
+  customer?: { fullName: string; phone?: string; address?: string | null; district?: string | null };
   assignedStaff?: { user: { fullName: string } } | null;
+}
+
+/**
+ * Bölüm O (4. tur): "Yol Tarifi" — müşteri adresi (+ semt) için Google Maps
+ * arama linki. Adres yoksa null (buton gizlenir).
+ */
+export function directionsUrl(customer?: { address?: string | null; district?: string | null } | null): string | null {
+  const query = [customer?.address, customer?.district].filter((x) => x && x.trim()).join(", ");
+  if (!query) return null;
+  return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query)}`;
 }
 
 export interface Payment {

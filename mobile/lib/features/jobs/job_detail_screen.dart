@@ -5,6 +5,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'package:signature/signature.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../../auth/auth_provider.dart';
 import '../../core/api_client.dart';
@@ -203,6 +204,28 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
                       ),
                   ],
                 ),
+                // Bölüm O (4. tur): Yol Tarifi — müşteri adresini Google Maps
+                // arama linkiyle açar (platform varsayılan harita uygulaması).
+                if (job.directionsUri != null) ...[
+                  const SizedBox(height: 10),
+                  Align(
+                    alignment: Alignment.centerLeft,
+                    child: OutlinedButton.icon(
+                      onPressed: () => launchUrl(
+                        job.directionsUri!,
+                        mode: LaunchMode.externalApplication,
+                      ),
+                      icon: const Icon(Icons.directions_outlined, size: 18),
+                      label: Text(
+                        [job.customerAddress, job.customerDistrict]
+                            .whereType<String>()
+                            .where((s) => s.trim().isNotEmpty)
+                            .join(', '),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ),
+                ],
                 if (job.cancellationReason != null) ...[
                   const SizedBox(height: 6),
                   Text(

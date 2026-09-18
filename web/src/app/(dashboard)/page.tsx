@@ -42,6 +42,7 @@ import { ActivityFeed } from "@/components/ActivityFeed";
 import { PhotoLightbox } from "@/components/PhotoLightbox";
 import { currencyFormatter, formatDateTime, todayIsoDate, toIsoDate } from "@/lib/format";
 import type { Job, JobReport, JobPhoto, JobStatus, Staff, Paginated, Customer, ActivityEvent, SystemHealth, DashboardSummary, TeamSummary, TeamDailyBriefing, AppointmentRequest } from "@/lib/types";
+import { directionsUrl } from "@/lib/types";
 import { TeamBriefingCard } from "@/components/TeamBriefingCard";
 import { AppointmentRequestModal } from "./AppointmentRequestModal";
 import { JobReportModal } from "./JobReportModal";
@@ -876,7 +877,19 @@ function StaffDashboard() {
                     <StatusBadge status={job.status} />
                   </div>
                 </div>
-                <div className="flex items-center gap-3">
+                <div className="flex flex-wrap items-center gap-3">
+                  {/* Bölüm O (4. tur): Yol Tarifi — müşteri adresi Google Maps'te yeni sekmede. */}
+                  {directionsUrl(job.customer) && (
+                    <a
+                      href={directionsUrl(job.customer)!}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-2 rounded-2xl border border-border bg-surface-base px-4 py-2.5 text-sm font-medium text-text-secondary transition hover:border-border-strong hover:bg-surface-subtle"
+                    >
+                      <MapPin size={15} strokeWidth={1.75} />
+                      Yol Tarifi
+                    </a>
+                  )}
                   {job.calendarLink && (
                     <a
                       href={job.calendarLink}

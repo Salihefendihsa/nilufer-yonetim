@@ -94,6 +94,20 @@ class JobChecklistEntry {
 }
 
 class Job {
+  /// Bölüm O (4. tur): müşteri adresi (+ semt) için Google Maps arama linki;
+  /// adres yoksa null (buton gizlenir).
+  Uri? get directionsUri {
+    final query = [customerAddress, customerDistrict]
+        .whereType<String>()
+        .where((s) => s.trim().isNotEmpty)
+        .join(', ');
+    if (query.isEmpty) return null;
+    return Uri.https('www.google.com', '/maps/search/', {
+      'api': '1',
+      'query': query,
+    });
+  }
+
   final String id;
   final String customerId;
   final String? assignedStaffId;

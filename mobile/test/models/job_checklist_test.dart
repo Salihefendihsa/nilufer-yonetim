@@ -32,4 +32,21 @@ void main() {
     expect(job.checklist.last.isChecked, isFalse);
     expect(job.checklist.where((e) => e.isChecked).length, 1);
   });
+
+  group('Job.directionsUri (Bölüm O)', () {
+    test('adres yoksa null', () {
+      expect(Job.fromJson(_baseJob()).directionsUri, isNull);
+    });
+    test('adres + semt Google Maps arama linkine kodlanır', () {
+      final job = Job.fromJson({
+        ..._baseJob(),
+        'customer': {'fullName': 'Ali', 'address': 'Çınar Sk. No:5', 'district': 'Nilüfer'},
+      });
+      final uri = job.directionsUri!;
+      expect(uri.host, 'www.google.com');
+      expect(uri.path, '/maps/search/');
+      expect(uri.queryParameters['api'], '1');
+      expect(uri.queryParameters['query'], 'Çınar Sk. No:5, Nilüfer');
+    });
+  });
 }
