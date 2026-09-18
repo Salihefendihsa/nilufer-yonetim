@@ -647,3 +647,77 @@ deep-link).
 - Backend vitest: 125 → **155** test (+30: L 5, M 3, N 6, P 6, Q 10).
 - Flutter: 23 → **35** test (+12).
 - Yeni migration: `job_checklist`, `customer_referral`, `contract_pause`.
+
+---
+
+# 5. Tur — Bölüm S / T / U / V / W
+
+## Bölüm S — Yapılandırılmış Müşteri Geri Bildirimi
+
+Alanlar **Job** modeline eklendi (ayrı CustomerFeedback modeli gereksizdi;
+`rating/ratingComment` zaten Job'da ve genel puan olarak DOKUNULMADI):
+`serviceQualityScore / punctualityScore / staffProfessionalismScore` (1–5),
+`wouldRecommend?`, `feedbackComment?`, `feedbackSubmittedAt?`.
+`PATCH /jobs/:id/feedback` — CUSTOMER, kendi işi (403), COMPLETED (400), bir
+kez (409; `updateMany where feedbackSubmittedAt: null` iyimser kilit).
+`GET /analytics/feedback-summary` (OWNER/MANAGER): 3 kriter ortalaması, tavsiye
+oranı, yanıt sayısı — veri yoksa null. Web: `FeedbackModal` ("Detaylı
+Değerlendir", müşteri Ana Sayfa), Raporlar → "Müşteri Geri Bildirimi"
+`RankBars` kartı. Mobil: iş detayında `_FeedbackCard` (alt sayfa), Raporlar'da
+özet blok.
+
+## Bölüm T — İş Şablonları
+
+`JobTemplate` (name, serviceType, defaultPrice, defaultDurationMinutes,
+defaultNotes, isActive). `/job-templates` CRUD OWNER/MANAGER; DELETE yumuşak
+(`isActive:false`, `?includeInactive=true`). "Şablondan Doldur" istemci
+mantığıdır: hizmet türü/fiyat/not dolar, `defaultDurationMinutes` + planlanan
+saat varsa bitiş saati hesaplanır; kullanıcı her alanı değiştirebilir. Web
+Ayarlar → `JobTemplatesSection` (OWNER **ve** MANAGER — diğer Ayarlar bölümleri
+OWNER'a özel), `JobFormModal` dropdown'ı. Mobil `JobTemplatesScreen`
+(Ayarlar listesi + Müdür çekmecesi "İş Şablonları"), iş formunda dropdown.
+
+## Bölüm U — Yeni Personel İşe Alım Kontrol Listesi
+
+`OnboardingChecklistItem` (staffId, item, sortOrder, isCompleted,
+completedAt/By). `createStaff` transaction'ında `lib/onboarding.ts` şablonu
+(5 madde) otomatik eklenir — `usersController.demoteFromManager`'ın yeniden
+oluşturduğu Staff kaydına EKLENMEZ (o bir işe alım değil, rol düşürme).
+`GET /staff/:id/onboarding` OWNER/MANAGER herkes, STAFF/TEAM_LEAD kendi kaydı
+salt-okunur (aksi 403), `progress {total, completed, percent, isComplete}`;
+`PATCH /staff/:id/onboarding/:itemId` OWNER/MANAGER — damga, yeniden
+işaretlemede korunur, geri alınca sıfırlanır, audit log. Web: `OnboardingModal`
++ kartta "İşe Alım" butonu; mobil: `OnboardingCard` personel detayında (liste
+boşsa — özellikten önce açılmış kayıt — gizli).
+
+## Bölüm V — Değerlendirme Geçmişi Trendi
+
+`GET /evaluations/staff/:staffId/history` — yalnızca SUBMITTED/LOCKED
+değerlendirmeler (taslak trendi bozmaz), dönem başlangıcına göre kronolojik;
+nokta: `periodLabel, averageScore, achievementTier, status`; `overallAverage`,
+`lastDelta` (tek dönemde null). Kapsam `resolveViewScope` (STAFF/TEAM_LEAD
+yalnızca kendisi → aksi 403), evaluator kimliği `redactEvaluatorForRole` ile
+yönetim dışına dönmez — testle sabitlendi. Web: `EvaluationTrendCard` (recharts
+`TrendChart`) `EvaluationsModal` üstünde ve Performans → Değerlendirmeler'de
+STAFF/TEAM_LEAD kendi trendi (`SelfEvaluationTrend`; önceden bu rol boş
+durum görüyordu). Mobil: `RevenueTrendChart`'a `fixedMaxY/valueFormatter`
+eklendi (ciro davranışı korunur), `EvaluationTrendCard` (fl_chart, 1–20).
+
+## Bölüm W — Stok Tükenme Tahmini
+
+`lib/stockForecast.ts`: son 30 gün **OUT** hareketleri toplamı / 30 = günlük
+ortalama; `currentStock / günlük = kalan gün` (floor) ve tükenme tarihi. OUT
+yoksa tüm alanlar null + `note: "Tahmin için yeterli veri yok"` — uydurma sayı
+yok. IN hareketleri ve 30 günden eski OUT'lar sayılmaz (testle sabit).
+`GET /products/:id/forecast` (OWNER/MANAGER); `/products` listesine her satır
+için `forecast` tek `groupBy` ile gömüldü (N+1 yok). Web/mobil kartta
+"Tahmini N gün sonra biter" (≤7 gün kırmızı, ≤30 sarı, 0 → "Tükendi"); veri
+yoksa hiçbir şey.
+
+## 5. Tur Toplam
+
+- Backend vitest: 155 → **185** test (+30: S 7, T 7, U 6, V 4, W 6).
+- Flutter: 35 → **44** test (+9).
+- Yeni migration: `job_structured_feedback`, `job_templates`, `onboarding_checklist`.
+- Cron/toplu iş fonksiyonu bu turda test edilmedi; test verisi ürün/hareket/
+  dönem/kriter dahil ID ile temizlendi (Bölüm Q dersi korunuyor).
