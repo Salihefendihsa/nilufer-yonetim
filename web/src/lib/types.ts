@@ -200,6 +200,18 @@ export interface LeaveRequest {
   staff?: { user: { fullName: string } };
 }
 
+/** Bölüm K (3. tur): personelin hafif "müsait değilim" işareti (startTime/endTime null = tüm gün). */
+export interface StaffUnavailability {
+  id: string;
+  staffId: string;
+  /** YYYY-MM-DD */
+  date: string;
+  startTime: string | null;
+  endTime: string | null;
+  reason: string | null;
+  createdAt: string;
+}
+
 /** Bölüm J (3. tur): giriş yapmış müşterinin kendi randevu talebi. */
 export type AppointmentRequestStatus = "PENDING" | "SCHEDULED" | "DECLINED";
 

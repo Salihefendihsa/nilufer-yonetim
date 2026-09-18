@@ -9,8 +9,10 @@ import { StatusStrip } from "@/components/StatusStrip";
 import { ChartCard, SimpleBarChart } from "@/components/ChartCard";
 import { StatusBadge, STATUS_COLORS, STATUS_TEXT } from "@/components/StatusBadge";
 import { api, ApiError } from "@/lib/api";
+import { useAuth } from "@/lib/AuthProvider";
 import { formatDateTime } from "@/lib/format";
-import type { Job, JobStatus, Paginated } from "@/lib/types";
+import type { Job, JobStatus, Paginated, StaffUnavailability } from "@/lib/types";
+import { UnavailabilityPanel } from "./UnavailabilityPanel";
 
 const WEEKDAY_LABELS = ["Pzt", "Sal", "Çar", "Per", "Cum", "Cmt", "Paz"];
 const MONTH_LABELS = [
@@ -59,6 +61,11 @@ const HEAT_LEGEND: { level: 0 | 1 | 2 | 3 | 4; swatch: string }[] = [
 ];
 
 export default function CalendarPage() {
+  const { user } = useAuth();
+  // Bölüm K (3. tur): STAFF/TEAM_LEAD kendi müsaitliğini işaretler; işaretli
+  // günler takvim hücresinde küçük bir rozetle görünür.
+  const canMarkUnavailability = user?.role === "STAFF" || user?.role === "TEAM_LEAD";
+  const [unavailableDays, setUnavailableDays] = useState<Set<string>>(new Set());
   const [monthStart, setMonthStart] = useState(() => {
     const now = new Date();
     return new Date(now.getFullYear(), now.getMonth(), 1);
@@ -129,6 +136,10 @@ export default function CalendarPage() {
   }, [monthStart]);
 
   const today = dateKey(new Date());
+  const monthKey = `${monthStart.getFullYear()}-${String(monthStart.getMonth() + 1).padStart(2, "0")}`;
+  const handleUnavailabilityChanged = useCallback((rows: StaffUnavailability[]) => {
+    setUnavailableDays(new Set(rows.map((r) => r.date)));
+  }, []);
 
   // Özet değerlerin tamamı zaten çekilmiş aylık iş listesinden türetilir; ek istek yok.
   const stats = useMemo(() => {
@@ -309,6 +320,11 @@ export default function CalendarPage() {
                       {dayJobs.length} iş
                     </span>
                   )}
+                  {inMonth && unavailableDays.has(key) && (
+                    <span className="rounded-full bg-warning-50 px-1.5 text-[9px] font-semibold text-warning-600 ring-1 ring-warning-100" title="Müsait değilim">
+                      müsait değil
+                    </span>
+                  )}
                   {inMonth && isToday && !isSelected && <span className="h-1 w-1 rounded-full bg-primary-600" />}
                 </button>
               );
@@ -365,6 +381,10 @@ export default function CalendarPage() {
           </div>
         </div>
       </div>
+
+      {canMarkUnavailability && (
+        <UnavailabilityPanel selectedDate={selectedDate} month={monthKey} onChanged={handleUnavailabilityChanged} />
+      )}
     </div>
   );
 }

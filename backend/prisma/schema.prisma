@@ -268,6 +268,7 @@ model Staff {
   leaveRequests LeaveRequest[]
   permissions     Permission[]
   certifications  StaffCertification[]
+  unavailabilities StaffUnavailability[]
   collectedPayments Payment[]      @relation("PaymentCollectedBy")
   evaluationsReceived Evaluation[] @relation("EvaluationTarget")
   staffBonuses    StaffBonus[]
@@ -275,6 +276,26 @@ model Staff {
   @@index([position])
   @@index([supervisorId])
   @@index([archivedAt])
+}
+
+/// Bölüm K (3. tur): Personelin "bugün öğleden sonra müsait değilim" gibi
+/// hafif, anlık müsait-olmama işareti — izin talebinden (LeaveRequest, onay
+/// gerektirir) AYRI. startTime/endTime null ise tüm gün. İş atamayı
+/// ENGELLEMEZ; iş formunda yalnızca bilgilendirici uyarı olarak gösterilir.
+model StaffUnavailability {
+  id        String   @id @default(uuid())
+  staffId   String
+  date      DateTime @db.Date
+  /// "HH:mm" — null ise tüm gün.
+  startTime String?
+  endTime   String?
+  reason    String?
+  createdAt DateTime @default(now())
+
+  staff Staff @relation(fields: [staffId], references: [id], onDelete: Cascade)
+
+  @@index([staffId, date])
+  @@index([date])
 }
 
 model StaffCertification {

@@ -22,6 +22,13 @@ import {
   deleteCertification,
   getExpiringCertifications,
 } from "../controllers/staffCertificationsController";
+import {
+  createMyUnavailability,
+  deleteMyUnavailability,
+  listMyUnavailability,
+  listStaffUnavailability,
+  listUnavailableStaffOnDate,
+} from "../controllers/staffUnavailabilityController";
 
 const router = Router();
 
@@ -30,6 +37,11 @@ router.use(requireAuth);
 router.get("/leaderboard", requireRole(Role.OWNER, Role.MANAGER, Role.TEAM_LEAD), getStaffLeaderboard);
 router.get("/org-chart", requireRole(Role.OWNER), getOrgChart);
 router.get("/certifications/expiring", requireRole(Role.OWNER, Role.MANAGER), getExpiringCertifications);
+// Bölüm K (3. tur): müsaitlik — sabit yollar /:id'den ÖNCE kayıtlı olmalı.
+router.get("/unavailability", requireRole(Role.OWNER, Role.MANAGER, Role.TEAM_LEAD), listUnavailableStaffOnDate);
+router.get("/me/unavailability", requireRole(Role.STAFF, Role.TEAM_LEAD), listMyUnavailability);
+router.post("/me/unavailability", requireRole(Role.STAFF, Role.TEAM_LEAD), createMyUnavailability);
+router.delete("/me/unavailability/:id", requireRole(Role.STAFF, Role.TEAM_LEAD), deleteMyUnavailability);
 router.get("/", requireRole(Role.OWNER, Role.MANAGER, Role.TEAM_LEAD, Role.STAFF), listStaff);
 router.get("/:id", requireRole(Role.OWNER, Role.MANAGER, Role.TEAM_LEAD, Role.STAFF), getStaff);
 router.post("/", requireRole(Role.OWNER, Role.MANAGER), createStaff);
@@ -48,6 +60,7 @@ router.patch(
   updateStaffStatus
 );
 
+router.get("/:id/unavailability", requireRole(Role.OWNER, Role.MANAGER, Role.TEAM_LEAD, Role.STAFF), listStaffUnavailability);
 router.get("/:id/certifications", requireRole(Role.OWNER, Role.MANAGER), listCertifications);
 router.post("/:id/certifications", requireRole(Role.OWNER, Role.MANAGER), createCertification);
 router.patch("/:id/certifications/:certId", requireRole(Role.OWNER, Role.MANAGER), updateCertification);

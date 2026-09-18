@@ -1,10 +1,20 @@
 "use client";
 
 import { useEffect, useState, type FormEvent } from "react";
+import { AlertTriangle } from "lucide-react";
 import { Modal } from "@/components/Modal";
 import { useToast } from "@/lib/ToastProvider";
 import { api, ApiError } from "@/lib/api";
-import type { Customer, Job, ServiceType, Staff } from "@/lib/types";
+import type { Customer, Job, ServiceType, Staff, StaffUnavailability } from "@/lib/types";
+
+/** Bölüm K: seçilen gün için müsait olmayan personel — staffId → kayıtlar. */
+type UnavailabilityMap = Record<string, Pick<StaffUnavailability, "startTime" | "endTime" | "reason">[]>;
+
+function describeUnavailability(rows: UnavailabilityMap[string]): string {
+  return rows
+    .map((r) => (r.startTime && r.endTime ? `${r.startTime}–${r.endTime}` : "tüm gün"))
+    .join(", ");
+}
 
 const OTHER_SERVICE_TYPE = "__diger__";
 
@@ -32,6 +42,34 @@ export function JobFormModal({ open, onClose, onSaved, customers, staff, prefill
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const { showToast } = useToast();
+
+  // Bölüm K (3. tur): seçilen tarihte müsait olmayan personel — ATAMAYI
+  // ENGELLEMEZ, yalnızca seçenek yanında ve seçim altında uyarı gösterir.
+  const [unavailable, setUnavailable] = useState<UnavailabilityMap>({});
+  const scheduledDate = scheduledAt ? scheduledAt.slice(0, 10) : "";
+  useEffect(() => {
+    if (!open || !scheduledDate) {
+      setUnavailable({});
+      return;
+    }
+    let cancelled = false;
+    api
+      .get<{ data: (Pick<StaffUnavailability, "startTime" | "endTime" | "reason"> & { staffId: string })[] }>(
+        `/staff/unavailability?date=${scheduledDate}`
+      )
+      .then((res) => {
+        if (cancelled) return;
+        const map: UnavailabilityMap = {};
+        for (const row of res.data) (map[row.staffId] ??= []).push(row);
+        setUnavailable(map);
+      })
+      .catch(() => {
+        if (!cancelled) setUnavailable({});
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [open, scheduledDate]);
 
   useEffect(() => {
     if (open) {
@@ -111,9 +149,23 @@ export function JobFormModal({ open, onClose, onSaved, customers, staff, prefill
             {staff.map((s) => (
               <option key={s.id} value={s.id}>
                 {s.user.fullName}
+                {unavailable[s.id] ? ` ⚠ müsait değil (${describeUnavailability(unavailable[s.id])})` : ""}
               </option>
             ))}
           </select>
+          {assignedStaffId && unavailable[assignedStaffId] && (
+            <p className="flex items-start gap-2 rounded-xl border border-warning-100 bg-warning-50 px-3 py-2 text-xs text-warning-600">
+              <AlertTriangle size={14} strokeWidth={2} className="mt-0.5 shrink-0" />
+              <span>
+                Bu personel {scheduledDate.split("-").reverse().join(".")} tarihinde müsait olmadığını işaretlemiş (
+                {describeUnavailability(unavailable[assignedStaffId])}
+                {unavailable[assignedStaffId].find((r) => r.reason)?.reason
+                  ? ` · ${unavailable[assignedStaffId].find((r) => r.reason)!.reason}`
+                  : ""}
+                ). Yine de atayabilirsiniz.
+              </span>
+            </p>
+          )}
         </div>
 
         <div className="flex flex-col gap-1.5">

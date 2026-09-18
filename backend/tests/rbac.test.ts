@@ -77,6 +77,14 @@ const CASES: EndpointCase[] = [
   { method: "get", path: "/appointment-requests/service-types", allowed: ["OWNER", "MANAGER", "CUSTOMER"] },
   { method: "post", path: `/appointment-requests/${NIL}/schedule`, allowed: ["OWNER", "MANAGER"], body: {} },
   { method: "post", path: `/appointment-requests/${NIL}/decline`, allowed: ["OWNER", "MANAGER"], body: {} },
+  // Bölüm K (3. tur)
+  { method: "get", path: "/staff/me/unavailability", allowed: ["STAFF", "TEAM_LEAD"] },
+  { method: "post", path: "/staff/me/unavailability", allowed: ["STAFF", "TEAM_LEAD"], body: {} },
+  { method: "delete", path: `/staff/me/unavailability/${NIL}`, allowed: ["STAFF", "TEAM_LEAD"] },
+  { method: "get", path: "/staff/unavailability?date=2030-01-01", allowed: ["OWNER", "MANAGER", "TEAM_LEAD"] },
+  // TEAM_LEAD/STAFF route'tan geçer ama uydurma id kapsamları dışında → 403
+  // (kendi/ekip kaydı için 200 senaryosu staffUnavailability.test.ts'te).
+  { method: "get", path: `/staff/${NIL}/unavailability`, allowed: ["OWNER", "MANAGER"] },
 ];
 
 describe("RBAC sınırları", () => {

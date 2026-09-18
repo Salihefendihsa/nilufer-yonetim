@@ -3,8 +3,11 @@ import 'package:flutter/material.dart';
 import '../../core/api_client.dart';
 import '../../models/customer.dart';
 import '../../models/staff.dart';
+import '../../models/staff_unavailability.dart';
+import '../../theme/app_colors.dart';
 import '../customers/customers_api.dart';
 import '../staff/staff_api.dart';
+import '../staff/staff_unavailability_api.dart';
 import 'jobs_api.dart';
 
 /// POST /jobs — backend OWNER/MANAGER'a kısıtlıyor (routes/jobs.ts:24).
@@ -31,6 +34,44 @@ class _JobFormScreenState extends State<JobFormScreen> {
 
   final _customersApi = CustomersApi();
   final _staffApi = StaffApi();
+  final _unavailabilityApi = StaffUnavailabilityApi();
+
+  /// Bölüm K (3. tur): seçilen tarihte müsait olmayan personel (staffId →
+  /// kayıtlar). Atamayı ENGELLEMEZ, yalnızca uyarı gösterir.
+  Map<String, List<StaffUnavailability>> _unavailable = {};
+  String? _unavailableForDate;
+
+  Future<void> _refreshUnavailability() async {
+    final date = _scheduledAt;
+    if (date == null) {
+      if (mounted) setState(() => _unavailable = {});
+      return;
+    }
+    final key =
+        '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
+    if (key == _unavailableForDate) return;
+    try {
+      final rows = await _unavailabilityApi.unavailableOn(key);
+      final map = <String, List<StaffUnavailability>>{};
+      for (final r in rows) {
+        (map[r.staffId] ??= []).add(r);
+      }
+      if (mounted) {
+        setState(() {
+          _unavailable = map;
+          _unavailableForDate = key;
+        });
+      }
+    } catch (_) {
+      // Uyarı bilgisi alınamazsa form yine çalışır.
+    }
+  }
+
+  String _unavailableLabel(String staffId) {
+    final rows = _unavailable[staffId];
+    if (rows == null || rows.isEmpty) return '';
+    return rows.map((r) => r.rangeLabel.toLowerCase()).join(', ');
+  }
   final _jobsApi = JobsApi();
 
   List<Customer> _customers = [];
@@ -102,6 +143,7 @@ class _JobFormScreenState extends State<JobFormScreen> {
         time.minute,
       ),
     );
+    _refreshUnavailability();
   }
 
   /// Randevu penceresinin bitisi - Stitch kartlarindaki "09:00 - 11:00".
@@ -202,15 +244,65 @@ class _JobFormScreenState extends State<JobFormScreen> {
                         .map(
                           (s) => DropdownMenuItem(
                             value: s.id,
-                            child: Text(
-                              s.fullName,
-                              overflow: TextOverflow.ellipsis,
+                            child: Row(
+                              children: [
+                                Expanded(
+                                  child: Text(
+                                    s.fullName,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                                if (_unavailable.containsKey(s.id))
+                                  const Padding(
+                                    padding: EdgeInsets.only(left: 6),
+                                    child: Icon(
+                                      Icons.warning_amber_rounded,
+                                      size: 16,
+                                      color: AppColors.warning600,
+                                    ),
+                                  ),
+                              ],
                             ),
                           ),
                         )
                         .toList(),
                     onChanged: (v) => setState(() => _selectedStaffId = v),
                   ),
+                  if (_selectedStaffId != null &&
+                      _unavailable.containsKey(_selectedStaffId)) ...[
+                    const SizedBox(height: 8),
+                    Container(
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        color: AppColors.warning50,
+                        borderRadius: BorderRadius.circular(AppRadius.card),
+                        border: Border.all(
+                          color: AppColors.warning500.withValues(alpha: 0.35),
+                        ),
+                      ),
+                      child: Row(
+                        children: [
+                          const Icon(
+                            Icons.warning_amber_rounded,
+                            size: 18,
+                            color: AppColors.warning600,
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              'Bu personel bu gün müsait değil '
+                              '(${_unavailableLabel(_selectedStaffId!)}). '
+                              'Yine de atayabilirsiniz.',
+                              style: const TextStyle(
+                                fontSize: 12,
+                                color: AppColors.warning600,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
                   const SizedBox(height: 12),
                   TextFormField(
                     controller: _serviceTypeController,

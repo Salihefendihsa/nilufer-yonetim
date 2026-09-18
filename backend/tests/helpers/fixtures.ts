@@ -201,6 +201,7 @@ export class TestContext {
     await prisma.advanceRequest.deleteMany({ where: { staffId: { in: staffIds } } });
     await prisma.leaveRequest.deleteMany({ where: { OR: [{ staffId: { in: staffIds } }, { decidedByUserId: { in: userIds } }] } });
     await prisma.staffCertification.deleteMany({ where: { staffId: { in: staffIds } } });
+    await prisma.staffUnavailability.deleteMany({ where: { staffId: { in: staffIds } } });
     await prisma.stockPurchaseRequest.deleteMany({
       where: { OR: [{ requestedByUserId: { in: userIds } }, { receivedByUserId: { in: userIds } }] },
     });
