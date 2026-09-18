@@ -9,6 +9,7 @@ import {
   deleteProduct,
   restockProduct,
   listProductMovements,
+  getProductForecast,
   adjustProductCount,
   createPurchaseRequest,
   listPurchaseRequests,
@@ -31,6 +32,8 @@ router.delete("/:id", requireRole(Role.OWNER, Role.MANAGER), deleteProduct);
 router.post("/:id/restock", requireRole(Role.OWNER, Role.MANAGER), restockProduct);
 router.post("/:id/count", requireRole(Role.OWNER, Role.MANAGER), adjustProductCount);
 router.get("/:id/movements", requireRole(Role.OWNER, Role.MANAGER), listProductMovements);
+// Bölüm W (5. tur): kullanım bazlı tükenme tahmini.
+router.get("/:id/forecast", requireRole(Role.OWNER, Role.MANAGER), getProductForecast);
 // Ekip lideri yalnızca TALEP AÇABİLİR (Stitch Şef → Bildirimler: "Talep Oluştur").
 // Listeleme, mal kabul ve iptal yukarıda OWNER/MANAGER'a kısıtlı KALIR — talebi
 // açan kişi kendi talebini sonuçlandıramaz.

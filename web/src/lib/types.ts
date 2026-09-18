@@ -429,6 +429,17 @@ export interface Product {
   /** Liste yanıtında sunucu tarafında eklenir. */
   lastMovement?: Pick<StockMovement, "type" | "quantity" | "note" | "createdAt"> | null;
   pendingPurchaseQuantity?: number;
+  /** Bölüm W (5. tur): son 30 gün OUT kullanımına göre tükenme tahmini; veri yoksa alanlar null. */
+  forecast?: StockForecast;
+}
+
+export interface StockForecast {
+  windowDays: number;
+  usedInWindow: number;
+  dailyAverageUsage: number | null;
+  estimatedDaysRemaining: number | null;
+  estimatedDepletionDate: string | null;
+  note: string | null;
 }
 
 export type PurchaseRequestStatus = "PENDING" | "RECEIVED" | "CANCELLED";

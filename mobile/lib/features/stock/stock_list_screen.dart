@@ -676,6 +676,37 @@ class _StockListScreenState extends State<StockListScreen> {
                       ],
                     ),
                   ),
+                // Bölüm W (5. tur): kullanım bazlı tahmin — veri yoksa gösterilmez.
+                if (p.forecastLabel != null)
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 6),
+                    child: Row(
+                      children: [
+                        Icon(
+                          Icons.timer_outlined,
+                          size: 13,
+                          color: (p.forecastDaysRemaining ?? 99) <= 7
+                              ? AppColors.danger500
+                              : (p.forecastDaysRemaining ?? 99) <= 30
+                                  ? AppColors.warning600
+                                  : AppColors.textSecondary,
+                        ),
+                        const SizedBox(width: 4),
+                        Text(
+                          p.forecastLabel!,
+                          style: TextStyle(
+                            fontSize: 11.5,
+                            fontWeight: FontWeight.w600,
+                            color: (p.forecastDaysRemaining ?? 99) <= 7
+                                ? AppColors.danger500
+                                : (p.forecastDaysRemaining ?? 99) <= 30
+                                    ? AppColors.warning600
+                                    : AppColors.textSecondary,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [

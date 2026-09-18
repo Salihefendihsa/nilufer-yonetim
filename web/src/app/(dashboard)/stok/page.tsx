@@ -1,7 +1,8 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Plus, PackagePlus, Boxes, Trash2, AlertTriangle, PackageCheck, Layers, ShoppingCart, History, ClipboardList } from "lucide-react";
+import { Plus, PackagePlus, Boxes, Trash2, AlertTriangle,
+  Timer, PackageCheck, Layers, ShoppingCart, History, ClipboardList } from "lucide-react";
 import { RequireRole } from "@/components/RequireRole";
 import { PageHeader } from "@/components/PageHeader";
 import { StatCard } from "@/components/StatCard";
@@ -177,6 +178,18 @@ function StockPageContent() {
               <span className="inline-flex items-center gap-1 rounded-full border border-danger-100 bg-danger-50 px-2 py-0.5 text-[10px] font-semibold text-danger-500">
                 <AlertTriangle size={10} strokeWidth={2} />
                 Kritik
+              </span>
+            )}
+            {/* Bölüm W (5. tur): kullanım bazlı tahmin — veri yoksa hiçbir şey gösterilmez */}
+            {row.forecast?.estimatedDaysRemaining !== null && row.forecast?.estimatedDaysRemaining !== undefined && (
+              <span
+                title={`Son ${row.forecast.windowDays} günde ${row.forecast.usedInWindow} ${row.unit} kullanıldı · günde ~${row.forecast.dailyAverageUsage} ${row.unit}`}
+                className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-semibold ${
+                  row.forecast.estimatedDaysRemaining <= 7 ? "bg-danger-50 text-danger-500" : row.forecast.estimatedDaysRemaining <= 30 ? "bg-warning-50 text-warning-600" : "bg-surface-subtle text-text-secondary"
+                }`}
+              >
+                <Timer size={10} strokeWidth={2} />
+                {row.forecast.estimatedDaysRemaining === 0 ? "Tükendi" : `Tahmini ${row.forecast.estimatedDaysRemaining} gün sonra biter`}
               </span>
             )}
           </span>

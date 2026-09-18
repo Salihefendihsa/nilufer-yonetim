@@ -54,6 +54,10 @@ class Product {
 
   /// Liste yanıtında sunucu tarafında eklenir (ürün başına ek istek yok).
   final StockMovement? lastMovement;
+  /// Bölüm W (5. tur): son 30 gün OUT kullanımına göre tahmini kalan gün;
+  /// veri yoksa null (etiket gösterilmez).
+  final int? forecastDaysRemaining;
+  final double? forecastDailyUsage;
 
   /// Henüz mal kabulü yapılmamış satın alma taleplerinin toplam miktarı.
   final double pendingPurchaseQuantity;
@@ -69,6 +73,8 @@ class Product {
     this.description,
     this.lastMovement,
     this.pendingPurchaseQuantity = 0,
+    this.forecastDaysRemaining,
+    this.forecastDailyUsage,
   });
 
   bool get isCritical => currentStock <= criticalThreshold;
@@ -89,7 +95,18 @@ class Product {
         : null,
     pendingPurchaseQuantity:
         decimalOr(json['pendingPurchaseQuantity']),
+    forecastDaysRemaining:
+        ((json['forecast'] as Map<String, dynamic>?)?['estimatedDaysRemaining'] as num?)?.toInt(),
+    forecastDailyUsage:
+        ((json['forecast'] as Map<String, dynamic>?)?['dailyAverageUsage'] as num?)?.toDouble(),
   );
+
+  /// Bölüm W: "Tahmini N gün sonra biter" / "Tükendi"; veri yoksa null.
+  String? get forecastLabel {
+    final d = forecastDaysRemaining;
+    if (d == null) return null;
+    return d == 0 ? 'Tükendi' : 'Tahmini $d gün sonra biter';
+  }
 }
 
 /// backend/prisma/schema.prisma:StockPurchaseRequest

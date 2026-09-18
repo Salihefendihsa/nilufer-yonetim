@@ -6,6 +6,7 @@ import { getPagination, paginatedResponse } from "../lib/pagination";
 import { idParam } from "../lib/params";
 import { recordAuditLog } from "../lib/auditLog";
 import { notifyManagement } from "../lib/notify";
+import { computeForecast, sumOutUsageByProduct } from "../lib/stockForecast";
 
 const createSchema = z.object({
   code: z.string().min(1).optional(),
@@ -59,7 +60,7 @@ export async function listProducts(req: Request, res: Response) {
   // Stitch Müdür → Stok: her satırda "Son Sarfiyat/Son Giriş" ve
   // "Sipariş Bekleyen" bilgisi görünüyor; tek seferde toplanır (N+1 yok).
   const productIds = data.map((p) => p.id);
-  const [movements, pendingPurchases] = await Promise.all([
+  const [movements, pendingPurchases, usage] = await Promise.all([
     productIds.length
       ? prisma.stockMovement.findMany({
           where: { productId: { in: productIds } },
@@ -75,10 +76,13 @@ export async function listProducts(req: Request, res: Response) {
           where: { productId: { in: productIds }, status: PurchaseRequestStatus.PENDING },
         })
       : Promise.resolve([]),
+    // Bölüm W: son 30 gün OUT toplamı → kart etiketi "Tahmini N gün sonra biter".
+    sumOutUsageByProduct(productIds),
   ]);
 
   const enriched = data.map((product) => ({
     ...product,
+    forecast: computeForecast(Number(product.currentStock), usage.get(product.id) ?? 0),
     lastMovement: movements.find((m) => m.productId === product.id) ?? null,
     pendingPurchaseQuantity: Number(
       pendingPurchases.find((p) => p.productId === product.id)?._sum.quantity ?? 0
@@ -441,4 +445,24 @@ export async function updatePurchaseRequest(req: Request, res: Response) {
     },
   });
   return res.json(updated);
+}
+
+/**
+ * Bölüm W (5. tur): GET /products/:id/forecast — son 30 gün OUT hareketlerine
+ * göre günlük ortalama tüketim ve tahmini tükenme. Veri yoksa alanlar null,
+ * `note: "Tahmin için yeterli veri yok"`.
+ */
+export async function getProductForecast(req: Request, res: Response) {
+  const product = await prisma.product.findUnique({ where: { id: idParam(req) }, select: { id: true, name: true, currentStock: true, unit: true } });
+  if (!product) {
+    return res.status(404).json({ error: "Ürün bulunamadı" });
+  }
+  const usage = await sumOutUsageByProduct([product.id]);
+  return res.json({
+    productId: product.id,
+    name: product.name,
+    unit: product.unit,
+    currentStock: Number(product.currentStock),
+    ...computeForecast(Number(product.currentStock), usage.get(product.id) ?? 0),
+  });
 }
