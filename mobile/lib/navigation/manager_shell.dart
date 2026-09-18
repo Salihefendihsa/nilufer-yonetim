@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../features/admin/job_templates_screen.dart';
+import '../features/customers/customer_tags.dart';
 import '../features/approvals/approvals_screen.dart';
 import '../features/calendar/calendar_screen.dart';
 import '../features/contracts/contracts_list_screen.dart';
@@ -86,6 +87,12 @@ class _ManagerShellState extends State<ManagerShell> {
         Icons.dashboard_customize_outlined,
         _buildJobTemplates,
       ),
+      // Bölüm X (6. tur): MANAGER de etiket tanımlar.
+      AppDrawerEntry(
+        'Müşteri Etiketleri',
+        Icons.label_outline_rounded,
+        _buildCustomerTags,
+      ),
     ], title: 'Operasyon'),
     AppDrawerGroup([
       AppDrawerEntry('Sözleşmeler', Icons.description_outlined, _buildContracts),
@@ -102,6 +109,7 @@ class _ManagerShellState extends State<ManagerShell> {
   static Widget _buildPerformance(BuildContext _) => const PerformanceScreen();
   static Widget _buildStock(BuildContext _) => const StockListScreen();
   static Widget _buildJobTemplates(BuildContext _) => const JobTemplatesScreen();
+  static Widget _buildCustomerTags(BuildContext _) => const CustomerTagsScreen();
   static Widget _buildContracts(BuildContext _) => const ContractsListScreen();
   static Widget _buildQuotes(BuildContext _) => const QuotesListScreen();
   static Widget _buildFinance(BuildContext _) => const FinanceScreen();

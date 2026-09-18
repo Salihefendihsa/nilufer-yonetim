@@ -15,6 +15,8 @@ class Customer {
   final int jobCount;
   final int activeContractCount;
   final DateTime? lastJobDate;
+  /// Bölüm X (6. tur): liste/detayda düz etiket listesi (CustomerTag JSON'u).
+  final List<Map<String, dynamic>> tags;
 
   Customer({
     required this.id,
@@ -29,6 +31,7 @@ class Customer {
     this.jobCount = 0,
     this.activeContractCount = 0,
     this.lastJobDate,
+    this.tags = const [],
   });
 
   factory Customer.fromJson(Map<String, dynamic> json) => Customer(
@@ -46,6 +49,7 @@ class Customer {
     lastJobDate: json['lastJobDate'] != null
         ? DateTime.parse(json['lastJobDate'] as String)
         : null,
+    tags: ((json['tags'] as List?) ?? const []).cast<Map<String, dynamic>>(),
   );
 
   Map<String, dynamic> toCreateJson() => {
@@ -77,6 +81,7 @@ class CustomerDetail extends Customer {
     required this.contracts,
     required this.payments,
     required super.outstandingBalance,
+    super.tags,
   });
 
   factory CustomerDetail.fromJson(Map<String, dynamic> json) => CustomerDetail(
@@ -92,5 +97,6 @@ class CustomerDetail extends Customer {
     contracts: (json['contracts'] as List?) ?? [],
     payments: (json['payments'] as List?) ?? [],
     outstandingBalance: (json['outstandingBalance'] as num?)?.toDouble(),
+    tags: ((json['tags'] as List?) ?? const []).cast<Map<String, dynamic>>(),
   );
 }

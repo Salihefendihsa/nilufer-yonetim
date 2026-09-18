@@ -17,6 +17,8 @@ import type { Customer, CustomerListItem, Paginated } from "@/lib/types";
 import { CustomerFormModal } from "./CustomerFormModal";
 import { CustomerDetailPanel } from "./CustomerDetailPanel";
 import { LoyalCustomerBadge } from "@/components/Badges";
+import { CustomerTagBadge } from "@/components/CustomerTagBadge";
+import type { CustomerTag } from "@/lib/types";
 
 /**
  * Bakiye, iş sayısı ve son iş tarihi artık /customers yanıtında sunucu
@@ -38,6 +40,15 @@ function CustomersPageContent() {
   // Bölüm G: Yönetici Özeti → "Bekleyen Bakiye" (?filter=debt) / "Bu Ay Yeni Müşteri" (?filter=new).
   const drillFilter = useInitialQueryParam("filter");
   const [customerFilter, setCustomerFilter] = useState<"debt" | "new" | null>(null);
+  // Bölüm X (6. tur): etiket filtresi (?tagId=) ve çipler.
+  const [tagOptions, setTagOptions] = useState<CustomerTag[]>([]);
+  const [tagFilter, setTagFilter] = useState<string | null>(null);
+  useEffect(() => {
+    api
+      .get<{ data: CustomerTag[] }>("/customer-tags")
+      .then((res) => setTagOptions(res.data))
+      .catch(() => setTagOptions([]));
+  }, []);
   useEffect(() => {
     if (drillFilter === "debt" || drillFilter === "new") setCustomerFilter(drillFilter);
   }, [drillFilter]);
@@ -74,7 +85,7 @@ function CustomersPageContent() {
     setError(null);
     try {
       const res = await api.get<Paginated<CustomerRow>>(
-        `/customers?page=${page}&limit=20&sort=${sort}${search ? `&search=${encodeURIComponent(search)}` : ""}`
+        `/customers?page=${page}&limit=20&sort=${sort}${search ? `&search=${encodeURIComponent(search)}` : ""}${tagFilter ? `&tagId=${tagFilter}` : ""}`
       );
 
       setRows(res.data);
@@ -84,7 +95,7 @@ function CustomersPageContent() {
     } finally {
       setLoading(false);
     }
-  }, [page, search, sort]);
+  }, [page, search, sort, tagFilter]);
 
   useEffect(() => {
     load();
@@ -115,6 +126,7 @@ function CustomersPageContent() {
         <span className="inline-flex flex-wrap items-center gap-2 font-medium text-text-primary">
           {row.fullName}
           {row.isLoyal && <LoyalCustomerBadge />}
+          {row.tags?.map((t) => <CustomerTagBadge key={t.id} tag={t} />)}
         </span>
       ),
     },
@@ -244,6 +256,33 @@ function CustomersPageContent() {
           </button>
         ))}
       </div>
+
+      {/* Bölüm X: etiket çipleri — tıklanan etiket sunucu tarafında filtreler */}
+      {tagOptions.length > 0 && (
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="text-xs font-semibold text-text-faint">Etiket:</span>
+          {tagOptions.map((t) => (
+            <button
+              key={t.id}
+              type="button"
+              onClick={() => {
+                setTagFilter((cur) => (cur === t.id ? null : t.id));
+                setPage(1);
+              }}
+              aria-pressed={tagFilter === t.id}
+              className={`rounded-full transition ${tagFilter === t.id ? "ring-2 ring-offset-1 ring-offset-surface-base" : "opacity-70 hover:opacity-100"}`}
+              style={tagFilter === t.id ? { ["--tw-ring-color" as string]: t.color } : undefined}
+            >
+              <CustomerTagBadge tag={t} size="md" />
+            </button>
+          ))}
+          {tagFilter && (
+            <button type="button" onClick={() => setTagFilter(null)} className="text-xs font-medium text-text-secondary hover:text-text-primary">
+              Temizle
+            </button>
+          )}
+        </div>
+      )}
 
       {customerFilter && (
         <DrillDownChip

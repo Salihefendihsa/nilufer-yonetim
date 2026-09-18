@@ -10,6 +10,7 @@ class CustomersApi {
     int page = 1,
     String? search,
     String sort = 'newest',
+    String? tagId,
   }) async {
     final json = await _api.get<Map<String, dynamic>>(
       '/customers',
@@ -18,6 +19,8 @@ class CustomersApi {
         'limit': 20,
         'sort': sort,
         if (search != null && search.isNotEmpty) 'search': search,
+        // Bölüm X (6. tur): etiket filtresi.
+        'tagId': ?tagId,
       },
     );
     return Paginated.fromJson(json, Customer.fromJson);

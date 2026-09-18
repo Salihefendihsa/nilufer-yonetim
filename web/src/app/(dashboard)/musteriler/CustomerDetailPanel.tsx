@@ -8,6 +8,8 @@ import { api, ApiError, downloadFile } from "@/lib/api";
 import { formatDate, currencyFormatter } from "@/lib/format";
 import { StatusBadge } from "@/components/StatusBadge";
 import type { CustomerDetail } from "@/lib/types";
+import { CustomerTagEditor } from "@/components/CustomerTagEditor";
+import { useAuth } from "@/lib/AuthProvider";
 
 interface CustomerDetailPanelProps {
   customerId: string | null;
@@ -19,6 +21,8 @@ interface CustomerDetailPanelProps {
 export function CustomerDetailPanel({ customerId, onClose, onEdit, onDelete }: CustomerDetailPanelProps) {
   const [detail, setDetail] = useState<CustomerDetail | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const { user } = useAuth();
+  const canEditTags = user?.role === "OWNER" || user?.role === "MANAGER";
 
   useEffect(() => {
     if (!customerId) {
@@ -72,6 +76,9 @@ export function CustomerDetailPanel({ customerId, onClose, onEdit, onDelete }: C
 
             {detail && (
               <div className="flex flex-col gap-6">
+                {/* Bölüm X (6. tur): etiketler */}
+                <CustomerTagEditor customerId={detail.id} tags={detail.tags ?? []} editable={canEditTags} />
+
                 <div className="grid grid-cols-2 gap-3 text-sm">
                   <InfoItem label="Telefon" value={detail.phone} />
                   <InfoItem label="E-posta" value={detail.email ?? "—"} />

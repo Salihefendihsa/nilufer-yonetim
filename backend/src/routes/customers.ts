@@ -11,6 +11,7 @@ import {
   deleteCustomer,
 } from "../controllers/customersController";
 import { exportCustomersExcel } from "../controllers/exportController";
+import { setCustomerTags } from "../controllers/customerTagsController";
 
 const router = Router();
 
@@ -24,6 +25,8 @@ router.get("/", requireRole(Role.OWNER, Role.MANAGER, Role.STAFF), listCustomers
 router.get("/:id", requireRole(Role.OWNER, Role.MANAGER, Role.STAFF), getCustomer);
 router.post("/", requireRole(Role.OWNER, Role.MANAGER), createCustomer);
 router.patch("/:id", requireRole(Role.OWNER, Role.MANAGER), updateCustomer);
+// Bölüm X (6. tur): müşterinin etiket kümesini tam olarak eşitler.
+router.post("/:id/tags", requireRole(Role.OWNER, Role.MANAGER), setCustomerTags);
 router.delete("/:id", requireRoleOrPermission([Role.MANAGER], "delete_customers"), deleteCustomer);
 
 export default router;

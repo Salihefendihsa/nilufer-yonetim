@@ -11,6 +11,7 @@ import '../../models/customer.dart';
 import '../../models/user.dart';
 import '../../theme/app_colors.dart';
 import '../../widgets/state_views.dart';
+import 'customer_tags.dart';
 import 'customers_api.dart';
 import 'customer_detail_screen.dart';
 import 'customer_form_screen.dart';
@@ -45,6 +46,10 @@ class _CustomersListScreenState extends State<CustomersListScreen> {
   int _page = 1;
   int _totalPages = 1;
   String _search = '';
+  // Bölüm X (6. tur): etiket filtresi ve çipler.
+  final _tagsApi = CustomerTagsApi();
+  List<CustomerTag> _tagOptions = [];
+  String? _tagFilter;
   bool _exporting = false;
 
   bool get _canManage {
@@ -75,6 +80,9 @@ class _CustomersListScreenState extends State<CustomersListScreen> {
   void initState() {
     super.initState();
     _load();
+    _tagsApi.list().then((v) {
+      if (mounted) setState(() => _tagOptions = v);
+    }).catchError((_) {});
   }
 
   @override
@@ -95,7 +103,7 @@ class _CustomersListScreenState extends State<CustomersListScreen> {
     });
     try {
       final page = append ? _page + 1 : 1;
-      final res = await _api.list(page: page, search: _search, sort: _sort);
+      final res = await _api.list(page: page, search: _search, sort: _sort, tagId: _tagFilter);
       setState(() {
         _customers = append ? [..._customers, ...res.data] : res.data;
         _page = res.pagination.page;
@@ -172,6 +180,28 @@ class _CustomersListScreenState extends State<CustomersListScreen> {
               ),
             ),
           ),
+          if (_tagOptions.isNotEmpty)
+            SizedBox(
+              height: 36,
+              child: ListView(
+                scrollDirection: Axis.horizontal,
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                children: [
+                  for (final t in _tagOptions)
+                    Padding(
+                      padding: const EdgeInsets.only(right: 6),
+                      child: CustomerTagChip(
+                        tag: t,
+                        dimmed: _tagFilter != null && _tagFilter != t.id,
+                        onTap: () {
+                          setState(() => _tagFilter = _tagFilter == t.id ? null : t.id);
+                          _load();
+                        },
+                      ),
+                    ),
+                ],
+              ),
+            ),
           SizedBox(
             height: 42,
             child: ListView(
@@ -314,6 +344,17 @@ class _CustomerCard extends StatelessWidget {
                         fontSize: 14.5,
                       ),
                     ),
+                    if (customer.tags.isNotEmpty)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 3),
+                        child: Wrap(
+                          spacing: 4,
+                          runSpacing: 4,
+                          children: [
+                            for (final t in customer.tags) CustomerTagChip(tag: CustomerTag.fromJson(t)),
+                          ],
+                        ),
+                      ),
                     const SizedBox(height: 2),
                     Text(
                       [

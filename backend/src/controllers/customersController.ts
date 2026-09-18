@@ -4,6 +4,7 @@ import { Role, type Prisma } from "@prisma/client";
 import { prisma } from "../lib/prisma";
 import { ensureReferralCode, generateReferralCode, referralInviteLink } from "../lib/referral";
 import { isLoyalCustomer, LOYAL_CUSTOMER_THRESHOLD } from "../lib/badges";
+import { customerTagSelect } from "./customerTagsController";
 import { idParam } from "../lib/params";
 import { getPagination, paginatedResponse } from "../lib/pagination";
 import { recordAuditLog } from "../lib/auditLog";
@@ -37,6 +38,12 @@ export async function listCustomers(req: Request, res: Response) {
 
   let where: Prisma.CustomerWhereInput = searchFilter ?? {};
 
+  // Bölüm X (6. tur): ?tagId= — yalnızca bu etikete sahip müşteriler.
+  if (typeof req.query.tagId === "string" && req.query.tagId) {
+    const tagFilter: Prisma.CustomerWhereInput = { tagAssignments: { some: { tagId: req.query.tagId } } };
+    where = Object.keys(where).length > 0 ? { AND: [where, tagFilter] } : tagFilter;
+  }
+
   // STAFF finansal ve iletişim bilgilerine toplu erişemesin diye yalnızca
   // kendisine atanmış bir işi olan müşterilerle sınırlanır.
   if (req.user!.role === Role.STAFF) {
@@ -53,16 +60,18 @@ export async function listCustomers(req: Request, res: Response) {
     sort === "name" ? { fullName: "asc" } : { createdAt: "desc" };
 
   const [data, total] = await Promise.all([
-    prisma.customer.findMany({ where, skip, take, orderBy }),
+    prisma.customer.findMany({ where, skip, take, orderBy, include: { tagAssignments: { include: { tag: { select: customerTagSelect } } } } }),
     prisma.customer.count({ where }),
   ]);
+  // Bölüm X: etiketler her satırda düz liste olarak (tagAssignments dışa sızmaz).
+  const withTags = data.map(({ tagAssignments, ...c }) => ({ ...c, tags: tagAssignments.map((a) => a.tag) }));
 
   // STAFF finansal veri görmez (bkz. getCustomer) — bakiye eklenmez.
   if (req.user!.role === Role.STAFF) {
-    return res.json(paginatedResponse(data, total, page, limit));
+    return res.json(paginatedResponse(withTags, total, page, limit));
   }
 
-  const customerIds = data.map((c) => c.id);
+  const customerIds = withTags.map((c) => c.id);
   const [jobAgg, paymentAgg, activeContracts, completedAgg] = customerIds.length
     ? await Promise.all([
         prisma.job.groupBy({
@@ -91,7 +100,7 @@ export async function listCustomers(req: Request, res: Response) {
       ])
     : [[], [], [], []];
 
-  const enriched = data.map((customer) => {
+  const enriched = withTags.map((customer) => {
     const jobs = jobAgg.find((j) => j.customerId === customer.id);
     const priced = Number(jobs?._sum.price ?? 0);
     const paid = Number(paymentAgg.find((p) => p.customerId === customer.id)?._sum.amount ?? 0);
@@ -115,18 +124,22 @@ export async function listCustomers(req: Request, res: Response) {
 }
 
 export async function getCustomer(req: Request, res: Response) {
-  const customer = await prisma.customer.findUnique({
+  const customerRow = await prisma.customer.findUnique({
     where: { id: idParam(req) },
     include: {
       jobs: { orderBy: { createdAt: "desc" } },
       payments: { orderBy: { createdAt: "desc" } },
       contracts: { orderBy: { createdAt: "desc" } },
+      tagAssignments: { include: { tag: { select: customerTagSelect } } },
     },
   });
 
-  if (!customer) {
+  if (!customerRow) {
     return res.status(404).json({ error: "Müşteri bulunamadı" });
   }
+  // Bölüm X: etiketler düz liste olarak.
+  const { tagAssignments, ...customer } = customerRow;
+  const tags = tagAssignments.map((a) => a.tag);
 
   if (req.user!.role === Role.STAFF) {
     const staffId = await getStaffIdForUser(req.user!.sub);
@@ -137,7 +150,7 @@ export async function getCustomer(req: Request, res: Response) {
 
     // Finansal veriler (ödemeler, bakiye) yalnızca OWNER/MANAGER'a görünür.
     const { payments: _payments, ...customerWithoutPayments } = customer;
-    return res.json(customerWithoutPayments);
+    return res.json({ ...customerWithoutPayments, tags });
   }
 
   const completedJobCount = customer.jobs.filter((j) => j.status === "COMPLETED").length;
@@ -145,7 +158,7 @@ export async function getCustomer(req: Request, res: Response) {
   const totalPaid = customer.payments.reduce((sum, payment) => sum + Number(payment.amount), 0);
   const outstandingBalance = totalPriced - totalPaid;
 
-  return res.json({ ...customer, outstandingBalance, completedJobCount, isLoyal: isLoyalCustomer(completedJobCount) });
+  return res.json({ ...customer, tags, outstandingBalance, completedJobCount, isLoyal: isLoyalCustomer(completedJobCount) });
 }
 
 export async function createCustomer(req: Request, res: Response) {

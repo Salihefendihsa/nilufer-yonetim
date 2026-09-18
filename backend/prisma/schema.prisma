@@ -236,10 +236,38 @@ model Customer {
   contracts Contract[]
   payments  Payment[]
   appointmentRequests AppointmentRequest[]
+  tagAssignments CustomerTagAssignment[]
 
   @@index([district])
   @@index([phone])
   @@index([referredByCustomerId])
+}
+
+/// Bölüm X (6. tur): Müşteri segmentasyonu — VIP / Kurumsal / Konut gibi
+/// renkli etiketler. Açık ara tablo (CustomerTagAssignment) kullanıldı ki
+/// etiket silinince atamalar Cascade ile temizlensin ve ileride atama
+/// tarihi/atayan gibi alanlar eklenebilsin.
+model CustomerTag {
+  id        String   @id @default(uuid())
+  name      String   @unique
+  /// #RRGGBB
+  color     String   @default("#3D8A4E")
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+
+  assignments CustomerTagAssignment[]
+}
+
+model CustomerTagAssignment {
+  customerId String
+  tagId      String
+  createdAt  DateTime @default(now())
+
+  customer Customer    @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  tag      CustomerTag @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@id([customerId, tagId])
+  @@index([tagId])
 }
 
 model Staff {

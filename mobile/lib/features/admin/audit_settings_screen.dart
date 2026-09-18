@@ -5,6 +5,7 @@ import '../../core/api_client.dart';
 import '../../theme/app_colors.dart';
 import '../../widgets/state_views.dart';
 import '../../widgets/stat_card.dart';
+import '../customers/customer_tags.dart';
 import 'job_templates_screen.dart';
 import 'named_list_settings_screen.dart';
 
@@ -412,6 +413,33 @@ class _SettingsTabState extends State<_SettingsTab> {
       children: [
         // web/src/app/(dashboard)/ayarlar/page.tsx: ServiceTypesSection +
         // DistrictsSection — mobilde daha önce hiç yoktu.
+        Material(
+          color: AppColors.surfaceCard,
+          borderRadius: BorderRadius.circular(AppRadius.card),
+          child: ListTile(
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(AppRadius.card),
+              side: const BorderSide(color: AppColors.borderDefault),
+            ),
+            leading: const Icon(
+              Icons.dashboard_customize_outlined,
+              color: AppColors.primary700,
+            ),
+            title: const Text('Müşteri Etiketleri'),
+            subtitle: const Text(
+              'Bölüm X: VIP / Kurumsal / Konut segmentleri',
+              style: TextStyle(fontSize: 11.5),
+            ),
+            trailing: const Icon(
+              Icons.chevron_right_rounded,
+              color: AppColors.textFaint,
+            ),
+            onTap: () => Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => const CustomerTagsScreen()),
+            ),
+          ),
+        ),
+        const SizedBox(height: 8),
         Material(
           color: AppColors.surfaceCard,
           borderRadius: BorderRadius.circular(AppRadius.card),

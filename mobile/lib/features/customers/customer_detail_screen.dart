@@ -11,6 +11,7 @@ import '../../models/user.dart';
 import '../../theme/app_colors.dart';
 import '../../widgets/state_views.dart';
 import '../jobs/job_detail_screen.dart';
+import 'customer_tags.dart';
 import 'customers_api.dart';
 import 'customer_form_screen.dart';
 
@@ -200,6 +201,16 @@ class _CustomerDetailScreenState extends State<CustomerDetailScreen>
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              // Bölüm X (6. tur): etiketler (yönetim düzenler, STAFF görür).
+              Padding(
+                padding: const EdgeInsets.only(bottom: 8),
+                child: CustomerTagEditor(
+                  key: ValueKey('tags-${c.id}-${c.tags.length}'),
+                  customerId: c.id,
+                  initial: c.tags.map(CustomerTag.fromJson).toList(),
+                  editable: _canManage,
+                ),
+              ),
               _InfoRow(icon: Icons.phone_rounded, text: c.phone),
               if (c.email != null)
                 _InfoRow(icon: Icons.mail_outline_rounded, text: c.email!),

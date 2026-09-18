@@ -11,6 +11,18 @@ export type ApiDecimal = number | string;
 
 export type JobStatus = "PENDING" | "SCHEDULED" | "IN_PROGRESS" | "COMPLETED" | "CANCELLED";
 
+/** Bölüm X (6. tur): müşteri etiketi (GET /customer-tags). */
+export interface CustomerTag {
+  id: string;
+  name: string;
+  /** #RRGGBB */
+  color: string;
+  isActive: boolean;
+  createdAt?: string;
+  /** Yalnızca /customer-tags listesinde. */
+  customerCount?: number;
+}
+
 export interface Customer {
   id: string;
   userId: string | null;
@@ -20,6 +32,8 @@ export interface Customer {
   address: string | null;
   district: string | null;
   createdAt: string;
+  /** Bölüm X: liste/detay yanıtında düz etiket listesi. */
+  tags?: Pick<CustomerTag, "id" | "name" | "color">[];
 }
 
 export interface JobChecklistEntry {

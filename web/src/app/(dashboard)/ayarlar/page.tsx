@@ -27,6 +27,7 @@ import {
 } from "lucide-react";
 import { RequireRole } from "@/components/RequireRole";
 import { JobTemplatesSection } from "./JobTemplatesSection";
+import { CustomerTagsSection } from "./CustomerTagsSection";
 import { PageHeader } from "@/components/PageHeader";
 import { Modal } from "@/components/Modal";
 import { Toggle } from "@/components/Toggle";
@@ -65,6 +66,7 @@ export default function SettingsPage() {
         <NotificationPreferencesSection isOwner={isOwner} />
         {canUseTwoFactor && <TwoFactorSection />}
         {canManageTemplates && <JobTemplatesSection />}
+        {canManageTemplates && <CustomerTagsSection />}
 
         {isOwner && (
           <>
