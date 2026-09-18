@@ -390,6 +390,10 @@ model Job {
   price            Decimal?  @db.Decimal(10, 2)
   rating           Int?
   ratingComment    String?
+  /// Bölüm N (4. tur): personelin iş öncesi günlük kontrol listesi —
+  /// [{ item, isChecked, checkedAt }] (sabit şablon: lib/checklist.ts).
+  /// Rapor oluşturulurken JobReport.checklist'e kopyalanır.
+  checklist        Json?
   createdAt        DateTime  @default(now())
 
   customer       Customer    @relation(fields: [customerId], references: [id])
@@ -433,6 +437,8 @@ model JobReport {
   /// Müdür/patron saha raporu onayı (Stitch Müdür → İşler → "Raporu Onayla").
   approvedAt        DateTime?
   approvedByUserId  String?
+  /// Bölüm N (4. tur): rapor anındaki kontrol listesi kopyası (Job.checklist).
+  checklist     Json?
   createdAt     DateTime @default(now())
 
   job           Job            @relation(fields: [jobId], references: [id])

@@ -10,6 +10,7 @@ import { buildGoogleCalendarLink } from "../lib/googleCalendar";
 import { checkLowStockAndNotify } from "../lib/reminders";
 import { saveBase64Image } from "../lib/upload";
 import { recordAuditLog } from "../lib/auditLog";
+import { checklistUpdateSchema, mergeChecklist, normalizeChecklist } from "../lib/checklist";
 
 const MANAGEMENT_ROLES: Role[] = [Role.OWNER, Role.MANAGER];
 
@@ -245,7 +246,29 @@ export async function getJob(req: Request, res: Response) {
     return res.status(403).json({ error: "Bu işlem için yetkiniz yok" });
   }
 
-  return res.json(withCalendarLink(job));
+  // Bölüm N: kontrol listesi her zaman tam şablon olarak döner (null → hepsi işaretsiz).
+  return res.json({ ...withCalendarLink(job), checklist: normalizeChecklist(job.checklist) });
+}
+
+/**
+ * Bölüm N (4. tur): Personel, kendi işinin günlük kontrol listesini işaretler.
+ * Şablon sabittir (lib/checklist.ts); gelen öğeler şablonla eşleşmeli.
+ * Tamamlanmamış liste raporu ENGELLEMEZ — eksikler görünür kalır.
+ */
+export async function updateJobChecklist(req: Request, res: Response) {
+  const job = await prisma.job.findUnique({ where: { id: idParam(req) }, select: { id: true, assignedStaffId: true, checklist: true } });
+  if (!job) {
+    return res.status(404).json({ error: "İş bulunamadı" });
+  }
+  const staffId = await getStaffIdForUser(req.user!.sub);
+  if (!staffId || staffId !== job.assignedStaffId) {
+    return res.status(403).json({ error: "Bu işlem için yetkiniz yok" });
+  }
+
+  const { items } = checklistUpdateSchema.parse(req.body);
+  const checklist = mergeChecklist(job.checklist, items);
+  await prisma.job.update({ where: { id: job.id }, data: { checklist: checklist as unknown as Prisma.InputJsonValue } });
+  return res.json({ jobId: job.id, checklist, isComplete: checklist.every((c) => c.isChecked) });
 }
 
 /**
@@ -513,7 +536,8 @@ export async function createJobReport(req: Request, res: Response) {
 
   const report = await prisma.$transaction(async (tx) => {
     const created = await tx.jobReport.create({
-      data: { ...data, jobId: job.id, staffId },
+      // Bölüm N: rapor anındaki kontrol listesi rapora kopyalanır.
+      data: { ...data, jobId: job.id, staffId, checklist: normalizeChecklist(job.checklist) as unknown as Prisma.InputJsonValue },
     });
 
     if (data.productId && data.quantity) {

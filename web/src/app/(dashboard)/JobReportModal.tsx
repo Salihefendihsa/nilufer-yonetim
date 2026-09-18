@@ -4,6 +4,7 @@ import { useEffect, useRef, useState, type FormEvent } from "react";
 import { Camera } from "lucide-react";
 import { Modal } from "@/components/Modal";
 import { SignaturePad } from "@/components/SignaturePad";
+import { JobChecklist } from "@/components/JobChecklist";
 import { api, ApiError, uploadFile } from "@/lib/api";
 import type { Product, Paginated } from "@/lib/types";
 
@@ -109,6 +110,9 @@ export function JobReportModal({ open, onClose, onCompleted, jobId }: JobReportM
   return (
     <Modal open={open} onClose={onClose} title="İşi Tamamla">
       <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+        {/* Bölüm N: rapor öncesi kontrol listesi — eksikler görünür kalır, gönderim engellenmez. */}
+        <JobChecklist jobId={open ? jobId : null} />
+
         <div className="flex flex-col gap-2">
           <label className="text-sm font-medium text-text-secondary">Kullanılan Ürünler (Stoktan Düşüm)</label>
           {usedProducts.map((row, i) => {

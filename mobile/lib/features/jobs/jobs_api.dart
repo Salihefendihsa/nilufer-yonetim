@@ -99,6 +99,27 @@ class JobsApi {
   /// [products]: Stitch Personel → İşler "Kullanılan Ürünler (Stoktan
   /// Düşüm)" — her biri kendi miktarıyla, aynı ürün iki kez olamaz (backend
   /// doğrular). Her satır ayrı bir StockMovement(OUT) üretir.
+  /// Bölüm N (4. tur): PATCH /jobs/:id/checklist — tek öğe işaretle/kaldır;
+  /// sunucu tam listeyi döner.
+  Future<List<JobChecklistEntry>> updateChecklist(
+    String jobId, {
+    required String item,
+    required bool isChecked,
+  }) async {
+    final json = await _api.patch<Map<String, dynamic>>(
+      '/jobs/$jobId/checklist',
+      body: {
+        'items': [
+          {'item': item, 'isChecked': isChecked},
+        ],
+      },
+    );
+    return ((json['checklist'] as List?) ?? const [])
+        .cast<Map<String, dynamic>>()
+        .map(JobChecklistEntry.fromJson)
+        .toList();
+  }
+
   Future<Map<String, dynamic>> createReport(
     String jobId, {
     List<({String productId, double quantity})> products = const [],

@@ -11,6 +11,7 @@ import {
   getJobReport,
   approveJobReport,
   rateJob,
+  updateJobChecklist,
 } from "../controllers/jobsController";
 import { exportJobReportPdf } from "../controllers/exportController";
 import { listJobPhotos, uploadJobPhoto, deleteJobPhoto } from "../controllers/jobPhotosController";
@@ -26,6 +27,8 @@ router.post("/", requireRole(Role.OWNER, Role.MANAGER), createJob);
 router.patch("/:id", updateJob);
 router.delete("/:id", requireRole(Role.OWNER, Role.MANAGER), deleteJob);
 
+// Bölüm N (4. tur): iş öncesi kontrol listesi — yalnızca işin atandığı personel.
+router.patch("/:id/checklist", requireRole(Role.STAFF), updateJobChecklist);
 router.post("/:id/report", requireRole(Role.STAFF), createJobReport);
 router.get("/:id/report", getJobReport);
 // Saha raporu onayı yönetim yetkisidir (Stitch Müdür → Ayarlar: "Saha Onayları: Yetkili").

@@ -313,6 +313,14 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
               (job.status == JobStatus.inProgress ||
                   job.status == JobStatus.completed)) ...[
             const SizedBox(height: 18),
+            // Bölüm N (4. tur): rapor öncesi kontrol listesi — eksikler
+            // görünür kalır, "Raporu Tamamla" engellenmez.
+            _ChecklistCard(
+              jobId: job.id,
+              api: _api,
+              initial: job.checklist,
+            ),
+            const SizedBox(height: 18),
             const Text(
               'İş Raporu Oluştur',
               style: TextStyle(fontWeight: FontWeight.w700, fontSize: 14.5),
@@ -665,6 +673,136 @@ class _ReportCard extends StatelessWidget {
               ),
             ),
           ],
+        ],
+      ),
+    );
+  }
+}
+
+/// Bölüm N (4. tur): Günlük kontrol listesi kartı — dokununca anında
+/// kaydeder (PATCH /jobs/:id/checklist), sunucudan dönen tam listeyi gösterir.
+class _ChecklistCard extends StatefulWidget {
+  final String jobId;
+  final JobsApi api;
+  final List<JobChecklistEntry> initial;
+  const _ChecklistCard({
+    required this.jobId,
+    required this.api,
+    required this.initial,
+  });
+
+  @override
+  State<_ChecklistCard> createState() => _ChecklistCardState();
+}
+
+class _ChecklistCardState extends State<_ChecklistCard> {
+  late List<JobChecklistEntry> _entries = widget.initial;
+  String? _busyItem;
+  String? _error;
+
+  Future<void> _toggle(JobChecklistEntry e) async {
+    setState(() {
+      _busyItem = e.item;
+      _error = null;
+    });
+    try {
+      final updated = await widget.api.updateChecklist(
+        widget.jobId,
+        item: e.item,
+        isChecked: !e.isChecked,
+      );
+      if (mounted) setState(() => _entries = updated);
+    } catch (err) {
+      if (mounted) {
+        setState(
+          () => _error = err is ApiException ? err.message : 'Kaydedilemedi',
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _busyItem = null);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final done = _entries.where((e) => e.isChecked).length;
+    final complete = _entries.isNotEmpty && done == _entries.length;
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: AppColors.surfaceCard,
+        borderRadius: BorderRadius.circular(AppRadius.card),
+        border: Border.all(color: AppColors.borderDefault),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(
+                Icons.checklist_rounded,
+                size: 18,
+                color: AppColors.primary600,
+              ),
+              const SizedBox(width: 6),
+              const Expanded(
+                child: Text(
+                  'Günlük Kontrol Listesi',
+                  style: TextStyle(fontWeight: FontWeight.w700, fontSize: 14.5),
+                ),
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                decoration: BoxDecoration(
+                  color: complete ? AppColors.primary50 : AppColors.warning50,
+                  borderRadius: BorderRadius.circular(AppRadius.pill),
+                ),
+                child: Text(
+                  '$done/${_entries.length}',
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w700,
+                    color: complete
+                        ? AppColors.primary700
+                        : AppColors.warning600,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 6),
+          for (final e in _entries)
+            CheckboxListTile(
+              dense: true,
+              contentPadding: EdgeInsets.zero,
+              controlAffinity: ListTileControlAffinity.leading,
+              activeColor: AppColors.primary600,
+              value: e.isChecked,
+              onChanged: _busyItem == null ? (_) => _toggle(e) : null,
+              title: Text(
+                e.item,
+                style: TextStyle(
+                  fontSize: 13.5,
+                  decoration: e.isChecked ? TextDecoration.lineThrough : null,
+                  color: e.isChecked
+                      ? AppColors.textSecondary
+                      : AppColors.textPrimary,
+                ),
+              ),
+            ),
+          if (!complete && _entries.isNotEmpty)
+            Text(
+              '${_entries.length - done} öğe eksik — rapor yine gönderilebilir.',
+              style: const TextStyle(fontSize: 11.5, color: AppColors.warning600),
+            ),
+          if (_error != null)
+            Padding(
+              padding: const EdgeInsets.only(top: 4),
+              child: Text(
+                _error!,
+                style: const TextStyle(fontSize: 11.5, color: AppColors.danger500),
+              ),
+            ),
         ],
       ),
     );

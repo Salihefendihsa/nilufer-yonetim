@@ -22,6 +22,12 @@ export interface Customer {
   createdAt: string;
 }
 
+export interface JobChecklistEntry {
+  item: string;
+  isChecked: boolean;
+  checkedAt: string | null;
+}
+
 export interface Job {
   id: string;
   customerId: string;
@@ -37,6 +43,8 @@ export interface Job {
   ratingComment: string | null;
   createdAt: string;
   calendarLink: string | null;
+  /** Bölüm N (4. tur): iş öncesi kontrol listesi (GET /jobs/:id her zaman tam şablonu döner). */
+  checklist?: JobChecklistEntry[];
   sequenceNo: number;
   scheduledEndAt: string | null;
   cancelledAt: string | null;

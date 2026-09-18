@@ -73,6 +73,26 @@ const Map<JobStatus, List<JobStatus>> validJobStatusTransitions = {
   JobStatus.cancelled: [JobStatus.cancelled],
 };
 
+/// Bölüm N (4. tur): kontrol listesi satırı (lib/checklist.ts şablonu).
+class JobChecklistEntry {
+  final String item;
+  final bool isChecked;
+  final String? checkedAt;
+
+  const JobChecklistEntry({
+    required this.item,
+    required this.isChecked,
+    this.checkedAt,
+  });
+
+  factory JobChecklistEntry.fromJson(Map<String, dynamic> json) =>
+      JobChecklistEntry(
+        item: json['item'] as String? ?? '',
+        isChecked: json['isChecked'] as bool? ?? false,
+        checkedAt: json['checkedAt'] as String?,
+      );
+}
+
 class Job {
   final String id;
   final String customerId;
@@ -88,6 +108,9 @@ class Job {
   final String? ratingComment;
   final String createdAt;
   final String? calendarLink;
+  /// Bölüm N (4. tur): iş öncesi kontrol listesi — GET /jobs/:id her zaman
+  /// tam şablonu döner; liste uçlarında gelmeyebilir (boş liste).
+  final List<JobChecklistEntry> checklist;
   final String? customerName;
   final String? customerPhone;
   final String? customerAddress;
@@ -118,6 +141,7 @@ class Job {
     required this.ratingComment,
     required this.createdAt,
     required this.calendarLink,
+    this.checklist = const [],
     required this.customerName,
     this.customerPhone,
     this.customerAddress,
@@ -159,6 +183,10 @@ class Job {
     ratingComment: json['ratingComment'] as String?,
     createdAt: json['createdAt'] as String,
     calendarLink: json['calendarLink'] as String?,
+    checklist: ((json['checklist'] as List?) ?? const [])
+        .cast<Map<String, dynamic>>()
+        .map(JobChecklistEntry.fromJson)
+        .toList(),
     customerName:
         (json['customer'] as Map<String, dynamic>?)?['fullName'] as String?,
     customerPhone:
