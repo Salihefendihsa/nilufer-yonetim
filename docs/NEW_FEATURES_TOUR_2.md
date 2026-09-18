@@ -721,3 +721,86 @@ yoksa hiçbir şey.
 - Yeni migration: `job_structured_feedback`, `job_templates`, `onboarding_checklist`.
 - Cron/toplu iş fonksiyonu bu turda test edilmedi; test verisi ürün/hareket/
   dönem/kriter dahil ID ile temizlendi (Bölüm Q dersi korunuyor).
+
+---
+
+# 6. Tur — Bölüm X / Y / Z / AA / AB
+
+## Bölüm X — Müşteri Segmentasyonu (Etiketler)
+
+`CustomerTag` (name unique, color `#RRGGBB`, isActive) + **açık** ara tablo
+`CustomerTagAssignment` (implicit m:n yerine — etiket silinince atamalar
+Cascade ile temizlenir, ileride atama tarihi/atayan eklenebilir).
+`/customer-tags` CRUD OWNER/MANAGER (GET STAFF de görür — listede rozet için),
+DELETE gerçek silme, pasifleştirme için PATCH `isActive:false`.
+`POST /customers/:id/tags { tagIds }` kümeyi **tam eşitler** (transaction:
+notIn sil + skipDuplicates ekle). `GET /customers?tagId=` filtre; liste/detay
+yanıtında `tags` düz liste (`tagAssignments` sızmaz). Web: Ayarlar
+`CustomerTagsSection` (palet + özel renk), müşteri listesinde rozet + filtre
+çipleri, detay panelinde `CustomerTagEditor`. Mobil: `customer_tags.dart`
+(model/API/chip/editor/`CustomerTagsScreen` — Ayarlar + Müdür çekmecesi).
+
+## Bölüm Y — Hizmet Garanti Takibi
+
+`ServiceType.defaultWarrantyDays` (Int?), `Job.warrantyExpiresAt`
+(DateTime?). `lib/warranty.ts`: iş COMPLETED olunca `completedAt + gün`;
+Job.serviceType serbest metin olduğu için ServiceType **adıyla** eşleşir,
+eşleşme veya gün yoksa null. `updateJob`'un hem yönetim hem STAFF dalında
+uygulanır. `GET /customers/:id/active-warranties?serviceType=` (OWNER/MANAGER)
+geçerli garantiler + `daysLeft`; bekleyen randevu taleplerinde yönetim
+listesine `activeWarranty` (aynı tür) gömülür, müşteriye dönmez.
+**Otomatik ücretsizlik yok** — yalnızca bilgilendirme. Web: `WarrantyBadge`
+(iş listesi, süresi dolmuşsa gizli), `WarrantyNotice` (iş formu + Bekleyen
+Onaylar), Ayarlar → Hizmet Türleri satırında "Garanti N gün" düzenleme.
+Mobil: `Job.warrantyDaysLeft` + detay pill, iş formunda uyarı kutusu.
+Not: repo'daki anonim teklif formu müşteri seçtirmediği için "teklif formunda
+uyarı" iş formu ve randevu talebine uygulandı.
+
+## Bölüm Z — Akıllı Personel Atama Önerisi
+
+`GET /jobs/suggest-staff?date=&time=&serviceType=` (OWNER/MANAGER/TEAM_LEAD;
+TEAM_LEAD `getTeamStaffIds`). Yeni hesap tekrarı yok: Staff (archivedAt null,
+status ON_LEAVE → müsait değil), `StaffUnavailability` (tüm gün veya verilen
+saati kapsayan aralık → `isUnavailable`), Job.assignedStaffId + scheduledAt o
+gün (CANCELLED sayılmaz) → `todayJobCount`. Sıralama: müsaitler önce, iş yükü
+artan, ad; ilk müsait `isRecommended`. **Saat verilmezse** kısmi aralık
+listeden düşürmez, `unavailableReason` metni taşır (UI rozet). `serviceType`
+yalnızca yankılanır — yetkinlik eşlemesi yok, uydurma puan üretilmez. Web/
+mobil iş formu personel seçicisi öneri sırasına dizilir ("★ Önerilen · Ad ·
+Bugün N iş ⚠ neden"); seçim yönetimde kalır.
+
+## Bölüm AA — Yıldan Yıla Karşılaştırmalı Raporlama
+
+`computeRevenueTrend(monthCount, anchor)` — pencere artık `[başlangıç,
+bitiş)` kapalı aralık (önceden `gte` açık uçluydu; "bugüne kadar" için fark
+yok, geçmiş anchor'da gerekliydi). `computeYearOverYear` aynı fonksiyonu
+bugün ve 12 ay öncesi için çağırıp indeks bazında eşler: `{ month, thisYear,
+lastYear, changePercent }` — geçen yıl 0 ise oran null, uydurma yok. PDF
+export etkilenmez. Web: Raporlar "Ciro Trendi" ikinci seri (gri) +
+"Geçen yılı gizle/karşılaştır"; mobil `RevenueTrendChart.secondaryPoints`
+(gri kesikli). Test, gerçek dev ödemeleriyle çakışmamak için **delta**
+bazlıdır (baseline − sonra) ve ödemeleri ID ile siler.
+
+## Bölüm AB — Müşteri Belge Kasası
+
+`CustomerDocument` (fileName orijinal ad, fileUrl `/uploads/<rastgele>`,
+fileType, fileSize, uploadedBy). `lib/upload.ts:uploadDocument` — JobPhoto ile
+aynı disk deposu/adlandırma; resim + PDF + ofis belgeleri, 15 MB.
+`DELETE /customers/:id/documents/:docId` DB kaydı + diskteki dosyayı
+(`path.basename` — traversal yok) birlikte kaldırır; `docId + customerId`
+eşleşmezse 404 → başka müşterinin belgesi kendi yolundan silinemez. Multer
+hataları (boyut, tür reddi) artık `errorHandler`'da 400 (önceden 500; JobPhoto
+da yararlanır). Web: `CustomerDocuments` (sürükle-bırak, indir, onaylı sil)
+detay panelinde. Mobil: `file_picker` bağımlılığı eklendi;
+`CustomerDocumentsTab` 4. sekme (yönetim), indir/paylaş `downloadAndShare`.
+Güvenlik notu: `/uploads` statik ve kimliksiz servis ediliyor (mevcut JobPhoto
+tasarımıyla aynı) — dosya adı rastgele UUID; hassas belgeler için ileride
+imzalı/yetkili indirme ucu düşünülebilir.
+
+## 6. Tur Toplam
+
+- Backend vitest: 185 → **212** test (+27: X 8, Y 5, Z 4, AA 4, AB 6).
+- Flutter: 44 → **52** test (+8).
+- Yeni migration: `customer_tags`, `job_warranty`, `customer_documents`.
+- Cron/toplu iş çağrısı yok; test verisi (etiket, ödeme, ürün, belge dosyaları
+  dahil) ID/isim ile temizlendi; `uploads/` test sonrası boş.
