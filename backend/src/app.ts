@@ -37,6 +37,7 @@ import notificationPreferenceRoutes from "./routes/notificationPreferences";
 import analyticsRoutes from "./routes/analytics";
 import sessionRoutes from "./routes/sessions";
 import fileRoutes from "./routes/files";
+import dataDeletionRoutes from "./routes/dataDeletionRequests";
 import { errorHandler } from "./middleware/errorHandler";
 import { recordRequest } from "./lib/metrics";
 
@@ -129,6 +130,7 @@ app.use("/notification-preferences", notificationPreferenceRoutes);
 app.use("/analytics", analyticsRoutes);
 app.use("/sessions", sessionRoutes);
 app.use("/files", fileRoutes);
+app.use("/data-deletion-requests", dataDeletionRoutes);
 
 app.use(errorHandler);
 

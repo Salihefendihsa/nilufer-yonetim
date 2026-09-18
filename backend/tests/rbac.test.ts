@@ -123,6 +123,11 @@ const CASES: EndpointCase[] = [
   { method: "delete", path: `/customers/${NIL}/documents/${NIL}`, allowed: ["OWNER", "MANAGER"] },
   // Bölüm AC (7. tur) — route tüm rollere açık (kayıt bazlı yetki), uydurma id 404
   { method: "get", path: `/files/job-photo/${NIL}`, allowed: ["OWNER", "MANAGER", "TEAM_LEAD", "STAFF", "CUSTOMER"] },
+  // Bölüm AD (7. tur)
+  { method: "post", path: "/customers/me/deletion-request", allowed: ["CUSTOMER"], body: {} },
+  { method: "get", path: "/data-deletion-requests", allowed: ["OWNER"] },
+  { method: "post", path: `/data-deletion-requests/${NIL}/approve`, allowed: ["OWNER"] },
+  { method: "post", path: `/data-deletion-requests/${NIL}/reject`, allowed: ["OWNER"], body: {} },
 ];
 
 describe("RBAC sınırları", () => {

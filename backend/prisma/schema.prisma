@@ -137,6 +137,7 @@ model User {
   appointmentRequestResponses AppointmentRequest[] @relation("AppointmentRequestRespondedBy")
   onboardingCompletions OnboardingChecklistItem[] @relation("OnboardingCompletedBy")
   uploadedCustomerDocuments CustomerDocument[] @relation("CustomerDocumentUploadedBy")
+  processedDeletionRequests DataDeletionRequest[] @relation("DataDeletionProcessedBy")
   recordedExpenses Expense[]
   twoFactorRecoveryCodes TwoFactorRecoveryCode[]
   twoFactorChallenges    TwoFactorChallenge[]
@@ -239,10 +240,37 @@ model Customer {
   appointmentRequests AppointmentRequest[]
   tagAssignments CustomerTagAssignment[]
   documents CustomerDocument[]
+  deletionRequests DataDeletionRequest[]
 
   @@index([district])
   @@index([phone])
   @@index([referredByCustomerId])
+}
+
+/// Bölüm AD (7. tur): KVKK — müşterinin kişisel verilerinin silinmesi talebi.
+/// Onayda GERÇEK silme değil anonimleştirme: Customer.fullName → "Silinmiş
+/// Müşteri", phone/email/address → placeholder/null, User pasif + token iptali;
+/// Job/Payment/Contract kayıtları KALIR (mali/yasal kayıt zorunluluğu).
+enum DataDeletionStatus {
+  PENDING
+  COMPLETED
+  REJECTED
+}
+
+model DataDeletionRequest {
+  id                String             @id @default(uuid())
+  customerId        String
+  status            DataDeletionStatus @default(PENDING)
+  requestedAt       DateTime           @default(now())
+  processedByUserId String?
+  processedAt       DateTime?
+  rejectionReason   String?
+
+  customer    Customer @relation(fields: [customerId], references: [id])
+  processedBy User?    @relation("DataDeletionProcessedBy", fields: [processedByUserId], references: [id])
+
+  @@index([customerId])
+  @@index([status])
 }
 
 /// Bölüm AB (6. tur): Müşteri belge kasası — sözleşme taraması, kimlik

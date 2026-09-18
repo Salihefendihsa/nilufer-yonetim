@@ -196,6 +196,7 @@ export class TestContext {
     });
     await prisma.job.deleteMany({ where: { id: { in: jobIds } } });
     await prisma.contract.deleteMany({ where: { customerId: { in: customerIds } } });
+    await prisma.dataDeletionRequest.deleteMany({ where: { OR: [{ customerId: { in: customerIds } }, { processedByUserId: { in: userIds } }] } });
     // Bölüm AB: belge kaydı (Cascade var ama açıkça; disk dosyasını testler kendisi siler).
     await prisma.customerDocument.deleteMany({ where: { OR: [{ customerId: { in: customerIds } }, { uploadedByUserId: { in: userIds } }] } });
 

@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 
 import '../auth/auth_provider.dart';
 import '../features/admin/audit_settings_screen.dart';
+import '../features/admin/data_deletion_screens.dart';
 import '../features/admin/system_health_screen.dart';
 import '../features/admin/usage_stats_screen.dart';
 import '../features/appointment_requests/my_appointment_requests_screen.dart';
@@ -153,6 +154,11 @@ class _RoleShellState extends State<RoleShell> {
         'Bildirimler',
         Icons.notifications_outlined,
         (_) => const NotificationsScreen(),
+      ),
+      AppDrawerEntry(
+        'Hesabımı ve Verilerimi Sil',
+        Icons.person_off_outlined,
+        (_) => const CustomerDataDeletionScreen(),
       ),
     ]),
   ];

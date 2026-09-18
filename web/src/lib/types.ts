@@ -11,6 +11,19 @@ export type ApiDecimal = number | string;
 
 export type JobStatus = "PENDING" | "SCHEDULED" | "IN_PROGRESS" | "COMPLETED" | "CANCELLED";
 
+/** Bölüm AD (7. tur): KVKK veri silme talebi. */
+export type DataDeletionStatus = "PENDING" | "COMPLETED" | "REJECTED";
+export interface DataDeletionRequest {
+  id: string;
+  customerId: string;
+  status: DataDeletionStatus;
+  requestedAt: string;
+  processedAt: string | null;
+  rejectionReason: string | null;
+  customer?: { id: string; fullName: string; phone: string; email: string | null };
+  processedBy?: { id: string; fullName: string } | null;
+}
+
 /** Bölüm AB (6. tur): müşteri belgesi (GET /customers/:id/documents). */
 export interface CustomerDocument {
   id: string;

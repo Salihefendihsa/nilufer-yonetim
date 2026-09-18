@@ -6,6 +6,7 @@ import '../../theme/app_colors.dart';
 import '../../widgets/state_views.dart';
 import '../../widgets/stat_card.dart';
 import '../customers/customer_tags.dart';
+import 'data_deletion_screens.dart';
 import 'job_templates_screen.dart';
 import 'named_list_settings_screen.dart';
 
@@ -423,6 +424,33 @@ class _SettingsTabState extends State<_SettingsTab> {
             ),
             leading: const Icon(
               Icons.dashboard_customize_outlined,
+              color: AppColors.primary700,
+            ),
+            title: const Text('Veri Silme Talepleri (KVKK)'),
+            subtitle: const Text(
+              'Bölüm AD: onay geri alınamaz — anonimleştirme',
+              style: TextStyle(fontSize: 11.5),
+            ),
+            trailing: const Icon(
+              Icons.chevron_right_rounded,
+              color: AppColors.textFaint,
+            ),
+            onTap: () => Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => const DataDeletionRequestsScreen()),
+            ),
+          ),
+        ),
+        const SizedBox(height: 8),
+        Material(
+          color: AppColors.surfaceCard,
+          borderRadius: BorderRadius.circular(AppRadius.card),
+          child: ListTile(
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(AppRadius.card),
+              side: const BorderSide(color: AppColors.borderDefault),
+            ),
+            leading: const Icon(
+              Icons.label_outline_rounded,
               color: AppColors.primary700,
             ),
             title: const Text('Müşteri Etiketleri'),

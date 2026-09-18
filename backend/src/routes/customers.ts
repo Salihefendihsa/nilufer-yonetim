@@ -15,6 +15,7 @@ import { exportCustomersExcel } from "../controllers/exportController";
 import { setCustomerTags } from "../controllers/customerTagsController";
 import { listCustomerDocuments, uploadCustomerDocument, deleteCustomerDocument } from "../controllers/customerDocumentsController";
 import { uploadDocument } from "../lib/upload";
+import { createMyDeletionRequest, getMyDeletionRequest } from "../controllers/dataDeletionController";
 
 const router = Router();
 
@@ -24,6 +25,9 @@ router.get("/export/excel", requireRole(Role.OWNER, Role.MANAGER), exportCustome
 // Bölüm P (4. tur): müşterinin kendi davet kodu/linki — /:id'den ÖNCE.
 router.get("/me/referral", requireRole(Role.CUSTOMER), getMyReferral);
 router.get("/me/badges", requireRole(Role.CUSTOMER), getMyBadges);
+// Bölüm AD (7. tur): KVKK veri silme talebi (müşteri kendi adına).
+router.post("/me/deletion-request", requireRole(Role.CUSTOMER), createMyDeletionRequest);
+router.get("/me/deletion-request", requireRole(Role.CUSTOMER), getMyDeletionRequest);
 router.get("/", requireRole(Role.OWNER, Role.MANAGER, Role.STAFF), listCustomers);
 router.get("/:id", requireRole(Role.OWNER, Role.MANAGER, Role.STAFF), getCustomer);
 router.post("/", requireRole(Role.OWNER, Role.MANAGER), createCustomer);
