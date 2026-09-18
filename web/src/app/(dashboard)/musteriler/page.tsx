@@ -16,6 +16,7 @@ import { formatDate, currencyFormatter } from "@/lib/format";
 import type { Customer, CustomerListItem, Paginated } from "@/lib/types";
 import { CustomerFormModal } from "./CustomerFormModal";
 import { CustomerDetailPanel } from "./CustomerDetailPanel";
+import { LoyalCustomerBadge } from "@/components/Badges";
 
 /**
  * Bakiye, iş sayısı ve son iş tarihi artık /customers yanıtında sunucu
@@ -110,7 +111,12 @@ function CustomersPageContent() {
       header: "Ad Soyad",
       isPrimary: true,
       avatarLabel: (row) => row.fullName,
-      accessor: (row) => <span className="font-medium text-text-primary">{row.fullName}</span>,
+      accessor: (row) => (
+        <span className="inline-flex flex-wrap items-center gap-2 font-medium text-text-primary">
+          {row.fullName}
+          {row.isLoyal && <LoyalCustomerBadge />}
+        </span>
+      ),
     },
     { header: "Telefon", accessor: (row) => <span className="font-mono text-xs">{row.phone}</span> },
     {

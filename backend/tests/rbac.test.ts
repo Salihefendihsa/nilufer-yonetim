@@ -90,6 +90,9 @@ const CASES: EndpointCase[] = [
   { method: "get", path: "/team/daily-briefing", allowed: ["TEAM_LEAD"] },
   { method: "patch", path: `/jobs/${NIL}/checklist`, allowed: ["STAFF"], body: {} },
   { method: "get", path: "/customers/me/referral", allowed: ["CUSTOMER"] },
+  { method: "get", path: "/customers/me/badges", allowed: ["CUSTOMER"] },
+  { method: "post", path: `/contracts/${NIL}/pause`, allowed: ["CUSTOMER", "OWNER", "MANAGER"] },
+  { method: "post", path: `/contracts/${NIL}/resume`, allowed: ["CUSTOMER", "OWNER", "MANAGER"] },
 ];
 
 describe("RBAC sınırları", () => {

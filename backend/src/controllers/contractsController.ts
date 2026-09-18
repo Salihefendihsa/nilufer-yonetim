@@ -117,6 +117,8 @@ export async function findOverdueRecurringContracts(now = new Date()) {
       status: "ACTIVE",
       recurrenceType: { not: null },
       nextGenerationDate: { lt: now },
+      // Bölüm Q: duraklatılmış sözleşmede iş üretilmemesi beklenen davranış — gecikme değil.
+      isPaused: false,
     },
     orderBy: { nextGenerationDate: "asc" },
     include: { customer: { select: { id: true, fullName: true } } },
@@ -292,4 +294,78 @@ export async function updateContract(req: Request, res: Response) {
   });
 
   return res.json(contract);
+}
+
+/**
+ * Bölüm Q (4. tur): Müşteri kendi AKTİF sözleşmesini duraklatır / devam ettirir.
+ * Duraklatılmış sözleşme için lib/cron.ts otomatik iş üretmez, sağlık kontrolü
+ * onu "gecikmiş" saymaz. OWNER/MANAGER her sözleşme için aynı işlemi yapabilir.
+ * Audit log tutulur. Yeniden başlatırken, cron'un duraklama dönemindeki
+ * kaçırılmış tarihleri toplu üretmemesi için nextGenerationDate bugünden
+ * eskiyse bir periyot ileri alınır.
+ */
+async function loadContractForPauseToggle(req: Request, res: Response) {
+  const contract = await prisma.contract.findUnique({ where: { id: idParam(req) } });
+  if (!contract) {
+    res.status(404).json({ error: "Sözleşme bulunamadı" });
+    return null;
+  }
+  if (req.user!.role === Role.CUSTOMER) {
+    const customerId = await getCustomerIdForUser(req.user!.sub);
+    if (!customerId || customerId !== contract.customerId) {
+      res.status(403).json({ error: "Yalnızca kendi sözleşmenizi duraklatabilirsiniz" });
+      return null;
+    }
+  }
+  if (contract.status !== "ACTIVE") {
+    res.status(409).json({ error: "Yalnızca aktif sözleşmeler duraklatılabilir/devam ettirilebilir" });
+    return null;
+  }
+  return contract;
+}
+
+export async function pauseContract(req: Request, res: Response) {
+  const contract = await loadContractForPauseToggle(req, res);
+  if (!contract) return;
+  if (contract.isPaused) {
+    return res.status(409).json({ error: "Sözleşme zaten duraklatılmış" });
+  }
+  const updated = await prisma.contract.update({
+    where: { id: contract.id },
+    data: { isPaused: true, pausedAt: new Date() },
+  });
+  await recordAuditLog({
+    actorUserId: req.user!.sub,
+    action: "contract.paused",
+    targetUserId: req.user!.sub,
+    targetType: "Contract",
+    targetId: contract.id,
+  });
+  return res.json(updated);
+}
+
+export async function resumeContract(req: Request, res: Response) {
+  const contract = await loadContractForPauseToggle(req, res);
+  if (!contract) return;
+  if (!contract.isPaused) {
+    return res.status(409).json({ error: "Sözleşme duraklatılmış değil" });
+  }
+  const now = new Date();
+  let nextGenerationDate = contract.nextGenerationDate;
+  if (contract.recurrenceType && nextGenerationDate && nextGenerationDate < now) {
+    while (nextGenerationDate < now) nextGenerationDate = addRecurrencePeriod(nextGenerationDate, contract.recurrenceType);
+  }
+  const updated = await prisma.contract.update({
+    where: { id: contract.id },
+    data: { isPaused: false, pausedAt: null, nextGenerationDate },
+  });
+  await recordAuditLog({
+    actorUserId: req.user!.sub,
+    action: "contract.resumed",
+    targetUserId: req.user!.sub,
+    targetType: "Contract",
+    targetId: contract.id,
+    detail: nextGenerationDate && nextGenerationDate !== contract.nextGenerationDate ? `nextGenerationDate -> ${nextGenerationDate.toISOString()}` : undefined,
+  });
+  return res.json(updated);
 }

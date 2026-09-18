@@ -12,6 +12,7 @@ import { api, ApiError } from "@/lib/api";
 import type { StaffLeaderboardEntry, StaffLeaderboardSummary, LeaderboardPeriod } from "@/lib/types";
 import { EvaluationsTab } from "./EvaluationsTab";
 import { useInitialQueryParam } from "@/lib/useDrillDownFilter";
+import { AchievementBadge } from "@/components/Badges";
 
 type PageTab = "leaderboard" | "evaluations";
 
@@ -107,7 +108,12 @@ function PerformancePageContent() {
       header: "Personel",
       isPrimary: true,
       avatarLabel: (row) => row.fullName,
-      accessor: (row) => row.fullName,
+      accessor: (row) => (
+        <span className="inline-flex flex-wrap items-center gap-2">
+          {row.fullName}
+          <AchievementBadge tier={row.achievementTier} />
+        </span>
+      ),
     },
     { header: "Pozisyon", accessor: (row) => row.position },
     {

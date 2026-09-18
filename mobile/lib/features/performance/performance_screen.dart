@@ -4,6 +4,7 @@ import '../../core/api_client.dart';
 import '../../theme/app_colors.dart';
 import '../../widgets/state_views.dart';
 import '../evaluations/evaluations_screen.dart';
+import '../../widgets/badges.dart';
 
 class LeaderboardEntry {
   final String staffId;
@@ -27,6 +28,9 @@ class LeaderboardEntry {
   /// Aylik is hedefi tanimli degilse null - uydurma bir hedef gosterilmez.
   final double? targetCompletionPercent;
 
+  /// Bölüm Q (4. tur): GOLD / SILVER / BRONZE (backend lib/badges.ts); yoksa null.
+  final String? achievementTier;
+
   LeaderboardEntry({
     required this.staffId,
     required this.fullName,
@@ -40,6 +44,7 @@ class LeaderboardEntry {
     this.onTimeRate,
     this.onTimeMeasuredJobs = 0,
     this.targetCompletionPercent,
+    this.achievementTier,
   });
 
   factory LeaderboardEntry.fromJson(Map<String, dynamic> json) =>
@@ -60,6 +65,7 @@ class LeaderboardEntry {
         onTimeMeasuredJobs: (json['onTimeMeasuredJobs'] as num?)?.toInt() ?? 0,
         targetCompletionPercent:
             (json['targetCompletionPercent'] as num?)?.toDouble(),
+        achievementTier: json['achievementTier'] as String?,
       );
 }
 
@@ -477,12 +483,23 @@ class _PerformanceScreenState extends State<PerformanceScreen> {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Text(
-                                e.fullName,
-                                style: const TextStyle(
-                                  fontWeight: FontWeight.w700,
-                                  fontSize: 14,
-                                ),
+                              Row(
+                                children: [
+                                  Flexible(
+                                    child: Text(
+                                      e.fullName,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: const TextStyle(
+                                        fontWeight: FontWeight.w700,
+                                        fontSize: 14,
+                                      ),
+                                    ),
+                                  ),
+                                  if (e.achievementTier != null) ...[
+                                    const SizedBox(width: 6),
+                                    AchievementBadge(tier: e.achievementTier),
+                                  ],
+                                ],
                               ),
                               Text(
                                 '${e.position} · ${e.completedJobsInPeriod} iş '

@@ -9,6 +9,7 @@ import { PERMISSION_KEYS, isPermissionKey } from "../lib/permissions";
 import { recordAuditLog } from "../lib/auditLog";
 import { resetExpiredStaffStatuses } from "../lib/cron";
 import { getMonthlyJobTarget } from "../lib/targets";
+import { achievementTier } from "../lib/badges";
 
 const createSchema = z.object({
   userId: z.string().uuid(),
@@ -703,6 +704,11 @@ export async function getStaffLeaderboard(req: Request, res: Response) {
           where: { status: "COMPLETED", completedAt: { gte: earliest } },
           select: { rating: true, completedAt: true, scheduledAt: true, scheduledEndAt: true },
         },
+        // Bölüm Q: başarı rozeti — gönderilmiş/kilitli değerlendirmelerin kriter puanları.
+        evaluationsReceived: {
+          where: { status: { in: ["SUBMITTED", "LOCKED"] } },
+          select: { scores: { select: { score: true } } },
+        },
       },
     }),
     getMonthlyJobTarget(),
@@ -729,10 +735,16 @@ export async function getStaffLeaderboard(req: Request, res: Response) {
     const timed = periodJobs.map(isOnTime).filter((v): v is boolean => v !== null);
     const onTimeCount = timed.filter(Boolean).length;
 
+    // Bölüm Q: tüm kriter puanlarının ortalaması (1–20) → Altın/Gümüş/Bronz.
+    const allScores = staff.evaluationsReceived.flatMap((e) => e.scores.map((sc) => sc.score));
+    const evaluationAverageScore = allScores.length > 0 ? allScores.reduce((a, b) => a + b, 0) / allScores.length : null;
+
     return {
       staffId: staff.id,
       fullName: staff.user.fullName,
       position: staff.position,
+      evaluationAverageScore,
+      achievementTier: achievementTier(evaluationAverageScore),
       // Geriye dönük uyumluluk (Müdür/Patron ekranları bu adları kullanıyor):
       completedJobsThisMonth: thisMonthJobs.length,
       completedJobsLastMonth: lastMonthJobs.length,

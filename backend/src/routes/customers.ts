@@ -6,6 +6,7 @@ import {
   getCustomer,
   createCustomer,
   getMyReferral,
+  getMyBadges,
   updateCustomer,
   deleteCustomer,
 } from "../controllers/customersController";
@@ -18,6 +19,7 @@ router.use(requireAuth);
 router.get("/export/excel", requireRole(Role.OWNER, Role.MANAGER), exportCustomersExcel);
 // Bölüm P (4. tur): müşterinin kendi davet kodu/linki — /:id'den ÖNCE.
 router.get("/me/referral", requireRole(Role.CUSTOMER), getMyReferral);
+router.get("/me/badges", requireRole(Role.CUSTOMER), getMyBadges);
 router.get("/", requireRole(Role.OWNER, Role.MANAGER, Role.STAFF), listCustomers);
 router.get("/:id", requireRole(Role.OWNER, Role.MANAGER, Role.STAFF), getCustomer);
 router.post("/", requireRole(Role.OWNER, Role.MANAGER), createCustomer);

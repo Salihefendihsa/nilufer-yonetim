@@ -12,6 +12,8 @@ class Contract {
   final String? recurrenceType;
   final String? nextGenerationDate;
   final String? customerName;
+  /// Bölüm Q (4. tur): müşteri duraklattı — otomatik iş üretimi durur.
+  final bool isPaused;
 
   Contract({
     required this.id,
@@ -25,6 +27,7 @@ class Contract {
     required this.recurrenceType,
     required this.nextGenerationDate,
     required this.customerName,
+    this.isPaused = false,
   });
 
   factory Contract.fromJson(Map<String, dynamic> json) => Contract(
@@ -38,6 +41,7 @@ class Contract {
     serviceType: json['serviceType'] as String?,
     recurrenceType: json['recurrenceType'] as String?,
     nextGenerationDate: json['nextGenerationDate'] as String?,
+    isPaused: json['isPaused'] as bool? ?? false,
     customerName:
         (json['customer'] as Map<String, dynamic>?)?['fullName'] as String?,
   );

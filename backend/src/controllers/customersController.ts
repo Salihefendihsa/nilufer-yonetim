@@ -3,6 +3,7 @@ import { z } from "zod";
 import { Role, type Prisma } from "@prisma/client";
 import { prisma } from "../lib/prisma";
 import { ensureReferralCode, generateReferralCode, referralInviteLink } from "../lib/referral";
+import { isLoyalCustomer, LOYAL_CUSTOMER_THRESHOLD } from "../lib/badges";
 import { idParam } from "../lib/params";
 import { getPagination, paginatedResponse } from "../lib/pagination";
 import { recordAuditLog } from "../lib/auditLog";
@@ -62,7 +63,7 @@ export async function listCustomers(req: Request, res: Response) {
   }
 
   const customerIds = data.map((c) => c.id);
-  const [jobAgg, paymentAgg, activeContracts] = customerIds.length
+  const [jobAgg, paymentAgg, activeContracts, completedAgg] = customerIds.length
     ? await Promise.all([
         prisma.job.groupBy({
           by: ["customerId"],
@@ -81,15 +82,24 @@ export async function listCustomers(req: Request, res: Response) {
           _count: { _all: true },
           where: { customerId: { in: customerIds }, status: "ACTIVE" },
         }),
+        // Bölüm Q: "Sadık Müşteri" rozeti — tamamlanmış iş sayısı.
+        prisma.job.groupBy({
+          by: ["customerId"],
+          _count: { _all: true },
+          where: { customerId: { in: customerIds }, status: "COMPLETED" },
+        }),
       ])
-    : [[], [], []];
+    : [[], [], [], []];
 
   const enriched = data.map((customer) => {
     const jobs = jobAgg.find((j) => j.customerId === customer.id);
     const priced = Number(jobs?._sum.price ?? 0);
     const paid = Number(paymentAgg.find((p) => p.customerId === customer.id)?._sum.amount ?? 0);
+    const completedJobCount = completedAgg.find((c) => c.customerId === customer.id)?._count._all ?? 0;
     return {
       ...customer,
+      completedJobCount,
+      isLoyal: isLoyalCustomer(completedJobCount),
       jobCount: jobs?._count._all ?? 0,
       lastJobDate: jobs?._max.scheduledAt ?? jobs?._max.createdAt ?? null,
       activeContractCount: activeContracts.find((c) => c.customerId === customer.id)?._count._all ?? 0,
@@ -130,11 +140,12 @@ export async function getCustomer(req: Request, res: Response) {
     return res.json(customerWithoutPayments);
   }
 
+  const completedJobCount = customer.jobs.filter((j) => j.status === "COMPLETED").length;
   const totalPriced = customer.jobs.reduce((sum, job) => sum + Number(job.price ?? 0), 0);
   const totalPaid = customer.payments.reduce((sum, payment) => sum + Number(payment.amount), 0);
   const outstandingBalance = totalPriced - totalPaid;
 
-  return res.json({ ...customer, outstandingBalance });
+  return res.json({ ...customer, outstandingBalance, completedJobCount, isLoyal: isLoyalCustomer(completedJobCount) });
 }
 
 export async function createCustomer(req: Request, res: Response) {
@@ -142,6 +153,19 @@ export async function createCustomer(req: Request, res: Response) {
   // Bölüm P: her yeni müşteri doğar doğmaz bir davet kodu alır.
   const customer = await prisma.customer.create({ data: { ...data, referralCode: generateReferralCode() } });
   return res.status(201).json(customer);
+}
+
+/**
+ * Bölüm Q (4. tur): Müşterinin kendi rozet bilgisi — "Sadık Müşteri"
+ * (tamamlanmış iş ≥ LOYAL_CUSTOMER_THRESHOLD). Yalnızca görsel.
+ */
+export async function getMyBadges(req: Request, res: Response) {
+  const customerId = await getCustomerIdForUser(req.user!.sub);
+  if (!customerId) {
+    return res.status(400).json({ error: "Bu hesaba bağlı bir müşteri kaydı yok" });
+  }
+  const completedJobCount = await prisma.job.count({ where: { customerId, status: "COMPLETED" } });
+  return res.json({ completedJobCount, isLoyal: isLoyalCustomer(completedJobCount), loyalThreshold: LOYAL_CUSTOMER_THRESHOLD });
 }
 
 /**

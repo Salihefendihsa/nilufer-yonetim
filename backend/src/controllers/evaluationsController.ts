@@ -4,6 +4,7 @@ import { Role, EvaluationStatus } from "@prisma/client";
 import { prisma } from "../lib/prisma";
 import { idParam } from "../lib/params";
 import { recordAuditLog } from "../lib/auditLog";
+import { achievementTier } from "../lib/badges";
 
 const MANAGEMENT_ROLES: Role[] = [Role.OWNER, Role.MANAGER];
 
@@ -206,6 +207,8 @@ function serializeEvaluation(
     ...redactEvaluatorForRole(rest as { evaluatorUserId: string; evaluator: unknown } & typeof rest, role),
     scores,
     averageScore: computeAverage(scores),
+    // Bölüm Q: görsel başarı kademesi (Altın/Gümüş/Bronz) — averageScore'dan türetilir.
+    achievementTier: achievementTier(computeAverage(scores)),
   };
 }
 

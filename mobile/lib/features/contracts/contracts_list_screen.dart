@@ -39,7 +39,6 @@ class _ContractsListScreenState extends State<ContractsListScreen> {
   String? _error;
   String? _busyId;
   String? _pdfDownloadingId;
-
   Future<void> _downloadContractPdf(Contract c) async {
     setState(() => _pdfDownloadingId = c.id);
     try {
@@ -645,6 +644,50 @@ class _MyContractsScreenState extends State<MyContractsScreen> {
   bool _loading = true;
   String? _error;
   String? _pdfDownloadingId;
+  String? _toggleBusyId;
+
+  /// Bölüm Q (4. tur): duraklat/devam ettir — duraklatmadan önce onay ister.
+  Future<void> _togglePause(Contract c) async {
+    if (!c.isPaused) {
+      final ok = await showDialog<bool>(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          title: const Text('Sözleşmeyi duraklat'),
+          content: const Text(
+            'Duraklatılan sözleşme için periyodik işler planlanmaz. İstediğiniz zaman devam ettirebilirsiniz.',
+          ),
+          actions: [
+            TextButton(onPressed: () => Navigator.of(ctx).pop(false), child: const Text('Vazgeç')),
+            ElevatedButton(onPressed: () => Navigator.of(ctx).pop(true), child: const Text('Duraklat')),
+          ],
+        ),
+      );
+      if (ok != true) return;
+    }
+    setState(() => _toggleBusyId = c.id);
+    try {
+      if (c.isPaused) {
+        await _api.resume(c.id);
+      } else {
+        await _api.pause(c.id);
+      }
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(c.isPaused ? 'Sözleşme devam ettirildi' : 'Sözleşme duraklatıldı')),
+        );
+      }
+      await _load();
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(e is ApiException ? e.message : 'İşlem yapılamadı')),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _toggleBusyId = null);
+    }
+  }
+
 
   Future<void> _downloadContractPdf(Contract c) async {
     setState(() => _pdfDownloadingId = c.id);
@@ -743,6 +786,23 @@ class _MyContractsScreenState extends State<MyContractsScreen> {
                                   fontWeight: FontWeight.w600,
                                 ),
                               ),
+                              if (c.isPaused)
+                                Container(
+                                  margin: const EdgeInsets.only(top: 4),
+                                  padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                                  decoration: BoxDecoration(
+                                    color: AppColors.warning50,
+                                    borderRadius: BorderRadius.circular(AppRadius.pill),
+                                  ),
+                                  child: const Text(
+                                    'Duraklatıldı',
+                                    style: TextStyle(
+                                      fontSize: 10.5,
+                                      fontWeight: FontWeight.w700,
+                                      color: AppColors.warning600,
+                                    ),
+                                  ),
+                                ),
                               if (c.amount != null)
                                 Text(
                                   _currency.format(c.amount),
@@ -750,6 +810,19 @@ class _MyContractsScreenState extends State<MyContractsScreen> {
                                     fontSize: 13,
                                     fontWeight: FontWeight.w700,
                                     color: AppColors.primary700,
+                                  ),
+                                ),
+                              // Bölüm Q: yalnızca aktif sözleşmede duraklat/devam.
+                              if (c.status == 'ACTIVE')
+                                Padding(
+                                  padding: const EdgeInsets.only(top: 6),
+                                  child: OutlinedButton.icon(
+                                    onPressed: _toggleBusyId == c.id ? null : () => _togglePause(c),
+                                    icon: Icon(
+                                      c.isPaused ? Icons.play_circle_outline_rounded : Icons.pause_circle_outline_rounded,
+                                      size: 16,
+                                    ),
+                                    label: Text(c.isPaused ? 'Devam Ettir' : 'Duraklat'),
                                   ),
                                 ),
                             ],

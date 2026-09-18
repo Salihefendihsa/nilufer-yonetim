@@ -45,6 +45,8 @@ import type { Job, JobReport, JobPhoto, JobStatus, Staff, Paginated, Customer, A
 import { directionsUrl } from "@/lib/types";
 import { TeamBriefingCard } from "@/components/TeamBriefingCard";
 import { ReferralCard } from "@/components/ReferralCard";
+import { MyContractsCard } from "@/components/MyContractsCard";
+import { LoyalCustomerBadge } from "@/components/Badges";
 import { AppointmentRequestModal } from "./AppointmentRequestModal";
 import { JobReportModal } from "./JobReportModal";
 import { AdvanceRequestModal } from "./AdvanceRequestModal";
@@ -943,6 +945,8 @@ function CustomerDashboard() {
   const [sent, setSent] = useState(false);
   // Bölüm J (3. tur): müşterinin kendi randevu talepleri ve durumları.
   const [appointmentRequests, setAppointmentRequests] = useState<AppointmentRequest[]>([]);
+  // Bölüm Q (4. tur): "Sadık Müşteri" rozeti — backend hesaplar (≥5 tamamlanmış iş).
+  const [isLoyal, setIsLoyal] = useState(false);
   const [expandedJobId, setExpandedJobId] = useState<string | null>(null);
   const [reports, setReports] = useState<Record<string, JobReport | "loading" | "none">>({});
   const [photos, setPhotos] = useState<Record<string, JobPhoto[]>>({});
@@ -976,10 +980,12 @@ function CustomerDashboard() {
     setLoading(true);
     setError(null);
     try {
-      const [res, requestsRes] = await Promise.all([
+      const [res, requestsRes, badges] = await Promise.all([
         api.get<{ data: Job[] }>("/jobs?limit=50"),
         api.get<Paginated<AppointmentRequest>>("/appointment-requests?limit=20").catch(() => ({ data: [] as AppointmentRequest[] })),
+        api.get<{ isLoyal: boolean }>("/customers/me/badges").catch(() => ({ isLoyal: false })),
       ]);
+      setIsLoyal(badges.isLoyal);
       const sorted = [...res.data].sort((a, b) => {
         const dateA = a.scheduledAt ?? a.createdAt;
         const dateB = b.scheduledAt ?? b.createdAt;
@@ -1023,6 +1029,8 @@ function CustomerDashboard() {
         title={`Merhaba${user ? `, ${user.fullName.split(" ")[0]}` : ""}`}
         description="Hizmetlerinizi buradan takip edebilirsiniz."
         actions={
+          <>
+            {isLoyal && <LoyalCustomerBadge className="self-center" />}
           <button
             type="button"
             onClick={() => setModalOpen(true)}
@@ -1031,6 +1039,7 @@ function CustomerDashboard() {
             <Plus size={16} strokeWidth={2} />
             Yeni Randevu İste
           </button>
+          </>
         }
       />
 
@@ -1063,6 +1072,9 @@ function CustomerDashboard() {
           Talebiniz alındı, en kısa sürede sizinle iletişime geçeceğiz.
         </p>
       )}
+
+      {/* Bölüm Q (4. tur): Sözleşmelerim — duraklat/devam ettir */}
+      <MyContractsCard />
 
       {/* Bölüm P (4. tur): Arkadaşını Davet Et */}
       <ReferralCard />

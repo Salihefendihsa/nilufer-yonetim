@@ -595,6 +595,10 @@ model Contract {
   /// bilgilendirici `sendContractExpiryReminders`'dan AYRI, daha aciliyetli
   /// bir ikinci mekanizma (bkz. lib/reminders.ts:sweepContractRenewalAlerts).
   lastRenewalAlertAt DateTime?
+  /// Bölüm Q (4. tur): müşteri kendi sözleşmesini duraklatabilir — duraklatılmışsa
+  /// otomatik iş üretimi (lib/cron.ts) ve sağlık kontrolü bu sözleşmeyi atlar.
+  isPaused           Boolean         @default(false)
+  pausedAt           DateTime?
 
   customer Customer @relation(fields: [customerId], references: [id])
 

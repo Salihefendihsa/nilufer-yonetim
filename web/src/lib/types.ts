@@ -89,6 +89,9 @@ export interface Contract {
   pdfUrl: string | null;
   recurrenceType: RecurrenceType | null;
   nextGenerationDate: string | null;
+  /** Bölüm Q (4. tur): müşteri duraklattı — otomatik iş üretimi durur. */
+  isPaused?: boolean;
+  pausedAt?: string | null;
   createdAt: string;
   customer?: { id: string; fullName: string; district: string | null };
 }
@@ -131,7 +134,13 @@ export interface JobReport {
   approvedBy?: { fullName: string } | null;
 }
 
+/** Bölüm Q (4. tur): personel başarı kademesi (leaderboard / evaluation). */
+export type AchievementTier = "GOLD" | "SILVER" | "BRONZE";
+
 export interface CustomerListItem extends Customer {
+  /** Bölüm Q: tamamlanmış iş sayısı ve "Sadık Müşteri" rozeti (backend hesaplar). */
+  completedJobCount?: number;
+  isLoyal?: boolean;
   jobCount: number;
   lastJobDate: string | null;
   activeContractCount: number;
@@ -139,6 +148,8 @@ export interface CustomerListItem extends Customer {
 }
 
 export interface CustomerDetail extends Customer {
+  completedJobCount?: number;
+  isLoyal?: boolean;
   jobs: Job[];
   payments: Payment[];
   contracts: Contract[];
@@ -451,6 +462,9 @@ export interface StaffLeaderboardEntry {
   staffId: string;
   fullName: string;
   position: string;
+  /** Bölüm Q: gönderilmiş değerlendirmelerin kriter ortalaması (1–20) ve kademe. */
+  evaluationAverageScore?: number | null;
+  achievementTier?: AchievementTier | null;
   completedJobsThisMonth: number;
   completedJobsLastMonth: number;
   /** Seçili döneme ait tamamlanan iş sayısı. */

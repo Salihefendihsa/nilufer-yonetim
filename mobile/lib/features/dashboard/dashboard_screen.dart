@@ -17,6 +17,7 @@ import '../jobs/job_detail_screen.dart';
 import '../jobs/jobs_api.dart';
 import '../search/search_screen.dart';
 import '../team/team_api.dart';
+import '../../widgets/badges.dart';
 import 'dashboard_api.dart';
 import 'dashboard_models.dart';
 
@@ -50,6 +51,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
   TeamSummary? _team;
   /// Bölüm M (4. tur): Şef "Bugün Ekibim" brifingi (null → blok gizli).
   TeamDailyBriefing? _briefing;
+  /// Bölüm Q (4. tur): müşteri "Sadık Müşteri" rozeti (backend hesaplar).
+  bool _isLoyalCustomer = false;
 
   bool get _isManagement {
     final role = context.read<AuthProvider>().user?.role;
@@ -106,6 +109,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
         _staffTodaysJobs = res.data.length;
       } else {
         _staffTodaysJobs = await _api.getTodaysJobsCountForCurrentUser();
+        try {
+          final badges = await ApiClient.instance.get<Map<String, dynamic>>('/customers/me/badges');
+          _isLoyalCustomer = badges['isLoyal'] as bool? ?? false;
+        } on ApiException {
+          _isLoyalCustomer = false;
+        }
       }
     } catch (e) {
       _error = e is ApiException ? e.message : 'Veriler alınamadı';
@@ -954,6 +963,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   fontWeight: FontWeight.w700,
                 ),
               ),
+              if (_isLoyalCustomer) ...[
+                const SizedBox(height: 6),
+                const LoyalCustomerBadge(),
+              ],
               const SizedBox(height: 4),
               Text(
                 DateFormat('d MMMM yyyy, EEEE', 'tr_TR').format(DateTime.now()),

@@ -10,6 +10,8 @@ import {
   getContractsSummary,
   getContractsHealthCheck,
   renewContract,
+  pauseContract,
+  resumeContract,
 } from "../controllers/contractsController";
 import { exportContractPdf } from "../controllers/exportController";
 
@@ -26,5 +28,8 @@ router.get("/:id/pdf", requireRole(Role.OWNER, Role.MANAGER, Role.CUSTOMER), exp
 router.post("/", requireRole(Role.OWNER, Role.MANAGER), createContract);
 router.patch("/:id", requireRole(Role.OWNER, Role.MANAGER), updateContract);
 router.post("/:id/renew", requireRole(Role.OWNER, Role.MANAGER), renewContract);
+// Bölüm Q (4. tur): müşteri kendi aktif sözleşmesini duraklatır/devam ettirir (yönetim de yapabilir).
+router.post("/:id/pause", requireRole(Role.CUSTOMER, Role.OWNER, Role.MANAGER), pauseContract);
+router.post("/:id/resume", requireRole(Role.CUSTOMER, Role.OWNER, Role.MANAGER), resumeContract);
 
 export default router;

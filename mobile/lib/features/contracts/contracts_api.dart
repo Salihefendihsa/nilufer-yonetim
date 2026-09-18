@@ -5,6 +5,12 @@ import '../../models/paginated.dart';
 class ContractsApi {
   final _api = ApiClient.instance;
 
+  /// Bölüm Q (4. tur): müşteri kendi aktif sözleşmesini duraklatır/devam ettirir.
+  Future<Contract> pause(String id) async =>
+      Contract.fromJson(await _api.post<Map<String, dynamic>>('/contracts/$id/pause'));
+  Future<Contract> resume(String id) async =>
+      Contract.fromJson(await _api.post<Map<String, dynamic>>('/contracts/$id/resume'));
+
   Future<Paginated<Contract>> list({int page = 1, String? status}) async {
     final json = await _api.get<Map<String, dynamic>>(
       '/contracts',

@@ -27,13 +27,21 @@ export async function resetExpiredStaffStatuses(): Promise<number> {
   return result.count;
 }
 
-export async function generateRecurringJobs() {
+/**
+ * @param onlyContractIds Testlerde yalnızca belirli sözleşmeleri işlemek için
+ *   (gerçek dev verisine dokunmamak adına); üretimde verilmez → tüm vadesi
+ *   gelmiş sözleşmeler.
+ */
+export async function generateRecurringJobs(onlyContractIds?: string[]) {
   const now = new Date();
 
   const dueContracts = await prisma.contract.findMany({
     where: {
       recurrenceType: { not: null },
       nextGenerationDate: { lte: now },
+      // Bölüm Q: müşterinin duraklattığı sözleşme için iş üretilmez.
+      isPaused: false,
+      ...(onlyContractIds ? { id: { in: onlyContractIds } } : {}),
     },
   });
 
