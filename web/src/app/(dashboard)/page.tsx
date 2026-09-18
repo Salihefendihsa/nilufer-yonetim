@@ -41,7 +41,8 @@ import { StarRating } from "@/components/StarRating";
 import { ActivityFeed } from "@/components/ActivityFeed";
 import { PhotoLightbox } from "@/components/PhotoLightbox";
 import { currencyFormatter, formatDateTime, todayIsoDate, toIsoDate } from "@/lib/format";
-import type { Job, JobReport, JobPhoto, JobStatus, Staff, Paginated, Customer, ActivityEvent, SystemHealth, DashboardSummary, TeamSummary, AppointmentRequest } from "@/lib/types";
+import type { Job, JobReport, JobPhoto, JobStatus, Staff, Paginated, Customer, ActivityEvent, SystemHealth, DashboardSummary, TeamSummary, TeamDailyBriefing, AppointmentRequest } from "@/lib/types";
+import { TeamBriefingCard } from "@/components/TeamBriefingCard";
 import { AppointmentRequestModal } from "./AppointmentRequestModal";
 import { JobReportModal } from "./JobReportModal";
 import { AdvanceRequestModal } from "./AdvanceRequestModal";
@@ -592,6 +593,8 @@ function TeamLeadDashboard() {
   const [error, setError] = useState<string | null>(null);
   const [reassigningId, setReassigningId] = useState<string | null>(null);
   const [summary, setSummary] = useState<TeamSummary | null>(null);
+  // Bölüm M (4. tur): "Bugün Ekibim" brifingi (izin + müsaitlik + anlık durum).
+  const [briefing, setBriefing] = useState<TeamDailyBriefing | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -599,14 +602,16 @@ function TeamLeadDashboard() {
     try {
       // Özet ve iş yükü artık sunucuda ekip kapsamıyla hesaplanıyor
       // (/team/summary); şirket geneli /dashboard/summary TEAM_LEAD'e KAPALI.
-      const [jobsRes, teamRes, summaryRes] = await Promise.all([
+      const [jobsRes, teamRes, summaryRes, briefingRes] = await Promise.all([
         api.get<{ data: Job[] }>(`/jobs?date=${todayIsoDate()}&limit=50`),
         api.get<Paginated<Staff>>("/staff?limit=100"),
         api.get<TeamSummary>("/team/summary"),
+        api.get<TeamDailyBriefing>("/team/daily-briefing").catch(() => null),
       ]);
       setJobs(jobsRes.data);
       setTeam(teamRes.data);
       setSummary(summaryRes);
+      setBriefing(briefingRes);
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "Veriler yüklenemedi");
     } finally {
@@ -715,6 +720,9 @@ function TeamLeadDashboard() {
             : []
         }
       />
+
+      {/* [Bugün Ekibim — Bölüm M] */}
+      <TeamBriefingCard briefing={briefing} loading={loading} />
 
       {/* [Ekip iş yükü] */}
       <ChartCard title="Ekip İş Yükü" description="Bugün kişi başına düşen iş" icon={Shuffle} height={200}>

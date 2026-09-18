@@ -48,6 +48,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
   int? _staffTodaysJobs;
   List<Job> _staffTodaysJobsList = [];
   TeamSummary? _team;
+  /// Bölüm M (4. tur): Şef "Bugün Ekibim" brifingi (null → blok gizli).
+  TeamDailyBriefing? _briefing;
 
   bool get _isManagement {
     final role = context.read<AuthProvider>().user?.role;
@@ -85,6 +87,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
         // Şef, şirket geneli /dashboard/summary'ye erişemez; ekip kapsamlı
         // /team/summary kullanılır.
         _team = await _teamApi.summary();
+        try {
+          _briefing = await _teamApi.dailyBriefing();
+        } on ApiException {
+          _briefing = null; // brifing alınamazsa özet yine gösterilir
+        }
       } else if (_isStaff) {
         // STAFF'ın /dashboard/summary'ye erişimi yok (OWNER/MANAGER'a
         // kısıtlı) — backend zaten /jobs'ı kendi işleriyle sınırlıyor
@@ -372,6 +379,142 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   /// Şef ana sayfası — Stitch "sef/ana_sayfa": bugünkü ekip işleri, tamamlama
   /// oranı, sahadaki teknisyen sayısı, durum dağılımı ve ekip iş yükü.
+  static const _staffStatusColors = <String, Color>{
+    'AVAILABLE': AppColors.success500,
+    'ON_JOB': AppColors.info500,
+    'ON_BREAK': AppColors.warning500,
+    'ON_LEAVE': AppColors.danger500,
+    'OFFLINE': AppColors.neutral500,
+  };
+  static const _staffStatusLabels = <String, String>{
+    'AVAILABLE': 'Müsait',
+    'ON_JOB': 'İşte',
+    'ON_BREAK': 'Molada',
+    'ON_LEAVE': 'İzinli',
+    'OFFLINE': 'Çevrimdışı',
+  };
+
+  /// Bölüm M (4. tur): "Bugün Ekibim" — her üye bir satır: durum noktası,
+  /// bugünkü iş sayısı, izinli/müsait-değil rozeti.
+  Widget _buildTeamBriefing(TeamDailyBriefing b) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          'Bugün Ekibim',
+          style: TextStyle(
+            fontSize: 15,
+            fontWeight: FontWeight.w700,
+            color: AppColors.textPrimary,
+          ),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          '${b.availableNowCount} müsait · ${b.onLeaveCount} izinli · '
+          '${b.unavailableCount} kısmen müsait değil · '
+          '${b.completedTodayCount}/${b.todaysJobsCount} iş tamamlandı',
+          style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
+        ),
+        const SizedBox(height: 10),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
+          decoration: BoxDecoration(
+            color: AppColors.surfaceCard,
+            borderRadius: BorderRadius.circular(AppRadius.sheet),
+            border: Border.all(color: AppColors.borderDefault),
+          ),
+          child: b.members.isEmpty
+              ? const Padding(
+                  padding: EdgeInsets.symmetric(vertical: 12),
+                  child: Text(
+                    'Ekibinizde personel yok',
+                    style: TextStyle(color: AppColors.textFaint),
+                  ),
+                )
+              : Column(
+                  children: [
+                    for (final m in b.members)
+                      Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 8),
+                        child: Row(
+                          children: [
+                            Container(
+                              width: 10,
+                              height: 10,
+                              decoration: BoxDecoration(
+                                color: _staffStatusColors[m.status] ??
+                                    AppColors.neutral500,
+                                shape: BoxShape.circle,
+                              ),
+                            ),
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    m.isSelf ? '${m.fullName} (siz)' : m.fullName,
+                                    style: const TextStyle(
+                                      fontSize: 13.5,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                  Text(
+                                    '${_staffStatusLabels[m.status] ?? m.status} · ${m.position}',
+                                    style: const TextStyle(
+                                      fontSize: 11.5,
+                                      color: AppColors.textSecondary,
+                                    ),
+                                  ),
+                                  if (m.badgeLabel != null)
+                                    Padding(
+                                      padding: const EdgeInsets.only(top: 3),
+                                      child: Container(
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 7,
+                                          vertical: 2,
+                                        ),
+                                        decoration: BoxDecoration(
+                                          color: m.onLeave
+                                              ? AppColors.danger50
+                                              : AppColors.warning50,
+                                          borderRadius:
+                                              BorderRadius.circular(AppRadius.pill),
+                                        ),
+                                        child: Text(
+                                          m.badgeLabel!,
+                                          style: TextStyle(
+                                            fontSize: 10.5,
+                                            fontWeight: FontWeight.w700,
+                                            color: m.onLeave
+                                                ? AppColors.danger500
+                                                : AppColors.warning600,
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                ],
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Text(
+                              '${m.todaysJobsCount} iş',
+                              style: const TextStyle(
+                                fontSize: 12.5,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                  ],
+                ),
+        ),
+      ],
+    );
+  }
+
   Widget _buildTeamLeadBody(AppUser? user) {
     final t = _team;
     if (t == null) {
@@ -429,6 +572,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
             ),
           ],
         ),
+        if (_briefing != null) ...[
+          const SizedBox(height: 20),
+          _buildTeamBriefing(_briefing!),
+        ],
         const SizedBox(height: 20),
         const Text(
           'Bugünkü Durum Dağılımı',

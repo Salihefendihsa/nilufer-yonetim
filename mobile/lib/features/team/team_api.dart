@@ -131,8 +131,104 @@ class TeamCalendarDay {
       );
 }
 
+/// Bölüm M (4. tur): GET /team/daily-briefing üye satırı.
+class TeamBriefingMember {
+  final String staffId;
+  final String fullName;
+  final String position;
+  final String status;
+  final int todaysJobsCount;
+  final bool isSelf;
+  final bool onLeave;
+  final bool unavailable;
+  final bool unavailableAllDay;
+  final List<String> unavailableRanges;
+  final String? unavailableReason;
+
+  const TeamBriefingMember({
+    required this.staffId,
+    required this.fullName,
+    required this.position,
+    required this.status,
+    required this.todaysJobsCount,
+    required this.isSelf,
+    required this.onLeave,
+    required this.unavailable,
+    required this.unavailableAllDay,
+    required this.unavailableRanges,
+    this.unavailableReason,
+  });
+
+  factory TeamBriefingMember.fromJson(Map<String, dynamic> json) =>
+      TeamBriefingMember(
+        staffId: json['staffId'] as String,
+        fullName: json['fullName'] as String? ?? '—',
+        position: json['position'] as String? ?? '',
+        status: json['status'] as String? ?? 'AVAILABLE',
+        todaysJobsCount: (json['todaysJobsCount'] as num?)?.toInt() ?? 0,
+        isSelf: json['isSelf'] as bool? ?? false,
+        onLeave: json['onLeave'] as bool? ?? false,
+        unavailable: json['unavailable'] as bool? ?? false,
+        unavailableAllDay: json['unavailableAllDay'] as bool? ?? false,
+        unavailableRanges:
+            ((json['unavailableRanges'] as List?) ?? const []).cast<String>(),
+        unavailableReason: json['unavailableReason'] as String?,
+      );
+
+  /// Rozet metni — izinli / tüm gün / saat aralıkları; işaret yoksa null.
+  String? get badgeLabel {
+    if (onLeave) return 'İzinli';
+    if (!unavailable) return null;
+    if (unavailableAllDay) return 'Bugün müsait değil';
+    return 'Müsait değil ${unavailableRanges.join(', ')}';
+  }
+}
+
+class TeamDailyBriefing {
+  final String date;
+  final int teamSize;
+  final int todaysJobsCount;
+  final int completedTodayCount;
+  final int availableNowCount;
+  final int onLeaveCount;
+  final int unavailableCount;
+  final List<TeamBriefingMember> members;
+
+  const TeamDailyBriefing({
+    required this.date,
+    required this.teamSize,
+    required this.todaysJobsCount,
+    required this.completedTodayCount,
+    required this.availableNowCount,
+    required this.onLeaveCount,
+    required this.unavailableCount,
+    required this.members,
+  });
+
+  factory TeamDailyBriefing.fromJson(Map<String, dynamic> json) =>
+      TeamDailyBriefing(
+        date: json['date'] as String? ?? '',
+        teamSize: (json['teamSize'] as num?)?.toInt() ?? 0,
+        todaysJobsCount: (json['todaysJobsCount'] as num?)?.toInt() ?? 0,
+        completedTodayCount:
+            (json['completedTodayCount'] as num?)?.toInt() ?? 0,
+        availableNowCount: (json['availableNowCount'] as num?)?.toInt() ?? 0,
+        onLeaveCount: (json['onLeaveCount'] as num?)?.toInt() ?? 0,
+        unavailableCount: (json['unavailableCount'] as num?)?.toInt() ?? 0,
+        members: ((json['members'] as List?) ?? const [])
+            .cast<Map<String, dynamic>>()
+            .map(TeamBriefingMember.fromJson)
+            .toList(),
+      );
+}
+
 class TeamApi {
   final _api = ApiClient.instance;
+
+  Future<TeamDailyBriefing> dailyBriefing() async {
+    final json = await _api.get<Map<String, dynamic>>('/team/daily-briefing');
+    return TeamDailyBriefing.fromJson(json);
+  }
 
   Future<TeamSummary> summary() async {
     final json = await _api.get<Map<String, dynamic>>('/team/summary');

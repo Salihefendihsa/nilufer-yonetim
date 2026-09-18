@@ -87,6 +87,7 @@ const CASES: EndpointCase[] = [
   { method: "get", path: `/staff/${NIL}/unavailability`, allowed: ["OWNER", "MANAGER"] },
   // Bölüm L (4. tur)
   { method: "post", path: "/team/broadcast", allowed: ["TEAM_LEAD"], body: {} },
+  { method: "get", path: "/team/daily-briefing", allowed: ["TEAM_LEAD"] },
 ];
 
 describe("RBAC sınırları", () => {

@@ -693,6 +693,30 @@ export interface TeamSummary {
   workload: TeamWorkloadEntry[];
 }
 
+/** Bölüm M (4. tur): GET /team/daily-briefing */
+export interface TeamBriefingMember extends TeamWorkloadEntry {
+  isSelf: boolean;
+  onLeave: boolean;
+  leaveUntil: string | null;
+  unavailable: boolean;
+  unavailableAllDay: boolean;
+  unavailableRanges: string[];
+  unavailableReason: string | null;
+}
+
+export interface TeamDailyBriefing {
+  date: string;
+  teamSize: number;
+  todaysJobsCount: number;
+  completedTodayCount: number;
+  completionRateToday: number | null;
+  staffByStatus: Record<StaffStatus, number>;
+  availableNowCount: number;
+  onLeaveCount: number;
+  unavailableCount: number;
+  members: TeamBriefingMember[];
+}
+
 export interface TeamWorkloadEntry {
   staffId: string;
   fullName: string;

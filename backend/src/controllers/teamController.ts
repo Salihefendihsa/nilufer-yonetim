@@ -35,17 +35,37 @@ async function resolveTeam(req: Request) {
  */
 export async function getTeamSummary(req: Request, res: Response) {
   const teamIds = await resolveTeam(req);
+  return res.json(await computeTeamSummary(teamIds));
+}
+
+const EMPTY_TEAM_SUMMARY = {
+  teamSize: 0,
+  todaysJobsCount: 0,
+  todaysJobsByStatus: {} as Record<JobStatus, number>,
+  completedTodayCount: 0,
+  completionRateToday: null as number | null,
+  activeTechnicianCount: 0,
+  staffByStatus: {} as Record<StaffStatus, number>,
+  workload: [] as TeamWorkloadRow[],
+};
+
+export interface TeamWorkloadRow {
+  staffId: string;
+  fullName: string;
+  position: string;
+  status: StaffStatus;
+  vehiclePlate: string | null;
+  dailyJobCapacity: number | null;
+  todaysJobsCount: number;
+}
+
+/**
+ * /team/summary'nin saf hesabı — Bölüm M (4. tur) günlük brifingi de aynı
+ * fonksiyonu kullanır (kopya yok).
+ */
+export async function computeTeamSummary(teamIds: string[]) {
   if (teamIds.length === 0) {
-    return res.json({
-      teamSize: 0,
-      todaysJobsCount: 0,
-      todaysJobsByStatus: {},
-      completedTodayCount: 0,
-      completionRateToday: null,
-      activeTechnicianCount: 0,
-      staffByStatus: {},
-      workload: [],
-    });
+    return EMPTY_TEAM_SUMMARY;
   }
 
   const { start, end } = dayBounds(new Date());
@@ -107,7 +127,7 @@ export async function getTeamSummary(req: Request, res: Response) {
     todaysJobsCount: perStaffGrouped.find((g) => g.assignedStaffId === staff.id)?._count._all ?? 0,
   }));
 
-  return res.json({
+  return {
     teamSize: teamIds.length,
     todaysJobsCount,
     todaysJobsByStatus,
@@ -122,6 +142,72 @@ export async function getTeamSummary(req: Request, res: Response) {
       (staffByStatus[StaffStatus.ON_JOB] ?? 0) + (staffByStatus[StaffStatus.AVAILABLE] ?? 0),
     staffByStatus,
     workload,
+  };
+}
+
+/**
+ * Bölüm M (4. tur): Şef için "Bugün Ekibim" brifingi. computeTeamSummary'nin
+ * bugünkü iş dağılımı + kişi başı yük verisi, bugün için ONAYLI izinler
+ * (LeaveRequest) ve müsait-olmama işaretleri (StaffUnavailability, Bölüm K)
+ * ile birleştirilir; her üye tek satırda: anlık durum (Staff.status), bugünkü
+ * iş sayısı, izinli mi, müsait değil mi (tüm gün / saat aralıkları).
+ */
+export async function getTeamDailyBriefing(req: Request, res: Response) {
+  const teamIds = await resolveTeam(req);
+  const todayStart = new Date();
+  todayStart.setHours(0, 0, 0, 0);
+  const todayDateOnly = new Date(Date.UTC(todayStart.getFullYear(), todayStart.getMonth(), todayStart.getDate()));
+
+  const [summary, leaves, unavailabilities] = await Promise.all([
+    computeTeamSummary(teamIds),
+    teamIds.length === 0
+      ? Promise.resolve([])
+      : prisma.leaveRequest.findMany({
+          where: { staffId: { in: teamIds }, status: "APPROVED", startDate: { lte: todayStart }, endDate: { gte: todayStart } },
+          select: { staffId: true, reason: true, endDate: true },
+        }),
+    teamIds.length === 0
+      ? Promise.resolve([])
+      : prisma.staffUnavailability.findMany({
+          where: { staffId: { in: teamIds }, date: todayDateOnly },
+          select: { staffId: true, startTime: true, endTime: true, reason: true },
+          orderBy: { startTime: "asc" },
+        }),
+  ]);
+
+  const members = summary.workload.map((row) => {
+    const leave = leaves.find((l) => l.staffId === row.staffId) ?? null;
+    const marks = unavailabilities.filter((u) => u.staffId === row.staffId);
+    const allDay = marks.some((m) => !m.startTime || !m.endTime);
+    return {
+      ...row,
+      isSelf: false,
+      onLeave: leave !== null,
+      leaveUntil: leave?.endDate ?? null,
+      unavailable: marks.length > 0,
+      unavailableAllDay: allDay,
+      unavailableRanges: marks.filter((m) => m.startTime && m.endTime).map((m) => `${m.startTime}–${m.endTime}`),
+      unavailableReason: marks.find((m) => m.reason)?.reason ?? leave?.reason ?? null,
+    };
+  });
+
+  // Şefin kendi satırı işaretlenir — arayüz ayrı gösterebilsin.
+  const ownStaffId = teamIds[0] ?? null; // getTeamStaffIds ilk sırada şefin kendi kaydını döner
+  for (const m of members) m.isSelf = m.staffId === ownStaffId;
+
+  const available = members.filter((m) => !m.onLeave && !m.unavailableAllDay && m.status === StaffStatus.AVAILABLE).length;
+
+  return res.json({
+    date: `${todayStart.getFullYear()}-${String(todayStart.getMonth() + 1).padStart(2, "0")}-${String(todayStart.getDate()).padStart(2, "0")}`,
+    teamSize: summary.teamSize,
+    todaysJobsCount: summary.todaysJobsCount,
+    completedTodayCount: summary.completedTodayCount,
+    completionRateToday: summary.completionRateToday,
+    staffByStatus: summary.staffByStatus,
+    availableNowCount: available,
+    onLeaveCount: members.filter((m) => m.onLeave).length,
+    unavailableCount: members.filter((m) => m.unavailable && !m.onLeave).length,
+    members,
   });
 }
 
