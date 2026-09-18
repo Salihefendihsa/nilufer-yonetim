@@ -85,6 +85,8 @@ const CASES: EndpointCase[] = [
   // TEAM_LEAD/STAFF route'tan geçer ama uydurma id kapsamları dışında → 403
   // (kendi/ekip kaydı için 200 senaryosu staffUnavailability.test.ts'te).
   { method: "get", path: `/staff/${NIL}/unavailability`, allowed: ["OWNER", "MANAGER"] },
+  // Bölüm L (4. tur)
+  { method: "post", path: "/team/broadcast", allowed: ["TEAM_LEAD"], body: {} },
 ];
 
 describe("RBAC sınırları", () => {

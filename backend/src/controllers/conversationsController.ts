@@ -253,9 +253,15 @@ export async function listAvailableContacts(req: Request, res: Response) {
   return res.json({ data: checked.filter((c): c is (typeof candidates)[number] => c !== null) });
 }
 
-const broadcastSchema = z.object({
-  content: z.string().min(1),
-});
+// Bölüm L (4. tur): /team/broadcast { message } de aynı handler'ı kullanır —
+// `message` ve `content` eşanlamlı kabul edilir.
+const broadcastSchema = z
+  .object({
+    content: z.string().trim().min(1).optional(),
+    message: z.string().trim().min(1).optional(),
+  })
+  .transform((d) => ({ content: (d.content ?? d.message ?? "").trim() }))
+  .refine((d) => d.content.length > 0, { message: "Duyuru metni zorunludur", path: ["message"] });
 
 /**
  * Sefin tum dogrudan ekibine ayni mesaji gondermesi

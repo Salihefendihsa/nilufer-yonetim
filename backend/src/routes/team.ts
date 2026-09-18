@@ -2,6 +2,7 @@ import { Router } from "express";
 import { Role } from "@prisma/client";
 import { requireAuth, requireRole } from "../middleware/auth";
 import { getTeamSummary, getTeamCalendar } from "../controllers/teamController";
+import { broadcastToTeam } from "../controllers/conversationsController";
 
 const router = Router();
 
@@ -12,5 +13,9 @@ router.use(requireAuth);
 // kalır ve TEAM_LEAD'e AÇILMAZ.
 router.get("/summary", requireRole(Role.OWNER, Role.MANAGER, Role.TEAM_LEAD), getTeamSummary);
 router.get("/calendar", requireRole(Role.OWNER, Role.MANAGER, Role.TEAM_LEAD), getTeamCalendar);
+// Bölüm L (4. tur): Şef → ekibe toplu duyuru. /conversations/broadcast ile aynı
+// mantık (her üyeye ayrı mesaj + team_broadcast bildirimi + push); bu yol
+// yalnızca TEAM_LEAD'e açık ve { message } gövdesini kabul eder.
+router.post("/broadcast", requireRole(Role.TEAM_LEAD), broadcastToTeam);
 
 export default router;
