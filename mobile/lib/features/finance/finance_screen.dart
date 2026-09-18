@@ -813,7 +813,7 @@ class _PaymentFormScreenState extends State<_PaymentFormScreen> {
                     const SizedBox(height: 12),
                     Text(
                       _error!,
-                      style: const TextStyle(color: Colors.red, fontSize: 13),
+                      style: const TextStyle(color: AppColors.danger500, fontSize: 13),
                     ),
                   ],
                   const SizedBox(height: 20),
@@ -966,7 +966,7 @@ class _ExpenseFormScreenState extends State<_ExpenseFormScreen> {
               const SizedBox(height: 12),
               Text(
                 _error!,
-                style: const TextStyle(color: Colors.red, fontSize: 13),
+                style: const TextStyle(color: AppColors.danger500, fontSize: 13),
               ),
             ],
             const SizedBox(height: 20),

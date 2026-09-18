@@ -166,6 +166,9 @@ function SystemHealthContent() {
 
       {error && <p className="rounded-2xl border border-danger-100 bg-danger-50 px-4 py-3 text-sm text-danger-500">{error}</p>}
 
+      {/* Bölüm R (4. tur): ilk ölçüm gelene kadar "uyarı" değil "yükleniyor" gösterilir. */}
+      {!health && !error && <p className="py-2 text-center text-sm text-text-faint">İlk ölçüm alınıyor...</p>}
+
       {/* [Servis durum göstergeleri] */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <HealthPill label="API" state={apiState} icon={Server} hint="Uygulama sunucusu" />

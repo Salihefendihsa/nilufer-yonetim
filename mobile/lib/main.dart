@@ -56,6 +56,37 @@ class _AuthGate extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final auth = context.watch<AuthProvider>();
+    // Bölüm R (4. tur): giriş ↔ 2FA ↔ uygulama geçişleri yumuşak (fade+slide).
+    return AnimatedSwitcher(
+      duration: const Duration(milliseconds: 260),
+      switchInCurve: Curves.easeOut,
+      switchOutCurve: Curves.easeIn,
+      transitionBuilder: (child, animation) => FadeTransition(
+        opacity: animation,
+        child: SlideTransition(
+          position: Tween<Offset>(
+            begin: const Offset(0.04, 0),
+            end: Offset.zero,
+          ).animate(animation),
+          child: child,
+        ),
+      ),
+      child: KeyedSubtree(
+        key: ValueKey(_gateKey(auth)),
+        child: _buildForStatus(auth),
+      ),
+    );
+  }
+
+  static String _gateKey(AuthProvider auth) => switch (auth.status) {
+        AuthStatus.unknown => 'unknown',
+        AuthStatus.unauthenticated => 'login',
+        AuthStatus.twoFactorRequired => '2fa',
+        AuthStatus.authenticated =>
+          auth.mustChangePassword ? 'force-password' : 'app',
+      };
+
+  Widget _buildForStatus(AuthProvider auth) {
     switch (auth.status) {
       case AuthStatus.unknown:
         return const Scaffold(body: LoadingView());

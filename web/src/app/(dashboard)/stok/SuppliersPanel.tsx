@@ -5,6 +5,7 @@ import { Truck, Plus, Pencil, X, Check } from "lucide-react";
 import { api, ApiError } from "@/lib/api";
 import { useToast } from "@/lib/ToastProvider";
 import type { Supplier } from "@/lib/types";
+import { EmptyState } from "@/components/EmptyState";
 
 interface SupplierFormState {
   name: string;
@@ -199,7 +200,7 @@ export function SuppliersPanel() {
           {loading ? (
             <p className="text-sm text-text-secondary">Yükleniyor...</p>
           ) : suppliers.length === 0 ? (
-            <p className="text-sm text-text-secondary">Henüz tedarikçi eklenmemiş.</p>
+            <EmptyState icon={Truck} title="Henüz tedarikçi yok" description="İlk tedarikçiyi ekleyerek satın alma taleplerini bağlayabilirsiniz." />
           ) : (
             <ul className="flex flex-col divide-y divide-border">
               {suppliers.map((s) => (

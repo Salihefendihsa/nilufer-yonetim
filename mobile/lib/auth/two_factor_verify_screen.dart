@@ -61,7 +61,41 @@ class _TwoFactorVerifyScreenState extends State<TwoFactorVerifyScreen> {
                       size: 36,
                     ),
                   ),
-                  const SizedBox(height: 20),
+                  const SizedBox(height: 16),
+                  // Bölüm R (4. tur): ilerleme göstergesi — 2/2 (Hesap → Doğrulama).
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Container(
+                          height: 5,
+                          decoration: BoxDecoration(
+                            color: AppColors.primary600,
+                            borderRadius: BorderRadius.circular(999),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 6),
+                      Expanded(
+                        child: Container(
+                          height: 5,
+                          decoration: BoxDecoration(
+                            color: AppColors.primary600,
+                            borderRadius: BorderRadius.circular(999),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      const Text(
+                        '2/2 · Doğrulama',
+                        style: TextStyle(
+                          fontSize: 11.5,
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.textSecondary,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 14),
                   const Text(
                     'İki Adımlı Doğrulama',
                     textAlign: TextAlign.center,

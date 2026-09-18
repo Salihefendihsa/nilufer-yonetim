@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import '../../core/api_client.dart';
 import '../../models/search_result.dart';
 import '../../theme/app_colors.dart';
+import '../../widgets/state_views.dart';
 import '../contracts/contracts_list_screen.dart';
 import '../customers/customer_detail_screen.dart';
 import '../jobs/job_detail_screen.dart';
@@ -148,27 +149,26 @@ class _SearchScreenState extends State<SearchScreen> {
   }
 
   Widget _buildBody() {
+    // Bölüm R (4. tur): durum görünümleri ortak widget'larla (LoadingView /
+    // ErrorRetryView / EmptyStateView) — diğer ekranlarla aynı dil.
     if (_query.length < _minLength) {
-      return const _Hint(
+      return const EmptyStateView(
+        title: 'Aramak için en az 2 karakter yazın',
+        subtitle: 'Müşteri, iş, personel, sözleşme ve teklif aranır.',
         icon: Icons.search_rounded,
-        text: 'Aramak için en az 2 karakter yazın',
       );
     }
     if (_loading && _groups.isEmpty) {
-      return const Center(
-        child: CircularProgressIndicator(
-          color: AppColors.primary600,
-          strokeWidth: 2.5,
-        ),
-      );
+      return const LoadingView();
     }
     if (_error != null) {
-      return _Hint(icon: Icons.error_outline_rounded, text: _error!);
+      return ErrorRetryView(message: _error!, onRetry: () => _run(_query));
     }
     if (_groups.isEmpty) {
-      return const _Hint(
+      return const EmptyStateView(
+        title: 'Sonuç bulunamadı',
+        subtitle: 'Farklı bir terim deneyin.',
         icon: Icons.search_off_rounded,
-        text: 'Sonuç bulunamadı',
       );
     }
 
@@ -239,31 +239,6 @@ class _SearchScreenState extends State<SearchScreen> {
           ],
         );
       },
-    );
-  }
-}
-
-class _Hint extends StatelessWidget {
-  final IconData icon;
-  final String text;
-
-  const _Hint({required this.icon, required this.text});
-
-  @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, size: 40, color: AppColors.textFaint),
-          const SizedBox(height: 12),
-          Text(
-            text,
-            textAlign: TextAlign.center,
-            style: const TextStyle(color: AppColors.textSecondary),
-          ),
-        ],
-      ),
     );
   }
 }
