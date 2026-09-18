@@ -100,6 +100,9 @@ const CASES: EndpointCase[] = [
   { method: "get", path: "/job-templates", allowed: ["OWNER", "MANAGER"] },
   { method: "post", path: "/job-templates", allowed: ["OWNER", "MANAGER"], body: {} },
   { method: "delete", path: `/job-templates/${NIL}`, allowed: ["OWNER", "MANAGER"] },
+  // Bölüm U (5. tur) — GET: STAFF/TEAM_LEAD route'tan geçer ama uydurma id kendi kaydı değil → 403
+  { method: "get", path: `/staff/${NIL}/onboarding`, allowed: ["OWNER", "MANAGER"] },
+  { method: "patch", path: `/staff/${NIL}/onboarding/${NIL}`, allowed: ["OWNER", "MANAGER"], body: {} },
 ];
 
 describe("RBAC sınırları", () => {

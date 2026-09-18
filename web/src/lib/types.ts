@@ -518,6 +518,24 @@ export interface SearchResponse {
   results: SearchResult[];
 }
 
+/** Bölüm U (5. tur): işe alım kontrol listesi (GET /staff/:id/onboarding). */
+export interface OnboardingItem {
+  id: string;
+  staffId: string;
+  item: string;
+  sortOrder: number;
+  isCompleted: boolean;
+  completedAt: string | null;
+  completedByUserId: string | null;
+  completedBy?: { id: string; fullName: string } | null;
+}
+
+export interface OnboardingChecklist {
+  staffId: string;
+  items: OnboardingItem[];
+  progress: { total: number; completed: number; percent: number; isComplete: boolean };
+}
+
 /** Bölüm T (5. tur): iş şablonu (GET /job-templates). */
 export interface JobTemplate {
   id: string;

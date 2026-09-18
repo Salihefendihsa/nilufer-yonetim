@@ -9,6 +9,7 @@ import {
   CalendarCheck,
   ShieldCheck,
   FileBadge,
+  ClipboardCheck,
   Users2,
   Briefcase,
   Coffee,
@@ -39,6 +40,7 @@ import type { Staff, Paginated } from "@/lib/types";
 import { StaffFormModal } from "./StaffFormModal";
 import { PermissionsModal } from "./PermissionsModal";
 import { CertificationsModal } from "./CertificationsModal";
+import { OnboardingModal } from "./OnboardingModal";
 import { EvaluationsModal } from "./EvaluationsModal";
 import { OrgChartView } from "./OrgChartView";
 import { ResetPasswordModal } from "./ResetPasswordModal";
@@ -103,6 +105,8 @@ function StaffPageContent() {
   const [deleting, setDeleting] = useState(false);
   const [permissionsTarget, setPermissionsTarget] = useState<Staff | null>(null);
   const [certificationsTarget, setCertificationsTarget] = useState<Staff | null>(null);
+  // Bölüm U (5. tur): işe alım kontrol listesi modalı.
+  const [onboardingTarget, setOnboardingTarget] = useState<Staff | null>(null);
   const [evaluationsTarget, setEvaluationsTarget] = useState<Staff | null>(null);
   const [resetPasswordTarget, setResetPasswordTarget] = useState<Staff | null>(null);
   const [impersonateTarget, setImpersonateTarget] = useState<Staff | null>(null);
@@ -412,6 +416,16 @@ function StaffPageContent() {
                 Belgeler
               </button>
 
+              {/* Bölüm U (5. tur): işe alım süreci — yeni personelde takip için */}
+              <button
+                type="button"
+                onClick={() => setOnboardingTarget(staff)}
+                className="flex items-center justify-center gap-2 rounded-xl border border-border bg-surface-base px-3 py-2 text-xs font-medium text-text-secondary transition hover:border-border-strong hover:bg-surface-subtle hover:text-text-primary"
+              >
+                <ClipboardCheck size={14} strokeWidth={1.75} />
+                İşe Alım
+              </button>
+
               <button
                 type="button"
                 onClick={() => setEvaluationsTarget(staff)}
@@ -464,6 +478,7 @@ function StaffPageContent() {
       <PermissionsModal open={!!permissionsTarget} onClose={() => setPermissionsTarget(null)} staff={permissionsTarget} />
 
       <CertificationsModal open={!!certificationsTarget} onClose={() => setCertificationsTarget(null)} staff={certificationsTarget} />
+      <OnboardingModal open={!!onboardingTarget} onClose={() => setOnboardingTarget(null)} staff={onboardingTarget} editable={user?.role === "OWNER" || user?.role === "MANAGER"} />
 
       <EvaluationsModal open={!!evaluationsTarget} onClose={() => setEvaluationsTarget(null)} staff={evaluationsTarget} />
 

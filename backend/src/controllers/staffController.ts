@@ -10,6 +10,7 @@ import { recordAuditLog } from "../lib/auditLog";
 import { resetExpiredStaffStatuses } from "../lib/cron";
 import { getMonthlyJobTarget } from "../lib/targets";
 import { achievementTier } from "../lib/badges";
+import { onboardingSeedRows } from "../lib/onboarding";
 
 const createSchema = z.object({
   userId: z.string().uuid(),
@@ -207,7 +208,12 @@ export async function createStaff(req: Request, res: Response) {
     return res.status(400).json({ error: "Geçersiz şef/müdür seçimi" });
   }
 
-  const staff = await prisma.staff.create({ data, include: staffInclude });
+  // Bölüm U (5. tur): personel + işe alım kontrol listesi tek transaction'da.
+  const staff = await prisma.$transaction(async (tx) => {
+    const created = await tx.staff.create({ data, include: staffInclude });
+    await tx.onboardingChecklistItem.createMany({ data: onboardingSeedRows(created.id) });
+    return created;
+  });
   return res.status(201).json(staff);
 }
 

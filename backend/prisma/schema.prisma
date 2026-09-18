@@ -135,6 +135,7 @@ model User {
   impersonationsAsTarget ImpersonationSession[] @relation("ImpersonationTarget")
   leaveRequestDecisions LeaveRequest[] @relation("LeaveRequestDecidedBy")
   appointmentRequestResponses AppointmentRequest[] @relation("AppointmentRequestRespondedBy")
+  onboardingCompletions OnboardingChecklistItem[] @relation("OnboardingCompletedBy")
   recordedExpenses Expense[]
   twoFactorRecoveryCodes TwoFactorRecoveryCode[]
   twoFactorChallenges    TwoFactorChallenge[]
@@ -277,6 +278,7 @@ model Staff {
   permissions     Permission[]
   certifications  StaffCertification[]
   unavailabilities StaffUnavailability[]
+  onboardingItems OnboardingChecklistItem[]
   collectedPayments Payment[]      @relation("PaymentCollectedBy")
   evaluationsReceived Evaluation[] @relation("EvaluationTarget")
   staffBonuses    StaffBonus[]
@@ -304,6 +306,25 @@ model StaffUnavailability {
 
   @@index([staffId, date])
   @@index([date])
+}
+
+/// Bölüm U (5. tur): yeni personel işe alım kontrol listesi — Staff
+/// oluşturulunca sabit şablon (lib/onboarding.ts) transaction içinde eklenir.
+/// "İlk Hafta Değerlendirmesi" EvaluationPeriod'dan bağımsız bir maddedir.
+model OnboardingChecklistItem {
+  id                String    @id @default(uuid())
+  staffId           String
+  item              String
+  sortOrder         Int       @default(0)
+  isCompleted       Boolean   @default(false)
+  completedAt       DateTime?
+  completedByUserId String?
+  createdAt         DateTime  @default(now())
+
+  staff       Staff @relation(fields: [staffId], references: [id], onDelete: Cascade)
+  completedBy User? @relation("OnboardingCompletedBy", fields: [completedByUserId], references: [id])
+
+  @@index([staffId])
 }
 
 model StaffCertification {

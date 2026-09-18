@@ -8,6 +8,7 @@ import '../../models/staff.dart';
 import '../../models/user.dart';
 import '../../theme/app_colors.dart';
 import '../../widgets/state_views.dart';
+import 'onboarding_card.dart';
 import 'staff_api.dart';
 import 'staff_form_screen.dart';
 
@@ -696,6 +697,8 @@ class _StaffDetailScreenState extends State<StaffDetailScreen> {
               ],
             ),
           ),
+          // Bölüm U (5. tur): işe alım kontrol listesi (yönetim işaretler, personel salt-okunur).
+          OnboardingCard(staffId: s.id, editable: _canManageStaff),
 
           if (canChangeStatus) ...[
             const SizedBox(height: 14),
