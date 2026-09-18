@@ -23,7 +23,7 @@ class MessageItem {
   final String senderId;
   final String content;
 
-  /// Saha fotografi eki (goreli /uploads yolu); yoksa null.
+  /// Saha fotografi eki var mi (goreli disk yolu; istemci fileUrl('message-attachment', id) kullanir).
   final String? attachmentUrl;
   final String? readAt;
   final String createdAt;

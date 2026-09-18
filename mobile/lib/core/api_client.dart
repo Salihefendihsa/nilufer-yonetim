@@ -150,10 +150,17 @@ class ApiClient {
     return res.bodyBytes;
   }
 
-  /// Yüklenen dosyaların (fotoğraf/imza/PDF) tam URL'sini üretir — backend
-  /// göreli yol döner (`/uploads/...`), API kökeniyle birleştirilmesi gerekir.
-  String resolveUploadUrl(String url) {
-    if (url.startsWith('http://') || url.startsWith('https://')) return url;
-    return '${AppConfig.apiUrl}$url';
+  /// Bölüm AC (7. tur) — GÜVENLİK: `/uploads` statik servisi kaldırıldı;
+  /// dosyalar yalnızca kimlik doğrulamalı `GET /files/:type/:id` ile alınır.
+  /// Bu yardımcı göreli API yolunu üretir; görseller `AuthImage`
+  /// (Authorization header'lı Image.network), indirmeler `getBytes`
+  /// (token'lı) ile çekilir. type: job-photo | job-signature |
+  /// customer-document | message-attachment.
+  String fileUrl(String type, String id) => '/files/$type/${Uri.encodeComponent(id)}';
+
+  /// Göreli API yolunu tam URL'ye çevirir (Image.network için).
+  String absoluteUrl(String path) {
+    if (path.startsWith('http://') || path.startsWith('https://')) return path;
+    return '${AppConfig.apiUrl}$path';
   }
 }

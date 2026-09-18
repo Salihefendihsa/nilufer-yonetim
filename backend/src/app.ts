@@ -1,4 +1,3 @@
-import path from "path";
 import express from "express";
 import cors from "cors";
 import helmet from "helmet";
@@ -37,6 +36,7 @@ import evaluationRoutes, { criteriaRouter as evaluationCriteriaRoutes, periodsRo
 import notificationPreferenceRoutes from "./routes/notificationPreferences";
 import analyticsRoutes from "./routes/analytics";
 import sessionRoutes from "./routes/sessions";
+import fileRoutes from "./routes/files";
 import { errorHandler } from "./middleware/errorHandler";
 import { recordRequest } from "./lib/metrics";
 
@@ -85,14 +85,12 @@ app.use((_req, _res, next) => {
 
 app.get("/health", (_req, res) => res.json({ status: "ok" }));
 
-// Cross-origin resource policy override so the web app (a different origin in dev)
-// can actually load these images in <img>/canvas tags — helmet defaults to same-origin.
-app.use(
-  "/uploads",
-  express.static(path.join(__dirname, "..", "uploads"), {
-    setHeaders: (res) => res.setHeader("Cross-Origin-Resource-Policy", "cross-origin"),
-  })
-);
+// Bölüm AC (7. tur) — GÜVENLİK: `/uploads` statik servisi KALDIRILDI. Eskiden
+// fotoğraf/imza/belge dosyaları kimliksiz erişilebiliyordu (yalnızca rastgele
+// dosya adına güveniliyordu). Artık tek yol `GET /files/:type/:id`
+// (routes/files.ts → controllers/filesController.ts): requireAuth + kaydın
+// yetki kuralı, sonra stream. `/uploads/*` istekleri hiçbir route'a
+// düşmez → Express varsayılan 404.
 
 app.use("/auth", authRoutes);
 app.use("/customers", customerRoutes);
@@ -130,6 +128,7 @@ app.use("/evaluation-periods", evaluationPeriodsRoutes);
 app.use("/notification-preferences", notificationPreferenceRoutes);
 app.use("/analytics", analyticsRoutes);
 app.use("/sessions", sessionRoutes);
+app.use("/files", fileRoutes);
 
 app.use(errorHandler);
 

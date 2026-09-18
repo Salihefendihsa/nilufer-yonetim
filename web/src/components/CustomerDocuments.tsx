@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { FileText, Image as ImageIcon, Upload, Trash2, Download, FolderOpen } from "lucide-react";
-import { api, ApiError, uploadFile, resolveUploadUrl } from "@/lib/api";
+import { api, ApiError, uploadFile, downloadFile, fileUrl } from "@/lib/api";
 import { useToast } from "@/lib/ToastProvider";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { formatDate } from "@/lib/format";
@@ -136,16 +136,15 @@ export function CustomerDocuments({ customerId }: { customerId: string }) {
                     {d.uploadedBy ? ` · ${d.uploadedBy.fullName}` : ""}
                   </p>
                 </div>
-                <a
-                  href={resolveUploadUrl(d.fileUrl)}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  download={d.fileName}
+                {/* Bölüm AC: kimlik doğrulamalı indirme (Authorization header) */}
+                <button
+                  type="button"
+                  onClick={() => downloadFile(fileUrl("customer-document", d.id), d.fileName).catch((err) => setError(err instanceof ApiError ? err.message : "İndirilemedi"))}
                   aria-label="İndir"
                   className="rounded-lg p-1.5 text-text-faint transition hover:bg-surface-subtle hover:text-text-primary"
                 >
                   <Download size={15} strokeWidth={1.75} />
-                </a>
+                </button>
                 <button type="button" onClick={() => setDeleteTarget(d)} aria-label="Sil" className="rounded-lg p-1.5 text-text-faint transition hover:bg-danger-50 hover:text-danger-500">
                   <Trash2 size={15} strokeWidth={1.75} />
                 </button>

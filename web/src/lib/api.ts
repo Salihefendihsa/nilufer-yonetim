@@ -1,9 +1,29 @@
 export const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000";
 
-/** Backend returns upload paths as relative URLs (e.g. "/uploads/x.png") — resolve against the API origin. */
-export function resolveUploadUrl(url: string): string {
-  if (/^https?:\/\//.test(url)) return url;
-  return `${API_URL}${url}`;
+/**
+ * Bölüm AC (7. tur) — GÜVENLİK: `/uploads` statik servisi kaldırıldı. Dosyalar
+ * yalnızca kimlik doğrulamalı `GET /files/:type/:id` ile alınır. Bu yardımcı
+ * API'ye GÖRELİ yolu üretir; görseller `AuthImage` (fetch+blob), indirmeler
+ * `downloadFile` (Authorization header) ile çekilir — token'sız URL yok.
+ */
+export type FileType = "job-photo" | "job-signature" | "customer-document" | "message-attachment";
+
+export function fileUrl(type: FileType, id: string): string {
+  return `/files/${type}/${encodeURIComponent(id)}`;
+}
+
+/** Kimlik doğrulamalı dosya getirme — <img> için object URL üretmek üzere Blob döner. */
+export async function fetchFileBlob(path: string): Promise<Blob> {
+  const headers: Record<string, string> = {};
+  const token = getToken();
+  if (token) headers.Authorization = `Bearer ${token}`;
+  const res = await fetch(`${API_URL}${path}`, { headers });
+  if (res.status === 401) {
+    handleUnauthorized();
+    throw new ApiError(401, "Oturum sona erdi");
+  }
+  if (!res.ok) throw new ApiError(res.status, res.status === 403 ? "Bu dosyaya erişim yetkiniz yok" : "Dosya bulunamadı");
+  return res.blob();
 }
 
 export class ApiError extends Error {

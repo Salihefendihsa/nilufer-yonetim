@@ -207,7 +207,8 @@ class JobsApi {
     return Job.fromJson(json);
   }
 
-  String resolveUploadUrl(String url) => _api.resolveUploadUrl(url);
+  /// Bölüm AC: kimlik doğrulamalı dosya yolu (AuthImage ile gösterilir).
+  String fileUrl(String type, String id) => _api.fileUrl(type, id);
 }
 
 /// Base64 encode helper — imza pad'inden gelen PNG byte'larını backend'in

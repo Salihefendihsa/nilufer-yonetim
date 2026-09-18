@@ -1,5 +1,7 @@
 "use client";
 
+import { AuthImage } from "@/components/AuthImage";
+
 import { createPortal } from "react-dom";
 import { AnimatePresence, motion } from "framer-motion";
 import { X } from "lucide-react";
@@ -32,7 +34,7 @@ export function PhotoLightbox({ src, alt, onClose }: PhotoLightboxProps) {
             onClick={(e) => e.stopPropagation()}
           >
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={src} alt={alt ?? "Fotoğraf"} className="max-h-[85vh] max-w-full rounded-2xl object-contain" />
+            <AuthImage path={src} alt={alt ?? "Fotoğraf"} className="max-h-[85vh] max-w-full rounded-2xl object-contain" />
             <button
               type="button"
               onClick={onClose}

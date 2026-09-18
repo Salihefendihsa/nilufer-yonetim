@@ -6,7 +6,7 @@ import { EmptyState } from "@/components/EmptyState";
 import { PageHeader } from "@/components/PageHeader";
 import { StatCard } from "@/components/StatCard";
 import { DayDivider, MessageBubble } from "@/components/MessageBubble";
-import { api, ApiError, resolveUploadUrl } from "@/lib/api";
+import { api, ApiError, fileUrl } from "@/lib/api";
 import { useAuth } from "@/lib/AuthProvider";
 import { ROLE_LABELS, type Role } from "@/lib/auth";
 import type { ConversationSummary, AllConversationSummary, MessageItem, Paginated, AvailableContact, ObserverAccessGrant } from "@/lib/types";
@@ -525,11 +525,7 @@ export default function MessagesPage() {
                           }
                           read={!!entry.message.readAt}
                           senderName={isObserving ? observerNames[entry.message.senderId] : undefined}
-                          attachmentUrl={
-                            entry.message.attachmentUrl
-                              ? resolveUploadUrl(entry.message.attachmentUrl)
-                              : null
-                          }
+                          attachmentUrl={entry.message.attachmentUrl ? fileUrl("message-attachment", entry.message.id) : null}
                         />
                       )
                     )}

@@ -29,7 +29,8 @@ import {
   Calendar,
   Wrench,
 } from "lucide-react";
-import { api, ApiError, resolveUploadUrl } from "@/lib/api";
+import { api, ApiError, fileUrl } from "@/lib/api";
+import { AuthImage } from "@/components/AuthImage";
 import { useAuth } from "@/lib/AuthProvider";
 import { StatCard } from "@/components/StatCard";
 import { PageHeader } from "@/components/PageHeader";
@@ -1230,12 +1231,7 @@ function CustomerDashboard() {
                           {report.signatureUrl && (
                             <div className="mt-2">
                               <p className="mb-1 text-xs text-text-faint">Müşteri İmzası</p>
-                              {/* eslint-disable-next-line @next/next/no-img-element */}
-                              <img
-                                src={resolveUploadUrl(report.signatureUrl)}
-                                alt="İmza"
-                                className="h-16 rounded-lg bg-surface-base/90 object-contain px-2"
-                              />
+                              <AuthImage path={fileUrl("job-signature", job.id)} alt="İmza" className="h-16 rounded-lg bg-surface-base/90 object-contain px-2" />
                             </div>
                           )}
                           {photos[job.id] && photos[job.id].length > 0 && (
@@ -1244,15 +1240,10 @@ function CustomerDashboard() {
                                 <button
                                   key={photo.id}
                                   type="button"
-                                  onClick={() => setLightboxSrc(resolveUploadUrl(photo.url))}
+                                  onClick={() => setLightboxSrc(fileUrl("job-photo", photo.id))}
                                   className="overflow-hidden rounded-xl border border-border transition hover:opacity-80"
                                 >
-                                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                                  <img
-                                    src={resolveUploadUrl(photo.url)}
-                                    alt={photo.type === "BEFORE" ? "Öncesi" : "Sonrası"}
-                                    className="h-16 w-16 object-cover"
-                                  />
+                                  <AuthImage path={fileUrl("job-photo", photo.id)} alt={photo.type === "BEFORE" ? "Öncesi" : "Sonrası"} className="h-16 w-16 object-cover" />
                                 </button>
                               ))}
                             </div>

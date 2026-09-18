@@ -13,6 +13,7 @@ import '../../models/job.dart';
 import '../../models/staff.dart';
 import '../../models/user.dart';
 import '../../theme/app_colors.dart';
+import '../../widgets/auth_image.dart';
 import '../../widgets/state_views.dart';
 import '../staff/staff_api.dart';
 import '../stock/stock_api.dart';
@@ -777,20 +778,13 @@ class _PhotosSectionState extends State<_PhotosSection> {
               separatorBuilder: (_, __) => const SizedBox(width: 8),
               itemBuilder: (context, i) {
                 final p = widget.photos[i];
-                final url = widget.api.resolveUploadUrl(p['url'] as String);
+                // Bölüm AC: kimlik doğrulamalı görsel (/files/job-photo/:id).
                 return ClipRRect(
                   borderRadius: BorderRadius.circular(12),
-                  child: Image.network(
-                    url,
+                  child: AuthImage(
+                    path: widget.api.fileUrl('job-photo', p['id'] as String),
                     width: 84,
                     height: 84,
-                    fit: BoxFit.cover,
-                    errorBuilder: (_, __, ___) => Container(
-                      width: 84,
-                      height: 84,
-                      color: AppColors.surfaceMuted,
-                      child: const Icon(Icons.broken_image_outlined),
-                    ),
                   ),
                 );
               },

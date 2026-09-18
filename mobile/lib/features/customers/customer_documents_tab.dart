@@ -229,7 +229,8 @@ class _CustomerDocumentsTabState extends State<CustomerDocumentsTab> {
                             IconButton(
                               icon: const Icon(Icons.ios_share_rounded, size: 20),
                               tooltip: 'İndir / Paylaş',
-                              onPressed: _busy ? null : () => downloadAndShare(d.fileUrl, d.fileName),
+                              // Bölüm AC: kimlik doğrulamalı indirme (getBytes token gönderir).
+                              onPressed: _busy ? null : () => downloadAndShare(ApiClient.instance.fileUrl('customer-document', d.id), d.fileName),
                             ),
                             IconButton(
                               icon: const Icon(Icons.delete_outline_rounded, size: 20, color: AppColors.danger500),

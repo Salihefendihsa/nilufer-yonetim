@@ -1,3 +1,6 @@
+"use client";
+
+import { AuthImage } from "@/components/AuthImage";
 import { Check, CheckCheck } from "lucide-react";
 
 interface MessageBubbleProps {
@@ -10,7 +13,7 @@ interface MessageBubbleProps {
   read?: boolean;
   /** Gözlemci modunda gönderenin adı balonun üstünde gösterilir. */
   senderName?: string;
-  /** Saha fotoğrafı eki — tam URL (api.resolveUploadUrl ile çözülmüş). */
+  /** Saha fotoğrafı eki — kimlik doğrulamalı API yolu (api.fileUrl("message-attachment", id)). */
   attachmentUrl?: string | null;
 }
 
@@ -32,14 +35,7 @@ export function MessageBubble({ content, time, mine, read, senderName, attachmen
               : "rounded-bl-md border border-border bg-surface-subtle text-text-primary"
           }`}
         >
-          {attachmentUrl && (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
-              src={attachmentUrl}
-              alt="Saha fotoğrafı"
-              className="mb-2 max-h-64 w-full rounded-xl object-cover"
-            />
-          )}
+          {attachmentUrl && <AuthImage path={attachmentUrl} alt="Saha fotoğrafı" className="mb-2 max-h-64 w-full rounded-xl object-cover" />}
           <p className="whitespace-pre-wrap break-words">{content}</p>
           <span className={`mt-1 flex items-center justify-end gap-1 ${mine ? "text-white/70" : "text-text-faint"}`}>
             <span className="font-mono text-[10px]">{time}</span>

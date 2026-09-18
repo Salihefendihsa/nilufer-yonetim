@@ -356,7 +356,7 @@ export interface MessageItem {
   content: string;
   readAt: string | null;
   createdAt: string;
-  /** Saha fotoğrafı eki (göreli /uploads yolu). */
+  /** Saha fotoğrafı eki var mı (göreli disk yolu; istemci fileUrl("message-attachment", id) kullanır). */
   attachmentUrl: string | null;
   attachmentType: string | null;
 }

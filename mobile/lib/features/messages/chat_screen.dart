@@ -11,6 +11,7 @@ import '../../core/api_client.dart';
 import '../../models/conversation.dart';
 import '../../theme/app_colors.dart';
 import '../../widgets/state_views.dart';
+import '../../widgets/auth_image.dart';
 import 'messages_api.dart';
 
 final _timeFormat = DateFormat('HH:mm');
@@ -224,19 +225,9 @@ class _ChatScreenState extends State<ChatScreen> {
                               if (m.attachmentUrl != null) ...[
                                 ClipRRect(
                                   borderRadius: BorderRadius.circular(12),
-                                  child: Image.network(
-                                    ApiClient.instance.resolveUploadUrl(
-                                      m.attachmentUrl!,
-                                    ),
-                                    fit: BoxFit.cover,
-                                    errorBuilder: (_, _, _) => Container(
-                                      padding: const EdgeInsets.all(12),
-                                      color: AppColors.surfaceMuted,
-                                      child: const Text(
-                                        'Görsel yüklenemedi',
-                                        style: TextStyle(fontSize: 11),
-                                      ),
-                                    ),
+                                  // Bölüm AC: kimlik doğrulamalı ek (/files/message-attachment/:id).
+                                  child: AuthImage(
+                                    path: ApiClient.instance.fileUrl('message-attachment', m.id),
                                   ),
                                 ),
                                 const SizedBox(height: 6),
