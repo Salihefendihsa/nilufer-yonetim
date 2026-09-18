@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Plus, Users, FileSpreadsheet, MapPin, Wallet } from "lucide-react";
+import { Plus, Users, FileSpreadsheet, MapPin, Wallet, Upload } from "lucide-react";
 import { RequireRole } from "@/components/RequireRole";
 import { PageHeader } from "@/components/PageHeader";
 import { StatusStrip } from "@/components/StatusStrip";
@@ -15,6 +15,7 @@ import { DrillDownChip } from "@/components/DrillDownChip";
 import { formatDate, currencyFormatter } from "@/lib/format";
 import type { Customer, CustomerListItem, Paginated } from "@/lib/types";
 import { CustomerFormModal } from "./CustomerFormModal";
+import { CustomerImportModal } from "./CustomerImportModal";
 import { CustomerDetailPanel } from "./CustomerDetailPanel";
 import { LoyalCustomerBadge } from "@/components/Badges";
 import { CustomerTagBadge } from "@/components/CustomerTagBadge";
@@ -69,6 +70,7 @@ function CustomersPageContent() {
   const [sort, setSort] = useState<"newest" | "name" | "balance">("newest");
 
   const [formOpen, setFormOpen] = useState(false);
+  const [importOpen, setImportOpen] = useState(false); // Bölüm AL (8. tur)
   const [editingCustomer, setEditingCustomer] = useState<Customer | null>(null);
   const [detailId, setDetailId] = useState<string | null>(null);
   // Bölüm I (3. tur): global aramadan gelen ?detailId= doğrudan detay panelini açar.
@@ -200,6 +202,15 @@ function CustomersPageContent() {
               <FileSpreadsheet size={16} strokeWidth={1.75} />
               Excel&apos;e Aktar
             </button>
+            {/* Bölüm AL (8. tur): CSV toplu içe aktarma */}
+            <button
+              type="button"
+              onClick={() => setImportOpen(true)}
+              className="flex items-center gap-2 rounded-2xl border border-border bg-surface-base px-4 py-2.5 text-sm font-medium text-text-secondary transition hover:border-border-strong hover:bg-surface-subtle hover:text-text-primary"
+            >
+              <Upload size={16} strokeWidth={1.75} />
+              CSV İçe Aktar
+            </button>
             <button
               type="button"
               onClick={() => {
@@ -316,6 +327,8 @@ function CustomersPageContent() {
           />
         }
       />
+
+      <CustomerImportModal open={importOpen} onClose={() => setImportOpen(false)} onImported={load} />
 
       <CustomerFormModal
         open={formOpen}

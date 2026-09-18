@@ -17,6 +17,7 @@ import { listCustomerDocuments, uploadCustomerDocument, deleteCustomerDocument }
 import { uploadDocument } from "../lib/upload";
 import { createMyDeletionRequest, getMyDeletionRequest } from "../controllers/dataDeletionController";
 import { exportMyData } from "../controllers/dataExportController";
+import { importCustomersCsv, uploadCsv } from "../controllers/customerImportController";
 
 const router = Router();
 
@@ -34,6 +35,8 @@ router.get("/me/data-export", requireRole(Role.CUSTOMER), exportMyData);
 router.get("/", requireRole(Role.OWNER, Role.MANAGER, Role.STAFF), listCustomers);
 router.get("/:id", requireRole(Role.OWNER, Role.MANAGER, Role.STAFF), getCustomer);
 router.post("/", requireRole(Role.OWNER, Role.MANAGER), createCustomer);
+// Bölüm AL (8. tur): CSV toplu içe aktarma — satır bazlı, bellekte, tek transaction değil.
+router.post("/import", requireRole(Role.OWNER, Role.MANAGER), uploadCsv.single("file"), importCustomersCsv);
 router.patch("/:id", requireRole(Role.OWNER, Role.MANAGER), updateCustomer);
 // Bölüm X (6. tur): müşterinin etiket kümesini tam olarak eşitler.
 router.post("/:id/tags", requireRole(Role.OWNER, Role.MANAGER), setCustomerTags);

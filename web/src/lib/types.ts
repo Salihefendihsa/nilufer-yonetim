@@ -283,6 +283,13 @@ export interface LeaveRequest {
   exceedsBalance?: boolean;
 }
 
+/** Bölüm AL (8. tur): POST /customers/import sonucu */
+export interface CustomerImportResult {
+  created: number;
+  skipped: number;
+  errors: { row: number; reason: string }[];
+}
+
 /** Bölüm AK (8. tur): sistem geneli duyuru şeridi */
 export interface Announcement {
   id: string;
