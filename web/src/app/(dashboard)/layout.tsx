@@ -5,6 +5,7 @@ import { Sidebar, MobileSidebar } from "@/components/Sidebar";
 import { Header } from "@/components/Header";
 import { PageTransition } from "@/components/PageTransition";
 import { ImpersonationBanner } from "@/components/ImpersonationBanner";
+import { AnnouncementBanner } from "@/components/AnnouncementBanner";
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
@@ -12,6 +13,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   return (
     <div className="flex min-h-screen flex-col bg-surface-page">
       <ImpersonationBanner />
+      {/* Bölüm AK (8. tur): sistem geneli duyuru şeridi */}
+      <AnnouncementBanner />
       <div className="flex flex-1">
         <Sidebar />
         <MobileSidebar open={mobileNavOpen} onClose={() => setMobileNavOpen(false)} />

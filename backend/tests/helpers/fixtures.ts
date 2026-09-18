@@ -216,6 +216,8 @@ export class TestContext {
     });
     await prisma.notification.deleteMany({ where: { userId: { in: userIds } } });
     await prisma.notificationPreference.deleteMany({ where: { userId: { in: userIds } } });
+    // Bölüm AK: test kullanıcısının açtığı duyurular.
+    await prisma.announcement.deleteMany({ where: { createdByUserId: { in: userIds } } });
     await prisma.auditLog.deleteMany({ where: { OR: [{ actorUserId: { in: userIds } }, { targetUserId: { in: userIds } }] } });
     await prisma.userSession.deleteMany({ where: { userId: { in: userIds } } });
     await prisma.passwordResetToken.deleteMany({ where: { userId: { in: userIds } } });

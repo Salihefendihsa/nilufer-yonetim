@@ -17,6 +17,7 @@ import '../jobs/job_detail_screen.dart';
 import '../jobs/jobs_api.dart';
 import '../search/search_screen.dart';
 import '../team/team_api.dart';
+import '../../widgets/announcement_banner.dart';
 import '../../widgets/badges.dart';
 import 'dashboard_api.dart';
 import 'dashboard_models.dart';
@@ -196,6 +197,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
+        // Bölüm AK (8. tur): sistem geneli duyuru şeridi
+        const AnnouncementBanner(),
         StatCardGrid(
           children: [
             AppStatCard(
@@ -536,6 +539,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
+        // Bölüm AK (8. tur): sistem geneli duyuru şeridi
+        const AnnouncementBanner(),
         Text(
           'Merhaba, ${user?.fullName.split(' ').first ?? ''}. '
           'Ekibinin bugünkü işleri burada.',
@@ -774,6 +779,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
+        // Bölüm AK (8. tur): sistem geneli duyuru şeridi
+        const AnnouncementBanner(),
         Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -946,6 +953,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
+        // Bölüm AK (8. tur): sistem geneli duyuru şeridi
+        const AnnouncementBanner(),
         Container(
           padding: const EdgeInsets.all(20),
           decoration: BoxDecoration(

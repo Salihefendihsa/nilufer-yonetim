@@ -130,6 +130,12 @@ const CASES: EndpointCase[] = [
   { method: "post", path: `/data-deletion-requests/${NIL}/reject`, allowed: ["OWNER"], body: {} },
   // Bölüm AJ (8. tur) — CUSTOMER kendi verisi (Customer kaydı yoksa 404 = yetkili)
   { method: "get", path: "/customers/me/data-export", allowed: ["CUSTOMER"] },
+  // Bölüm AK (8. tur) — /active tüm oturumlara açık; yönetim yalnızca OWNER
+  { method: "get", path: "/announcements/active", allowed: ["OWNER", "MANAGER", "TEAM_LEAD", "STAFF", "CUSTOMER"] },
+  { method: "get", path: "/announcements", allowed: ["OWNER"] },
+  // boş gövde → OWNER için 400 (gerçek aktif duyuruyu pasifleştirmesin)
+  { method: "post", path: "/announcements", allowed: ["OWNER"], body: {} },
+  { method: "delete", path: `/announcements/${NIL}`, allowed: ["OWNER"] },
   // Bölüm AE (7. tur)
   { method: "get", path: "/analytics/quote-response-time", allowed: ["OWNER", "MANAGER"] },
   // Bölüm AH (7. tur) — STAFF/TEAM_LEAD route'tan geçer ama uydurma id kendi kaydı değil → 403

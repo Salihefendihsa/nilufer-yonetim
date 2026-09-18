@@ -138,6 +138,8 @@ model User {
   onboardingCompletions OnboardingChecklistItem[] @relation("OnboardingCompletedBy")
   uploadedCustomerDocuments CustomerDocument[] @relation("CustomerDocumentUploadedBy")
   processedDeletionRequests DataDeletionRequest[] @relation("DataDeletionProcessedBy")
+  /// Bölüm AK (8. tur)
+  announcements             Announcement[]
   recordedExpenses Expense[]
   twoFactorRecoveryCodes TwoFactorRecoveryCode[]
   twoFactorChallenges    TwoFactorChallenge[]
@@ -271,6 +273,21 @@ model DataDeletionRequest {
 
   @@index([customerId])
   @@index([status])
+}
+
+/// Bölüm AK (8. tur): Sistem geneli duyuru şeridi — aynı anda en fazla 1 aktif
+/// duyuru (yeni POST öncekini işlemde pasifleştirir). expiresAt geçmişse /active null.
+model Announcement {
+  id              String    @id @default(uuid())
+  message         String
+  isActive        Boolean   @default(true)
+  createdByUserId String
+  createdAt       DateTime  @default(now())
+  expiresAt       DateTime?
+
+  createdBy User @relation(fields: [createdByUserId], references: [id])
+
+  @@index([isActive])
 }
 
 /// Bölüm AB (6. tur): Müşteri belge kasası — sözleşme taraması, kimlik

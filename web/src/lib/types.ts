@@ -283,6 +283,17 @@ export interface LeaveRequest {
   exceedsBalance?: boolean;
 }
 
+/** Bölüm AK (8. tur): sistem geneli duyuru şeridi */
+export interface Announcement {
+  id: string;
+  message: string;
+  isActive: boolean;
+  createdByUserId?: string;
+  createdAt: string;
+  expiresAt: string | null;
+  createdBy?: { fullName: string };
+}
+
 /** Bölüm AH (7. tur): GET /staff/:id/leave-balance */
 export interface LeaveBalance {
   staffId: string;

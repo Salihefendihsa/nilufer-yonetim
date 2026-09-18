@@ -30,6 +30,7 @@ import { JobTemplatesSection } from "./JobTemplatesSection";
 import { CustomerTagsSection } from "./CustomerTagsSection";
 import { DataDeletionRequestsSection, CustomerDataDeletionSection } from "./DataDeletionSections";
 import { CustomerDataExportSection } from "./CustomerDataExportSection";
+import { AnnouncementSection } from "./AnnouncementSection";
 import { PageHeader } from "@/components/PageHeader";
 import { Modal } from "@/components/Modal";
 import { Toggle } from "@/components/Toggle";
@@ -74,6 +75,8 @@ export default function SettingsPage() {
         {/* Bölüm AJ (8. tur): müşteri kendi verisini indirir */}
         {user?.role === "CUSTOMER" && <CustomerDataExportSection />}
         {user?.role === "CUSTOMER" && <CustomerDataDeletionSection />}
+        {/* Bölüm AK (8. tur): duyuru şeridi yönetimi */}
+        {isOwner && <AnnouncementSection />}
         {isOwner && <DataDeletionRequestsSection />}
 
         {isOwner && (
