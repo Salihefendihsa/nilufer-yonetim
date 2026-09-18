@@ -401,3 +401,129 @@ sızıntısı, evaluator kimliği sızıntısı).
 **Çalıştırma:** `cd backend && npm test` (~40 sn, Postgres ayakta olmalı),
 `npm run test:typecheck`; `cd mobile && flutter test`. CI yok —
 PROJECT_HANDOFF_TR.md §12.2.1'e "her önemli değişiklikten önce" kuralı eklendi.
+
+---
+
+# 3. Tur — Bölüm I / J / K
+
+## Bölüm I — Global Arama
+
+**Ne yapıldı:** `GET /search?q=` yeniden yazıldı: müşteri, iş, personel,
+sözleşme ve teklif tek çağrıda paralel aranır (`Promise.all`), sonuçlar
+normalize `{ type, id, title, subtitle, route }` listesi olarak döner. Web
+Header'daki arama kutusu bu uca bağlandı (300 ms debounce, türe göre gruplu
+dropdown, ikon + tür etiketi); mobilde Ana Sayfa AppBar'ına büyüteç →
+tam ekran `SearchScreen`.
+
+**Tasarım kararları:**
+
+- **Rol kapsamı kopyalanmadı, aynı yardımcılar kullanıldı**
+  (`getStaffIdForUser`, `getTeamStaffIds`, `getCustomerIdForUser`): STAFF
+  yalnızca kendisine atanmış işleri ve o işlerin müşterilerini
+  (`customersController.listCustomers` ile aynı `jobs.some` filtresi),
+  TEAM_LEAD ekibinin işlerini/personelini, CUSTOMER kendi kaydını/işini/
+  sözleşmesini görür. TEAM_LEAD'in `/customers` listesine erişimi olmadığı
+  için müşteri sonucu almaz (ekibinin müşterileri iş sonuçlarında görünür).
+  Teklif (`QuoteRequest`) yalnızca OWNER/MANAGER — modelde müşteri FK'sı yok,
+  ad/telefon formdan geldiği gibi aranır.
+- **Türkçe İ/i:** PostgreSQL `ILIKE` (Prisma `mode: "insensitive"`) `lower()`
+  üzerinden çalışır; DB collation'ı (`en_US.utf8`) "İ"→"i" dönüşümünü Türkçe
+  kuralıyla yapmaz. Bu yüzden terimin varyantları (İ↔i, I↔ı,
+  `toLocaleLowerCase("tr-TR")`, `toLocaleUpperCase("tr-TR")`) ek OR dalları
+  olarak eklenir — "İSMAİL" yazan da "ismail" yazan da aynı kaydı bulur.
+  Ş/Ğ/Ü/Ö/Ç `lower()` ile zaten doğru eşleşir. Test: `search.test.ts`
+  "Türkçe büyük/küçük harf".
+- **Performans:** en az 2 karakter (altında sorgu hiç yapılmaz), tür başına
+  `LIMIT 5`, `select` ile yalnızca gerekli sütunlar.
+- **Deep-link'ler:** müşteri → `/musteriler?detailId=` (detay paneli açılır),
+  iş → `/isler?search=<müşteri adı>`, personel/sözleşme/teklif →
+  `?highlight=<id>` (liste o kayda daraltılır, "Arama sonucu" chip'i ile
+  temizlenir — mevcut drill-down deseni). Mobil `route`'u kullanmaz; `type`+
+  `id`'den detay ekranını türetir (sözleşme/teklifte ayrı detay ekranı
+  olmadığı için liste açılır).
+
+**Test (8 + 4):** rol kapsamı (STAFF başkasının işini/müşterisini,
+TEAM_LEAD ekip dışı personeli, CUSTOMER başka müşteriyi göremez), Türkçe
+eşleşme, min uzunluk, limit, normalize alanlar, 401. Flutter: yanıt modeli
+ayrıştırma + sabit sıralı gruplama.
+
+## Bölüm J — Müşteri Kendi Randevu Talebi
+
+**Ne yapıldı:** `AppointmentRequest` modeli (PENDING/SCHEDULED/DECLINED,
+`resultingJobId`, `respondedByUserId/At`, `declineReason`).
+`/appointment-requests`: CUSTOMER oluşturur ve yalnızca kendi taleplerini
+görür; OWNER/MANAGER tümünü listeler, `/:id/schedule { jobId }` ile var olan
+bir işe bağlar, `/:id/decline { reason }` ile reddeder. Web müşteri
+panelindeki "Yeni Randevu İste" butonu — Stitch'te vardı ama anonim teklif
+formuna (`/quotes`) gidiyordu — artık bu akışa bağlı; Bekleyen Onaylar'a
+6. kaynak "Randevu Talepleri" eklendi. Mobilde müşteri kabuğunda "Randevu
+Taleplerim" ekranı (form alt sayfası + durum listesi).
+
+**Tasarım kararları:**
+
+- **Doğrulama:** `preferredDateStart` gelecekte, `< preferredDateEnd`,
+  `serviceTypeId` aktif bir ServiceType olmalı (400). Müşteri formunda
+  aralık "gün başı – gün sonu" olarak gönderilir ("3–5 Ekim arası").
+- **Planlama = var olan işe bağlama.** `schedule` iş oluşturmaz; işin
+  `customerId`'si talebin müşterisiyle aynı olmalı (aksi 400) — yanlış
+  müşteriye bağlama veri tutarsızlığı yaratır. Web'de "Planla" düğmesi
+  `/isler?customerId=&serviceType=&scheduledAt=&appointmentRequestId=` ile iş
+  formunu ön dolu açar; `JobFormModal.onSaved` artık oluşturulan `Job`'u
+  döndürür ve sayfa `schedule` çağrısını yapar. İkinci karar 409.
+- **Bildirimler:** yeni talep → yönetime (`appointment_request`, alert
+  kategorisi); planlama → müşteriye (`appointment_request_scheduled`, job
+  kategorisi, `relatedType: Job`); red → müşteriye gerekçeyle
+  (`appointment_request_declined`). `notificationCategories.ts` güncellendi.
+- **Hizmet türü listesi:** `/service-types` CUSTOMER'a kapalı (yönetim
+  ayarı) — `GET /appointment-requests/service-types` yalnızca aktif
+  türlerin `id+name`'ini döner.
+- `QuoteRequestModal.tsx` (web) artık hiçbir yerden çağrılmadığı için
+  silindi; anonim `/quotes` ucu ve reCAPTCHA akışı backend'de duruyor.
+
+**Test (12 + 6 RBAC + 2 Flutter):** doğrulama (geçmiş tarih, start≥end,
+geçersiz hizmet türü), CUSTOMER kendi/başkasının talebi, OWNER filtre,
+planlama (yanlış müşteri 400, olmayan iş 404, başarı + bildirim + 409),
+reddetme (gerekçesiz 400, başarı + bildirim gövdesi), RBAC.
+
+## Bölüm K — Personel Müsaitlik İşaretleri
+
+**Ne yapıldı:** `StaffUnavailability` (date `@db.Date`, `startTime/endTime`
+"HH:mm" — null ise tüm gün, `reason`). İzin talebinden (`LeaveRequest`,
+onay gerektirir, `Staff.status`'u değiştirir) AYRI, onaysız ve anlık:
+"bugün öğleden sonra müsait değilim". Uçlar: `POST/GET/DELETE
+/staff/me/unavailability`, `GET /staff/:id/unavailability?month=`,
+`GET /staff/unavailability?date=`. Web iş formu ve mobil iş formu seçilen
+tarihte müsait olmayan personeli işaretler; Takvim'de STAFF/TEAM_LEAD için
+işaretleme paneli.
+
+**Tasarım kararları:**
+
+- **Atama ENGELLENMEZ.** Uyarı yalnızca bilgilendiricidir — seçenek yanında
+  "⚠ müsait değil (13:00–17:00)" ve seçim altında sarı uyarı kutusu; kaydet
+  düğmesi etkilenmez (acil durumlar). `GET /staff/unavailability?date=`
+  yardımcı ucu, formun N personel için N istek yerine tek çağrıyla uyarı
+  çizmesi için eklendi (TEAM_LEAD ekip kapsamlı).
+- **Tarih saat dilimi:** istemci `YYYY-MM-DD` düz string gönderir, sunucu
+  UTC gece yarısı `DATE` olarak saklar ve aynı biçimde geri verir — ISO
+  tam-zaman gönderilmesi halinde yaşanacak "bir gün kayma" sorunu baştan
+  kapatıldı. Geçmiş gün 400; bugün kabul.
+- **Sahiplik:** silme `deleteMany({ id, staffId })` ile — başkasının kaydı
+  için 404 döner, kaydın varlığı sızmaz. `GET /staff/:id/...` kapsamı STAFF
+  kendi, TEAM_LEAD ekibi (aksi 403), OWNER/MANAGER herkes.
+- **Route sırası:** `/unavailability` ve `/me/unavailability` sabit yolları
+  `/:id`'den ÖNCE kayıtlı; aksi halde Express `me`'yi id sanır.
+- RBAC matrisinde `GET /staff/:id/unavailability` için TEAM_LEAD/STAFF
+  "izinli" sayılmadı: route'tan geçerler ama uydurma id kapsam dışı → 403.
+  Kendi/ekip kaydı için 200 senaryosu `staffUnavailability.test.ts`'te.
+
+**Test (13 + 5 RBAC + 3 Flutter):** doğrulama (geçmiş, tek saat, ters
+aralık, bozuk saat), kendi kaydını silme / başkasınınkini silememe,
+`?month=` listesi, `/staff/:id` kapsamı (STAFF/TEAM_LEAD 403, OWNER 200/404),
+`?date=` uyarı kaynağı (işaretli var, işaretsiz yok, başka gün yok,
+TEAM_LEAD ekip dışını görmez), RBAC.
+
+## 3. Tur Toplam
+
+- Backend vitest: 81 → **125** test (+44: I 8, J 12, K 13, RBAC +11).
+- Flutter: 14 → **23** test (+9 model testi).
+- Yeni migration: `appointment_requests`, `staff_unavailability`.
