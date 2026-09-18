@@ -129,6 +129,40 @@ class _JobFormScreenState extends State<JobFormScreen> {
     });
   }
 
+  /// Bölüm Y (6. tur): müşteri + hizmet türü seçilince geçerli garanti bilgisi
+  /// (GET /customers/:id/active-warranties?serviceType=). Otomatik indirim yok.
+  int? _warrantyDaysLeft;
+  String? _warrantyServiceType;
+
+  Future<void> _refreshWarranty() async {
+    final customerId = _selectedCustomerId;
+    final serviceType = _serviceTypeController.text.trim();
+    if (customerId == null || serviceType.isEmpty) {
+      if (mounted) setState(() => _warrantyDaysLeft = null);
+      return;
+    }
+    try {
+      final json = await ApiClient.instance.get<Map<String, dynamic>>(
+        '/customers/$customerId/active-warranties',
+        query: {'serviceType': serviceType},
+      );
+      final rows = (json['data'] as List?) ?? const [];
+      if (mounted) {
+        setState(() {
+          if (rows.isEmpty) {
+            _warrantyDaysLeft = null;
+          } else {
+            final first = rows.first as Map<String, dynamic>;
+            _warrantyDaysLeft = (first['daysLeft'] as num?)?.toInt();
+            _warrantyServiceType = first['serviceType'] as String?;
+          }
+        });
+      }
+    } on ApiException {
+      if (mounted) setState(() => _warrantyDaysLeft = null);
+    }
+  }
+
   Future<void> _loadOptions() async {
     try {
       final results = await Future.wait([
@@ -288,8 +322,34 @@ class _JobFormScreenState extends State<JobFormScreen> {
                           ),
                         )
                         .toList(),
-                    onChanged: (v) => setState(() => _selectedCustomerId = v),
+                    onChanged: (v) {
+                      setState(() => _selectedCustomerId = v);
+                      _refreshWarranty();
+                    },
                   ),
+                  if (_warrantyDaysLeft != null)
+                    Container(
+                      margin: const EdgeInsets.only(top: 10),
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        color: AppColors.primary50,
+                        borderRadius: BorderRadius.circular(AppRadius.card),
+                        border: Border.all(color: AppColors.primary100),
+                      ),
+                      child: Row(
+                        children: [
+                          const Icon(Icons.verified_user_outlined, size: 18, color: AppColors.primary700),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              'Bu müşterinin ${_warrantyServiceType ?? 'bu hizmet'} için devam eden garantisi var — '
+                              '$_warrantyDaysLeft gün kaldı. Ücretlendirmeyi buna göre değerlendirin.',
+                              style: const TextStyle(fontSize: 12, color: AppColors.primary700),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
                   const SizedBox(height: 12),
                   DropdownButtonFormField<String>(
                     initialValue: _selectedStaffId,
@@ -363,6 +423,7 @@ class _JobFormScreenState extends State<JobFormScreen> {
                   const SizedBox(height: 12),
                   TextFormField(
                     controller: _serviceTypeController,
+                    onChanged: (_) => _refreshWarranty(),
                     decoration: const InputDecoration(
                       labelText: 'Hizmet Türü *',
                     ),

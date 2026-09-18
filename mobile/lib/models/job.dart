@@ -122,6 +122,16 @@ class Job {
   final String? ratingComment;
   /// Bölüm S (5. tur): detaylı geri bildirim gönderildi mi (bir kez).
   final String? feedbackSubmittedAt;
+  /// Bölüm Y (6. tur): garanti bitişi; türde tanımlı değilse null.
+  final DateTime? warrantyExpiresAt;
+
+  /// Garanti hâlâ geçerliyse kalan gün; değilse null (rozet gizli).
+  int? get warrantyDaysLeft {
+    final w = warrantyExpiresAt;
+    if (w == null) return null;
+    final days = w.difference(DateTime.now()).inMinutes / (24 * 60);
+    return days > 0 ? days.ceil() : null;
+  }
   final String createdAt;
   final String? calendarLink;
   /// Bölüm N (4. tur): iş öncesi kontrol listesi — GET /jobs/:id her zaman
@@ -156,6 +166,7 @@ class Job {
     required this.rating,
     required this.ratingComment,
     this.feedbackSubmittedAt,
+    this.warrantyExpiresAt,
     required this.createdAt,
     required this.calendarLink,
     this.checklist = const [],
@@ -198,6 +209,9 @@ class Job {
     price: decimalOrNull(json['price']),
     rating: json['rating'] as int?,
     feedbackSubmittedAt: json['feedbackSubmittedAt'] as String?,
+    warrantyExpiresAt: json['warrantyExpiresAt'] != null
+        ? DateTime.parse(json['warrantyExpiresAt'] as String)
+        : null,
     ratingComment: json['ratingComment'] as String?,
     createdAt: json['createdAt'] as String,
     calendarLink: json['calendarLink'] as String?,

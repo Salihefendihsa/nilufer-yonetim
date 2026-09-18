@@ -456,6 +456,9 @@ model Job {
   wouldRecommend            Boolean?
   feedbackComment           String?
   feedbackSubmittedAt       DateTime?
+  /// Bölüm Y (6. tur): garanti bitişi — tamamlanınca hesaplanır; hizmet
+  /// türünde defaultWarrantyDays tanımlı değilse null.
+  warrantyExpiresAt         DateTime?
   /// Bölüm N (4. tur): personelin iş öncesi günlük kontrol listesi —
   /// [{ item, isChecked, checkedAt }] (sabit şablon: lib/checklist.ts).
   /// Rapor oluşturulurken JobReport.checklist'e kopyalanır.
@@ -793,6 +796,10 @@ model ServiceType {
   id        String   @id @default(uuid())
   name      String   @unique
   isActive  Boolean  @default(true)
+  /// Bölüm Y (6. tur): bu hizmet türü için varsayılan garanti süresi (gün);
+  /// null ise garanti takibi yapılmaz. İş COMPLETED olduğunda
+  /// Job.warrantyExpiresAt = completedAt + bu değer.
+  defaultWarrantyDays Int?
   createdAt DateTime @default(now())
 
   appointmentRequests AppointmentRequest[]

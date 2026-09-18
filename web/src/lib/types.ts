@@ -62,6 +62,8 @@ export interface Job {
   wouldRecommend?: boolean | null;
   feedbackComment?: string | null;
   feedbackSubmittedAt?: string | null;
+  /** Bölüm Y (6. tur): garanti bitişi — tamamlanınca hesaplanır; türde tanımlı değilse null. */
+  warrantyExpiresAt?: string | null;
   createdAt: string;
   calendarLink: string | null;
   /** Bölüm N (4. tur): iş öncesi kontrol listesi (GET /jobs/:id her zaman tam şablonu döner). */
@@ -290,6 +292,8 @@ export interface AppointmentRequest {
   serviceType?: { id: string; name: string };
   respondedByUser?: { id: string; fullName: string } | null;
   resultingJob?: { id: string; sequenceNo: number; scheduledAt: string | null; status: JobStatus } | null;
+  /** Bölüm Y: yönetim listesinde, aynı hizmet türünde geçerli garanti varsa. */
+  activeWarranty?: ActiveWarranty | null;
 }
 
 export interface QuoteRequest {
@@ -597,10 +601,21 @@ export interface JobTemplate {
   createdAt: string;
 }
 
+/** Bölüm Y (6. tur): GET /customers/:id/active-warranties satırı. */
+export interface ActiveWarranty {
+  jobId: string;
+  serviceType: string;
+  completedAt: string | null;
+  warrantyExpiresAt: string;
+  daysLeft: number;
+}
+
 export interface ServiceType {
   id: string;
   name: string;
   isActive: boolean;
+  /** Bölüm Y: varsayılan garanti (gün); null → takip yok. */
+  defaultWarrantyDays?: number | null;
   createdAt: string;
 }
 

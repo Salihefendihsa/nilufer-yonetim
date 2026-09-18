@@ -7,6 +7,7 @@ import {
   createCustomer,
   getMyReferral,
   getMyBadges,
+  getCustomerActiveWarranties,
   updateCustomer,
   deleteCustomer,
 } from "../controllers/customersController";
@@ -27,6 +28,8 @@ router.post("/", requireRole(Role.OWNER, Role.MANAGER), createCustomer);
 router.patch("/:id", requireRole(Role.OWNER, Role.MANAGER), updateCustomer);
 // Bölüm X (6. tur): müşterinin etiket kümesini tam olarak eşitler.
 router.post("/:id/tags", requireRole(Role.OWNER, Role.MANAGER), setCustomerTags);
+// Bölüm Y (6. tur): geçerli garantiler (bilgilendirme).
+router.get("/:id/active-warranties", requireRole(Role.OWNER, Role.MANAGER), getCustomerActiveWarranties);
 router.delete("/:id", requireRoleOrPermission([Role.MANAGER], "delete_customers"), deleteCustomer);
 
 export default router;

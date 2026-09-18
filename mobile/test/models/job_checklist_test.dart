@@ -59,4 +59,14 @@ void main() {
       );
     });
   });
+
+  group('Job.warrantyDaysLeft (Bölüm Y)', () {
+    test('gelecekteki garanti → pozitif gün; geçmiş → null; yok → null', () {
+      final future = DateTime.now().add(const Duration(days: 10, hours: 12)).toUtc().toIso8601String();
+      final past = DateTime.now().subtract(const Duration(days: 1)).toUtc().toIso8601String();
+      expect(Job.fromJson({..._baseJob(), 'warrantyExpiresAt': future}).warrantyDaysLeft, 11);
+      expect(Job.fromJson({..._baseJob(), 'warrantyExpiresAt': past}).warrantyDaysLeft, isNull);
+      expect(Job.fromJson(_baseJob()).warrantyDaysLeft, isNull);
+    });
+  });
 }

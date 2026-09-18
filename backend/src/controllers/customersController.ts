@@ -5,6 +5,7 @@ import { prisma } from "../lib/prisma";
 import { ensureReferralCode, generateReferralCode, referralInviteLink } from "../lib/referral";
 import { isLoyalCustomer, LOYAL_CUSTOMER_THRESHOLD } from "../lib/badges";
 import { customerTagSelect } from "./customerTagsController";
+import { findActiveWarranties } from "../lib/warranty";
 import { idParam } from "../lib/params";
 import { getPagination, paginatedResponse } from "../lib/pagination";
 import { recordAuditLog } from "../lib/auditLog";
@@ -237,4 +238,19 @@ export async function deleteCustomer(req: Request, res: Response) {
   });
 
   return res.status(204).send();
+}
+
+/**
+ * Bölüm Y (6. tur): Müşterinin geçerli garantileri — iş/randevu planlarken
+ * yönetime "devam eden garantisi var, N gün kaldı" bilgisi (otomatik
+ * ücretsizlik YOK). ?serviceType= ile aynı hizmet türüne daraltılır.
+ */
+export async function getCustomerActiveWarranties(req: Request, res: Response) {
+  const customer = await prisma.customer.findUnique({ where: { id: idParam(req) }, select: { id: true } });
+  if (!customer) {
+    return res.status(404).json({ error: "Müşteri bulunamadı" });
+  }
+  const serviceType = typeof req.query.serviceType === "string" && req.query.serviceType ? req.query.serviceType : undefined;
+  const data = await findActiveWarranties(customer.id, serviceType);
+  return res.json({ customerId: customer.id, data });
 }

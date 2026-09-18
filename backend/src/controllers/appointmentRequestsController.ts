@@ -7,6 +7,7 @@ import { getCustomerIdForUser } from "../lib/access";
 import { idParam } from "../lib/params";
 import { recordAuditLog } from "../lib/auditLog";
 import { notifyUser, notifyManagement } from "../lib/notify";
+import { findActiveWarranties } from "../lib/warranty";
 
 /**
  * Bölüm J (3. tur): Müşterinin kendi hesabından randevu talebi.
@@ -118,6 +119,18 @@ export async function listAppointmentRequests(req: Request, res: Response) {
     }),
     prisma.appointmentRequest.count({ where }),
   ]);
+
+  // Bölüm Y (6. tur): yönetim için, talebin müşterisinin aynı hizmet türünde
+  // geçerli garantisi varsa satıra eklenir (Bekleyen Onaylar'da uyarı).
+  if (user.role !== Role.CUSTOMER) {
+    const enriched = await Promise.all(
+      data.map(async (r) => {
+        const active = r.status === AppointmentRequestStatus.PENDING ? await findActiveWarranties(r.customerId, r.serviceType.name) : [];
+        return { ...r, activeWarranty: active[0] ?? null };
+      })
+    );
+    return res.json(paginatedResponse(enriched, total, page, limit));
+  }
 
   return res.json(paginatedResponse(data, total, page, limit));
 }

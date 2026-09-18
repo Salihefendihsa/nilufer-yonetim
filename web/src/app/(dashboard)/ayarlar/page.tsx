@@ -736,8 +736,37 @@ function ServiceTypesSection() {
                     className="input flex-1"
                   />
                 ) : (
-                  <span className={`text-sm ${item.isActive ? "text-text-primary" : "text-text-faint line-through"}`}>
+                  <span className={`flex flex-wrap items-center gap-2 text-sm ${item.isActive ? "text-text-primary" : "text-text-faint line-through"}`}>
                     {item.name}
+                    {/* Bölüm Y (6. tur): varsayılan garanti süresi — tıklanınca düzenlenir */}
+                    <button
+                      type="button"
+                      disabled={busy}
+                      title="Varsayılan garanti süresi (gün)"
+                      onClick={async () => {
+                        const raw = window.prompt(`"${item.name}" için varsayılan garanti süresi (gün) — boş bırakılırsa garanti takibi yapılmaz:`, item.defaultWarrantyDays ? String(item.defaultWarrantyDays) : "");
+                        if (raw === null) return;
+                        const days = raw.trim() === "" ? null : Number(raw);
+                        if (days !== null && (!Number.isInteger(days) || days <= 0)) {
+                          setError("Garanti süresi pozitif bir tam sayı olmalı");
+                          return;
+                        }
+                        setBusy(true);
+                        try {
+                          await api.patch(`/service-types/${item.id}`, { defaultWarrantyDays: days });
+                          await load();
+                        } catch (err) {
+                          setError(err instanceof ApiError ? err.message : "Güncellenemedi");
+                        } finally {
+                          setBusy(false);
+                        }
+                      }}
+                      className={`rounded-full px-2 py-0.5 text-2xs font-semibold ring-1 transition ${
+                        item.defaultWarrantyDays ? "bg-primary-50 text-primary-700 ring-primary-100 hover:bg-primary-100" : "bg-surface-subtle text-text-faint ring-border hover:text-text-secondary"
+                      }`}
+                    >
+                      {item.defaultWarrantyDays ? `Garanti ${item.defaultWarrantyDays} gün` : "Garanti yok"}
+                    </button>
                   </span>
                 )}
 

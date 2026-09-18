@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { Modal } from "@/components/Modal";
+import { WarrantyNotice } from "@/components/WarrantyBadge";
 import { RequireRole } from "@/components/RequireRole";
 import { EmptyState } from "@/components/EmptyState";
 import { PageHeader } from "@/components/PageHeader";
@@ -351,6 +352,12 @@ function ApprovalQueueContent() {
                     {r.customer?.phone ? ` · ${r.customer.phone}` : ""}
                     {r.note ? ` · ${r.note}` : ""}
                   </p>
+                  {/* Bölüm Y (6. tur): aynı hizmet türünde devam eden garanti */}
+                  {r.activeWarranty && (
+                    <div className="mt-2">
+                      <WarrantyNotice daysLeft={r.activeWarranty.daysLeft} serviceType={r.activeWarranty.serviceType} />
+                    </div>
+                  )}
                 </div>
               </div>
               <div className="flex gap-2">

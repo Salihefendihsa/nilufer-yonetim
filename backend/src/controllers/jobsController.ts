@@ -11,6 +11,7 @@ import { checkLowStockAndNotify } from "../lib/reminders";
 import { saveBase64Image } from "../lib/upload";
 import { recordAuditLog } from "../lib/auditLog";
 import { checklistUpdateSchema, mergeChecklist, normalizeChecklist } from "../lib/checklist";
+import { warrantyFieldsFor } from "../lib/warranty";
 
 const MANAGEMENT_ROLES: Role[] = [Role.OWNER, Role.MANAGER];
 
@@ -393,7 +394,9 @@ export async function updateJob(req: Request, res: Response) {
     }
 
     const timestamps = timestampsForTransition(existing.status, data.status);
-    const { applied, job } = await applyJobUpdate(existing.id, existing.status, { ...data, ...timestamps });
+    // Bölüm Y: tamamlanınca garanti bitişi hesaplanır (hizmet türünde tanımlı değilse null).
+    const warranty = timestamps.completedAt ? await warrantyFieldsFor(existing.serviceType, timestamps.completedAt) : {};
+    const { applied, job } = await applyJobUpdate(existing.id, existing.status, { ...data, ...timestamps, ...warranty });
 
     if (!applied && job.status !== data.status) {
       return res.status(409).json({ error: "İş durumu başka bir istekle değişti, lütfen tekrar deneyin" });
@@ -478,7 +481,9 @@ export async function updateJob(req: Request, res: Response) {
     }
 
     const timestamps = timestampsForTransition(existing.status, data.status);
-    const { applied, job } = await applyJobUpdate(existing.id, existing.status, { ...data, ...timestamps });
+    // Bölüm Y: tamamlanınca garanti bitişi hesaplanır (hizmet türünde tanımlı değilse null).
+    const warranty = timestamps.completedAt ? await warrantyFieldsFor(existing.serviceType, timestamps.completedAt) : {};
+    const { applied, job } = await applyJobUpdate(existing.id, existing.status, { ...data, ...timestamps, ...warranty });
 
     if (!applied && job.status !== data.status) {
       return res.status(409).json({ error: "İş durumu başka bir istekle değişti, lütfen tekrar deneyin" });

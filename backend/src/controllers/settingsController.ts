@@ -30,11 +30,14 @@ export async function updateSettings(req: Request, res: Response) {
 
 const serviceTypeCreateSchema = z.object({
   name: z.string().min(1),
+  // Bölüm Y (6. tur): varsayılan garanti süresi (gün); null → takip yok.
+  defaultWarrantyDays: z.number().int().positive().max(3650).nullable().optional(),
 });
 
 const serviceTypeUpdateSchema = z.object({
   name: z.string().min(1).optional(),
   isActive: z.boolean().optional(),
+  defaultWarrantyDays: z.number().int().positive().max(3650).nullable().optional(),
 });
 
 export async function listServiceTypes(_req: Request, res: Response) {

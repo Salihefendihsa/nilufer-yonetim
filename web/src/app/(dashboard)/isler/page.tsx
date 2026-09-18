@@ -15,6 +15,7 @@ import { formatDateTime, formatTime } from "@/lib/format";
 import { Modal } from "@/components/Modal";
 import type { Customer, Staff, Job, JobStatus, Paginated } from "@/lib/types";
 import { JobFormModal } from "./JobFormModal";
+import { WarrantyBadge } from "@/components/WarrantyBadge";
 import { WeekCalendar } from "./WeekCalendar";
 
 const STATUS_OPTIONS: JobStatus[] = ["PENDING", "SCHEDULED", "IN_PROGRESS", "COMPLETED", "CANCELLED"];
@@ -299,8 +300,12 @@ function JobsPageContent() {
                     </span>
                     {job.customer?.fullName ?? "Müşteri"}
                   </p>
-                  <p className="text-sm text-text-secondary">
-                    {job.serviceType} · {job.assignedStaffId ? job.assignedStaff?.user.fullName ?? "Personel" : "Atanmadı"}
+                  <p className="flex flex-wrap items-center gap-2 text-sm text-text-secondary">
+                    <span>
+                      {job.serviceType} · {job.assignedStaffId ? job.assignedStaff?.user.fullName ?? "Personel" : "Atanmadı"}
+                    </span>
+                    {/* Bölüm Y (6. tur): geçerli garanti rozeti */}
+                    <WarrantyBadge expiresAt={job.warrantyExpiresAt} />
                   </p>
                   <p className="text-xs text-text-faint">
                     {formatDateTime(job.scheduledAt)}

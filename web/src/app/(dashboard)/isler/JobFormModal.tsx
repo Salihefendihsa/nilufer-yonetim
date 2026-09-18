@@ -2,6 +2,8 @@
 
 import { useEffect, useState, type FormEvent } from "react";
 import { AlertTriangle } from "lucide-react";
+import { WarrantyNotice } from "@/components/WarrantyBadge";
+import type { ActiveWarranty } from "@/lib/types";
 import { Modal } from "@/components/Modal";
 import { useToast } from "@/lib/ToastProvider";
 import { api, ApiError } from "@/lib/api";
@@ -126,6 +128,27 @@ export function JobFormModal({ open, onClose, onSaved, customers, staff, prefill
 
   const serviceType = serviceTypeSelect === OTHER_SERVICE_TYPE ? serviceTypeOther : serviceTypeSelect;
 
+  // Bölüm Y (6. tur): müşteri + hizmet türü seçilince geçerli garanti uyarısı (bilgi amaçlı).
+  const [activeWarranty, setActiveWarranty] = useState<ActiveWarranty | null>(null);
+  useEffect(() => {
+    if (!open || !customerId || !serviceType) {
+      setActiveWarranty(null);
+      return;
+    }
+    let cancelled = false;
+    api
+      .get<{ data: ActiveWarranty[] }>(`/customers/${customerId}/active-warranties?serviceType=${encodeURIComponent(serviceType)}`)
+      .then((res) => {
+        if (!cancelled) setActiveWarranty(res.data[0] ?? null);
+      })
+      .catch(() => {
+        if (!cancelled) setActiveWarranty(null);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [open, customerId, serviceType]);
+
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
     setError(null);
@@ -185,6 +208,7 @@ export function JobFormModal({ open, onClose, onSaved, customers, staff, prefill
         </div>
 
         <div className="flex flex-col gap-1.5">
+          {activeWarranty && <WarrantyNotice daysLeft={activeWarranty.daysLeft} serviceType={activeWarranty.serviceType} />}
           <label className="text-sm font-medium text-text-secondary">Personel (opsiyonel)</label>
           <select value={assignedStaffId} onChange={(e) => setAssignedStaffId(e.target.value)} className="input">
             <option value="">Atanmadı</option>

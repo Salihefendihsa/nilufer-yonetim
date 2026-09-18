@@ -192,6 +192,12 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
                   runSpacing: 6,
                   children: [
                     _Pill(text: jobStatusLabelTr(job.status)),
+                    // Bölüm Y (6. tur): geçerli garanti rozeti (süresi dolmuşsa gizli).
+                    if (job.warrantyDaysLeft != null)
+                      _Pill(
+                        text: 'Garanti · ${job.warrantyDaysLeft} gün',
+                        icon: Icons.verified_user_outlined,
+                      ),
                     if (job.assignedStaffName != null)
                       _Pill(
                         text: job.assignedStaffName!,
