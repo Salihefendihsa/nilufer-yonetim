@@ -70,6 +70,13 @@ const CASES: EndpointCase[] = [
   { method: "post", path: "/leave-requests", allowed: ["STAFF", "TEAM_LEAD"], body: {} },
   { method: "patch", path: `/leave-requests/${NIL}/decide`, allowed: ["OWNER", "MANAGER", "TEAM_LEAD"], body: {} },
   { method: "get", path: "/team/summary", allowed: ["OWNER", "MANAGER", "TEAM_LEAD"] },
+  // Bölüm I/J (3. tur)
+  { method: "get", path: "/search?q=ab", allowed: ["OWNER", "MANAGER", "TEAM_LEAD", "STAFF", "CUSTOMER"] },
+  { method: "post", path: "/appointment-requests", allowed: ["CUSTOMER"], body: {} },
+  { method: "get", path: "/appointment-requests", allowed: ["OWNER", "MANAGER", "CUSTOMER"] },
+  { method: "get", path: "/appointment-requests/service-types", allowed: ["OWNER", "MANAGER", "CUSTOMER"] },
+  { method: "post", path: `/appointment-requests/${NIL}/schedule`, allowed: ["OWNER", "MANAGER"], body: {} },
+  { method: "post", path: `/appointment-requests/${NIL}/decline`, allowed: ["OWNER", "MANAGER"], body: {} },
 ];
 
 describe("RBAC sınırları", () => {

@@ -200,6 +200,28 @@ export interface LeaveRequest {
   staff?: { user: { fullName: string } };
 }
 
+/** Bölüm J (3. tur): giriş yapmış müşterinin kendi randevu talebi. */
+export type AppointmentRequestStatus = "PENDING" | "SCHEDULED" | "DECLINED";
+
+export interface AppointmentRequest {
+  id: string;
+  customerId: string;
+  serviceTypeId: string;
+  preferredDateStart: string;
+  preferredDateEnd: string;
+  note: string | null;
+  status: AppointmentRequestStatus;
+  respondedByUserId: string | null;
+  respondedAt: string | null;
+  declineReason: string | null;
+  resultingJobId: string | null;
+  createdAt: string;
+  customer?: { id: string; fullName: string; phone: string };
+  serviceType?: { id: string; name: string };
+  respondedByUser?: { id: string; fullName: string } | null;
+  resultingJob?: { id: string; sequenceNo: number; scheduledAt: string | null; status: JobStatus } | null;
+}
+
 export interface QuoteRequest {
   id: string;
   fullName: string;

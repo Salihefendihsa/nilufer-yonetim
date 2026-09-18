@@ -5,6 +5,7 @@ import '../auth/auth_provider.dart';
 import '../features/admin/audit_settings_screen.dart';
 import '../features/admin/system_health_screen.dart';
 import '../features/admin/usage_stats_screen.dart';
+import '../features/appointment_requests/my_appointment_requests_screen.dart';
 import '../features/approvals/approvals_screen.dart';
 import '../features/calendar/calendar_screen.dart';
 import '../features/contracts/contracts_list_screen.dart';
@@ -132,6 +133,11 @@ class _RoleShellState extends State<RoleShell> {
   /// modülleri kapsar (bkz. customer_more_menu_screen.dart).
   static final _customerGroups = <AppDrawerGroup>[
     AppDrawerGroup([
+      AppDrawerEntry(
+        'Randevu Taleplerim',
+        Icons.event_available_outlined,
+        (_) => const MyAppointmentRequestsScreen(),
+      ),
       AppDrawerEntry(
         'Sözleşmelerim',
         Icons.description_outlined,

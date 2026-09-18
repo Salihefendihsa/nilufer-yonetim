@@ -134,6 +134,7 @@ model User {
   impersonationsAsOwner  ImpersonationSession[] @relation("ImpersonationOwner")
   impersonationsAsTarget ImpersonationSession[] @relation("ImpersonationTarget")
   leaveRequestDecisions LeaveRequest[] @relation("LeaveRequestDecidedBy")
+  appointmentRequestResponses AppointmentRequest[] @relation("AppointmentRequestRespondedBy")
   recordedExpenses Expense[]
   twoFactorRecoveryCodes TwoFactorRecoveryCode[]
   twoFactorChallenges    TwoFactorChallenge[]
@@ -226,6 +227,7 @@ model Customer {
   jobs      Job[]
   contracts Contract[]
   payments  Payment[]
+  appointmentRequests AppointmentRequest[]
 
   @@index([district])
   @@index([phone])
@@ -373,6 +375,7 @@ model Job {
   assignedStaff  Staff?      @relation("AssignedStaff", fields: [assignedStaffId], references: [id])
   jobReports     JobReport[]
   photos         JobPhoto[]
+  appointmentRequests AppointmentRequest[]
 
   @@index([customerId])
   @@index([assignedStaffId])
@@ -692,6 +695,42 @@ model ServiceType {
   name      String   @unique
   isActive  Boolean  @default(true)
   createdAt DateTime @default(now())
+
+  appointmentRequests AppointmentRequest[]
+}
+
+/// Bölüm J (3. tur): Giriş yapmış müşterinin kendi hesabından "yeni randevu
+/// istiyorum" talebi — genel (anonim) QuoteRequest formundan AYRI. Yönetim
+/// talebi var olan bir Job'a bağlayarak planlar (SCHEDULED, resultingJobId)
+/// veya gerekçeyle reddeder (DECLINED); her iki durumda müşteriye bildirim gider.
+enum AppointmentRequestStatus {
+  PENDING
+  SCHEDULED
+  DECLINED
+}
+
+model AppointmentRequest {
+  id                 String                   @id @default(uuid())
+  customerId         String
+  serviceTypeId      String
+  preferredDateStart DateTime
+  preferredDateEnd   DateTime
+  note               String?
+  status             AppointmentRequestStatus @default(PENDING)
+  respondedByUserId  String?
+  respondedAt        DateTime?
+  /// Red gerekçesi (DECLINED) — müşteriye bildirimle iletilir.
+  declineReason      String?
+  resultingJobId     String?
+  createdAt          DateTime                 @default(now())
+
+  customer        Customer    @relation(fields: [customerId], references: [id])
+  serviceType     ServiceType @relation(fields: [serviceTypeId], references: [id])
+  respondedByUser User?       @relation("AppointmentRequestRespondedBy", fields: [respondedByUserId], references: [id])
+  resultingJob    Job?        @relation(fields: [resultingJobId], references: [id])
+
+  @@index([customerId])
+  @@index([status])
 }
 
 model District {

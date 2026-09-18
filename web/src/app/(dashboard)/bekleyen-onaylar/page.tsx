@@ -12,7 +12,10 @@ import {
   AlertTriangle,
   ClipboardList,
   CalendarOff,
+  CalendarPlus,
 } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { Modal } from "@/components/Modal";
 import { RequireRole } from "@/components/RequireRole";
 import { EmptyState } from "@/components/EmptyState";
 import { PageHeader } from "@/components/PageHeader";
@@ -23,7 +26,7 @@ import { useAuth } from "@/lib/AuthProvider";
 import { useToast } from "@/lib/ToastProvider";
 import { formatDate, currencyFormatter } from "@/lib/format";
 import { formatDateTime } from "@/lib/format";
-import type { QuoteRequest, AdvanceRequest, Contract, Customer, Job, Paginated, LeaveRequest } from "@/lib/types";
+import type { QuoteRequest, AdvanceRequest, Contract, Customer, Job, Paginated, LeaveRequest, AppointmentRequest } from "@/lib/types";
 
 /** /jobs?pendingReportApproval=true yanıtında onaysız rapor özeti gömülü gelir. */
 interface JobWithPendingReport extends Job {
@@ -37,6 +40,7 @@ const QUEUE_COLORS = {
   quote: "#1F6FA8",
   report: "#5A6B5E",
   leave: "#9B1C1C",
+  appointment: "#6B4FBB",
 } as const;
 
 /** Bitişine 7 günden az kalan sözleşme "acil" sayılır ve kırmızı kodlanır. */
@@ -62,6 +66,11 @@ function ApprovalQueueContent() {
   const [expiringContracts, setExpiringContracts] = useState<(Contract & { customer: Customer })[]>([]);
   const [pendingReports, setPendingReports] = useState<JobWithPendingReport[]>([]);
   const [leaveRequests, setLeaveRequests] = useState<LeaveRequest[]>([]);
+  // Bölüm J (3. tur): müşteri randevu talepleri (OWNER/MANAGER).
+  const [appointmentRequests, setAppointmentRequests] = useState<AppointmentRequest[]>([]);
+  const [declineTarget, setDeclineTarget] = useState<AppointmentRequest | null>(null);
+  const [declineReason, setDeclineReason] = useState("");
+  const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
@@ -73,13 +82,17 @@ function ApprovalQueueContent() {
     try {
       // allSettled: bu kalemlerden biri yetki/ağ hatası verirse sayfanın tamamı
       // çökmesin, yalnızca o kalem boş listeyle gösterilsin.
-      const [quotesRes, advancesRes, expiringRes, reportsRes, leaveRes] = await Promise.allSettled([
+      const [quotesRes, advancesRes, expiringRes, reportsRes, leaveRes, appointmentRes] = await Promise.allSettled([
         isTeamLead ? Promise.resolve({ data: [], pagination: null } as never) : api.get<Paginated<QuoteRequest>>("/quotes?status=NEW&limit=50"),
         isTeamLead ? Promise.resolve({ data: [], pagination: null } as never) : api.get<Paginated<AdvanceRequest>>("/advances?status=PENDING&limit=50"),
         isTeamLead ? Promise.resolve({ data: [] } as never) : api.get<{ data: (Contract & { customer: Customer })[] }>("/contracts/expiring"),
         api.get<Paginated<JobWithPendingReport>>("/jobs?pendingReportApproval=true&limit=50"),
         api.get<Paginated<LeaveRequest>>("/leave-requests?status=PENDING&limit=50"),
+        isTeamLead
+          ? Promise.resolve({ data: [], pagination: null } as never)
+          : api.get<Paginated<AppointmentRequest>>("/appointment-requests?status=PENDING&limit=50"),
       ]);
+      setAppointmentRequests(appointmentRes.status === "fulfilled" ? appointmentRes.value.data : []);
       setQuotes(quotesRes.status === "fulfilled" ? quotesRes.value.data : []);
       setAdvances(advancesRes.status === "fulfilled" ? advancesRes.value.data : []);
       setExpiringContracts(expiringRes.status === "fulfilled" ? expiringRes.value.data : []);
@@ -88,7 +101,7 @@ function ApprovalQueueContent() {
         leaveRes.status === "fulfilled" ? leaveRes.value.data.filter((l) => l.status === "PENDING") : []
       );
 
-      const firstError = [quotesRes, advancesRes, expiringRes, reportsRes, leaveRes].find((r) => r.status === "rejected");
+      const firstError = [quotesRes, advancesRes, expiringRes, reportsRes, leaveRes, appointmentRes].find((r) => r.status === "rejected");
       if (firstError && firstError.status === "rejected") {
         const reason = firstError.reason;
         setError(reason instanceof ApiError ? reason.message : "Kuyruğun bir kısmı yüklenemedi");
@@ -170,7 +183,35 @@ function ApprovalQueueContent() {
     }
   }
 
-  const total = quotes.length + advances.length + expiringContracts.length + pendingReports.length + leaveRequests.length;
+  /** "Planla": iş formu müşteri + hizmet türü + tercih edilen ilk gün ile önceden dolu açılır; kaydedince talep işe bağlanır. */
+  function handleAppointmentSchedule(r: AppointmentRequest) {
+    const params = new URLSearchParams({ customerId: r.customerId, appointmentRequestId: r.id });
+    if (r.serviceType?.name) params.set("serviceType", r.serviceType.name);
+    // datetime-local biçimi (yerel saat): tercih edilen aralığın ilk günü 09:00.
+    const start = new Date(r.preferredDateStart);
+    const pad = (n: number) => String(n).padStart(2, "0");
+    params.set("scheduledAt", `${start.getFullYear()}-${pad(start.getMonth() + 1)}-${pad(start.getDate())}T09:00`);
+    if (r.note) params.set("notes", `Müşteri notu: ${r.note}`);
+    router.push(`/isler?${params.toString()}`);
+  }
+
+  async function handleAppointmentDecline() {
+    if (!declineTarget || !declineReason.trim()) return;
+    setBusyId(declineTarget.id);
+    try {
+      await api.post(`/appointment-requests/${declineTarget.id}/decline`, { reason: declineReason.trim() });
+      setDeclineTarget(null);
+      setDeclineReason("");
+      load();
+      showToast("Randevu talebi reddedildi, müşteriye bildirildi.");
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : "Reddedilemedi");
+    } finally {
+      setBusyId(null);
+    }
+  }
+
+  const total = quotes.length + advances.length + expiringContracts.length + pendingReports.length + leaveRequests.length + appointmentRequests.length;
 
   const daysLeftOf = (contract: Contract) =>
     Math.max(0, Math.ceil((new Date(contract.endDate).getTime() - Date.now()) / (1000 * 60 * 60 * 24)));
@@ -245,6 +286,16 @@ function ApprovalQueueContent() {
           mono
           hint="Karar bekleyen izin talepleri"
         />
+        {!isTeamLead && (
+          <StatCard
+            label="Randevu talebi"
+            value={loading ? "—" : String(appointmentRequests.length)}
+            icon={CalendarPlus}
+            accent="blue"
+            mono
+            hint="Müşterilerin hesabından açtığı talepler"
+          />
+        )}
       </div>
 
       {/* [Aciliyet / tür dağılımı şeridi] */}
@@ -257,6 +308,7 @@ function ApprovalQueueContent() {
           { label: "teklif", count: quotes.length, color: QUEUE_COLORS.quote },
           { label: "saha raporu", count: pendingReports.length, color: QUEUE_COLORS.report },
           { label: "izin", count: leaveRequests.length, color: QUEUE_COLORS.leave },
+          { label: "randevu", count: appointmentRequests.length, color: QUEUE_COLORS.appointment },
         ]}
         action={
           urgency.urgent > 0 ? (
@@ -279,6 +331,54 @@ function ApprovalQueueContent() {
         </div>
       ) : (
         <div className="flex flex-col gap-3">
+          {appointmentRequests.map((r) => (
+            <div
+              key={r.id}
+              className="flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-border border-l-4 bg-surface-card p-5 shadow-card transition hover:shadow-cardHover"
+              style={{ borderLeftColor: QUEUE_COLORS.appointment }}
+            >
+              <div className="flex items-start gap-3">
+                <span className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary-50 text-primary-600 ring-1 ring-primary-100">
+                  <CalendarPlus size={16} strokeWidth={1.75} />
+                </span>
+                <div>
+                  <p className="text-2xs font-semibold uppercase tracking-wide text-primary-600">Randevu Talebi</p>
+                  <p className="mt-0.5 font-medium text-text-primary">
+                    {r.customer?.fullName ?? "Müşteri"} · {r.serviceType?.name ?? "Hizmet"}
+                  </p>
+                  <p className="text-sm text-text-secondary">
+                    {formatDate(r.preferredDateStart)} – {formatDate(r.preferredDateEnd)}
+                    {r.customer?.phone ? ` · ${r.customer.phone}` : ""}
+                    {r.note ? ` · ${r.note}` : ""}
+                  </p>
+                </div>
+              </div>
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  disabled={busyId === r.id}
+                  onClick={() => handleAppointmentSchedule(r)}
+                  className="flex items-center gap-1.5 rounded-xl bg-primary-600 px-4 py-2 text-sm font-semibold text-white shadow-card transition hover:bg-primary-700 disabled:opacity-50"
+                >
+                  <CalendarPlus size={15} strokeWidth={2} />
+                  Planla
+                </button>
+                <button
+                  type="button"
+                  disabled={busyId === r.id}
+                  onClick={() => {
+                    setDeclineReason("");
+                    setDeclineTarget(r);
+                  }}
+                  className="flex items-center gap-1.5 rounded-xl border border-danger-100 bg-danger-50 px-4 py-2 text-sm font-semibold text-danger-500 transition hover:bg-danger-100 disabled:opacity-50"
+                >
+                  <X size={15} strokeWidth={2} />
+                  Reddet
+                </button>
+              </div>
+            </div>
+          ))}
+
           {leaveRequests.map((leave) => (
             <div
               key={leave.id}
@@ -486,6 +586,34 @@ function ApprovalQueueContent() {
           ))}
         </div>
       )}
+      <Modal open={!!declineTarget} onClose={() => setDeclineTarget(null)} title="Randevu talebini reddet">
+        <div className="flex flex-col gap-4">
+          <p className="text-sm text-text-secondary">
+            {declineTarget?.customer?.fullName ?? "Müşteri"} · {declineTarget?.serviceType?.name ?? "Hizmet"} — gerekçe müşteriye bildirim olarak iletilir.
+          </p>
+          <textarea
+            value={declineReason}
+            onChange={(e) => setDeclineReason(e.target.value)}
+            rows={3}
+            maxLength={1000}
+            className="input"
+            placeholder="Örn. O tarihlerde ekip dolu, sonraki hafta için tekrar talep açabilirsiniz"
+          />
+          <div className="flex justify-end gap-3">
+            <button type="button" onClick={() => setDeclineTarget(null)} className="rounded-2xl px-4 py-2.5 text-sm font-medium text-text-secondary transition hover:bg-surface-subtle">
+              Vazgeç
+            </button>
+            <button
+              type="button"
+              disabled={!declineReason.trim() || busyId === declineTarget?.id}
+              onClick={handleAppointmentDecline}
+              className="rounded-2xl bg-danger-500 px-4 py-2.5 text-sm font-semibold text-white shadow-card transition hover:bg-danger-600 disabled:opacity-60"
+            >
+              Reddet
+            </button>
+          </div>
+        </div>
+      </Modal>
     </div>
   );
 }

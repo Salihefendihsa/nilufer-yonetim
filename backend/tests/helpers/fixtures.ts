@@ -190,6 +190,10 @@ export class TestContext {
     await prisma.jobReport.deleteMany({ where: { id: { in: reportIds } } });
     await prisma.jobPhoto.deleteMany({ where: { OR: [{ jobId: { in: jobIds } }, { uploadedByUserId: { in: userIds } }] } });
     await prisma.payment.deleteMany({ where: { OR: [{ customerId: { in: customerIds } }, { collectedByStaffId: { in: staffIds } }] } });
+    // Bölüm J: randevu talepleri Job'a (resultingJobId) ve Customer'a bağlı — ikisinden önce.
+    await prisma.appointmentRequest.deleteMany({
+      where: { OR: [{ customerId: { in: customerIds } }, { resultingJobId: { in: jobIds } }, { respondedByUserId: { in: userIds } }] },
+    });
     await prisma.job.deleteMany({ where: { id: { in: jobIds } } });
     await prisma.contract.deleteMany({ where: { customerId: { in: customerIds } } });
 

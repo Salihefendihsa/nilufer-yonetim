@@ -41,8 +41,8 @@ import { StarRating } from "@/components/StarRating";
 import { ActivityFeed } from "@/components/ActivityFeed";
 import { PhotoLightbox } from "@/components/PhotoLightbox";
 import { currencyFormatter, formatDateTime, todayIsoDate, toIsoDate } from "@/lib/format";
-import type { Job, JobReport, JobPhoto, JobStatus, Staff, Paginated, Customer, ActivityEvent, SystemHealth, DashboardSummary, TeamSummary } from "@/lib/types";
-import { QuoteRequestModal } from "./QuoteRequestModal";
+import type { Job, JobReport, JobPhoto, JobStatus, Staff, Paginated, Customer, ActivityEvent, SystemHealth, DashboardSummary, TeamSummary, AppointmentRequest } from "@/lib/types";
+import { AppointmentRequestModal } from "./AppointmentRequestModal";
 import { JobReportModal } from "./JobReportModal";
 import { AdvanceRequestModal } from "./AdvanceRequestModal";
 
@@ -919,6 +919,8 @@ function CustomerDashboard() {
   const [error, setError] = useState<string | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
   const [sent, setSent] = useState(false);
+  // Bölüm J (3. tur): müşterinin kendi randevu talepleri ve durumları.
+  const [appointmentRequests, setAppointmentRequests] = useState<AppointmentRequest[]>([]);
   const [expandedJobId, setExpandedJobId] = useState<string | null>(null);
   const [reports, setReports] = useState<Record<string, JobReport | "loading" | "none">>({});
   const [photos, setPhotos] = useState<Record<string, JobPhoto[]>>({});
@@ -952,13 +954,17 @@ function CustomerDashboard() {
     setLoading(true);
     setError(null);
     try {
-      const res = await api.get<{ data: Job[] }>("/jobs?limit=50");
+      const [res, requestsRes] = await Promise.all([
+        api.get<{ data: Job[] }>("/jobs?limit=50"),
+        api.get<Paginated<AppointmentRequest>>("/appointment-requests?limit=20").catch(() => ({ data: [] as AppointmentRequest[] })),
+      ]);
       const sorted = [...res.data].sort((a, b) => {
         const dateA = a.scheduledAt ?? a.createdAt;
         const dateB = b.scheduledAt ?? b.createdAt;
         return new Date(dateB).getTime() - new Date(dateA).getTime();
       });
       setJobs(sorted);
+      setAppointmentRequests(requestsRes.data);
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "İşler yüklenemedi");
     } finally {
@@ -1034,6 +1040,48 @@ function CustomerDashboard() {
         <p className="rounded-2xl border border-primary-100 bg-primary-50 px-4 py-3 text-sm text-primary-700">
           Talebiniz alındı, en kısa sürede sizinle iletişime geçeceğiz.
         </p>
+      )}
+
+      {/* Bölüm J (3. tur): Randevu taleplerim */}
+      {appointmentRequests.length > 0 && (
+        <div className="rounded-2xl border border-border bg-surface-card p-6 shadow-card">
+          <div className="mb-4 flex items-center gap-2.5">
+            <span className="flex h-9 w-9 items-center justify-center rounded-2xl bg-primary-50 text-primary-600 ring-1 ring-primary-100">
+              <CalendarCheck size={17} strokeWidth={1.75} />
+            </span>
+            <h2 className="text-base font-semibold text-text-primary">Randevu Taleplerim</h2>
+          </div>
+          <ul className="flex flex-col divide-y divide-border">
+            {appointmentRequests.map((r) => (
+              <li key={r.id} className="flex flex-wrap items-center justify-between gap-3 py-3">
+                <div className="min-w-0">
+                  <p className="text-sm font-medium text-text-primary">{r.serviceType?.name ?? "Hizmet"}</p>
+                  <p className="text-xs text-text-secondary">
+                    {formatDateTime(r.preferredDateStart).split(" ")[0]} – {formatDateTime(r.preferredDateEnd).split(" ")[0]}
+                    {r.note ? ` · ${r.note}` : ""}
+                  </p>
+                  {r.status === "DECLINED" && r.declineReason && (
+                    <p className="mt-1 text-xs text-danger-500">Gerekçe: {r.declineReason}</p>
+                  )}
+                  {r.status === "SCHEDULED" && r.resultingJob?.scheduledAt && (
+                    <p className="mt-1 text-xs text-primary-700">Randevu: {formatDateTime(r.resultingJob.scheduledAt)}</p>
+                  )}
+                </div>
+                <span
+                  className={`rounded-full px-2.5 py-1 text-xs font-semibold ${
+                    r.status === "SCHEDULED"
+                      ? "bg-primary-50 text-primary-700"
+                      : r.status === "DECLINED"
+                        ? "bg-danger-50 text-danger-500"
+                        : "bg-surface-subtle text-text-secondary"
+                  }`}
+                >
+                  {r.status === "SCHEDULED" ? "Planlandı" : r.status === "DECLINED" ? "Reddedildi" : "Bekliyor"}
+                </span>
+              </li>
+            ))}
+          </ul>
+        </div>
       )}
 
       <div className="rounded-2xl border border-border bg-surface-card p-6 shadow-card">
@@ -1168,11 +1216,13 @@ function CustomerDashboard() {
         )}
       </div>
 
-      <QuoteRequestModal
+      <AppointmentRequestModal
         open={modalOpen}
         onClose={() => setModalOpen(false)}
-        onSent={() => setSent(true)}
-        user={user}
+        onSent={() => {
+          setSent(true);
+          load();
+        }}
       />
 
       <PhotoLightbox src={lightboxSrc} onClose={() => setLightboxSrc(null)} />

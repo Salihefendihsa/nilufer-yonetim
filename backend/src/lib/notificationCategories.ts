@@ -8,10 +8,10 @@
  * kaybolmaz.
  */
 export const NOTIFICATION_CATEGORY_TYPES = {
-  job: ["job_assigned", "job_completed", "job_report_pending", "job_report_approved"],
+  job: ["job_assigned", "job_completed", "job_report_pending", "job_report_approved", "appointment_request_scheduled"],
   payment: ["advance_request", "payment_received"],
   message: ["new_message", "team_broadcast"],
-  alert: ["low_stock", "stock_purchase_request", "quote_request"],
+  alert: ["low_stock", "stock_purchase_request", "quote_request", "appointment_request", "appointment_request_declined"],
 } as const;
 
 export type NotificationCategory = keyof typeof NOTIFICATION_CATEGORY_TYPES;

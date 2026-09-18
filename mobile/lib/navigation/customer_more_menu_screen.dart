@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../features/appointment_requests/my_appointment_requests_screen.dart';
 import '../features/contracts/contracts_list_screen.dart';
 import '../features/notifications/notifications_screen.dart';
 import '../theme/app_colors.dart';
@@ -16,6 +17,12 @@ class CustomerMoreMenuScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final items = <({String label, IconData icon, WidgetBuilder builder})>[
+      // Bölüm J (3. tur): müşteri kendi hesabından randevu talebi açar.
+      (
+        label: 'Randevu Taleplerim',
+        icon: Icons.event_available_outlined,
+        builder: (_) => const MyAppointmentRequestsScreen(),
+      ),
       (
         label: 'Sözleşmelerim',
         icon: Icons.description_outlined,

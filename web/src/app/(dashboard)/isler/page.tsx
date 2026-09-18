@@ -53,7 +53,10 @@ function JobsPageContent() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [formOpen, setFormOpen] = useState(false);
-  const [formPrefill, setFormPrefill] = useState<{ customerId?: string; serviceType?: string } | undefined>(undefined);
+  const [formPrefill, setFormPrefill] = useState<{ customerId?: string; serviceType?: string; scheduledAt?: string; notes?: string } | undefined>(undefined);
+  // Bölüm J (3. tur): Bekleyen Onaylar → "Planla" ile gelindiyse, oluşturulan iş
+  // bu randevu talebine bağlanır (POST /appointment-requests/:id/schedule).
+  const [appointmentRequestId, setAppointmentRequestId] = useState<string | null>(null);
   const searchParams = useSearchParams();
   const [updatingId, setUpdatingId] = useState<string | null>(null);
   const [statusCounts, setStatusCounts] = useState<Record<JobStatus, number> | null>(null);
@@ -68,7 +71,13 @@ function JobsPageContent() {
   useEffect(() => {
     const customerId = searchParams.get("customerId");
     if (customerId) {
-      setFormPrefill({ customerId, serviceType: searchParams.get("serviceType") ?? undefined });
+      setFormPrefill({
+        customerId,
+        serviceType: searchParams.get("serviceType") ?? undefined,
+        scheduledAt: searchParams.get("scheduledAt") ?? undefined,
+        notes: searchParams.get("notes") ?? undefined,
+      });
+      setAppointmentRequestId(searchParams.get("appointmentRequestId"));
       setFormOpen(true);
     }
     const status = searchParams.get("status");
@@ -354,7 +363,18 @@ function JobsPageContent() {
           setFormOpen(false);
           setFormPrefill(undefined);
         }}
-        onSaved={load}
+        onSaved={async (job) => {
+          if (appointmentRequestId) {
+            try {
+              await api.post(`/appointment-requests/${appointmentRequestId}/schedule`, { jobId: job.id });
+              showToast("Randevu talebi planlandı, müşteriye bildirildi.");
+            } catch (err) {
+              setError(err instanceof ApiError ? err.message : "İş oluşturuldu ama randevu talebine bağlanamadı");
+            }
+            setAppointmentRequestId(null);
+          }
+          load();
+        }}
         customers={customers}
         staff={staff}
         prefill={formPrefill}

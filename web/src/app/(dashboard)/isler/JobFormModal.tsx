@@ -4,18 +4,19 @@ import { useEffect, useState, type FormEvent } from "react";
 import { Modal } from "@/components/Modal";
 import { useToast } from "@/lib/ToastProvider";
 import { api, ApiError } from "@/lib/api";
-import type { Customer, ServiceType, Staff } from "@/lib/types";
+import type { Customer, Job, ServiceType, Staff } from "@/lib/types";
 
 const OTHER_SERVICE_TYPE = "__diger__";
 
 interface JobFormModalProps {
   open: boolean;
   onClose: () => void;
-  onSaved: () => void;
+  /** Oluşturulan iş (Bölüm J: randevu talebine bağlamak için id gerekir). */
+  onSaved: (job: Job) => void;
   customers: Customer[];
   staff: Staff[];
   /** Bölüm E (2. tur): Sözleşmeler → "Şimdi İş Oluştur" kısayolundan önceden doldurulmuş değerler. */
-  prefill?: { customerId?: string; serviceType?: string };
+  prefill?: { customerId?: string; serviceType?: string; scheduledAt?: string; notes?: string };
 }
 
 export function JobFormModal({ open, onClose, onSaved, customers, staff, prefill }: JobFormModalProps) {
@@ -38,9 +39,9 @@ export function JobFormModal({ open, onClose, onSaved, customers, staff, prefill
       setAssignedStaffId("");
       setServiceTypeSelect("");
       setServiceTypeOther(prefill?.serviceType ?? "");
-      setScheduledAt("");
+      setScheduledAt(prefill?.scheduledAt ?? "");
       setScheduledEndAt("");
-      setNotes("");
+      setNotes(prefill?.notes ?? "");
       setPrice("");
       setError(null);
       api
@@ -67,7 +68,7 @@ export function JobFormModal({ open, onClose, onSaved, customers, staff, prefill
     setSaving(true);
 
     try {
-      await api.post("/jobs", {
+      const created = await api.post<Job>("/jobs", {
         customerId,
         assignedStaffId: assignedStaffId || undefined,
         serviceType,
@@ -76,7 +77,7 @@ export function JobFormModal({ open, onClose, onSaved, customers, staff, prefill
         notes: notes || undefined,
         price: price ? Number(price) : undefined,
       });
-      onSaved();
+      onSaved(created);
       onClose();
       showToast("İş oluşturuldu.");
     } catch (err) {
