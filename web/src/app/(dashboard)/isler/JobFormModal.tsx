@@ -3,7 +3,7 @@
 import { useEffect, useState, type FormEvent } from "react";
 import { AlertTriangle } from "lucide-react";
 import { WarrantyNotice } from "@/components/WarrantyBadge";
-import type { ActiveWarranty } from "@/lib/types";
+import type { ActiveWarranty, StaffSuggestion } from "@/lib/types";
 import { Modal } from "@/components/Modal";
 import { useToast } from "@/lib/ToastProvider";
 import { api, ApiError } from "@/lib/api";
@@ -70,29 +70,50 @@ export function JobFormModal({ open, onClose, onSaved, customers, staff, prefill
   // ENGELLEMEZ, yalnızca seçenek yanında ve seçim altında uyarı gösterir.
   const [unavailable, setUnavailable] = useState<UnavailabilityMap>({});
   const scheduledDate = scheduledAt ? scheduledAt.slice(0, 10) : "";
+  const scheduledTime = scheduledAt && scheduledAt.length >= 16 ? scheduledAt.slice(11, 16) : "";
+  // Bölüm Z (6. tur): tarih seçilince öneri listesi — en az yüklü müsait personel
+  // en üstte ("Önerilen"), müsait olmayanlar sonda ⚠ ile. Seçim yönetimde kalır.
+  const [suggestions, setSuggestions] = useState<StaffSuggestion[]>([]);
   useEffect(() => {
     if (!open || !scheduledDate) {
       setUnavailable({});
+      setSuggestions([]);
       return;
     }
     let cancelled = false;
-    api
-      .get<{ data: (Pick<StaffUnavailability, "startTime" | "endTime" | "reason"> & { staffId: string })[] }>(
-        `/staff/unavailability?date=${scheduledDate}`
-      )
-      .then((res) => {
+    Promise.all([
+      api.get<{ data: (Pick<StaffUnavailability, "startTime" | "endTime" | "reason"> & { staffId: string })[] }>(`/staff/unavailability?date=${scheduledDate}`),
+      api
+        .get<{ data: StaffSuggestion[] }>(`/jobs/suggest-staff?date=${scheduledDate}${scheduledTime ? `&time=${scheduledTime}` : ""}`)
+        .catch(() => ({ data: [] as StaffSuggestion[] })),
+    ])
+      .then(([unav, sugg]) => {
         if (cancelled) return;
         const map: UnavailabilityMap = {};
-        for (const row of res.data) (map[row.staffId] ??= []).push(row);
+        for (const row of unav.data) (map[row.staffId] ??= []).push(row);
         setUnavailable(map);
+        setSuggestions(sugg.data);
       })
       .catch(() => {
-        if (!cancelled) setUnavailable({});
+        if (!cancelled) {
+          setUnavailable({});
+          setSuggestions([]);
+        }
       });
     return () => {
       cancelled = true;
     };
-  }, [open, scheduledDate]);
+  }, [open, scheduledDate, scheduledTime]);
+
+  // Öneri varsa personel listesi öneri sırasına dizilir; yoksa mevcut sıra.
+  const orderedStaff = suggestions.length > 0
+    ? [...staff].sort((a, b) => {
+        const ia = suggestions.findIndex((s) => s.staffId === a.id);
+        const ib = suggestions.findIndex((s) => s.staffId === b.id);
+        return (ia === -1 ? 999 : ia) - (ib === -1 ? 999 : ib);
+      })
+    : staff;
+  const suggestionOf = (id: string) => suggestions.find((s) => s.staffId === id);
 
   useEffect(() => {
     if (open) {
@@ -212,13 +233,21 @@ export function JobFormModal({ open, onClose, onSaved, customers, staff, prefill
           <label className="text-sm font-medium text-text-secondary">Personel (opsiyonel)</label>
           <select value={assignedStaffId} onChange={(e) => setAssignedStaffId(e.target.value)} className="input">
             <option value="">Atanmadı</option>
-            {staff.map((s) => (
-              <option key={s.id} value={s.id}>
-                {s.user.fullName}
-                {unavailable[s.id] ? ` ⚠ müsait değil (${describeUnavailability(unavailable[s.id])})` : ""}
-              </option>
-            ))}
+            {orderedStaff.map((s) => {
+              const sg = suggestionOf(s.id);
+              return (
+                <option key={s.id} value={s.id}>
+                  {sg?.isRecommended ? "★ Önerilen · " : ""}
+                  {s.user.fullName}
+                  {sg ? ` · Bugün ${sg.todayJobCount} iş` : ""}
+                  {sg?.isUnavailable ? ` ⚠ ${sg.unavailableReason ?? "müsait değil"}` : unavailable[s.id] ? ` ⚠ müsait değil (${describeUnavailability(unavailable[s.id])})` : ""}
+                </option>
+              );
+            })}
           </select>
+          {suggestions.length > 0 && (
+            <p className="text-2xs text-text-faint">Liste o günkü iş yüküne göre sıralandı (en az yüklü önce); ★ en uygun öneri — seçim size ait.</p>
+          )}
           {assignedStaffId && unavailable[assignedStaffId] && (
             <p className="flex items-start gap-2 rounded-xl border border-warning-100 bg-warning-50 px-3 py-2 text-xs text-warning-600">
               <AlertTriangle size={14} strokeWidth={2} className="mt-0.5 shrink-0" />

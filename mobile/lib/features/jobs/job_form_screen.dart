@@ -8,6 +8,7 @@ import '../../theme/app_colors.dart';
 import '../customers/customers_api.dart';
 import '../staff/staff_api.dart';
 import '../staff/staff_unavailability_api.dart';
+import '../staff/staff_suggestion.dart';
 import '../admin/job_templates_screen.dart';
 import 'jobs_api.dart';
 
@@ -40,6 +41,21 @@ class _JobFormScreenState extends State<JobFormScreen> {
   /// Bölüm K (3. tur): seçilen tarihte müsait olmayan personel (staffId →
   /// kayıtlar). Atamayı ENGELLEMEZ, yalnızca uyarı gösterir.
   Map<String, List<StaffUnavailability>> _unavailable = {};
+  /// Bölüm Z (6. tur): öneri sırası (en az yüklü müsait önce) — seçim yönetimde.
+  final _suggestionApi = StaffSuggestionApi();
+  List<StaffSuggestion> _suggestions = [];
+  StaffSuggestion? _suggestionOf(String staffId) =>
+      _suggestions.where((s) => s.staffId == staffId).firstOrNull;
+  List<Staff> get _orderedStaff {
+    if (_suggestions.isEmpty) return _staff;
+    int idx(String id) {
+      final i = _suggestions.indexWhere((s) => s.staffId == id);
+      return i == -1 ? 999 : i;
+    }
+    final copy = [..._staff];
+    copy.sort((a, b) => idx(a.id).compareTo(idx(b.id)));
+    return copy;
+  }
   String? _unavailableForDate;
 
   Future<void> _refreshUnavailability() async {
@@ -52,7 +68,12 @@ class _JobFormScreenState extends State<JobFormScreen> {
         '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
     if (key == _unavailableForDate) return;
     try {
-      final rows = await _unavailabilityApi.unavailableOn(key);
+      final time = '${date.hour.toString().padLeft(2, '0')}:${date.minute.toString().padLeft(2, '0')}';
+      final results = await Future.wait([
+        _unavailabilityApi.unavailableOn(key),
+        _suggestionApi.suggest(key, time: time).catchError((_) => <StaffSuggestion>[]),
+      ]);
+      final rows = results[0] as List<StaffUnavailability>;
       final map = <String, List<StaffUnavailability>>{};
       for (final r in rows) {
         (map[r.staffId] ??= []).add(r);
@@ -61,6 +82,7 @@ class _JobFormScreenState extends State<JobFormScreen> {
         setState(() {
           _unavailable = map;
           _unavailableForDate = key;
+          _suggestions = results[1] as List<StaffSuggestion>;
         });
       }
     } catch (_) {
@@ -357,16 +379,25 @@ class _JobFormScreenState extends State<JobFormScreen> {
                     decoration: const InputDecoration(
                       labelText: 'Personel (opsiyonel)',
                     ),
-                    items: _staff
+                    items: _orderedStaff
                         .map(
                           (s) => DropdownMenuItem(
                             value: s.id,
                             child: Row(
                               children: [
+                                // Bölüm Z: en uygun öneri yıldızlı.
+                                if (_suggestionOf(s.id)?.isRecommended ?? false)
+                                  const Padding(
+                                    padding: EdgeInsets.only(right: 4),
+                                    child: Icon(Icons.star_rounded, size: 16, color: AppColors.warning500),
+                                  ),
                                 Expanded(
                                   child: Text(
-                                    s.fullName,
+                                    _suggestionOf(s.id) == null
+                                        ? s.fullName
+                                        : '${s.fullName} · ${_suggestionOf(s.id)!.hint}',
                                     overflow: TextOverflow.ellipsis,
+                                    style: const TextStyle(fontSize: 13.5),
                                   ),
                                 ),
                                 if (_unavailable.containsKey(s.id))

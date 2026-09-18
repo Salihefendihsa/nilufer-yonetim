@@ -15,6 +15,7 @@ import {
   submitJobFeedback,
 } from "../controllers/jobsController";
 import { exportJobReportPdf } from "../controllers/exportController";
+import { suggestStaff } from "../controllers/staffSuggestionController";
 import { listJobPhotos, uploadJobPhoto, deleteJobPhoto } from "../controllers/jobPhotosController";
 import { upload } from "../lib/upload";
 
@@ -23,6 +24,8 @@ const router = Router();
 router.use(requireAuth);
 
 router.get("/", listJobs);
+// Bölüm Z (6. tur): personel atama önerisi — /:id'den ÖNCE kayıtlı olmalı.
+router.get("/suggest-staff", requireRole(Role.OWNER, Role.MANAGER, Role.TEAM_LEAD), suggestStaff);
 router.get("/:id", getJob);
 router.post("/", requireRole(Role.OWNER, Role.MANAGER), createJob);
 router.patch("/:id", updateJob);

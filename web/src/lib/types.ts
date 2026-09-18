@@ -601,6 +601,18 @@ export interface JobTemplate {
   createdAt: string;
 }
 
+/** Bölüm Z (6. tur): GET /jobs/suggest-staff satırı — öneri, otomatik atama değil. */
+export interface StaffSuggestion {
+  staffId: string;
+  fullName: string;
+  position: string;
+  status: StaffStatus;
+  todayJobCount: number;
+  isUnavailable: boolean;
+  unavailableReason: string | null;
+  isRecommended: boolean;
+}
+
 /** Bölüm Y (6. tur): GET /customers/:id/active-warranties satırı. */
 export interface ActiveWarranty {
   jobId: string;

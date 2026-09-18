@@ -114,6 +114,8 @@ const CASES: EndpointCase[] = [
   { method: "post", path: `/customers/${NIL}/tags`, allowed: ["OWNER", "MANAGER"], body: {} },
   // Bölüm Y (6. tur)
   { method: "get", path: `/customers/${NIL}/active-warranties`, allowed: ["OWNER", "MANAGER"] },
+  // Bölüm Z (6. tur)
+  { method: "get", path: "/jobs/suggest-staff?date=2030-01-01", allowed: ["OWNER", "MANAGER", "TEAM_LEAD"] },
 ];
 
 describe("RBAC sınırları", () => {
