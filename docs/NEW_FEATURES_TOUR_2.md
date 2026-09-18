@@ -527,3 +527,123 @@ TEAM_LEAD ekip dışını görmez), RBAC.
 - Backend vitest: 81 → **125** test (+44: I 8, J 12, K 13, RBAC +11).
 - Flutter: 14 → **23** test (+9 model testi).
 - Yeni migration: `appointment_requests`, `staff_unavailability`.
+
+---
+
+# 4. Tur — Bölüm L / M / N / O / P / Q / R
+
+## Bölüm L — Şef: Ekibe Toplu Mesaj
+
+**Durum:** altyapı zaten vardı (`POST /conversations/broadcast`: her üyeye ayrı
+mesaj + `team_broadcast` bildirimi + push + audit; web `BroadcastModal`, mobil
+Mesajlar ekranı). Spec'teki `POST /team/broadcast { message }` aynı handler'a
+bağlanan, yalnızca TEAM_LEAD'e açık bir yol olarak eklendi; `message` ve
+`content` eşanlamlı. Ekibi olmayan şef 400. Push zaten `notifyUser →
+pushToUsers → isPushConfigured()` zinciriyle gidiyor. Test: `teamBroadcast.test.ts`
+(her üye alır, ekip dışı ve şefin kendisi almaz, boş metin 400, RBAC).
+
+## Bölüm M — Şef: Günlük Ekip Brifingi
+
+`GET /team/daily-briefing` (TEAM_LEAD). `getTeamSummary`'nin hesabı
+`computeTeamSummary(teamIds)` olarak dışa alındı (kopya yok); brifing tek
+`Promise.all` içinde bu özeti, bugünü kapsayan **onaylı** izinleri
+(`LeaveRequest`) ve bugünkü müsait-olmama işaretlerini (`StaffUnavailability`,
+Bölüm K) birleştirir. Üye satırı: `status` (Staff.status), `todaysJobsCount`,
+`onLeave`, `unavailable/unavailableAllDay/unavailableRanges/unavailableReason`,
+`isSelf` (getTeamStaffIds ilk sırada şefin kendisini döner). `availableNowCount`
+= izinli değil ∧ tüm gün müsait-değil değil ∧ AVAILABLE. Web `TeamBriefingCard`,
+mobil `_buildTeamBriefing`. `date` alanı yerel tarih (UTC kayması testte
+yakalandı ve düzeltildi).
+
+## Bölüm N — Personel: Günlük Kontrol Listesi
+
+Yeni model YOK — `Job.checklist Json?` ve `JobReport.checklist Json?`; sabit
+şablon `lib/checklist.ts` (4 öğe, ServiceType/Setting bazlı özelleştirme
+bilinçli olarak yok). `PATCH /jobs/:id/checklist { items }` yalnızca işin
+atandığı STAFF; şablon dışı öğe 400; `mergeChecklist` işaret kaldırılınca
+`checkedAt`'i sıfırlar, korunan öğenin zamanını değiştirmez. `GET /jobs/:id`
+her zaman tam şablonu döner (null → hepsi işaretsiz). Rapor oluşturulurken
+liste rapora kopyalanır; **eksik liste raporu engellemez** (yalnızca
+"N öğe eksik" uyarısı). Web `JobChecklist` (rapor modalının ilk adımı), mobil
+`_ChecklistCard` (iş detayında rapor formunun üstünde).
+
+## Bölüm O — Personel: Yol Tarifi
+
+Backend değişikliği yok: `/jobs` yanıtına `customer.address/district` zaten
+gömülü. Web `directionsUrl()` + personel Ana Sayfa iş kartında "Yol Tarifi"
+(yeni sekme); mobil `Job.directionsUri` + iş detayında `url_launcher`
+(`LaunchMode.externalApplication`). Adres yoksa buton gizli.
+**Manuel doğrulama notu:** gerçek cihazda Google Maps/Apple Maps'in açıldığı ve
+adresin doğru aratıldığı elle kontrol edilmeli (otomatik test yok — basit
+deep-link).
+
+## Bölüm P — Müşteri: Arkadaşını Davet Et
+
+- `Customer.referralCode` (unique, 6 karakter, karışabilen harfler yok —
+  `lib/referral.ts`), `Customer.referredByCustomerId` (self-relation),
+  `QuoteRequest.referralCode`. Migration `prisma migrate diff + deploy` ile
+  üretildi (unique-constraint uyarısı interaktif onay istiyordu).
+- `POST /quotes` `?ref=` veya gövde `referralCode`: yalnızca **gerçek bir
+  müşteriye ait** kod saklanır, uydurma kod sessizce yoksayılır (form başarısız
+  olmaz). `POST /quotes/:id/convert`: yeni müşteri davet edene bağlanır, kendi
+  kodunu alır, davet edene "Davetiniz kabul edildi!" (`referral_converted`).
+  `createCustomer` da kod üretir; eski kayıtlar ilk `GET /customers/me/referral`
+  çağrısında kod alır.
+- Repo'da anonim teklif formu sayfası yoktu (dış site `/quotes`'a POST ediyor);
+  davet linkinin hedefi olarak public **`/teklif-al?ref=`** sayfası eklendi
+  (`WEB_APP_URL` tabanlı). Web `ReferralCard`, mobil `ReferralScreen`
+  (kopyala/paylaş).
+- **İndirim/ödül mekanizması bilinçli olarak YOK** — yalnızca takip/gösterim.
+  Ödül kuralı (ilk işte % indirim, puan, vb.) ayrı bir iş kararı gerektirir.
+
+## Bölüm Q — Ek Küçük Dokunuşlar
+
+- **Sadık Müşteri** (`lib/badges.ts`): tamamlanmış iş ≥ 5 (sabit eşik).
+  `/customers` liste+detay `completedJobCount`/`isLoyal`; `GET /customers/me/badges`
+  (CUSTOMER). Rozet: müşteri listesi, müşteri Ana Sayfa, mobil Ana Sayfa.
+- **Başarı rozeti**: değerlendirme kriter ortalaması (1–20) ≥18 Altın / ≥15
+  Gümüş / ≥12 Bronz. `/staff/leaderboard` satırlarına `evaluationAverageScore`
+  + `achievementTier` (SUBMITTED/LOCKED değerlendirmeler), `/evaluations`
+  öğelerine `achievementTier`. Performans tablosu ve mobil performans listesi.
+- **Sözleşme duraklat/devam**: `Contract.isPaused/pausedAt`;
+  `POST /contracts/:id/pause|resume` — CUSTOMER kendi sözleşmesi (aksi 403),
+  OWNER/MANAGER hepsi; yalnızca ACTIVE; mükerrer 409; audit log. Duraklatılmış
+  sözleşme için `generateRecurringJobs` iş üretmez ve `findOverdueRecurringContracts`
+  gecikmiş saymaz; `resume`'da `nextGenerationDate` bugünden eskiyse periyot
+  periyot geleceğe alınır (duraklama dönemindeki kaçırılmış tarihler toplu
+  üretilmez). Müşteri web Ana Sayfa `MyContractsCard`, mobil `MyContractsScreen`.
+- **Test izolasyonu notu:** ilk sürümde test `generateRecurringJobs()`'u global
+  çağırınca dev DB'deki gerçek bir vadesi gelmiş sözleşme için iş üretti (iş ID
+  ile silindi, sözleşme tarihi geri alındı). Fonksiyona `onlyContractIds?`
+  parametresi eklendi; test yalnızca kendi sözleşmesini işler.
+
+## Bölüm R — Giriş Sayfası + Tasarım Tutarlılığı
+
+- **Web `/giris`:** split-screen korunup zenginleştirildi (gradyan + nokta
+  deseni + nefes alan halka dekoru), rol sekmeleri ikonlu ve aktif gösterge
+  `framer-motion layoutId` ile kayar, tema düğmesi (`useTheme`, sistem tercihi
+  yalnızca istemcide okunur — hidrasyon uyuşmazlığı yok), giriş → 2FA →
+  Şifremi Unuttum tek sayfada `AnimatePresence` fade/slide, çok adımlı
+  akışlarda `StepIndicator` (1/2, 2/2), `ErrorNotice` sakin ve yol gösterici
+  (`friendlyError`: 401 → "eşleşmedi, yazımı kontrol edin", 429 → "biraz
+  bekleyin", 2FA 401 → "kodlar 30 sn'de bir değişir"). `/sifremi-unuttum`
+  sayfası da duruyor (e-posta linkleri için).
+- **Mobil `LoginScreen`:** marka bandı (gradyan + `CustomPaint` nokta deseni),
+  ikonlu rol kartları — `AuthProvider.login(expectedRole)` hesabın gerçek rolü
+  uyuşmazsa oturum açmaz, açıklayıcı hata; 2FA akışında ikinci adımda kontrol
+  edilir ve giriş ekranına döner. `_AuthGate` `AnimatedSwitcher` (fade+slide),
+  Şifremi Unuttum `PageRouteBuilder` fade, 2FA ekranında 2/2 göstergesi.
+- **Tutarlılık taraması (web+mobil):** izinler, değerlendirmeler, primler,
+  tedarikçiler, giderler, org şeması, yönetici özeti, loglar, kullanım
+  istatistikleri, randevu talepleri, müsaitlik, arama tarandı. Düzeltilenler:
+  Tedarikçiler boş durumu → `EmptyState`; Sistem Durumu ilk ölçümde "uyarı"
+  yerine "İlk ölçüm alınıyor..."; mobil arama ekranı özel `_Hint` yerine ortak
+  `LoadingView/ErrorRetryView/EmptyStateView`; Para ekranında `Colors.red` →
+  `AppColors.danger500`. Kasıtlı `bg-white` (2FA QR kodu, imza pedi) korundu.
+  Koyu mod: yeni sayfalar yalnızca tema token'larını kullanıyor.
+
+## 4. Tur Toplam
+
+- Backend vitest: 125 → **155** test (+30: L 5, M 3, N 6, P 6, Q 10).
+- Flutter: 23 → **35** test (+12).
+- Yeni migration: `job_checklist`, `customer_referral`, `contract_pause`.
