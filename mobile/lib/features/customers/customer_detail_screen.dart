@@ -11,6 +11,7 @@ import '../../models/user.dart';
 import '../../theme/app_colors.dart';
 import '../../widgets/state_views.dart';
 import '../jobs/job_detail_screen.dart';
+import 'customer_documents_tab.dart';
 import 'customer_tags.dart';
 import 'customers_api.dart';
 import 'customer_form_screen.dart';
@@ -64,7 +65,8 @@ class _CustomerDetailScreenState extends State<CustomerDetailScreen>
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 3, vsync: this);
+    // Bölüm AB (6. tur): yönetim için 4. sekme "Belgeler".
+    _tabController = TabController(length: _canManage ? 4 : 3, vsync: this);
     _load();
   }
 
@@ -277,6 +279,7 @@ class _CustomerDetailScreenState extends State<CustomerDetailScreen>
               Tab(text: 'Ödemeler (${c.payments.length})')
             else
               const Tab(text: 'Ödemeler'),
+            if (_canManage) const Tab(text: 'Belgeler'),
           ],
         ),
         Expanded(
@@ -292,6 +295,7 @@ class _CustomerDetailScreenState extends State<CustomerDetailScreen>
                       subtitle: 'Bu bilgiler yalnızca yönetim rolüne açıktır.',
                       icon: Icons.lock_outline_rounded,
                     ),
+              if (_canManage) CustomerDocumentsTab(customerId: c.id),
             ],
           ),
         ),

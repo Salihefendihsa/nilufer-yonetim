@@ -43,3 +43,32 @@ export function saveBase64Image(base64: string, prefix: string): string {
   fs.writeFileSync(path.join(UPLOADS_DIR, filename), Buffer.from(data, "base64"));
   return uploadedFileUrl(filename);
 }
+
+/**
+ * Bölüm AB (6. tur): Müşteri belgeleri — resimlere ek olarak PDF ve ofis
+ * belgeleri; 15 MB. Aynı disk deposu ve dosya adlandırması.
+ */
+const DOCUMENT_MIME_TYPES = new Set([
+  "application/pdf",
+  "application/msword",
+  "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+  "application/vnd.ms-excel",
+  "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+  "text/plain",
+]);
+
+export function isAllowedDocumentMime(mimetype: string): boolean {
+  return mimetype.startsWith("image/") || DOCUMENT_MIME_TYPES.has(mimetype);
+}
+
+export const uploadDocument = multer({
+  storage,
+  limits: { fileSize: 15 * 1024 * 1024 },
+  fileFilter: (_req, file, cb) => {
+    if (!isAllowedDocumentMime(file.mimetype)) {
+      cb(new Error("Yalnızca resim, PDF veya ofis belgeleri yüklenebilir"));
+      return;
+    }
+    cb(null, true);
+  },
+});

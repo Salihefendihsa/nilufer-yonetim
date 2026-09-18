@@ -136,6 +136,7 @@ model User {
   leaveRequestDecisions LeaveRequest[] @relation("LeaveRequestDecidedBy")
   appointmentRequestResponses AppointmentRequest[] @relation("AppointmentRequestRespondedBy")
   onboardingCompletions OnboardingChecklistItem[] @relation("OnboardingCompletedBy")
+  uploadedCustomerDocuments CustomerDocument[] @relation("CustomerDocumentUploadedBy")
   recordedExpenses Expense[]
   twoFactorRecoveryCodes TwoFactorRecoveryCode[]
   twoFactorChallenges    TwoFactorChallenge[]
@@ -237,10 +238,30 @@ model Customer {
   payments  Payment[]
   appointmentRequests AppointmentRequest[]
   tagAssignments CustomerTagAssignment[]
+  documents CustomerDocument[]
 
   @@index([district])
   @@index([phone])
   @@index([referredByCustomerId])
+}
+
+/// Bölüm AB (6. tur): Müşteri belge kasası — sözleşme taraması, kimlik
+/// fotokopisi vb. JobPhoto ile aynı upload altyapısı (lib/upload.ts,
+/// /uploads statik). Silmede DB kaydı + diskteki dosya birlikte kaldırılır.
+model CustomerDocument {
+  id               String   @id @default(uuid())
+  customerId       String
+  fileName         String
+  fileUrl          String
+  fileType         String
+  fileSize         Int
+  uploadedByUserId String
+  uploadedAt       DateTime @default(now())
+
+  customer   Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  uploadedBy User     @relation("CustomerDocumentUploadedBy", fields: [uploadedByUserId], references: [id])
+
+  @@index([customerId])
 }
 
 /// Bölüm X (6. tur): Müşteri segmentasyonu — VIP / Kurumsal / Konut gibi

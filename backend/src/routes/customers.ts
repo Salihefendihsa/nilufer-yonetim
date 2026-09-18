@@ -13,6 +13,8 @@ import {
 } from "../controllers/customersController";
 import { exportCustomersExcel } from "../controllers/exportController";
 import { setCustomerTags } from "../controllers/customerTagsController";
+import { listCustomerDocuments, uploadCustomerDocument, deleteCustomerDocument } from "../controllers/customerDocumentsController";
+import { uploadDocument } from "../lib/upload";
 
 const router = Router();
 
@@ -30,6 +32,10 @@ router.patch("/:id", requireRole(Role.OWNER, Role.MANAGER), updateCustomer);
 router.post("/:id/tags", requireRole(Role.OWNER, Role.MANAGER), setCustomerTags);
 // Bölüm Y (6. tur): geçerli garantiler (bilgilendirme).
 router.get("/:id/active-warranties", requireRole(Role.OWNER, Role.MANAGER), getCustomerActiveWarranties);
+// Bölüm AB (6. tur): belge kasası — yükleme JobPhoto ile aynı disk deposu.
+router.get("/:id/documents", requireRole(Role.OWNER, Role.MANAGER), listCustomerDocuments);
+router.post("/:id/documents", requireRole(Role.OWNER, Role.MANAGER), uploadDocument.single("file"), uploadCustomerDocument);
+router.delete("/:id/documents/:docId", requireRole(Role.OWNER, Role.MANAGER), deleteCustomerDocument);
 router.delete("/:id", requireRoleOrPermission([Role.MANAGER], "delete_customers"), deleteCustomer);
 
 export default router;

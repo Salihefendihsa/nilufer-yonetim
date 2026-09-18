@@ -11,6 +11,18 @@ export type ApiDecimal = number | string;
 
 export type JobStatus = "PENDING" | "SCHEDULED" | "IN_PROGRESS" | "COMPLETED" | "CANCELLED";
 
+/** Bölüm AB (6. tur): müşteri belgesi (GET /customers/:id/documents). */
+export interface CustomerDocument {
+  id: string;
+  customerId: string;
+  fileName: string;
+  fileUrl: string;
+  fileType: string;
+  fileSize: number;
+  uploadedAt: string;
+  uploadedBy?: { id: string; fullName: string } | null;
+}
+
 /** Bölüm X (6. tur): müşteri etiketi (GET /customer-tags). */
 export interface CustomerTag {
   id: string;

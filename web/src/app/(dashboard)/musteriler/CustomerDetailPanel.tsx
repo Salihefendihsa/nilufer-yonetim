@@ -9,6 +9,7 @@ import { formatDate, currencyFormatter } from "@/lib/format";
 import { StatusBadge } from "@/components/StatusBadge";
 import type { CustomerDetail } from "@/lib/types";
 import { CustomerTagEditor } from "@/components/CustomerTagEditor";
+import { CustomerDocuments } from "@/components/CustomerDocuments";
 import { useAuth } from "@/lib/AuthProvider";
 
 interface CustomerDetailPanelProps {
@@ -78,6 +79,9 @@ export function CustomerDetailPanel({ customerId, onClose, onEdit, onDelete }: C
               <div className="flex flex-col gap-6">
                 {/* Bölüm X (6. tur): etiketler */}
                 <CustomerTagEditor customerId={detail.id} tags={detail.tags ?? []} editable={canEditTags} />
+
+                {/* Bölüm AB (6. tur): belge kasası — yalnızca yönetim */}
+                {canEditTags && <CustomerDocuments customerId={detail.id} />}
 
                 <div className="grid grid-cols-2 gap-3 text-sm">
                   <InfoItem label="Telefon" value={detail.phone} />

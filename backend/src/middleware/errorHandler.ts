@@ -2,6 +2,7 @@ import type { Request, Response, NextFunction } from "express";
 import { ZodError } from "zod";
 import { Prisma } from "@prisma/client";
 import { recordError } from "../lib/metrics";
+import multer from "multer";
 
 export function errorHandler(err: unknown, _req: Request, res: Response, _next: NextFunction) {
   if (err instanceof ZodError) {
@@ -18,6 +19,16 @@ export function errorHandler(err: unknown, _req: Request, res: Response, _next: 
     if (err.code === "P2025") {
       return res.status(404).json({ error: "Kayıt bulunamadı" });
     }
+  }
+
+  // Bölüm AB (6. tur): dosya yükleme hataları istemci hatasıdır — boyut/sayı
+  // sınırı (MulterError) ve fileFilter'ın fırlattığı tür reddi 400 döner.
+  if (err instanceof multer.MulterError) {
+    const message = err.code === "LIMIT_FILE_SIZE" ? "Dosya çok büyük" : "Dosya yüklenemedi";
+    return res.status(400).json({ error: message });
+  }
+  if (err instanceof Error && /yüklenebilir$/.test(err.message)) {
+    return res.status(400).json({ error: err.message });
   }
 
   recordError();
