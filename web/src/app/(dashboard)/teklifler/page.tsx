@@ -12,6 +12,8 @@ import { useToast } from "@/lib/ToastProvider";
 import { formatDate, currencyFormatter } from "@/lib/format";
 import type { QuoteRequest, QuotesSummary, Paginated } from "@/lib/types";
 import { QuoteHistoryModal } from "./QuoteHistoryModal";
+import { useInitialQueryParam } from "@/lib/useDrillDownFilter";
+import { DrillDownChip } from "@/components/DrillDownChip";
 
 // "REVISION" backend'de yeni bir enum değeri DEĞİL — QuoteRequest.status
 // serbest bir string olduğu için (bkz. backend/prisma/schema.prisma) şema
@@ -52,6 +54,16 @@ function QuotesPageContent() {
   const [surveyDrafts, setSurveyDrafts] = useState<Record<string, string>>({});
   const [summary, setSummary] = useState<QuotesSummary | null>(null);
   const [historyQuote, setHistoryQuote] = useState<QuoteRequest | null>(null);
+  // Bölüm I (3. tur): global aramadan gelen ?highlight=<quoteId> listeyi o kayda daraltır.
+  const highlightParam = useInitialQueryParam("highlight");
+  const [highlightId, setHighlightId] = useState<string | null>(null);
+  useEffect(() => {
+    if (highlightParam) setHighlightId(highlightParam);
+  }, [highlightParam]);
+  const visibleQuotes = useMemo(
+    () => (highlightId ? quotes.filter((q) => q.id === highlightId) : quotes),
+    [quotes, highlightId]
+  );
   const { showToast } = useToast();
 
   const load = useCallback(async () => {
@@ -224,15 +236,17 @@ function QuotesPageContent() {
 
       {error && <p className="rounded-2xl border border-danger-100 bg-danger-50 px-4 py-3 text-sm text-danger-500">{error}</p>}
 
+      {highlightId && <DrillDownChip label="Arama sonucu" onClear={() => setHighlightId(null)} />}
+
       {loading ? (
         <p className="py-16 text-center text-sm text-text-faint">Yükleniyor...</p>
-      ) : quotes.length === 0 ? (
+      ) : visibleQuotes.length === 0 ? (
         <div className="rounded-2xl border border-border bg-surface-card shadow-card">
           <EmptyState icon={Inbox} title="Talep yok" description="Bu filtrede henüz bir teklif talebi yok." />
         </div>
       ) : (
         <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-          {quotes.map((quote) => (
+          {visibleQuotes.map((quote) => (
             <div key={quote.id} className="flex flex-col gap-3 rounded-2xl border border-border bg-surface-card p-5 shadow-card">
               <div className="flex items-start justify-between gap-3">
                 <div>

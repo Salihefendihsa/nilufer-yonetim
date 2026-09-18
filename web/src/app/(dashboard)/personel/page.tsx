@@ -82,11 +82,18 @@ function StaffPageContent() {
   useEffect(() => {
     if (drillFilter === "on_leave" || drillFilter === "expiring_certs") setStaffFilter(drillFilter);
   }, [drillFilter]);
+  // Bölüm I (3. tur): global aramadan gelen ?highlight=<staffId> listeyi o kayda daraltır.
+  const highlightParam = useInitialQueryParam("highlight");
+  const [highlightId, setHighlightId] = useState<string | null>(null);
+  useEffect(() => {
+    if (highlightParam) setHighlightId(highlightParam);
+  }, [highlightParam]);
   const visibleRows = useMemo(() => {
+    if (highlightId) return rows.filter((r) => r.id === highlightId);
     if (staffFilter === "on_leave") return rows.filter((r) => r.status === "ON_LEAVE");
     if (staffFilter === "expiring_certs") return rows.filter((r) => r.expiringCertificationCount > 0);
     return rows;
-  }, [rows, staffFilter]);
+  }, [rows, staffFilter, highlightId]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -268,6 +275,7 @@ function StaffPageContent() {
 
       {error && <p className="rounded-2xl border border-danger-100 bg-danger-50 px-4 py-3 text-sm text-danger-500">{error}</p>}
 
+      {highlightId && <DrillDownChip label="Arama sonucu" onClear={() => setHighlightId(null)} />}
       {staffFilter && (
         <DrillDownChip
           label={staffFilter === "on_leave" ? "İzinli personel" : "Sertifikası 30 gün içinde dolacak personel"}

@@ -75,6 +75,9 @@ function JobsPageContent() {
     if (status && (JOB_STATUS_VALUES as readonly string[]).includes(status)) {
       setStatusFilter(status as JobStatus);
     }
+    // Bölüm I (3. tur): global aramadan gelen ?search= (müşteri adı) arama kutusunu doldurur.
+    const initialSearch = searchParams.get("search");
+    if (initialSearch) setSearch(initialSearch);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 

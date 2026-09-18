@@ -15,6 +15,7 @@ import '../../widgets/stat_card.dart';
 import '../advances/advance_request_sheet.dart';
 import '../jobs/job_detail_screen.dart';
 import '../jobs/jobs_api.dart';
+import '../search/search_screen.dart';
 import '../team/team_api.dart';
 import 'dashboard_api.dart';
 import 'dashboard_models.dart';
@@ -131,6 +132,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
           ],
         ),
         actions: [
+          // Bölüm I (3. tur): global arama — tüm roller (sunucu kapsam uygular).
+          IconButton(
+            icon: const Icon(Icons.search_rounded),
+            tooltip: 'Ara',
+            onPressed: () => Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => const SearchScreen()),
+            ),
+          ),
           IconButton(
             icon: const Icon(Icons.logout_rounded),
             tooltip: 'Çıkış yap',

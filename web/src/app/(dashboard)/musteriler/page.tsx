@@ -59,6 +59,11 @@ function CustomersPageContent() {
   const [formOpen, setFormOpen] = useState(false);
   const [editingCustomer, setEditingCustomer] = useState<Customer | null>(null);
   const [detailId, setDetailId] = useState<string | null>(null);
+  // Bölüm I (3. tur): global aramadan gelen ?detailId= doğrudan detay panelini açar.
+  const searchDetailId = useInitialQueryParam("detailId");
+  useEffect(() => {
+    if (searchDetailId) setDetailId(searchDetailId);
+  }, [searchDetailId]);
   const [deleteTarget, setDeleteTarget] = useState<Customer | null>(null);
   const { showToast } = useToast();
   const [deleting, setDeleting] = useState(false);

@@ -61,7 +61,14 @@ function ContractsPageContent() {
     if (drillFilter === "overdue") setHealthCheckOpen(true);
     if (drillFilter === "renewal") setRenewalOnly(true);
   }, [drillFilter]);
+  // Bölüm I (3. tur): global aramadan gelen ?highlight=<contractId> listeyi o kayda daraltır.
+  const highlightParam = useInitialQueryParam("highlight");
+  const [highlightId, setHighlightId] = useState<string | null>(null);
+  useEffect(() => {
+    if (highlightParam) setHighlightId(highlightParam);
+  }, [highlightParam]);
   const visibleContracts = useMemo(() => {
+    if (highlightId) return contracts.filter((c) => c.id === highlightId);
     if (!renewalOnly) return contracts;
     const now = Date.now();
     const in7Days = now + 7 * 24 * 60 * 60 * 1000;
@@ -69,7 +76,7 @@ function ContractsPageContent() {
       const end = new Date(c.endDate).getTime();
       return c.status === "ACTIVE" && end >= now && end <= in7Days;
     });
-  }, [contracts, renewalOnly]);
+  }, [contracts, renewalOnly, highlightId]);
   const router = useRouter();
 
   async function handleDownloadContractPdf(contract: Contract) {
@@ -346,6 +353,7 @@ function ContractsPageContent() {
         </div>
       )}
 
+      {highlightId && <DrillDownChip label="Arama sonucu" onClear={() => setHighlightId(null)} />}
       {renewalOnly && <DrillDownChip label="7 gün içinde yenilenecek sözleşmeler" onClear={() => setRenewalOnly(false)} />}
 
       <Table

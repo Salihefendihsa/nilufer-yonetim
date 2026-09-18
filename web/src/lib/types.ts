@@ -421,10 +421,20 @@ export interface StaffLeaderboardSummary {
   jobsPerStaff: number;
 }
 
-export interface SearchResults {
-  customers: { id: string; label: string; sublabel: string }[];
-  staff: { id: string; label: string; sublabel: string }[];
-  jobs: { id: string; label: string; sublabel: string }[];
+/** Bölüm I (3. tur): GET /search — tüm varlık türleri tek normalize listede. */
+export type SearchResultType = "customer" | "job" | "staff" | "contract" | "quote";
+
+export interface SearchResult {
+  type: SearchResultType;
+  id: string;
+  title: string;
+  subtitle: string;
+  route: string;
+}
+
+export interface SearchResponse {
+  query: string;
+  results: SearchResult[];
 }
 
 export interface ServiceType {
