@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../features/appointment_requests/my_appointment_requests_screen.dart';
+import '../features/complaints/complaints_screen.dart';
 import '../features/contracts/contracts_list_screen.dart';
 import '../features/admin/data_deletion_screens.dart';
 import '../features/customers/customer_data_export_screen.dart';
@@ -25,6 +26,12 @@ class CustomerMoreMenuScreen extends StatelessWidget {
         label: 'Randevu Taleplerim',
         icon: Icons.event_available_outlined,
         builder: (_) => const MyAppointmentRequestsScreen(),
+      ),
+      // Bölüm AO (9. tur): şikayet/sorun bildirimi ve çözüm takibi.
+      (
+        label: 'Şikayetlerim',
+        icon: Icons.report_problem_outlined,
+        builder: (_) => const ComplaintsScreen(),
       ),
       // Bölüm P (4. tur): davet kodu/linki — indirim/ödül yok, yalnızca takip.
       (

@@ -29,6 +29,7 @@ import {
   CalendarOff,
   LayoutDashboard,
   Receipt,
+  MessageSquareWarning,
 } from "lucide-react";
 import { useAuth } from "@/lib/AuthProvider";
 import { ROLE_LABELS, ROLE_SHORT_LABELS, type Role } from "@/lib/auth";
@@ -56,6 +57,9 @@ const NAV_ITEMS: NavItem[] = [
   { href: "/izinlerim", label: "İzin Taleplerim", icon: CalendarOff, roles: ["TEAM_LEAD", "STAFF"], group: "operasyon" },
   // Bölüm AN (9. tur): kişisel bordro özeti — yalnızca personel (yönetim Finans'tan görür).
   { href: "/bordrom", label: "Bordrom", icon: Receipt, roles: ["TEAM_LEAD", "STAFF"], group: "finans" },
+  // Bölüm AO (9. tur): şikayetler — aynı sayfa, role göre başlık (Bekleyen Onaylar'dan ayrı akış).
+  { href: "/sikayetler", label: "Şikayetlerim", icon: MessageSquareWarning, roles: ["CUSTOMER"], group: "operasyon" },
+  { href: "/sikayetler", label: "Şikayetler", icon: MessageSquareWarning, roles: ["OWNER", "MANAGER"], group: "operasyon" },
   { href: "/musteriler", label: "Müşteriler", icon: Users, roles: ["OWNER", "MANAGER"], group: "operasyon" },
   { href: "/personel", label: "Personel", icon: HardHat, roles: ["OWNER", "MANAGER"], group: "operasyon" },
   { href: "/performans", label: "Performans", icon: Trophy, roles: ["OWNER", "MANAGER", "TEAM_LEAD"], group: "operasyon" },

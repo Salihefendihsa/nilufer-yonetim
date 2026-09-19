@@ -39,6 +39,7 @@ import sessionRoutes from "./routes/sessions";
 import fileRoutes from "./routes/files";
 import dataDeletionRoutes from "./routes/dataDeletionRequests";
 import announcementRoutes from "./routes/announcements";
+import complaintRoutes from "./routes/complaints";
 import { errorHandler } from "./middleware/errorHandler";
 import { recordRequest } from "./lib/metrics";
 
@@ -133,6 +134,7 @@ app.use("/sessions", sessionRoutes);
 app.use("/files", fileRoutes);
 app.use("/data-deletion-requests", dataDeletionRoutes);
 app.use("/announcements", announcementRoutes);
+app.use("/complaints", complaintRoutes);
 
 app.use(errorHandler);
 

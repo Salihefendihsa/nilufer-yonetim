@@ -205,6 +205,10 @@ export class TestContext {
     await prisma.appointmentRequest.deleteMany({
       where: { OR: [{ customerId: { in: customerIds } }, { resultingJobId: { in: jobIds } }, { respondedByUserId: { in: userIds } }] },
     });
+    // Bölüm AO: şikayetler Job/Customer/User'a bağlı — hepsinden önce.
+    await prisma.customerComplaint.deleteMany({
+      where: { OR: [{ customerId: { in: customerIds } }, { jobId: { in: jobIds } }, { assignedToUserId: { in: userIds } }] },
+    });
     await prisma.job.deleteMany({ where: { id: { in: jobIds } } });
     await prisma.contract.deleteMany({ where: { customerId: { in: customerIds } } });
     await prisma.dataDeletionRequest.deleteMany({ where: { OR: [{ customerId: { in: customerIds } }, { processedByUserId: { in: userIds } }] } });

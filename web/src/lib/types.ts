@@ -1075,3 +1075,24 @@ export interface Payslip {
   advances: { id: string; amount: number; reason: string; createdAt: string }[];
 }
 
+/** Bölüm AO (9. tur): müşteri şikayet/sorun bildirimi (Job.rating'den ayrı). */
+export type ComplaintStatus = "OPEN" | "IN_PROGRESS" | "RESOLVED" | "CLOSED";
+export type ComplaintPriority = "LOW" | "MEDIUM" | "HIGH";
+
+export interface CustomerComplaint {
+  id: string;
+  customerId: string;
+  jobId: string | null;
+  subject: string;
+  description: string;
+  status: ComplaintStatus;
+  priority: ComplaintPriority;
+  assignedToUserId: string | null;
+  resolutionNote: string | null;
+  createdAt: string;
+  resolvedAt: string | null;
+  customer?: { id: string; fullName: string; phone: string };
+  job?: { id: string; sequenceNo: number; serviceType: string; scheduledAt: string | null; status: JobStatus } | null;
+  assignedTo?: { id: string; fullName: string; role: string } | null;
+}
+

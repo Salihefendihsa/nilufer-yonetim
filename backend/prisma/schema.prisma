@@ -140,6 +140,7 @@ model User {
   processedDeletionRequests DataDeletionRequest[] @relation("DataDeletionProcessedBy")
   /// Bölüm AK (8. tur)
   announcements             Announcement[]
+  assignedComplaints        CustomerComplaint[] @relation("ComplaintAssignedTo")
   recordedExpenses Expense[]
   twoFactorRecoveryCodes TwoFactorRecoveryCode[]
   twoFactorChallenges    TwoFactorChallenge[]
@@ -243,6 +244,7 @@ model Customer {
   tagAssignments CustomerTagAssignment[]
   documents CustomerDocument[]
   deletionRequests DataDeletionRequest[]
+  complaints CustomerComplaint[]
 
   @@index([district])
   @@index([phone])
@@ -275,6 +277,45 @@ model DataDeletionRequest {
   @@index([status])
 }
 
+enum ComplaintStatus {
+  OPEN
+  IN_PROGRESS
+  RESOLVED
+  CLOSED
+}
+
+enum ComplaintPriority {
+  LOW
+  MEDIUM
+  HIGH
+}
+
+/// Bölüm AO (9. tur): Müşteri şikayet/sorun bildirimi — basit iş puanlamasından
+/// (Job.rating) AYRI, çözüm takipli bir akış. CUSTOMER kendi adına açar;
+/// OWNER/MANAGER durum/öncelik/atama/çözüm notu günceller. RESOLVED/CLOSED'a
+/// geçişte resolvedAt damgalanır ve müşteriye bildirim gider. Bekleyen
+/// Onaylar'a EKLENMEZ — ayrı "Şikayetler" sayfası.
+model CustomerComplaint {
+  id               String            @id @default(uuid())
+  customerId       String
+  jobId            String?
+  subject          String
+  description      String
+  status           ComplaintStatus   @default(OPEN)
+  priority         ComplaintPriority @default(MEDIUM)
+  assignedToUserId String?
+  resolutionNote   String?
+  createdAt        DateTime          @default(now())
+  resolvedAt       DateTime?
+
+  customer   Customer @relation(fields: [customerId], references: [id])
+  job        Job?     @relation(fields: [jobId], references: [id])
+  assignedTo User?    @relation("ComplaintAssignedTo", fields: [assignedToUserId], references: [id])
+
+  @@index([customerId])
+  @@index([status])
+  @@index([priority])
+  @@index([assignedToUserId])
 }
 
 /// Bölüm AK (8. tur): Sistem geneli duyuru şeridi — aynı anda en fazla 1 aktif
@@ -543,6 +584,7 @@ model Job {
   jobReports     JobReport[]
   photos         JobPhoto[]
   appointmentRequests AppointmentRequest[]
+  complaints     CustomerComplaint[]
 
   @@index([customerId])
   @@index([assignedStaffId])

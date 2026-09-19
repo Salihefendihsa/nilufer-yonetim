@@ -5,6 +5,7 @@ import '../auth/auth_provider.dart';
 import '../features/admin/audit_settings_screen.dart';
 import '../features/admin/system_health_screen.dart';
 import '../features/admin/usage_stats_screen.dart';
+import '../features/complaints/complaints_screen.dart';
 import '../features/contracts/contracts_list_screen.dart';
 import '../features/customers/customers_list_screen.dart';
 import '../features/executive/executive_summary_screen.dart';
@@ -54,6 +55,12 @@ class MoreMenuScreen extends StatelessWidget {
         'Personel',
         Icons.groups_outlined,
         (_) => const StaffListScreen(),
+      ),
+      // Bölüm AO (9. tur): müşteri şikayetleri — Bekleyen Onaylar'dan ayrı akış.
+      _MoreItem(
+        'Şikayetler',
+        Icons.report_problem_outlined,
+        (_) => const ComplaintsScreen(),
       ),
       _MoreItem(
         'Takvim',
