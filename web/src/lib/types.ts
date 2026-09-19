@@ -1061,3 +1061,17 @@ export interface ExecutiveSummary {
   };
 }
 
+/** Bölüm AN (9. tur): GET /staff/me/payslip — salt görüntüleme aylık özet. */
+export interface Payslip {
+  staffId: string;
+  month: string;
+  salaryBase: number;
+  bonusTotal: number;
+  bonusCount: number;
+  advanceTotal: number;
+  advanceCount: number;
+  net: number;
+  bonuses: { id: string; amount: number; approvedAt: string | null; periodName: string }[];
+  advances: { id: string; amount: number; reason: string; createdAt: string }[];
+}
+

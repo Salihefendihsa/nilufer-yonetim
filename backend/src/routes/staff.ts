@@ -31,6 +31,7 @@ import {
 } from "../controllers/staffUnavailabilityController";
 import { getOnboarding, updateOnboardingItem } from "../controllers/onboardingController";
 import { getStaffLeaveBalance } from "../controllers/staffController";
+import { getMyPayslip } from "../controllers/staffPayslipController";
 
 const router = Router();
 
@@ -41,6 +42,8 @@ router.get("/org-chart", requireRole(Role.OWNER), getOrgChart);
 router.get("/certifications/expiring", requireRole(Role.OWNER, Role.MANAGER), getExpiringCertifications);
 // Bölüm K (3. tur): müsaitlik — sabit yollar /:id'den ÖNCE kayıtlı olmalı.
 router.get("/unavailability", requireRole(Role.OWNER, Role.MANAGER, Role.TEAM_LEAD), listUnavailableStaffOnDate);
+// Bölüm AN (9. tur): kişisel bordro özeti — yalnızca STAFF/TEAM_LEAD (kendi kaydı).
+router.get("/me/payslip", requireRole(Role.STAFF, Role.TEAM_LEAD), getMyPayslip);
 router.get("/me/unavailability", requireRole(Role.STAFF, Role.TEAM_LEAD), listMyUnavailability);
 router.post("/me/unavailability", requireRole(Role.STAFF, Role.TEAM_LEAD), createMyUnavailability);
 router.delete("/me/unavailability/:id", requireRole(Role.STAFF, Role.TEAM_LEAD), deleteMyUnavailability);

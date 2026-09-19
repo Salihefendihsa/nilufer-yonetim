@@ -28,6 +28,7 @@ import {
   Timer,
   CalendarOff,
   LayoutDashboard,
+  Receipt,
 } from "lucide-react";
 import { useAuth } from "@/lib/AuthProvider";
 import { ROLE_LABELS, ROLE_SHORT_LABELS, type Role } from "@/lib/auth";
@@ -53,6 +54,8 @@ const NAV_ITEMS: NavItem[] = [
   { href: "/mesajlar", label: "Mesajlar", icon: MessageCircle, roles: ["OWNER", "MANAGER", "TEAM_LEAD", "STAFF", "CUSTOMER"], group: "genel" },
   { href: "/bekleyen-onaylar", label: "Bekleyen Onaylar", icon: ClipboardCheck, roles: ["OWNER", "MANAGER", "TEAM_LEAD"], group: "operasyon" },
   { href: "/izinlerim", label: "İzin Taleplerim", icon: CalendarOff, roles: ["TEAM_LEAD", "STAFF"], group: "operasyon" },
+  // Bölüm AN (9. tur): kişisel bordro özeti — yalnızca personel (yönetim Finans'tan görür).
+  { href: "/bordrom", label: "Bordrom", icon: Receipt, roles: ["TEAM_LEAD", "STAFF"], group: "finans" },
   { href: "/musteriler", label: "Müşteriler", icon: Users, roles: ["OWNER", "MANAGER"], group: "operasyon" },
   { href: "/personel", label: "Personel", icon: HardHat, roles: ["OWNER", "MANAGER"], group: "operasyon" },
   { href: "/performans", label: "Performans", icon: Trophy, roles: ["OWNER", "MANAGER", "TEAM_LEAD"], group: "operasyon" },

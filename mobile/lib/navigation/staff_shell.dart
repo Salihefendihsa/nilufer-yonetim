@@ -5,6 +5,7 @@ import '../features/dashboard/dashboard_screen.dart';
 import '../features/evaluations/evaluations_screen.dart';
 import '../features/jobs/jobs_list_screen.dart';
 import '../features/leave_requests/leave_requests_screen.dart';
+import '../features/payslip/payslip_screen.dart';
 import '../features/messages/messages_list_screen.dart';
 import '../features/notifications/notifications_screen.dart';
 import '../theme/app_colors.dart';
@@ -74,12 +75,15 @@ class _StaffShellState extends State<StaffShell> {
         Icons.event_busy_outlined,
         _buildLeaveRequests,
       ),
+      // Bölüm AN (9. tur): kişisel bordro özeti (salt görüntüleme).
+      AppDrawerEntry('Bordrom', Icons.receipt_long_outlined, _buildPayslip),
     ]),
   ];
 
   static Widget _buildCalendar(BuildContext _) => const CalendarScreen();
   static Widget _buildEvaluations(BuildContext _) => const EvaluationsScreen();
   static Widget _buildLeaveRequests(BuildContext _) => const LeaveRequestsScreen();
+  static Widget _buildPayslip(BuildContext _) => const PayslipScreen();
 
   @override
   Widget build(BuildContext context) {

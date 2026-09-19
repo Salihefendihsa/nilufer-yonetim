@@ -4,6 +4,7 @@ import '../features/calendar/calendar_screen.dart';
 import '../features/dashboard/dashboard_screen.dart';
 import '../features/jobs/jobs_list_screen.dart';
 import '../features/leave_requests/leave_requests_screen.dart';
+import '../features/payslip/payslip_screen.dart';
 import '../features/messages/messages_list_screen.dart';
 import '../features/notifications/notifications_screen.dart';
 import '../features/performance/performance_screen.dart';
@@ -74,6 +75,8 @@ class _TeamLeadShellState extends State<TeamLeadShell> {
         Icons.event_busy_outlined,
         _buildLeaveRequests,
       ),
+      // Bölüm AN (9. tur): kişisel bordro özeti (salt görüntüleme).
+      AppDrawerEntry('Bordrom', Icons.receipt_long_outlined, _buildPayslip),
     ]),
   ];
 
@@ -81,6 +84,7 @@ class _TeamLeadShellState extends State<TeamLeadShell> {
   static Widget _buildPerformance(BuildContext _) => const PerformanceScreen();
   static Widget _buildStock(BuildContext _) => const StockListScreen();
   static Widget _buildLeaveRequests(BuildContext _) => const LeaveRequestsScreen();
+  static Widget _buildPayslip(BuildContext _) => const PayslipScreen();
 
   @override
   Widget build(BuildContext context) {

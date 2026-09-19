@@ -138,6 +138,8 @@ const CASES: EndpointCase[] = [
   { method: "delete", path: `/announcements/${NIL}`, allowed: ["OWNER"] },
   // Bölüm AL (8. tur) — dosya yok → izinli roller 400
   { method: "post", path: "/customers/import", allowed: ["OWNER", "MANAGER"], body: {} },
+  // Bölüm AN (9. tur) — kişisel bordro: STAFF-only, yönetim 403
+  { method: "get", path: "/staff/me/payslip", allowed: ["STAFF", "TEAM_LEAD"] },
   // Bölüm AM (9. tur) — parti/SKT
   { method: "get", path: "/products/expiring-batches", allowed: ["OWNER", "MANAGER"] },
   { method: "get", path: `/products/${NIL}/batches`, allowed: ["OWNER", "MANAGER"] },
