@@ -402,6 +402,12 @@ model Staff {
   /// Bölüm AH (7. tur): yıllık izin hakkı (gün) — Türkiye asgari 14. Bakiye =
   /// bu değer − takvim yılında APPROVED izinlerin toplam günü (lib/leaveBalance.ts).
   annualLeaveQuotaDays Int @default(14)
+  /// Bölüm AP (9. tur): kişisel takvim aboneliği (ICS) için tahmin edilemez
+  /// token — GET /calendar/:token.ics requireAuth OLMADAN yalnızca bu token'la
+  /// açılır (Job.calendarLink gibi tek işlik değil, personelin tüm programı).
+  /// crypto.randomUUID ile ilk istendiğinde üretilir; "Token'ı Yenile" eskisini
+  /// geçersiz kılar. Eski kayıtlar için null.
+  calendarToken String? @unique
   createdAt    DateTime @default(now())
   /// Doldurulmuşsa bu Staff kaydı "arşivlenmiş" sayılır — MÜDÜR'e terfi
   /// (Staff kaydına artık ihtiyaç yok) veya işten çıkarma sonucu. Hiçbir

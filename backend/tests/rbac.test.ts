@@ -138,6 +138,10 @@ const CASES: EndpointCase[] = [
   { method: "delete", path: `/announcements/${NIL}`, allowed: ["OWNER"] },
   // Bölüm AL (8. tur) — dosya yok → izinli roller 400
   { method: "post", path: "/customers/import", allowed: ["OWNER", "MANAGER"], body: {} },
+  // Bölüm AP (9. tur) — takvim dışa aktarma: yalnızca personel
+  { method: "get", path: "/staff/me/calendar.ics", allowed: ["STAFF", "TEAM_LEAD"] },
+  { method: "get", path: "/staff/me/calendar-token", allowed: ["STAFF", "TEAM_LEAD"] },
+  { method: "post", path: "/staff/me/calendar-token/rotate", allowed: ["STAFF", "TEAM_LEAD"] },
   // Bölüm AO (9. tur) — şikayetler: CUSTOMER açar; yönetim + CUSTOMER listeler; yalnızca yönetim günceller
   { method: "post", path: "/complaints", allowed: ["CUSTOMER"], body: {} },
   { method: "get", path: "/complaints", allowed: ["OWNER", "MANAGER", "CUSTOMER"] },

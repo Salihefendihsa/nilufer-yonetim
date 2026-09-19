@@ -9,6 +9,7 @@ import '../../models/user.dart';
 import '../../theme/app_colors.dart';
 import '../../theme/theme_controller.dart';
 import '../../widgets/state_views.dart';
+import 'calendar_export_card.dart';
 
 /// Stitch Müdür → Ayarlar.
 ///
@@ -179,6 +180,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 if (user?.role == AppRole.owner || user?.role == AppRole.manager) ...[
                   const SizedBox(height: 12),
                   const _TwoFactorCard(),
+                ],
+                // Bölüm AP (9. tur): personel takvim aboneliği (ICS).
+                if (user?.role == AppRole.staff || user?.role == AppRole.teamLead) ...[
+                  const SizedBox(height: 12),
+                  const CalendarExportCard(),
                 ],
                 const SizedBox(height: 12),
                 Container(

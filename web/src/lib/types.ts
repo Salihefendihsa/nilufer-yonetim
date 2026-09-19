@@ -1096,3 +1096,11 @@ export interface CustomerComplaint {
   assignedTo?: { id: string; fullName: string; role: string } | null;
 }
 
+/** Bölüm AP (9. tur): GET /staff/me/calendar-token — ICS abonelik linki. */
+export interface CalendarToken {
+  token: string;
+  url: string;
+  webcalUrl: string;
+  windowDays: number;
+}
+

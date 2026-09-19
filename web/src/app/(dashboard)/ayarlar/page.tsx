@@ -31,6 +31,7 @@ import { CustomerTagsSection } from "./CustomerTagsSection";
 import { DataDeletionRequestsSection, CustomerDataDeletionSection } from "./DataDeletionSections";
 import { CustomerDataExportSection } from "./CustomerDataExportSection";
 import { AnnouncementSection } from "./AnnouncementSection";
+import { CalendarExportSection } from "./CalendarExportSection";
 import { PageHeader } from "@/components/PageHeader";
 import { Modal } from "@/components/Modal";
 import { Toggle } from "@/components/Toggle";
@@ -73,6 +74,8 @@ export default function SettingsPage() {
 
         {/* Bölüm AD (7. tur): KVKK — müşteri talep açar, OWNER sonuçlandırır */}
         {/* Bölüm AJ (8. tur): müşteri kendi verisini indirir */}
+        {/* Bölüm AP (9. tur): personel takvim aboneliği (ICS) */}
+        {(user?.role === "STAFF" || user?.role === "TEAM_LEAD") && <CalendarExportSection />}
         {user?.role === "CUSTOMER" && <CustomerDataExportSection />}
         {user?.role === "CUSTOMER" && <CustomerDataDeletionSection />}
         {/* Bölüm AK (8. tur): duyuru şeridi yönetimi */}
