@@ -40,6 +40,7 @@ import type { Staff, Paginated } from "@/lib/types";
 import { StaffFormModal } from "./StaffFormModal";
 import { PermissionsModal } from "./PermissionsModal";
 import { CertificationsModal } from "./CertificationsModal";
+import { VehicleMaintenanceModal } from "./VehicleMaintenanceModal";
 import { OnboardingModal } from "./OnboardingModal";
 import { LeaveBalanceCard } from "@/components/LeaveBalanceCard";
 import { EvaluationsModal } from "./EvaluationsModal";
@@ -106,6 +107,8 @@ function StaffPageContent() {
   const [deleting, setDeleting] = useState(false);
   const [permissionsTarget, setPermissionsTarget] = useState<Staff | null>(null);
   const [certificationsTarget, setCertificationsTarget] = useState<Staff | null>(null);
+  // Bölüm AQ (9. tur): araç bakımı — yalnızca plakası dolu personelde buton görünür.
+  const [vehicleTarget, setVehicleTarget] = useState<Staff | null>(null);
   // Bölüm U (5. tur): işe alım kontrol listesi modalı.
   const [onboardingTarget, setOnboardingTarget] = useState<Staff | null>(null);
   const [evaluationsTarget, setEvaluationsTarget] = useState<Staff | null>(null);
@@ -420,6 +423,18 @@ function StaffPageContent() {
                 Belgeler
               </button>
 
+              {/* Bölüm AQ (9. tur): yalnızca zimmetli aracı olan personelde */}
+              {staff.vehiclePlate && (
+                <button
+                  type="button"
+                  onClick={() => setVehicleTarget(staff)}
+                  className="flex items-center justify-center gap-2 rounded-xl border border-border bg-surface-base px-3 py-2 text-xs font-medium text-text-secondary transition hover:border-border-strong hover:bg-surface-subtle hover:text-text-primary"
+                >
+                  <Truck size={14} strokeWidth={1.75} />
+                  Araç Bakımı
+                </button>
+              )}
+
               {/* Bölüm U (5. tur): işe alım süreci — yeni personelde takip için */}
               <button
                 type="button"
@@ -482,6 +497,7 @@ function StaffPageContent() {
       <PermissionsModal open={!!permissionsTarget} onClose={() => setPermissionsTarget(null)} staff={permissionsTarget} />
 
       <CertificationsModal open={!!certificationsTarget} onClose={() => setCertificationsTarget(null)} staff={certificationsTarget} />
+      <VehicleMaintenanceModal open={!!vehicleTarget} onClose={() => setVehicleTarget(null)} staff={vehicleTarget} />
       <OnboardingModal open={!!onboardingTarget} onClose={() => setOnboardingTarget(null)} staff={onboardingTarget} editable={user?.role === "OWNER" || user?.role === "MANAGER"} />
 
       <EvaluationsModal open={!!evaluationsTarget} onClose={() => setEvaluationsTarget(null)} staff={evaluationsTarget} />

@@ -32,6 +32,12 @@ import {
 import { getOnboarding, updateOnboardingItem } from "../controllers/onboardingController";
 import { getStaffLeaveBalance } from "../controllers/staffController";
 import { getMyPayslip } from "../controllers/staffPayslipController";
+import {
+  listVehicleMaintenance,
+  createVehicleMaintenance,
+  updateVehicleMaintenance,
+  deleteVehicleMaintenance,
+} from "../controllers/vehicleMaintenanceController";
 import { getMyCalendarIcs, getMyCalendarToken, rotateMyCalendarToken } from "../controllers/staffCalendarController";
 
 const router = Router();
@@ -74,6 +80,11 @@ router.get("/:id/onboarding", requireRole(Role.OWNER, Role.MANAGER, Role.TEAM_LE
 // Bölüm AH (7. tur): yıllık izin bakiyesi (STAFF/TEAM_LEAD kendi kaydı).
 router.get("/:id/leave-balance", requireRole(Role.OWNER, Role.MANAGER, Role.TEAM_LEAD, Role.STAFF), getStaffLeaveBalance);
 router.patch("/:id/onboarding/:itemId", requireRole(Role.OWNER, Role.MANAGER), updateOnboardingItem);
+// Bölüm AQ (9. tur): araç bakım — STAFF/TEAM_LEAD kendi kaydını salt-okunur (controller'da kontrol).
+router.get("/:id/vehicle-maintenance", requireRole(Role.OWNER, Role.MANAGER, Role.TEAM_LEAD, Role.STAFF), listVehicleMaintenance);
+router.post("/:id/vehicle-maintenance", requireRole(Role.OWNER, Role.MANAGER), createVehicleMaintenance);
+router.patch("/:id/vehicle-maintenance/:maintenanceId", requireRole(Role.OWNER, Role.MANAGER), updateVehicleMaintenance);
+router.delete("/:id/vehicle-maintenance/:maintenanceId", requireRole(Role.OWNER, Role.MANAGER), deleteVehicleMaintenance);
 router.get("/:id/certifications", requireRole(Role.OWNER, Role.MANAGER), listCertifications);
 router.post("/:id/certifications", requireRole(Role.OWNER, Role.MANAGER), createCertification);
 router.patch("/:id/certifications/:certId", requireRole(Role.OWNER, Role.MANAGER), updateCertification);

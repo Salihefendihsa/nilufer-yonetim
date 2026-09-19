@@ -1104,3 +1104,18 @@ export interface CalendarToken {
   windowDays: number;
 }
 
+/** Bölüm AQ (9. tur): araç bakım/muayene takibi (Staff.vehiclePlate dolu personelde). */
+export type VehicleMaintenanceType = "INSPECTION" | "OIL_CHANGE" | "TIRE" | "OTHER";
+
+export interface VehicleMaintenance {
+  id: string;
+  staffId: string;
+  maintenanceType: VehicleMaintenanceType;
+  lastServiceDate: string;
+  nextDueDate: string;
+  note: string | null;
+  createdAt: string;
+  daysLeft: number;
+  isOverdue: boolean;
+}
+

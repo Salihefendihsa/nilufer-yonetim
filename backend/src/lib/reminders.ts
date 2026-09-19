@@ -450,3 +450,51 @@ export async function sweepExpiringBatchAlerts(onlyProductIds?: string[]): Promi
 
   return notifiedCount;
 }
+
+const VEHICLE_DUE_WINDOW_DAYS = 14;
+
+/**
+ * Bölüm AQ (9. tur): nextDueDate'i 14 gün içinde (veya geçmiş) olan araç bakım
+ * kayıtları için yönetime günlük dedup'lı bildirim (`lastDueAlertAt`, aynı
+ * takvim günü). Vade ileri alınınca controller alanı sıfırlar → yeni pencerede
+ * yeniden bildirir.
+ * @param onlyStaffIds Testler için kapsam daraltıcı — üretimde verilmez.
+ */
+export async function sweepVehicleMaintenanceAlerts(onlyStaffIds?: string[]): Promise<number> {
+  const now = new Date();
+  const windowEnd = new Date(Date.UTC(now.getFullYear(), now.getMonth(), now.getDate() + VEHICLE_DUE_WINDOW_DAYS));
+
+  const rows = await prisma.vehicleMaintenance.findMany({
+    where: {
+      nextDueDate: { lte: windowEnd },
+      ...(onlyStaffIds ? { staffId: { in: onlyStaffIds } } : {}),
+      staff: { archivedAt: null },
+    },
+    include: { staff: { select: { vehiclePlate: true, user: { select: { fullName: true } } } } },
+    orderBy: { nextDueDate: "asc" },
+  });
+
+  const labels: Record<string, string> = { INSPECTION: "Muayene", OIL_CHANGE: "Yağ değişimi", TIRE: "Lastik", OTHER: "Bakım" };
+  let notifiedCount = 0;
+  for (const row of rows) {
+    if (row.lastDueAlertAt && isSameCalendarDay(row.lastDueAlertAt, now)) continue;
+
+    const today = Date.UTC(now.getFullYear(), now.getMonth(), now.getDate());
+    const due = Date.UTC(row.nextDueDate.getUTCFullYear(), row.nextDueDate.getUTCMonth(), row.nextDueDate.getUTCDate());
+    const daysLeft = Math.round((due - today) / (1000 * 60 * 60 * 24));
+    const plate = row.staff.vehiclePlate ?? "plakasız araç";
+    const kind = labels[row.maintenanceType] ?? "Bakım";
+
+    await notifyManagement(
+      daysLeft < 0 ? "Araç bakımı gecikti" : "Yaklaşan araç bakımı",
+      daysLeft < 0
+        ? `${plate} (${row.staff.user.fullName}) · ${kind} tarihi ${Math.abs(daysLeft)} gün geçti.`
+        : `${plate} (${row.staff.user.fullName}) · ${kind} ${daysLeft === 0 ? "bugün" : `${daysLeft} gün içinde`} yapılmalı.`,
+      { type: "vehicle_maintenance", relatedType: "Staff", relatedId: row.staffId }
+    );
+    await prisma.vehicleMaintenance.update({ where: { id: row.id }, data: { lastDueAlertAt: now } });
+    notifiedCount++;
+  }
+
+  return notifiedCount;
+}

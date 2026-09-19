@@ -428,6 +428,7 @@ model Staff {
   collectedPayments Payment[]      @relation("PaymentCollectedBy")
   evaluationsReceived Evaluation[] @relation("EvaluationTarget")
   staffBonuses    StaffBonus[]
+  vehicleMaintenances VehicleMaintenance[]
 
   @@index([position])
   @@index([supervisorId])
@@ -473,6 +474,32 @@ model OnboardingChecklistItem {
   @@index([staffId])
 }
 
+enum VehicleMaintenanceType {
+  INSPECTION
+  OIL_CHANGE
+  TIRE
+  OTHER
+}
+
+/// Bölüm AQ (9. tur): zimmetli araç (Staff.vehiclePlate) bakım/muayene takibi.
+/// nextDueDate 14 gün içindeyse günlük cron OWNER/MANAGER'a bildirir
+/// (lastDueAlertAt ile günlük dedup — lastLowStockAlertAt deseni). Backend
+/// vehiclePlate zorunluluğu koymaz (plaka sonradan silinse de geçmiş kalır);
+/// arayüz bölümü yalnızca plakası dolu personelde gösterir.
+model VehicleMaintenance {
+  id              String                 @id @default(uuid())
+  staffId         String
+  maintenanceType VehicleMaintenanceType
+  lastServiceDate DateTime               @db.Date
+  nextDueDate     DateTime               @db.Date
+  note            String?
+  lastDueAlertAt  DateTime?
+  createdAt       DateTime               @default(now())
+
+  staff Staff @relation(fields: [staffId], references: [id], onDelete: Cascade)
+
+  @@index([staffId])
+  @@index([nextDueDate])
 }
 
 model StaffCertification {

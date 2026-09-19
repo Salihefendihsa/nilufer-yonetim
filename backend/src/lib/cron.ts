@@ -13,6 +13,7 @@ import {
   sweepLowStockAlerts,
   sweepContractRenewalAlerts,
   sweepExpiringBatchAlerts,
+  sweepVehicleMaintenanceAlerts,
 } from "./reminders";
 
 /**
@@ -102,6 +103,8 @@ export function startReminderCrons() {
     sweepContractRenewalAlerts().catch((err) => console.error("Sözleşme yenileme taraması başarısız:", err));
     // Bölüm AM (9. tur): SKT'si 7 gün içinde dolacak/dolmuş partiler (günlük dedup).
     sweepExpiringBatchAlerts().catch((err) => console.error("Parti SKT taraması başarısız:", err));
+    // Bölüm AQ (9. tur): 14 gün içinde vadesi gelen araç bakımları (günlük dedup).
+    sweepVehicleMaintenanceAlerts().catch((err) => console.error("Araç bakım taraması başarısız:", err));
   });
 
   // Günlük özet emaili — 07:00.

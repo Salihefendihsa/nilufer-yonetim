@@ -10,6 +10,7 @@ import '../../theme/app_colors.dart';
 import '../../widgets/state_views.dart';
 import 'evaluation_trend_card.dart';
 import 'leave_balance_card.dart';
+import 'vehicle_maintenance_card.dart';
 import 'onboarding_card.dart';
 import 'staff_api.dart';
 import 'staff_form_screen.dart';
@@ -705,6 +706,13 @@ class _StaffDetailScreenState extends State<StaffDetailScreen> {
           EvaluationTrendCard(staffId: s.id),
           // Bölüm AH (8. tur): izin bakiyesi
           LeaveBalanceCard(staffId: s.id),
+          // Bölüm AQ (9. tur): araç bakımı — yalnızca zimmetli aracı olan personelde.
+          if (s.vehiclePlate != null && s.vehiclePlate!.trim().isNotEmpty)
+            VehicleMaintenanceCard(
+              staffId: s.id,
+              vehiclePlate: s.vehiclePlate!,
+              editable: _canManageStaff,
+            ),
 
           if (canChangeStatus) ...[
             const SizedBox(height: 14),
