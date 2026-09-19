@@ -221,6 +221,7 @@ export class TestContext {
     await prisma.staffCertification.deleteMany({ where: { staffId: { in: staffIds } } });
     // Bölüm AQ/AR: araç bakım ve puantaj (Cascade var ama açıkça).
     await prisma.vehicleMaintenance.deleteMany({ where: { staffId: { in: staffIds } } });
+    await prisma.attendanceRecord.deleteMany({ where: { staffId: { in: staffIds } } });
     await prisma.staffUnavailability.deleteMany({ where: { staffId: { in: staffIds } } });
     await prisma.onboardingChecklistItem.deleteMany({ where: { OR: [{ staffId: { in: staffIds } }, { completedByUserId: { in: userIds } }] } });
     await prisma.stockPurchaseRequest.deleteMany({

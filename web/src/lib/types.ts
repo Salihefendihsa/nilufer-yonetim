@@ -1119,3 +1119,23 @@ export interface VehicleMaintenance {
   isOverdue: boolean;
 }
 
+/** Bölüm AR (9. tur): puantaj — gün başına tek kayıt; workedHours sunucuda hesaplanır. */
+export interface AttendanceRecord {
+  id: string;
+  staffId: string;
+  date: string;
+  clockInAt: string | null;
+  clockOutAt: string | null;
+  note: string | null;
+  createdAt: string;
+  workedHours: number | null;
+}
+
+export interface AttendanceMonth {
+  staffId: string;
+  month: string;
+  totalHours: number;
+  completedDays: number;
+  openCount: number;
+  data: AttendanceRecord[];
+}

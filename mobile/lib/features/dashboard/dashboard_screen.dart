@@ -18,6 +18,7 @@ import '../jobs/jobs_api.dart';
 import '../search/search_screen.dart';
 import '../team/team_api.dart';
 import '../../widgets/announcement_banner.dart';
+import '../../widgets/clock_card.dart';
 import '../../widgets/badges.dart';
 import 'dashboard_api.dart';
 import 'dashboard_models.dart';
@@ -541,6 +542,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
       children: [
         // Bölüm AK (8. tur): sistem geneli duyuru şeridi
         const AnnouncementBanner(),
+        // Bölüm AR (9. tur): şefin kendi günlük puantajı
+        const ClockCard(),
         Text(
           'Merhaba, ${user?.fullName.split(' ').first ?? ''}. '
           'Ekibinin bugünkü işleri burada.',
@@ -818,6 +821,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
           ],
         ),
         const SizedBox(height: 16),
+        // Bölüm AR (9. tur): günlük puantaj — giriş/çıkış
+        const ClockCard(),
         StatCardGrid(
           crossAxisCount: 3,
           children: [

@@ -34,6 +34,7 @@ import { AuthImage } from "@/components/AuthImage";
 import { useAuth } from "@/lib/AuthProvider";
 import { StatCard } from "@/components/StatCard";
 import { PageHeader } from "@/components/PageHeader";
+import { ClockCard } from "@/components/ClockCard";
 import { StatusStrip } from "@/components/StatusStrip";
 import { ChartCard, DonutChart, RankBars, SimpleBarChart } from "@/components/ChartCard";
 import { StatusBadge, STATUS_COLORS, STATUS_TEXT } from "@/components/StatusBadge";
@@ -727,6 +728,9 @@ function TeamLeadDashboard() {
         }
       />
 
+      {/* Bölüm AR (9. tur): şefin kendi günlük puantajı */}
+      <ClockCard />
+
       {/* [Bugün Ekibim — Bölüm M] */}
       <TeamBriefingCard briefing={briefing} loading={loading} />
 
@@ -853,6 +857,9 @@ function StaffDashboard() {
 
       {/* [Durum dağılımı şeridi] */}
       <StatusStrip loading={loading} totalLabel={`${jobs.length} iş`} segments={toStatusSegments(jobs)} />
+
+      {/* Bölüm AR (9. tur): günlük puantaj — giriş/çıkış */}
+      <ClockCard />
       {advanceSent && (
         <p className="rounded-2xl border border-primary-100 bg-primary-50 px-4 py-3 text-sm text-primary-700">
           Avans talebiniz gönderildi, onay bekliyor.

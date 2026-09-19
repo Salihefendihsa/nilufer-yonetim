@@ -38,6 +38,7 @@ import {
   updateVehicleMaintenance,
   deleteVehicleMaintenance,
 } from "../controllers/vehicleMaintenanceController";
+import { clockIn, clockOut, getMyAttendanceToday, getStaffAttendance } from "../controllers/attendanceController";
 import { getMyCalendarIcs, getMyCalendarToken, rotateMyCalendarToken } from "../controllers/staffCalendarController";
 
 const router = Router();
@@ -53,6 +54,12 @@ router.get("/unavailability", requireRole(Role.OWNER, Role.MANAGER, Role.TEAM_LE
 router.get("/me/payslip", requireRole(Role.STAFF, Role.TEAM_LEAD), getMyPayslip);
 // Bölüm AP (9. tur): takvim dışa aktarma — ICS indirme + abonelik token'ı.
 router.get("/me/calendar.ics", requireRole(Role.STAFF, Role.TEAM_LEAD), getMyCalendarIcs);
+// Bölüm AR (9. tur): puantaj — giriş/çıkış yalnızca personelin kendisi.
+router.post("/me/clock-in", requireRole(Role.STAFF, Role.TEAM_LEAD), clockIn);
+router.post("/me/clock-out", requireRole(Role.STAFF, Role.TEAM_LEAD), clockOut);
+router.get("/me/attendance/today", requireRole(Role.STAFF, Role.TEAM_LEAD), getMyAttendanceToday);
+router.get("/me/calendar-token", requireRole(Role.STAFF, Role.TEAM_LEAD), getMyCalendarToken);
+router.post("/me/calendar-token/rotate", requireRole(Role.STAFF, Role.TEAM_LEAD), rotateMyCalendarToken);
 router.get("/me/unavailability", requireRole(Role.STAFF, Role.TEAM_LEAD), listMyUnavailability);
 router.post("/me/unavailability", requireRole(Role.STAFF, Role.TEAM_LEAD), createMyUnavailability);
 router.delete("/me/unavailability/:id", requireRole(Role.STAFF, Role.TEAM_LEAD), deleteMyUnavailability);
@@ -80,6 +87,8 @@ router.get("/:id/onboarding", requireRole(Role.OWNER, Role.MANAGER, Role.TEAM_LE
 // Bölüm AH (7. tur): yıllık izin bakiyesi (STAFF/TEAM_LEAD kendi kaydı).
 router.get("/:id/leave-balance", requireRole(Role.OWNER, Role.MANAGER, Role.TEAM_LEAD, Role.STAFF), getStaffLeaveBalance);
 router.patch("/:id/onboarding/:itemId", requireRole(Role.OWNER, Role.MANAGER), updateOnboardingItem);
+// Bölüm AR (9. tur): aylık puantaj — STAFF/TEAM_LEAD kendi kaydı (controller'da kontrol).
+router.get("/:id/attendance", requireRole(Role.OWNER, Role.MANAGER, Role.TEAM_LEAD, Role.STAFF), getStaffAttendance);
 // Bölüm AQ (9. tur): araç bakım — STAFF/TEAM_LEAD kendi kaydını salt-okunur (controller'da kontrol).
 router.get("/:id/vehicle-maintenance", requireRole(Role.OWNER, Role.MANAGER, Role.TEAM_LEAD, Role.STAFF), listVehicleMaintenance);
 router.post("/:id/vehicle-maintenance", requireRole(Role.OWNER, Role.MANAGER), createVehicleMaintenance);

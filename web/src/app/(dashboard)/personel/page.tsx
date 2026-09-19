@@ -14,6 +14,7 @@ import {
   Briefcase,
   Coffee,
   Truck,
+  Timer,
   Star,
   AlertTriangle,
   Network,
@@ -41,6 +42,7 @@ import { StaffFormModal } from "./StaffFormModal";
 import { PermissionsModal } from "./PermissionsModal";
 import { CertificationsModal } from "./CertificationsModal";
 import { VehicleMaintenanceModal } from "./VehicleMaintenanceModal";
+import { AttendanceModal } from "./AttendanceModal";
 import { OnboardingModal } from "./OnboardingModal";
 import { LeaveBalanceCard } from "@/components/LeaveBalanceCard";
 import { EvaluationsModal } from "./EvaluationsModal";
@@ -109,6 +111,8 @@ function StaffPageContent() {
   const [certificationsTarget, setCertificationsTarget] = useState<Staff | null>(null);
   // Bölüm AQ (9. tur): araç bakımı — yalnızca plakası dolu personelde buton görünür.
   const [vehicleTarget, setVehicleTarget] = useState<Staff | null>(null);
+  // Bölüm AR (9. tur): aylık puantaj özeti.
+  const [attendanceTarget, setAttendanceTarget] = useState<Staff | null>(null);
   // Bölüm U (5. tur): işe alım kontrol listesi modalı.
   const [onboardingTarget, setOnboardingTarget] = useState<Staff | null>(null);
   const [evaluationsTarget, setEvaluationsTarget] = useState<Staff | null>(null);
@@ -423,6 +427,16 @@ function StaffPageContent() {
                 Belgeler
               </button>
 
+              {/* Bölüm AR (9. tur): aylık giriş/çıkış özeti */}
+              <button
+                type="button"
+                onClick={() => setAttendanceTarget(staff)}
+                className="flex items-center justify-center gap-2 rounded-xl border border-border bg-surface-base px-3 py-2 text-xs font-medium text-text-secondary transition hover:border-border-strong hover:bg-surface-subtle hover:text-text-primary"
+              >
+                <Timer size={14} strokeWidth={1.75} />
+                Puantaj
+              </button>
+
               {/* Bölüm AQ (9. tur): yalnızca zimmetli aracı olan personelde */}
               {staff.vehiclePlate && (
                 <button
@@ -498,6 +512,7 @@ function StaffPageContent() {
 
       <CertificationsModal open={!!certificationsTarget} onClose={() => setCertificationsTarget(null)} staff={certificationsTarget} />
       <VehicleMaintenanceModal open={!!vehicleTarget} onClose={() => setVehicleTarget(null)} staff={vehicleTarget} />
+      <AttendanceModal open={!!attendanceTarget} onClose={() => setAttendanceTarget(null)} staff={attendanceTarget} />
       <OnboardingModal open={!!onboardingTarget} onClose={() => setOnboardingTarget(null)} staff={onboardingTarget} editable={user?.role === "OWNER" || user?.role === "MANAGER"} />
 
       <EvaluationsModal open={!!evaluationsTarget} onClose={() => setEvaluationsTarget(null)} staff={evaluationsTarget} />

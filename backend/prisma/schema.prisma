@@ -429,6 +429,7 @@ model Staff {
   evaluationsReceived Evaluation[] @relation("EvaluationTarget")
   staffBonuses    StaffBonus[]
   vehicleMaintenances VehicleMaintenance[]
+  attendanceRecords   AttendanceRecord[]
 
   @@index([position])
   @@index([supervisorId])
@@ -472,6 +473,25 @@ model OnboardingChecklistItem {
   completedBy User? @relation("OnboardingCompletedBy", fields: [completedByUserId], references: [id])
 
   @@index([staffId])
+}
+
+/// Bölüm AR (9. tur): günlük puantaj — personelin gerçek işe başlama/bitirme
+/// saati (StaffUnavailability "müsait değilim" işaretinden AYRI). Gün başına
+/// tek kayıt (unique staffId+date). Aynı gün ikinci giriş → 409 (çıkış yapılmış
+/// olsa da; düzeltme yönetimin işi). Çıkış, giriş yoksa → 400.
+model AttendanceRecord {
+  id         String    @id @default(uuid())
+  staffId    String
+  date       DateTime  @db.Date
+  clockInAt  DateTime?
+  clockOutAt DateTime?
+  note       String?
+  createdAt  DateTime  @default(now())
+
+  staff Staff @relation(fields: [staffId], references: [id], onDelete: Cascade)
+
+  @@unique([staffId, date])
+  @@index([date])
 }
 
 enum VehicleMaintenanceType {
