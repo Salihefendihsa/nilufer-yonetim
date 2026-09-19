@@ -275,6 +275,8 @@ model DataDeletionRequest {
   @@index([status])
 }
 
+}
+
 /// Bölüm AK (8. tur): Sistem geneli duyuru şeridi — aynı anda en fazla 1 aktif
 /// duyuru (yeni POST öncekini işlemde pasifleştirir). expiresAt geçmişse /active null.
 model Announcement {
@@ -422,6 +424,8 @@ model OnboardingChecklistItem {
   completedBy User? @relation("OnboardingCompletedBy", fields: [completedByUserId], references: [id])
 
   @@index([staffId])
+}
+
 }
 
 model StaffCertification {
@@ -638,8 +642,34 @@ model Product {
   jobReports        JobReport[]
   jobReportProducts JobReportProduct[]
   purchaseRequests  StockPurchaseRequest[]
+  batches           ProductBatch[]
 
   @@index([name])
+}
+
+/// Bölüm AM (9. tur): kimyasal parti (lot) + son kullanma tarihi takibi —
+/// yasal izlenebilirlik gereksinimi. Stok girişinde (restock / mal kabul)
+/// OPSİYONEL olarak açılır; stok çıkışında (iş raporu) aynı ürünün partileri
+/// arasından EN ÖNCE süresi dolacak olandan düşülür (FIFO by expiry, bkz.
+/// lib/productBatches.ts). Partisiz eski stok/hareketler etkilenmez.
+model ProductBatch {
+  id                String    @id @default(uuid())
+  productId         String
+  batchNumber       String
+  expiryDate        DateTime  @db.Date
+  quantityReceived  Decimal   @db.Decimal(10, 2)
+  quantityRemaining Decimal   @db.Decimal(10, 2)
+  receivedAt        DateTime  @default(now())
+  supplierId        String?
+  /// Günlük SKT uyarısı dedup'ı — lastLowStockAlertAt ile aynı desen.
+  lastExpiryAlertAt DateTime?
+
+  product   Product         @relation(fields: [productId], references: [id], onDelete: Cascade)
+  supplier  Supplier?       @relation(fields: [supplierId], references: [id])
+  movements StockMovement[]
+
+  @@index([productId, expiryDate])
+  @@index([expiryDate])
 }
 
 model StockMovement {
@@ -653,12 +683,17 @@ model StockMovement {
   relatedJobReportProductId String?           @unique
   note                      String?
   createdAt                 DateTime          @default(now())
+  /// Bölüm AM (9. tur): hareketin ait olduğu parti — eski hareketler ve
+  /// partisiz giriş/çıkışlar null taşır (geriye dönük uyumluluk).
+  batchId                   String?
 
   product                 Product           @relation(fields: [productId], references: [id])
   relatedJobReport        JobReport?        @relation(fields: [relatedJobReportId], references: [id])
   relatedJobReportProduct JobReportProduct? @relation(fields: [relatedJobReportProductId], references: [id])
+  batch                   ProductBatch?     @relation(fields: [batchId], references: [id])
 
   @@index([productId])
+  @@index([batchId])
 }
 
 /// Depo ikmal / satın alma talebi. Müdür "Satın Alma Talebi" oluşturur
@@ -706,6 +741,7 @@ model Supplier {
   createdAt     DateTime @default(now())
 
   purchaseRequests StockPurchaseRequest[]
+  batches          ProductBatch[]
 
   @@index([name])
 }

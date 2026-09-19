@@ -31,6 +31,17 @@ export function uid(): string {
   return randomUUID().slice(0, 8);
 }
 
+/**
+ * Yerel takvim gününe göre "YYYY-AA-GG" (bugün + offset). `toISOString()`
+ * UTC gün döndürür ve gece yarısı civarında yerel günden sapar — tarih-only
+ * (@db.Date) uçları sunucunun YEREL gününü esas aldığı için bu kullanılmalı.
+ */
+export function localIsoDate(offsetDays = 0): string {
+  const d = new Date();
+  d.setDate(d.getDate() + offsetDays);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
+
 export function testEmail(tag: string): string {
   return `${TEST_PREFIX}${tag}_${uid()}@test.local`;
 }

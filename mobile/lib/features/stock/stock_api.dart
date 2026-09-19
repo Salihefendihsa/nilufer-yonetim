@@ -1,6 +1,7 @@
 import '../../core/api_client.dart';
 import '../../models/paginated.dart';
 import '../../models/product.dart';
+import '../../models/product_batch.dart';
 
 class StockApi {
   final _api = ApiClient.instance;
@@ -75,15 +76,50 @@ class StockApi {
     return Product.fromJson(json);
   }
 
-  Future<Product> restock(String id, double quantity, {String? note}) async {
+  /// Bölüm AM (9. tur): `batchNumber` + `expiryDate` (YYYY-AA-GG) birlikte
+  /// verilirse ProductBatch açılır; ikisi de boşsa eski partisiz giriş.
+  Future<Product> restock(
+    String id,
+    double quantity, {
+    String? note,
+    String? batchNumber,
+    String? expiryDate,
+  }) async {
     final json = await _api.post<Map<String, dynamic>>(
       '/products/$id/restock',
       body: {
         'quantity': quantity,
         if (note != null && note.isNotEmpty) 'note': note,
+        if (batchNumber != null && batchNumber.isNotEmpty)
+          'batchNumber': batchNumber,
+        if (expiryDate != null && expiryDate.isNotEmpty)
+          'expiryDate': expiryDate,
       },
     );
     return Product.fromJson(json);
+  }
+
+  /// GET /products/:id/batches — SKT sırasıyla (OWNER/MANAGER).
+  Future<List<ProductBatch>> batches(String productId) async {
+    final json = await _api.get<Map<String, dynamic>>(
+      '/products/$productId/batches',
+    );
+    return (json['data'] as List)
+        .cast<Map<String, dynamic>>()
+        .map(ProductBatch.fromJson)
+        .toList();
+  }
+
+  /// GET /products/expiring-batches?days= — dolmuş partiler isExpired ile gelir.
+  Future<List<ProductBatch>> expiringBatches({int days = 30}) async {
+    final json = await _api.get<Map<String, dynamic>>(
+      '/products/expiring-batches',
+      query: {'days': days},
+    );
+    return (json['data'] as List)
+        .cast<Map<String, dynamic>>()
+        .map(ProductBatch.fromJson)
+        .toList();
   }
 
   Future<void> delete(String id) => _api.delete('/products/$id');
@@ -145,8 +181,18 @@ class StockApi {
   });
 
   /// status: RECEIVED (mal kabul, stoğu artırır) veya CANCELLED.
-  Future<void> resolvePurchaseRequest(String id, String status) =>
-      _api.patch('/products/purchase-requests/$id', body: {'status': status});
+  /// Bölüm AM: mal kabulde opsiyonel parti no + SKT.
+  Future<void> resolvePurchaseRequest(
+    String id,
+    String status, {
+    String? batchNumber,
+    String? expiryDate,
+  }) => _api.patch('/products/purchase-requests/$id', body: {
+    'status': status,
+    if (batchNumber != null && batchNumber.isNotEmpty)
+      'batchNumber': batchNumber,
+    if (expiryDate != null && expiryDate.isNotEmpty) 'expiryDate': expiryDate,
+  });
 
   // --- Tedarikçiler (Bölüm E) ---
 

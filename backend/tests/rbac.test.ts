@@ -138,6 +138,9 @@ const CASES: EndpointCase[] = [
   { method: "delete", path: `/announcements/${NIL}`, allowed: ["OWNER"] },
   // Bölüm AL (8. tur) — dosya yok → izinli roller 400
   { method: "post", path: "/customers/import", allowed: ["OWNER", "MANAGER"], body: {} },
+  // Bölüm AM (9. tur) — parti/SKT
+  { method: "get", path: "/products/expiring-batches", allowed: ["OWNER", "MANAGER"] },
+  { method: "get", path: `/products/${NIL}/batches`, allowed: ["OWNER", "MANAGER"] },
   // Bölüm AE (7. tur)
   { method: "get", path: "/analytics/quote-response-time", allowed: ["OWNER", "MANAGER"] },
   // Bölüm AH (7. tur) — STAFF/TEAM_LEAD route'tan geçer ama uydurma id kendi kaydı değil → 403

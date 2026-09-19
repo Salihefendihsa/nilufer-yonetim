@@ -14,6 +14,8 @@ import {
   createPurchaseRequest,
   listPurchaseRequests,
   updatePurchaseRequest,
+  listProductBatches,
+  getExpiringBatches,
 } from "../controllers/productsController";
 
 const router = Router();
@@ -26,12 +28,15 @@ router.get("/", requireRole(Role.OWNER, Role.MANAGER, Role.TEAM_LEAD, Role.STAFF
 // Satın alma talepleri — sabit yol parçası "/:id" desenlerinden önce tanımlanır.
 router.get("/purchase-requests", requireRole(Role.OWNER, Role.MANAGER), listPurchaseRequests);
 router.patch("/purchase-requests/:id", requireRole(Role.OWNER, Role.MANAGER), updatePurchaseRequest);
+// Bölüm AM (9. tur): SKT yaklaşan/dolmuş partiler — sabit yol, "/:id"den önce.
+router.get("/expiring-batches", requireRole(Role.OWNER, Role.MANAGER), getExpiringBatches);
 router.post("/", requireRole(Role.OWNER, Role.MANAGER), createProduct);
 router.patch("/:id", requireRole(Role.OWNER, Role.MANAGER), updateProduct);
 router.delete("/:id", requireRole(Role.OWNER, Role.MANAGER), deleteProduct);
 router.post("/:id/restock", requireRole(Role.OWNER, Role.MANAGER), restockProduct);
 router.post("/:id/count", requireRole(Role.OWNER, Role.MANAGER), adjustProductCount);
 router.get("/:id/movements", requireRole(Role.OWNER, Role.MANAGER), listProductMovements);
+router.get("/:id/batches", requireRole(Role.OWNER, Role.MANAGER), listProductBatches);
 // Bölüm W (5. tur): kullanım bazlı tükenme tahmini.
 router.get("/:id/forecast", requireRole(Role.OWNER, Role.MANAGER), getProductForecast);
 // Ekip lideri yalnızca TALEP AÇABİLİR (Stitch Şef → Bildirimler: "Talep Oluştur").

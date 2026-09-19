@@ -1,7 +1,8 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState, type FormEvent } from "react";
 import { ShoppingCart, Check, X } from "lucide-react";
+import { Modal } from "@/components/Modal";
 import { api, ApiError } from "@/lib/api";
 import { formatDateTime, decimalValue } from "@/lib/format";
 import type { Paginated, StockPurchaseRequest } from "@/lib/types";
@@ -21,6 +22,11 @@ export function PurchaseRequestsPanel({ onChanged }: { onChanged: () => void }) 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
+  // Bölüm AM (9. tur): mal kabulde opsiyonel parti no + SKT sorulur.
+  const [receiveTarget, setReceiveTarget] = useState<StockPurchaseRequest | null>(null);
+  const [batchNumber, setBatchNumber] = useState("");
+  const [expiryDate, setExpiryDate] = useState("");
+  const [receiveError, setReceiveError] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -39,18 +45,43 @@ export function PurchaseRequestsPanel({ onChanged }: { onChanged: () => void }) 
     load();
   }, [load]);
 
-  async function resolve(id: string, status: "RECEIVED" | "CANCELLED") {
+  async function resolve(id: string, status: "RECEIVED" | "CANCELLED", batch?: { batchNumber?: string; expiryDate?: string }) {
     setBusyId(id);
     setError(null);
     try {
-      await api.patch(`/products/purchase-requests/${id}`, { status });
+      await api.patch(`/products/purchase-requests/${id}`, { status, ...batch });
       await load();
       onChanged();
+      return true;
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : "İşlem tamamlanamadı");
+      const message = err instanceof ApiError ? err.message : "İşlem tamamlanamadı";
+      if (status === "RECEIVED" && batch) setReceiveError(message);
+      else setError(message);
+      return false;
     } finally {
       setBusyId(null);
     }
+  }
+
+  function openReceive(request: StockPurchaseRequest) {
+    setReceiveTarget(request);
+    setBatchNumber("");
+    setExpiryDate("");
+    setReceiveError(null);
+  }
+
+  async function handleReceive(e: FormEvent) {
+    e.preventDefault();
+    if (!receiveTarget) return;
+    if (!!batchNumber.trim() !== !!expiryDate) {
+      setReceiveError("Parti numarası ve son kullanma tarihi birlikte girilmeli");
+      return;
+    }
+    const ok = await resolve(receiveTarget.id, "RECEIVED", {
+      batchNumber: batchNumber.trim() || undefined,
+      expiryDate: expiryDate || undefined,
+    });
+    if (ok) setReceiveTarget(null);
   }
 
   return (
@@ -109,7 +140,7 @@ export function PurchaseRequestsPanel({ onChanged }: { onChanged: () => void }) 
                 <button
                   type="button"
                   disabled={busyId === request.id}
-                  onClick={() => resolve(request.id, "RECEIVED")}
+                  onClick={() => openReceive(request)}
                   className="flex items-center gap-1.5 rounded-xl bg-primary-600 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-primary-700 disabled:opacity-60"
                 >
                   <Check size={13} strokeWidth={2} />
@@ -129,6 +160,34 @@ export function PurchaseRequestsPanel({ onChanged }: { onChanged: () => void }) 
           ))}
         </ul>
       )}
+
+      <Modal open={!!receiveTarget} onClose={() => setReceiveTarget(null)} title={receiveTarget ? `Mal Kabul — ${receiveTarget.product?.name ?? "Ürün"}` : "Mal Kabul"}>
+        <form onSubmit={handleReceive} className="flex flex-col gap-4">
+          <p className="text-sm text-text-secondary">
+            +{receiveTarget ? decimalValue(receiveTarget.quantity) : ""} {receiveTarget?.product?.unit ?? ""} stoğa eklenecek. Kimyasallar için parti no ve SKT
+            girmeniz önerilir (opsiyonel).
+          </p>
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <div className="flex flex-col gap-1.5">
+              <label className="text-sm font-medium text-text-secondary">Parti No</label>
+              <input value={batchNumber} onChange={(e) => setBatchNumber(e.target.value)} className="input" placeholder="Örn. LOT-2409A" maxLength={64} />
+            </div>
+            <div className="flex flex-col gap-1.5">
+              <label className="text-sm font-medium text-text-secondary">Son Kullanma Tarihi</label>
+              <input type="date" value={expiryDate} onChange={(e) => setExpiryDate(e.target.value)} className="input" />
+            </div>
+          </div>
+          {receiveError && <p className="rounded-2xl border border-danger-100 bg-danger-50 px-4 py-3 text-sm text-danger-500">{receiveError}</p>}
+          <div className="mt-2 flex justify-end gap-3">
+            <button type="button" onClick={() => setReceiveTarget(null)} className="rounded-2xl px-4 py-2.5 text-sm font-medium text-text-secondary transition hover:bg-surface-subtle">
+              Vazgeç
+            </button>
+            <button type="submit" disabled={busyId === receiveTarget?.id} className="rounded-2xl bg-primary-600 px-4 py-2.5 text-sm font-semibold text-white shadow-card transition hover:bg-primary-700 disabled:opacity-60">
+              {busyId === receiveTarget?.id ? "Kaydediliyor..." : "Mal Kabul Et"}
+            </button>
+          </div>
+        </form>
+      </Modal>
     </section>
   );
 }

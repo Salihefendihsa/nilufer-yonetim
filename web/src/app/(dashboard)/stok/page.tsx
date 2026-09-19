@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Plus, PackagePlus, Boxes, Trash2, AlertTriangle,
-  Timer, PackageCheck, Layers, ShoppingCart, History, ClipboardList } from "lucide-react";
+  Timer, PackageCheck, Layers, ShoppingCart, History, ClipboardList, Tag } from "lucide-react";
 import { RequireRole } from "@/components/RequireRole";
 import { PageHeader } from "@/components/PageHeader";
 import { StatCard } from "@/components/StatCard";
@@ -25,6 +25,8 @@ import { PurchaseRequestsPanel } from "./PurchaseRequestsPanel";
 import { SuppliersPanel } from "./SuppliersPanel";
 import { MovementsModal } from "./MovementsModal";
 import { StockCountModal } from "./StockCountModal";
+import { BatchesModal } from "./BatchesModal";
+import { ExpiringBatchesPanel } from "./ExpiringBatchesPanel";
 
 const CATEGORY_LABELS: Record<ProductCategory, string> = {
   BIOCIDAL: "Kimyasal",
@@ -70,6 +72,8 @@ function StockPageContent() {
   const [purchaseTarget, setPurchaseTarget] = useState<Product | null>(null);
   const [movementsTarget, setMovementsTarget] = useState<Product | null>(null);
   const [countTarget, setCountTarget] = useState<Product | null>(null);
+  // Bölüm AM (9. tur): parti listesi modalı.
+  const [batchesTarget, setBatchesTarget] = useState<Product | null>(null);
   // Mal kabulü stoğu değiştirdiği için panelin de yenilenmesi gerekir.
   const [purchaseRefreshKey, setPurchaseRefreshKey] = useState(0);
   const [deleteTarget, setDeleteTarget] = useState<Product | null>(null);
@@ -250,6 +254,16 @@ function StockPageContent() {
           {canManage && (
           <button
             type="button"
+            onClick={() => setBatchesTarget(row)}
+            className="flex items-center gap-1.5 rounded-xl border border-border bg-surface-base px-3 py-1.5 text-xs font-medium text-text-secondary transition hover:border-border-strong hover:bg-surface-subtle hover:text-text-primary"
+          >
+            <Tag size={13} strokeWidth={1.75} />
+            Partiler
+          </button>
+          )}
+          {canManage && (
+          <button
+            type="button"
             onClick={() => setCountTarget(row)}
             className="flex items-center gap-1.5 rounded-xl border border-border bg-surface-base px-3 py-1.5 text-xs font-medium text-text-secondary transition hover:border-border-strong hover:bg-surface-subtle hover:text-text-primary"
           >
@@ -398,11 +412,20 @@ function StockPageContent() {
         }
       />
 
+      {canManage && <ExpiringBatchesPanel refreshKey={purchaseRefreshKey} />}
       {canManage && <PurchaseRequestsPanel key={purchaseRefreshKey} onChanged={load} />}
       {canManage && <SuppliersPanel />}
 
       <ProductFormModal open={formOpen} onClose={() => setFormOpen(false)} onSaved={load} />
-      <RestockModal open={!!restockTarget} onClose={() => setRestockTarget(null)} onSaved={load} product={restockTarget} />
+      <RestockModal
+        open={!!restockTarget}
+        onClose={() => setRestockTarget(null)}
+        onSaved={() => {
+          load();
+          setPurchaseRefreshKey((k) => k + 1);
+        }}
+        product={restockTarget}
+      />
       <PurchaseRequestModal
         open={!!purchaseTarget}
         onClose={() => setPurchaseTarget(null)}
@@ -413,6 +436,7 @@ function StockPageContent() {
         product={purchaseTarget}
       />
       <MovementsModal open={!!movementsTarget} onClose={() => setMovementsTarget(null)} product={movementsTarget} />
+      <BatchesModal open={!!batchesTarget} onClose={() => setBatchesTarget(null)} product={batchesTarget} />
       <StockCountModal
         open={!!countTarget}
         onClose={() => setCountTarget(null)}

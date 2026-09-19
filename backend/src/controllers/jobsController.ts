@@ -1,12 +1,13 @@
 import type { Request, Response } from "express";
 import { z } from "zod";
-import { JobStatus, Role, StockMovementType, type Prisma } from "@prisma/client";
+import { JobStatus, Role, type Prisma } from "@prisma/client";
 import { prisma } from "../lib/prisma";
 import { getPagination, paginatedResponse } from "../lib/pagination";
 import { getCustomerIdForUser, getStaffIdForUser, getTeamStaffIds, canAccessJob, resolveSupervisorInfo } from "../lib/access";
 import { idParam } from "../lib/params";
 import { notifyUser, notifyManagement } from "../lib/notify";
 import { buildGoogleCalendarLink } from "../lib/googleCalendar";
+import { consumeFromBatches } from "../lib/productBatches";
 import { checkLowStockAndNotify } from "../lib/reminders";
 import { saveBase64Image } from "../lib/upload";
 import { recordAuditLog } from "../lib/auditLog";
@@ -554,19 +555,18 @@ export async function createJobReport(req: Request, res: Response) {
       data: { ...data, jobId: job.id, staffId, checklist: normalizeChecklist(job.checklist) as unknown as Prisma.InputJsonValue },
     });
 
+    // Bölüm AM (9. tur): çıkış, ürünün partileri arasından en önce süresi
+    // dolacak olandan düşülür (FIFO by expiry) — bkz. lib/productBatches.ts.
     if (data.productId && data.quantity) {
       await tx.product.update({
         where: { id: data.productId },
         data: { currentStock: { decrement: data.quantity } },
       });
-      await tx.stockMovement.create({
-        data: {
-          productId: data.productId,
-          type: StockMovementType.OUT,
-          quantity: data.quantity,
-          relatedJobReportId: created.id,
-          note: `İş raporu: ${job.serviceType}`,
-        },
+      await consumeFromBatches(tx, {
+        productId: data.productId,
+        quantity: data.quantity,
+        relatedJobReportId: created.id,
+        note: `İş raporu: ${job.serviceType}`,
       });
     }
 
@@ -578,14 +578,11 @@ export async function createJobReport(req: Request, res: Response) {
         where: { id: p.productId },
         data: { currentStock: { decrement: p.quantity } },
       });
-      await tx.stockMovement.create({
-        data: {
-          productId: p.productId,
-          type: StockMovementType.OUT,
-          quantity: p.quantity,
-          relatedJobReportProductId: line.id,
-          note: `İş raporu: ${job.serviceType}`,
-        },
+      await consumeFromBatches(tx, {
+        productId: p.productId,
+        quantity: p.quantity,
+        relatedJobReportProductId: line.id,
+        note: `İş raporu: ${job.serviceType}`,
       });
     }
 

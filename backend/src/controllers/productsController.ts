@@ -7,6 +7,7 @@ import { idParam } from "../lib/params";
 import { recordAuditLog } from "../lib/auditLog";
 import { notifyManagement } from "../lib/notify";
 import { computeForecast, sumOutUsageByProduct } from "../lib/stockForecast";
+import { createBatchIfProvided, decorateBatch, findExpiringBatches } from "../lib/productBatches";
 
 const createSchema = z.object({
   code: z.string().min(1).optional(),
@@ -27,9 +28,25 @@ const updateSchema = z.object({
   criticalThreshold: z.number().nonnegative().optional(),
 });
 
+/**
+ * Bölüm AM (9. tur): stok girişinde OPSİYONEL parti no + SKT. İkisi birlikte
+ * verilmeli (biri varsa diğeri zorunlu) — yarım parti kaydı olmaz.
+ */
+const batchFields = {
+  batchNumber: z.string().trim().min(1).max(64).optional(),
+  expiryDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "SKT YYYY-AA-GG biçiminde olmalı").optional(),
+};
+function validateBatchPair(data: { batchNumber?: string; expiryDate?: string }): string | null {
+  if (!!data.batchNumber !== !!data.expiryDate) return "Parti numarası ve son kullanma tarihi birlikte girilmeli";
+  if (data.expiryDate && Number.isNaN(new Date(data.expiryDate).getTime())) return "Geçersiz son kullanma tarihi";
+  return null;
+}
+
 const restockSchema = z.object({
   quantity: z.number().positive(),
   note: z.string().optional(),
+  ...batchFields,
+  supplierId: z.string().uuid().optional(),
 });
 
 export async function listProducts(req: Request, res: Response) {
@@ -150,17 +167,21 @@ export async function restockProduct(req: Request, res: Response) {
     return res.status(404).json({ error: "Ürün bulunamadı" });
   }
 
-  const { quantity, note } = restockSchema.parse(req.body);
+  const { quantity, note, batchNumber, expiryDate, supplierId } = restockSchema.parse(req.body);
+  const batchError = validateBatchPair({ batchNumber, expiryDate });
+  if (batchError) return res.status(400).json({ error: batchError });
 
-  const [product] = await prisma.$transaction([
-    prisma.product.update({
+  const product = await prisma.$transaction(async (tx) => {
+    const updated = await tx.product.update({
       where: { id: existing.id },
       data: { currentStock: { increment: quantity } },
-    }),
-    prisma.stockMovement.create({
-      data: { productId: existing.id, type: StockMovementType.IN, quantity, note },
-    }),
-  ]);
+    });
+    const batchId = await createBatchIfProvided(tx, existing.id, quantity, { batchNumber, expiryDate, supplierId });
+    await tx.stockMovement.create({
+      data: { productId: existing.id, type: StockMovementType.IN, quantity, note, batchId },
+    });
+    return updated;
+  });
 
   await recordAuditLog({
     actorUserId: req.user!.sub,
@@ -371,6 +392,8 @@ export async function listPurchaseRequests(req: Request, res: Response) {
 
 const purchaseStatusSchema = z.object({
   status: z.enum([PurchaseRequestStatus.RECEIVED, PurchaseRequestStatus.CANCELLED]),
+  // Bölüm AM: mal kabulde opsiyonel parti bilgisi (talebin tedarikçisi partiye yazılır).
+  ...batchFields,
 });
 
 /**
@@ -383,7 +406,9 @@ const purchaseStatusSchema = z.object({
  */
 export async function updatePurchaseRequest(req: Request, res: Response) {
   const requestId = idParam(req);
-  const { status } = purchaseStatusSchema.parse(req.body);
+  const { status, batchNumber, expiryDate } = purchaseStatusSchema.parse(req.body);
+  const batchError = validateBatchPair({ batchNumber, expiryDate });
+  if (batchError) return res.status(400).json({ error: batchError });
 
   const existing = await prisma.stockPurchaseRequest.findUnique({
     where: { id: requestId },
@@ -412,12 +437,18 @@ export async function updatePurchaseRequest(req: Request, res: Response) {
         where: { id: existing.productId },
         data: { currentStock: { increment: existing.quantity } },
       });
+      const batchId = await createBatchIfProvided(tx, existing.productId, existing.quantity, {
+        batchNumber,
+        expiryDate,
+        supplierId: existing.supplierId,
+      });
       await tx.stockMovement.create({
         data: {
           productId: existing.productId,
           type: StockMovementType.IN,
           quantity: existing.quantity,
           note: `Satın alma talebi mal kabulü${existing.note ? ` — ${existing.note}` : ""}`,
+          batchId,
         },
       });
     }
@@ -465,4 +496,34 @@ export async function getProductForecast(req: Request, res: Response) {
     currentStock: Number(product.currentStock),
     ...computeForecast(Number(product.currentStock), usage.get(product.id) ?? 0),
   });
+}
+
+// ---------------------------------------------------------------------------
+// Bölüm AM (9. tur): parti / SKT
+// ---------------------------------------------------------------------------
+
+/** GET /products/:id/batches — ürünün partileri (bakiyesi 0 olanlar da; SKT sırasıyla). */
+export async function listProductBatches(req: Request, res: Response) {
+  const productId = idParam(req);
+  const existing = await prisma.product.findUnique({ where: { id: productId }, select: { id: true } });
+  if (!existing) {
+    return res.status(404).json({ error: "Ürün bulunamadı" });
+  }
+  const batches = await prisma.productBatch.findMany({
+    where: { productId },
+    orderBy: [{ expiryDate: "asc" }, { receivedAt: "asc" }],
+    include: { supplier: { select: { id: true, name: true } } },
+  });
+  return res.json({ data: batches.map((b) => decorateBatch(b)) });
+}
+
+/**
+ * GET /products/expiring-batches?days=30 — süresi `days` gün içinde dolacak
+ * veya DOLMUŞ (isExpired=true) bakiyeli partiler, en yakın SKT önce.
+ */
+export async function getExpiringBatches(req: Request, res: Response) {
+  const raw = Number(req.query.days);
+  const days = Number.isFinite(raw) && raw >= 0 && raw <= 365 ? Math.floor(raw) : 30;
+  const data = await findExpiringBatches(days);
+  return res.json({ days, data });
 }

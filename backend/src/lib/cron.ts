@@ -12,6 +12,7 @@ import {
   sendDailyDigest,
   sweepLowStockAlerts,
   sweepContractRenewalAlerts,
+  sweepExpiringBatchAlerts,
 } from "./reminders";
 
 /**
@@ -99,6 +100,8 @@ export function startReminderCrons() {
     // Bölüm B (2. tur): 7 gün veya daha az kalan sözleşmeler için sözleşme
     // bazlı, daha aciliyetli ikinci bir hatırlatma — 30 günlük özetin YERİNE değil, yanına.
     sweepContractRenewalAlerts().catch((err) => console.error("Sözleşme yenileme taraması başarısız:", err));
+    // Bölüm AM (9. tur): SKT'si 7 gün içinde dolacak/dolmuş partiler (günlük dedup).
+    sweepExpiringBatchAlerts().catch((err) => console.error("Parti SKT taraması başarısız:", err));
   });
 
   // Günlük özet emaili — 07:00.

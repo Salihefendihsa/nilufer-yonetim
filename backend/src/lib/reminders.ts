@@ -2,6 +2,7 @@ import { Role, AdvanceStatus, JobStatus, PurchaseRequestStatus } from "@prisma/c
 import { prisma } from "./prisma";
 import { notifyUser, notifyUsers, notifyManagement } from "./notify";
 import { sendEmail } from "./email";
+import { EXPIRY_ALERT_WINDOW_DAYS, findExpiringBatches } from "./productBatches";
 
 const UPCOMING_JOB_WINDOW_START_MIN = 55;
 const UPCOMING_JOB_WINDOW_END_MIN = 70;
@@ -412,6 +413,38 @@ export async function sweepContractRenewalAlerts(): Promise<number> {
       { type: "contract_renewal", relatedType: "Contract", relatedId: contract.id }
     );
     await prisma.contract.update({ where: { id: contract.id }, data: { lastRenewalAlertAt: now } });
+    notifiedCount++;
+  }
+
+  return notifiedCount;
+}
+
+/**
+ * Bölüm AM (9. tur): SKT'si 7 gün içinde dolacak veya dolmuş, bakiyesi > 0
+ * partiler için yönetime (OWNER/MANAGER) günlük dedup'lı bildirim —
+ * `ProductBatch.lastExpiryAlertAt` ile aynı takvim günü kontrolü
+ * (lastLowStockAlertAt deseni). Bakiyesi sıfırlanan parti listeden düşer.
+ * @param onlyProductIds Testler/manuel tetikleme için kapsam daraltıcı —
+ *   üretimde verilmez (bkz. lib/cron.ts).
+ */
+export async function sweepExpiringBatchAlerts(onlyProductIds?: string[]): Promise<number> {
+  const now = new Date();
+  const batches = await findExpiringBatches(EXPIRY_ALERT_WINDOW_DAYS, onlyProductIds);
+
+  let notifiedCount = 0;
+  for (const batch of batches) {
+    if (batch.lastExpiryAlertAt && isSameCalendarDay(batch.lastExpiryAlertAt, now)) continue;
+
+    const body = batch.isExpired
+      ? `${batch.product.name} · Parti ${batch.batchNumber} son kullanma tarihi GEÇTİ (${Number(batch.quantityRemaining)} ${batch.product.unit} kaldı). İmha/iade edilmeli.`
+      : `${batch.product.name} · Parti ${batch.batchNumber} ${batch.daysLeft} gün içinde son kullanma tarihine ulaşıyor (${Number(batch.quantityRemaining)} ${batch.product.unit} kaldı).`;
+
+    await notifyManagement(
+      batch.isExpired ? "Süresi dolmuş kimyasal partisi" : "Son kullanma tarihi yaklaşan parti",
+      body,
+      { type: "batch_expiry", relatedType: "Product", relatedId: batch.productId }
+    );
+    await prisma.productBatch.update({ where: { id: batch.id }, data: { lastExpiryAlertAt: now } });
     notifiedCount++;
   }
 

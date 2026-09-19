@@ -54,10 +54,116 @@ class _PurchaseRequestsScreenState extends State<PurchaseRequestsScreen> {
     }
   }
 
-  Future<void> _resolve(StockPurchaseRequest r, String status) async {
+  /// Bölüm AM (9. tur): mal kabulde opsiyonel parti no + SKT sorulur
+  /// (ikisi birlikte). Kullanıcı vazgeçerse işlem yapılmaz.
+  Future<void> _receiveWithBatch(StockPurchaseRequest r) async {
+    final batchController = TextEditingController();
+    DateTime? expiry;
+    final result = await showModalBottomSheet<({String batch, String? expiry})>(
+      context: context,
+      isScrollControlled: true,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setSheetState) => Padding(
+          padding: EdgeInsets.only(
+            bottom: MediaQuery.of(ctx).viewInsets.bottom,
+            left: 20,
+            right: 20,
+            top: 20,
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Mal Kabul — ${r.productName ?? 'Ürün'}',
+                style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 15),
+              ),
+              const SizedBox(height: 6),
+              Text(
+                '+${r.quantity.toStringAsFixed(1)} ${r.productUnit ?? ''} stoğa eklenecek. Kimyasallar için parti no ve SKT önerilir (opsiyonel).',
+                style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: batchController,
+                decoration: const InputDecoration(
+                  labelText: 'Parti No (opsiyonel)',
+                  hintText: 'Örn. LOT-2409A',
+                ),
+              ),
+              const SizedBox(height: 8),
+              OutlinedButton.icon(
+                onPressed: () async {
+                  final picked = await showDatePicker(
+                    context: ctx,
+                    initialDate: expiry ?? DateTime.now().add(const Duration(days: 365)),
+                    firstDate: DateTime.now().subtract(const Duration(days: 3650)),
+                    lastDate: DateTime.now().add(const Duration(days: 3650)),
+                  );
+                  if (picked != null) setSheetState(() => expiry = picked);
+                },
+                icon: const Icon(Icons.event_outlined, size: 16),
+                label: Text(
+                  expiry == null
+                      ? 'Son Kullanma Tarihi seç'
+                      : 'SKT: ${expiry!.day.toString().padLeft(2, '0')}.${expiry!.month.toString().padLeft(2, '0')}.${expiry!.year}',
+                ),
+              ),
+              const SizedBox(height: 16),
+              ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.success600,
+                ),
+                onPressed: () {
+                  final e = expiry;
+                  Navigator.of(ctx).pop((
+                    batch: batchController.text.trim(),
+                    expiry: e == null
+                        ? null
+                        : '${e.year}-${e.month.toString().padLeft(2, '0')}-${e.day.toString().padLeft(2, '0')}',
+                  ));
+                },
+                child: const Text('Mal Kabul Et'),
+              ),
+              const SizedBox(height: 12),
+            ],
+          ),
+        ),
+      ),
+    );
+    if (result == null) return;
+    if (result.batch.isNotEmpty != (result.expiry ?? '').isNotEmpty) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Parti numarası ve son kullanma tarihi birlikte girilmeli'),
+          ),
+        );
+      }
+      return;
+    }
+    await _resolve(
+      r,
+      'RECEIVED',
+      batchNumber: result.batch,
+      expiryDate: result.expiry,
+    );
+  }
+
+  Future<void> _resolve(
+    StockPurchaseRequest r,
+    String status, {
+    String? batchNumber,
+    String? expiryDate,
+  }) async {
     setState(() => _busyId = r.id);
     try {
-      await _api.resolvePurchaseRequest(r.id, status);
+      await _api.resolvePurchaseRequest(
+        r.id,
+        status,
+        batchNumber: batchNumber,
+        expiryDate: expiryDate,
+      );
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -193,7 +299,7 @@ class _PurchaseRequestsScreenState extends State<PurchaseRequestsScreen> {
                               child: ElevatedButton(
                                 onPressed: busy
                                     ? null
-                                    : () => _resolve(r, 'RECEIVED'),
+                                    : () => _receiveWithBatch(r),
                                 style: ElevatedButton.styleFrom(
                                   backgroundColor: AppColors.success600,
                                 ),

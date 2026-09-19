@@ -10,6 +10,7 @@ import '../../widgets/state_views.dart';
 import 'purchase_requests_screen.dart';
 import 'stock_api.dart';
 import 'stock_movements_screen.dart';
+import 'product_batches_screen.dart';
 import 'suppliers_screen.dart';
 
 /// backend/src/routes/products.ts: GET herkese (rol dahilinde) açık, yazma
@@ -308,49 +309,113 @@ class _StockListScreenState extends State<StockListScreen> {
 
   Future<void> _showRestockSheet(Product p) async {
     final controller = TextEditingController();
-    final result = await showModalBottomSheet<double>(
+    // Bölüm AM (9. tur): opsiyonel parti no + SKT (ikisi birlikte).
+    final batchController = TextEditingController();
+    DateTime? expiry;
+    final result = await showModalBottomSheet<({double qty, String? batch, String? expiry})>(
       context: context,
       isScrollControlled: true,
-      builder: (ctx) => Padding(
-        padding: EdgeInsets.only(
-          bottom: MediaQuery.of(ctx).viewInsets.bottom,
-          left: 20,
-          right: 20,
-          top: 20,
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              '${p.name} — Stok Ekle',
-              style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 15),
-            ),
-            const SizedBox(height: 12),
-            TextField(
-              controller: controller,
-              keyboardType: const TextInputType.numberWithOptions(
-                decimal: true,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setSheetState) => Padding(
+          padding: EdgeInsets.only(
+            bottom: MediaQuery.of(ctx).viewInsets.bottom,
+            left: 20,
+            right: 20,
+            top: 20,
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                '${p.name} — Stok Ekle',
+                style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 15),
               ),
-              decoration: InputDecoration(labelText: 'Miktar (${p.unit})'),
-              autofocus: true,
-            ),
-            const SizedBox(height: 16),
-            ElevatedButton(
-              onPressed: () {
-                final v = double.tryParse(controller.text.trim());
-                Navigator.of(ctx).pop(v);
-              },
-              child: const Text('Ekle'),
-            ),
-            const SizedBox(height: 12),
-          ],
+              const SizedBox(height: 12),
+              TextField(
+                controller: controller,
+                keyboardType: const TextInputType.numberWithOptions(
+                  decimal: true,
+                ),
+                decoration: InputDecoration(labelText: 'Miktar (${p.unit})'),
+                autofocus: true,
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: batchController,
+                decoration: const InputDecoration(
+                  labelText: 'Parti No (opsiyonel)',
+                  hintText: 'Örn. LOT-2409A',
+                ),
+              ),
+              const SizedBox(height: 8),
+              OutlinedButton.icon(
+                onPressed: () async {
+                  final picked = await showDatePicker(
+                    context: ctx,
+                    initialDate: expiry ?? DateTime.now().add(const Duration(days: 365)),
+                    firstDate: DateTime.now().subtract(const Duration(days: 3650)),
+                    lastDate: DateTime.now().add(const Duration(days: 3650)),
+                  );
+                  if (picked != null) setSheetState(() => expiry = picked);
+                },
+                icon: const Icon(Icons.event_outlined, size: 16),
+                label: Text(
+                  expiry == null
+                      ? 'Son Kullanma Tarihi seç'
+                      : 'SKT: ${expiry!.day.toString().padLeft(2, '0')}.${expiry!.month.toString().padLeft(2, '0')}.${expiry!.year}',
+                ),
+              ),
+              const SizedBox(height: 4),
+              const Text(
+                'Kimyasallarda parti + SKT yasal takip için önerilir; çıkışlar en önce süresi dolacak partiden düşülür.',
+                style: TextStyle(fontSize: 11, color: AppColors.textSecondary),
+              ),
+              const SizedBox(height: 16),
+              ElevatedButton(
+                onPressed: () {
+                  final v = double.tryParse(controller.text.trim());
+                  if (v == null) {
+                    Navigator.of(ctx).pop();
+                    return;
+                  }
+                  final e = expiry;
+                  Navigator.of(ctx).pop((
+                    qty: v,
+                    batch: batchController.text.trim(),
+                    expiry: e == null
+                        ? null
+                        : '${e.year}-${e.month.toString().padLeft(2, '0')}-${e.day.toString().padLeft(2, '0')}',
+                  ));
+                },
+                child: const Text('Ekle'),
+              ),
+              const SizedBox(height: 12),
+            ],
+          ),
         ),
       ),
     );
-    if (result == null || result <= 0) return;
+    if (result == null || result.qty <= 0) return;
+    final hasBatch = (result.batch ?? '').isNotEmpty;
+    final hasExpiry = (result.expiry ?? '').isNotEmpty;
+    if (hasBatch != hasExpiry) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Parti numarası ve son kullanma tarihi birlikte girilmeli'),
+          ),
+        );
+      }
+      return;
+    }
     try {
-      await _api.restock(p.id, result);
+      await _api.restock(
+        p.id,
+        result.qty,
+        batchNumber: result.batch,
+        expiryDate: result.expiry,
+      );
       _load();
       if (mounted) {
         ScaffoldMessenger.of(
@@ -419,6 +484,18 @@ class _StockListScreenState extends State<StockListScreen> {
               onPressed: () {
                 Navigator.of(context).push(
                   MaterialPageRoute(builder: (_) => const SuppliersScreen()),
+                );
+              },
+            ),
+          if (_canManage)
+            IconButton(
+              icon: const Icon(Icons.event_busy_outlined),
+              tooltip: 'Süresi Yaklaşan Partiler',
+              onPressed: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (_) => const ExpiringBatchesScreen(),
+                  ),
                 );
               },
             ),
@@ -736,6 +813,25 @@ class _StockListScreenState extends State<StockListScreen> {
                             icon: const Icon(Icons.history_rounded, size: 15),
                             label: const Text(
                               'Hareketler',
+                              style: TextStyle(fontSize: 12),
+                            ),
+                            style: TextButton.styleFrom(
+                              padding: EdgeInsets.zero,
+                              minimumSize: const Size(0, 0),
+                              visualDensity: VisualDensity.compact,
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          TextButton.icon(
+                            onPressed: () => Navigator.of(context).push(
+                              MaterialPageRoute(
+                                builder: (_) =>
+                                    ProductBatchesScreen(product: p),
+                              ),
+                            ),
+                            icon: const Icon(Icons.sell_outlined, size: 15),
+                            label: const Text(
+                              'Partiler',
                               style: TextStyle(fontSize: 12),
                             ),
                             style: TextButton.styleFrom(

@@ -510,6 +510,22 @@ export interface Product {
   forecast?: StockForecast;
 }
 
+/** Bölüm AM (9. tur): kimyasal parti (lot) + SKT. daysLeft/isExpired sunucuda hesaplanır. */
+export interface ProductBatch {
+  id: string;
+  productId: string;
+  batchNumber: string;
+  expiryDate: string;
+  quantityReceived: ApiDecimal;
+  quantityRemaining: ApiDecimal;
+  receivedAt: string;
+  supplierId: string | null;
+  daysLeft: number;
+  isExpired: boolean;
+  supplier?: { id: string; name: string } | null;
+  product?: { id: string; name: string; unit: string; code: string | null };
+}
+
 export interface StockForecast {
   windowDays: number;
   usedInWindow: number;
@@ -1044,3 +1060,4 @@ export interface ExecutiveSummary {
     staffBonuses: number;
   };
 }
+
