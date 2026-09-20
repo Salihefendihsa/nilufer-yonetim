@@ -96,48 +96,58 @@ app.get("/health", (_req, res) => res.json({ status: "ok" }));
 // yetki kuralı, sonra stream. `/uploads/*` istekleri hiçbir route'a
 // düşmez → Express varsayılan 404.
 
-app.use("/auth", authRoutes);
-app.use("/customers", customerRoutes);
-app.use("/staff", staffRoutes);
-app.use("/jobs", jobRoutes);
-app.use("/contracts", contractRoutes);
-app.use("/payments", paymentRoutes);
-app.use("/quotes", quoteRoutes);
-app.use("/dashboard", dashboardRoutes);
+const apiRouter = express.Router();
+
+apiRouter.use("/auth", authRoutes);
+apiRouter.use("/customers", customerRoutes);
+apiRouter.use("/staff", staffRoutes);
+apiRouter.use("/jobs", jobRoutes);
+apiRouter.use("/contracts", contractRoutes);
+apiRouter.use("/payments", paymentRoutes);
+apiRouter.use("/quotes", quoteRoutes);
+apiRouter.use("/dashboard", dashboardRoutes);
 // Ekip (şef) kapsamlı görünümler — şirket geneli /dashboard'tan ayrıdır.
-app.use("/team", teamRoutes);
-app.use("/users", userRoutes);
-app.use("/advances", advanceRoutes);
-app.use("/leave-requests", leaveRequestRoutes);
-app.use("/appointment-requests", appointmentRequestRoutes);
-app.use("/job-templates", jobTemplateRoutes);
-app.use("/customer-tags", customerTagRoutes);
-app.use("/expenses", expenseRoutes);
-app.use("/suppliers", supplierRoutes);
-app.use("/staff-bonuses", staffBonusRoutes);
-app.use("/conversations", conversationRoutes);
-app.use("/notifications", notificationRoutes);
-app.use("/audit-logs", auditLogRoutes);
-app.use("/system", systemRoutes);
-app.use("/products", productRoutes);
-app.use("/search", searchRoutes);
-app.use("/admin", adminRoutes);
-app.use("/settings", settingsRoutes);
-app.use("/service-types", serviceTypeRoutes);
-app.use("/districts", districtRoutes);
-app.use("/observer-access", observerAccessRoutes);
-app.use("/evaluations", evaluationRoutes);
-app.use("/evaluation-criteria", evaluationCriteriaRoutes);
-app.use("/evaluation-periods", evaluationPeriodsRoutes);
-app.use("/notification-preferences", notificationPreferenceRoutes);
-app.use("/analytics", analyticsRoutes);
-app.use("/sessions", sessionRoutes);
-app.use("/files", fileRoutes);
-app.use("/data-deletion-requests", dataDeletionRoutes);
-app.use("/announcements", announcementRoutes);
-app.use("/complaints", complaintRoutes);
+apiRouter.use("/team", teamRoutes);
+apiRouter.use("/users", userRoutes);
+apiRouter.use("/advances", advanceRoutes);
+apiRouter.use("/leave-requests", leaveRequestRoutes);
+apiRouter.use("/appointment-requests", appointmentRequestRoutes);
+apiRouter.use("/job-templates", jobTemplateRoutes);
+apiRouter.use("/customer-tags", customerTagRoutes);
+apiRouter.use("/expenses", expenseRoutes);
+apiRouter.use("/suppliers", supplierRoutes);
+apiRouter.use("/staff-bonuses", staffBonusRoutes);
+apiRouter.use("/conversations", conversationRoutes);
+apiRouter.use("/notifications", notificationRoutes);
+apiRouter.use("/audit-logs", auditLogRoutes);
+apiRouter.use("/system", systemRoutes);
+apiRouter.use("/products", productRoutes);
+apiRouter.use("/search", searchRoutes);
+apiRouter.use("/admin", adminRoutes);
+apiRouter.use("/settings", settingsRoutes);
+apiRouter.use("/service-types", serviceTypeRoutes);
+apiRouter.use("/districts", districtRoutes);
+apiRouter.use("/observer-access", observerAccessRoutes);
+apiRouter.use("/evaluations", evaluationRoutes);
+apiRouter.use("/evaluation-criteria", evaluationCriteriaRoutes);
+apiRouter.use("/evaluation-periods", evaluationPeriodsRoutes);
+apiRouter.use("/notification-preferences", notificationPreferenceRoutes);
+apiRouter.use("/analytics", analyticsRoutes);
+apiRouter.use("/sessions", sessionRoutes);
+apiRouter.use("/files", fileRoutes);
+apiRouter.use("/data-deletion-requests", dataDeletionRoutes);
+apiRouter.use("/announcements", announcementRoutes);
+apiRouter.use("/complaints", complaintRoutes);
 // Bölüm AP (9. tur): token'lı ICS aboneliği — requireAuth yok (bkz. routes/calendar.ts).
-app.use("/calendar", calendarRoutes);
+apiRouter.use("/calendar", calendarRoutes);
+
+// ADR-004: API versiyonlama. Var olan istemciler (web, yayınlanmış mobil
+// sürümler) önek olmadan çağırmaya devam eder — bu satır hiçbir mevcut
+// davranışı değiştirmez. `/v1` aynı router'ı ayrıca mount eder; ileride
+// kırıcı bir backend değişikliği gerektiğinde yeni istemciler `/v1`'e,
+// eskileri önek olmayan (bu sürümde donan) yola yönlendirilebilir.
+app.use(apiRouter);
+app.use("/v1", apiRouter);
 
 app.use(errorHandler);
 

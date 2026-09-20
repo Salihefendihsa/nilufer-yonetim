@@ -17,7 +17,7 @@ import {
 import { exportJobReportPdf } from "../controllers/exportController";
 import { suggestStaff } from "../controllers/staffSuggestionController";
 import { listJobPhotos, uploadJobPhoto, deleteJobPhoto } from "../controllers/jobPhotosController";
-import { upload } from "../lib/upload";
+import { upload, finalizeUpload } from "../lib/upload";
 
 const router = Router();
 
@@ -43,7 +43,7 @@ router.patch("/:id/rate", requireRole(Role.CUSTOMER), rateJob);
 router.patch("/:id/feedback", requireRole(Role.CUSTOMER), submitJobFeedback);
 
 router.get("/:id/photos", listJobPhotos);
-router.post("/:id/photos", upload.single("photo"), uploadJobPhoto);
+router.post("/:id/photos", upload.single("photo"), finalizeUpload, uploadJobPhoto);
 router.delete("/:id/photos/:photoId", deleteJobPhoto);
 
 export default router;

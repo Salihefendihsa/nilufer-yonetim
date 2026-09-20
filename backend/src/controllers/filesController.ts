@@ -1,10 +1,9 @@
-import fs from "fs";
 import path from "path";
 import type { Request, Response } from "express";
 import { Role } from "@prisma/client";
 import { prisma } from "../lib/prisma";
 import { canAccessJob } from "../lib/access";
-import { UPLOADS_DIR } from "../lib/upload";
+import { readFileStream } from "../lib/storage";
 
 /**
  * Bölüm AC (7. tur) — KRİTİK GÜVENLİK: Kimlik doğrulamalı dosya servisi.
@@ -103,23 +102,23 @@ export async function serveFile(req: Request, res: Response) {
   if (!resolved) return res.status(404).json(NOT_FOUND);
 
   const safeName = path.basename(resolved.filename);
-  const filePath = path.join(UPLOADS_DIR, safeName);
-  if (!filePath.startsWith(UPLOADS_DIR) || !fs.existsSync(filePath)) {
+  const file = await readFileStream(safeName);
+  if (!file) {
     return res.status(404).json(NOT_FOUND);
   }
 
   const mime = resolved.mimeType ?? EXT_MIME[path.extname(safeName).toLowerCase()] ?? "application/octet-stream";
   res.setHeader("Content-Type", mime);
+  if (file.contentLength !== undefined) res.setHeader("Content-Length", String(file.contentLength));
   res.setHeader("Cache-Control", "private, max-age=300");
   // Web'de <img>/blob için inline; indirme butonu `download` özniteliğiyle adı verir.
   const dispositionName = encodeURIComponent(resolved.downloadName ?? safeName);
   res.setHeader("Content-Disposition", `inline; filename*=UTF-8''${dispositionName}`);
   res.setHeader("Cross-Origin-Resource-Policy", "cross-origin");
 
-  const stream = fs.createReadStream(filePath);
-  stream.on("error", () => {
+  file.stream.on("error", () => {
     if (!res.headersSent) res.status(404).json(NOT_FOUND);
     else res.end();
   });
-  return stream.pipe(res);
+  return file.stream.pipe(res);
 }

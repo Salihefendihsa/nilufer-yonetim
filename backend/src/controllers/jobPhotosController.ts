@@ -1,4 +1,3 @@
-import fs from "fs";
 import path from "path";
 import type { Request, Response } from "express";
 import { z } from "zod";
@@ -6,7 +5,8 @@ import { JobPhotoType, Role } from "@prisma/client";
 import { prisma } from "../lib/prisma";
 import { idParam } from "../lib/params";
 import { canAccessJob, getStaffIdForUser } from "../lib/access";
-import { UPLOADS_DIR, uploadedFileUrl } from "../lib/upload";
+import { uploadedFileUrl } from "../lib/upload";
+import { deleteFile } from "../lib/storage";
 
 const MANAGEMENT_ROLES: Role[] = [Role.OWNER, Role.MANAGER];
 
@@ -74,8 +74,7 @@ export async function deleteJobPhoto(req: Request, res: Response) {
 
   await prisma.jobPhoto.delete({ where: { id: photo.id } });
 
-  const filePath = path.join(UPLOADS_DIR, path.basename(photo.url));
-  fs.unlink(filePath, () => {});
+  deleteFile(path.basename(photo.url)).catch(() => {});
 
   return res.status(204).send();
 }

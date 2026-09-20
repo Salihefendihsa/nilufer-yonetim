@@ -546,7 +546,7 @@ export async function createJobReport(req: Request, res: Response) {
   }
 
   if (signatureBase64) {
-    data.signatureUrl = saveBase64Image(signatureBase64, "imza");
+    data.signatureUrl = await saveBase64Image(signatureBase64, "imza");
   }
 
   const report = await prisma.$transaction(async (tx) => {

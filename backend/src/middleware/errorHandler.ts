@@ -2,9 +2,11 @@ import type { Request, Response, NextFunction } from "express";
 import { ZodError } from "zod";
 import { Prisma } from "@prisma/client";
 import { recordError } from "../lib/metrics";
+import { logger } from "../lib/logger";
+import { captureException } from "../lib/errorReporting";
 import multer from "multer";
 
-export function errorHandler(err: unknown, _req: Request, res: Response, _next: NextFunction) {
+export function errorHandler(err: unknown, req: Request, res: Response, _next: NextFunction) {
   if (err instanceof ZodError) {
     return res.status(400).json({ error: "Girdiğiniz bilgilerde hata var", details: err.issues });
   }
@@ -36,6 +38,7 @@ export function errorHandler(err: unknown, _req: Request, res: Response, _next: 
   // Beklenmeyen hatanın gerçek mesajı (İngilizce/teknik olabilir, dosya yolu
   // sızdırabilir) sunucu loguna yazılır ama istemciye asla ham haliyle
   // dönülmez — diğer tüm response'larla tutarlı, sabit bir Türkçe mesaj.
-  console.error(err);
+  logger.error({ err, method: req.method, path: req.originalUrl, userId: req.user?.sub }, "unhandled_error");
+  captureException(err);
   return res.status(500).json({ error: "Sunucu hatası oluştu" });
 }

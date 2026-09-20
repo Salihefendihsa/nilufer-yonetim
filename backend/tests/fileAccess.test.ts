@@ -3,7 +3,8 @@ import path from "path";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { Role } from "@prisma/client";
 import { prisma } from "../src/lib/prisma";
-import { UPLOADS_DIR, uploadedFileUrl } from "../src/lib/upload";
+import { uploadedFileUrl } from "../src/lib/upload";
+import { UPLOADS_DIR } from "../src/lib/storage";
 import { orderedPair } from "../src/lib/messaging";
 import { api, TestContext, type TestUser } from "./helpers/fixtures";
 

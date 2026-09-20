@@ -193,7 +193,7 @@ export async function sendMessage(req: Request, res: Response) {
   // Saha fotografi eki (Stitch Sef -> Mesaj Detayi). Is fotograflariyla ayni
   // depolama altyapisi kullanilir; yalnizca goreli URL saklanir.
   const attachmentUrl = attachmentBase64
-    ? saveBase64Image(attachmentBase64, "message")
+    ? await saveBase64Image(attachmentBase64, "message")
     : null;
 
   const message = await prisma.message.create({

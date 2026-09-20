@@ -2,12 +2,8 @@ import fs from "fs";
 import path from "path";
 import crypto from "crypto";
 import multer from "multer";
-
-export const UPLOADS_DIR = path.join(__dirname, "..", "..", "uploads");
-
-if (!fs.existsSync(UPLOADS_DIR)) {
-  fs.mkdirSync(UPLOADS_DIR, { recursive: true });
-}
+import type { Request, Response, NextFunction } from "express";
+import { UPLOADS_DIR, persistFile } from "./storage";
 
 const storage = multer.diskStorage({
   destination: (_req, _file, cb) => cb(null, UPLOADS_DIR),
@@ -34,19 +30,40 @@ export function uploadedFileUrl(filename: string): string {
 }
 
 /** Decodes a data-URL / base64 PNG (e.g. a signature pad export) and saves it as a file. Returns the public URL. */
-export function saveBase64Image(base64: string, prefix: string): string {
+export async function saveBase64Image(base64: string, prefix: string): Promise<string> {
   const match = /^data:image\/(\w+);base64,(.+)$/.exec(base64);
   const ext = match ? match[1] : "png";
   const data = match ? match[2] : base64;
 
   const filename = `${prefix}-${Date.now()}-${crypto.randomUUID()}.${ext}`;
-  fs.writeFileSync(path.join(UPLOADS_DIR, filename), Buffer.from(data, "base64"));
+  const localPath = path.join(UPLOADS_DIR, filename);
+  fs.writeFileSync(localPath, Buffer.from(data, "base64"));
+  await persistFile(localPath, filename);
   return uploadedFileUrl(filename);
 }
 
 /**
+ * `upload`/`uploadDocument` (multer diskStorage) her zaman önce yerel diske
+ * yazar; nesne depolama (S3 vb.) yapılandırılmışsa bu middleware yüklenen
+ * dosyayı oraya taşıyıp yerel kopyayı siler (bkz. lib/storage.ts). S3
+ * yapılandırılmadıysa no-op — dosya yerel diskte kalır, davranış değişmez.
+ * `upload.single(...)`/`uploadDocument.single(...)` middleware'inden HEMEN
+ * sonra route'a eklenmelidir.
+ */
+export async function finalizeUpload(req: Request, _res: Response, next: NextFunction) {
+  try {
+    if (req.file) {
+      await persistFile(req.file.path, req.file.filename);
+    }
+    next();
+  } catch (err) {
+    next(err);
+  }
+}
+
+/**
  * Bölüm AB (6. tur): Müşteri belgeleri — resimlere ek olarak PDF ve ofis
- * belgeleri; 15 MB. Aynı disk deposu ve dosya adlandırması.
+ * belgeleri; 15 MB. Aynı depolama ve dosya adlandırması.
  */
 const DOCUMENT_MIME_TYPES = new Set([
   "application/pdf",

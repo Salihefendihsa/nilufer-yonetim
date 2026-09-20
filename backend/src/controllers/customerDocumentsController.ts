@@ -1,10 +1,10 @@
-import fs from "fs";
 import path from "path";
 import type { Request, Response } from "express";
 import { prisma } from "../lib/prisma";
 import { idParam } from "../lib/params";
 import { recordAuditLog } from "../lib/auditLog";
-import { UPLOADS_DIR, uploadedFileUrl } from "../lib/upload";
+import { uploadedFileUrl } from "../lib/upload";
+import { deleteFile } from "../lib/storage";
 
 /**
  * Bölüm AB (6. tur): Müşteri belge kasası (OWNER/MANAGER).
@@ -88,9 +88,8 @@ export async function deleteCustomerDocument(req: Request, res: Response) {
   }
 
   await prisma.customerDocument.delete({ where: { id: doc.id } });
-  // Diskteki dosya: URL'den yalnızca dosya adı alınır (path traversal yok).
-  const filePath = path.join(UPLOADS_DIR, path.basename(doc.fileUrl));
-  await fs.promises.unlink(filePath).catch(() => {}); // zaten yoksa sorun değil
+  // Depodaki dosya (S3 veya yerel disk): URL'den yalnızca dosya adı alınır (path traversal yok).
+  await deleteFile(path.basename(doc.fileUrl)).catch(() => {}); // zaten yoksa sorun değil
 
   await recordAuditLog({
     actorUserId: req.user!.sub,
