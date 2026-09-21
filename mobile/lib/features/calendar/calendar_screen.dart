@@ -9,6 +9,7 @@ import '../../theme/app_colors.dart';
 import '../../auth/auth_provider.dart';
 import '../../models/user.dart';
 import '../../navigation/manager_nav.dart';
+import '../search/search_action.dart';
 import '../../widgets/state_views.dart';
 import '../../widgets/stat_card.dart';
 import '../team/team_api.dart';
@@ -371,6 +372,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
       appBar: AppBar(
         leading: ManagerNav.maybeLeading(context),
         title: const Text('Takvim'),
+        actions: const [SearchAction()],
       ),
       body: _loading
           ? const LoadingView()

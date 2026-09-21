@@ -8,6 +8,7 @@ import '../../models/conversation.dart';
 import '../../models/user.dart';
 import '../../theme/app_colors.dart';
 import '../../navigation/manager_nav.dart';
+import '../search/search_action.dart';
 import '../../widgets/state_views.dart';
 import '../../widgets/stat_card.dart';
 import 'chat_screen.dart';
@@ -238,6 +239,7 @@ class _MessagesListScreenState extends State<MessagesListScreen> {
         leading: ManagerNav.maybeLeading(context),
         title: const Text('Mesajlar'),
         actions: [
+          const SearchAction(),
           // Toplu duyuru: doğrudan ekibi olan roller (backend
           // /conversations/broadcast OWNER/MANAGER/TEAM_LEAD).
           if (_canBroadcast)

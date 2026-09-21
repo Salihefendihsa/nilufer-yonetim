@@ -7,7 +7,9 @@ import '../../models/staff.dart';
 import '../../models/user.dart';
 import '../../theme/app_colors.dart';
 import '../../widgets/staggered_fade_in.dart';
+import '../../navigation/manager_nav.dart';
 import '../../widgets/state_views.dart';
+import '../search/search_action.dart';
 import 'staff_api.dart';
 import 'staff_detail_screen.dart';
 import 'staff_form_screen.dart';
@@ -73,8 +75,10 @@ class _StaffListScreenState extends State<StaffListScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
+        leading: ManagerNav.maybeLeading(context),
         title: Text(_showArchived ? 'Geçmiş Personel' : 'Personel'),
         actions: [
+          const SearchAction(),
           if (_isOwner)
             IconButton(
               icon: Icon(_showArchived ? Icons.groups_outlined : Icons.history_rounded),

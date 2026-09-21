@@ -2,163 +2,87 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../auth/auth_provider.dart';
-import '../features/admin/audit_settings_screen.dart';
-import '../features/admin/system_health_screen.dart';
-import '../features/admin/usage_stats_screen.dart';
-import '../features/complaints/complaints_screen.dart';
-import '../features/contracts/contracts_list_screen.dart';
-import '../features/customers/customers_list_screen.dart';
-import '../features/executive/executive_summary_screen.dart';
-import '../features/finance/finance_screen.dart';
-import '../features/notifications/notifications_screen.dart';
-import '../features/performance/performance_screen.dart';
-import '../features/quotes/quotes_list_screen.dart';
-import '../features/reports/reports_screen.dart';
-import '../features/staff/org_chart_screen.dart';
-import '../features/staff/staff_list_screen.dart';
-import '../features/calendar/calendar_screen.dart';
-import '../features/stock/stock_list_screen.dart';
-import '../models/user.dart';
+import '../features/search/search_action.dart';
 import '../theme/app_colors.dart';
+import 'app_drawer.dart';
+import 'manager_nav.dart';
+import 'nav_items.dart';
 
-class _MoreItem {
-  final String label;
-  final IconData icon;
-  final WidgetBuilder builder;
-  const _MoreItem(this.label, this.icon, this.builder);
-}
-
-/// OWNER/MANAGER için alt navigasyonda sabit sekmesi olmayan modüllerin
-/// listesi. "Denetim & Ayarlar" backend'de yalnızca OWNER'a açık olduğu
-/// için (routes/auditLogs.ts, settings.ts) MANAGER'a bu menüde hiç
-/// gösterilmez — mevcut backend kısıtı Flutter'da da yansıtılır.
+/// Alt navigasyondaki "Daha Fazla" sekmesi — rolün ikincil modüllerini
+/// gruplu liste olarak gösterir. İçerik `navGroupsFor(role)`'dan gelir; yani
+/// hamburger çekmecesiyle (AppDrawer) birebir AYNI küme (tasarım denetimi
+/// §3.3: önceden OWNER için 17 öğelik düz liste + 12 öğelik farklı bir
+/// drawer vardı, CUSTOMER için de ikisi senkron değildi).
+///
+/// Tüm roller için tek widget: eski `CustomerMoreMenuScreen` kaldırıldı.
 class MoreMenuScreen extends StatelessWidget {
   const MoreMenuScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
-    final isOwner = context.watch<AuthProvider>().user?.role == AppRole.owner;
-
-    final items = <_MoreItem>[
-      // Bölüm G (2. tur): tüm KPI'lar tek ekranda, drill-down'lu.
-      _MoreItem(
-        'Yönetici Özeti',
-        Icons.dashboard_customize_outlined,
-        (_) => const ExecutiveSummaryScreen(),
-      ),
-      _MoreItem(
-        'Müşteriler',
-        Icons.people_outline_rounded,
-        (_) => const CustomersListScreen(),
-      ),
-      _MoreItem(
-        'Personel',
-        Icons.groups_outlined,
-        (_) => const StaffListScreen(),
-      ),
-      // Bölüm AO (9. tur): müşteri şikayetleri — Bekleyen Onaylar'dan ayrı akış.
-      _MoreItem(
-        'Şikayetler',
-        Icons.report_problem_outlined,
-        (_) => const ComplaintsScreen(),
-      ),
-      _MoreItem(
-        'Takvim',
-        Icons.calendar_month_outlined,
-        (_) => const CalendarScreen(),
-      ),
-      _MoreItem(
-        'Bildirimler',
-        Icons.notifications_outlined,
-        (_) => const NotificationsScreen(),
-      ),
-      _MoreItem(
-        'Stok',
-        Icons.inventory_2_outlined,
-        (_) => const StockListScreen(),
-      ),
-      _MoreItem(
-        'Teklifler',
-        Icons.request_quote_outlined,
-        (_) => const QuotesListScreen(),
-      ),
-      _MoreItem(
-        'Sözleşmeler',
-        Icons.description_outlined,
-        (_) => const ContractsListScreen(),
-      ),
-      _MoreItem(
-        'Para & Finans',
-        Icons.payments_outlined,
-        (_) => const FinanceScreen(),
-      ),
-      _MoreItem(
-        'Performans',
-        Icons.emoji_events_outlined,
-        (_) => const PerformanceScreen(),
-      ),
-      _MoreItem(
-        'Raporlar',
-        Icons.bar_chart_rounded,
-        (_) => const ReportsScreen(),
-      ),
-      if (isOwner)
-        _MoreItem(
-          'Organizasyon Şeması',
-          Icons.account_tree_outlined,
-          (_) => const OrgChartScreen(),
-        ),
-      if (isOwner)
-        _MoreItem(
-          'Denetim & Ayarlar',
-          Icons.admin_panel_settings_outlined,
-          (_) => const AuditSettingsScreen(),
-        ),
-      if (isOwner)
-        _MoreItem(
-          'Sistem Durumu',
-          Icons.monitor_heart_outlined,
-          (_) => const SystemHealthScreen(),
-        ),
-      if (isOwner)
-        _MoreItem(
-          'Kullanım İstatistikleri',
-          Icons.query_stats_rounded,
-          (_) => const UsageStatsScreen(),
-        ),
-    ];
+    final role = context.watch<AuthProvider>().user?.role;
+    final groups = role == null ? const <AppDrawerGroup>[] : navGroupsFor(role);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Diğer Modüller')),
-      body: ListView.separated(
-        padding: const EdgeInsets.all(16),
-        itemCount: items.length,
-        separatorBuilder: (_, __) => const SizedBox(height: 8),
-        itemBuilder: (context, i) {
-          final item = items[i];
-          return Material(
-            color: AppColors.surfaceCard,
-            borderRadius: BorderRadius.circular(AppRadius.card),
-            child: ListTile(
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(AppRadius.card),
-                side: const BorderSide(color: AppColors.borderDefault),
+      appBar: AppBar(
+        leading: ManagerNav.maybeLeading(context),
+        title: const Text('Daha Fazla'),
+        actions: const [SearchAction()],
+      ),
+      body: ListView(
+        padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+        children: [
+          for (final group in groups) ...[
+            if (group.title != null)
+              Padding(
+                padding: const EdgeInsets.fromLTRB(4, 14, 4, 8),
+                child: Text(
+                  group.title!.toUpperCase(),
+                  style: const TextStyle(
+                    fontSize: 11,
+                    letterSpacing: 0.6,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.textFaint,
+                  ),
+                ),
               ),
-              leading: Icon(item.icon, color: AppColors.primary700),
-              title: Text(
-                item.label,
-                style: const TextStyle(fontWeight: FontWeight.w600),
+            for (final entry in group.entries)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 8),
+                child: _MoreTile(entry: entry),
               ),
-              trailing: const Icon(
-                Icons.chevron_right_rounded,
-                color: AppColors.textFaint,
-              ),
-              onTap: () =>
-                  Navigator.of(context)
-                      .push(MaterialPageRoute(builder: item.builder)),
-            ),
-          );
-        },
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+class _MoreTile extends StatelessWidget {
+  final AppDrawerEntry entry;
+  const _MoreTile({required this.entry});
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: AppColors.surfaceCard,
+      borderRadius: BorderRadius.circular(AppRadius.card),
+      child: ListTile(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppRadius.card),
+          side: const BorderSide(color: AppColors.borderDefault),
+        ),
+        leading: Icon(entry.icon, color: AppColors.primary700),
+        title: Text(
+          entry.label,
+          style: const TextStyle(fontWeight: FontWeight.w600),
+        ),
+        trailing: const Icon(
+          Icons.chevron_right_rounded,
+          color: AppColors.textFaint,
+        ),
+        onTap: () => Navigator.of(context)
+            .push(MaterialPageRoute(builder: entry.builder)),
       ),
     );
   }

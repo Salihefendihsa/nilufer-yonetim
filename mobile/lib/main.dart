@@ -7,7 +7,7 @@ import 'auth/auth_provider.dart';
 import 'auth/force_change_password_screen.dart';
 import 'auth/login_screen.dart';
 import 'auth/two_factor_verify_screen.dart';
-import 'navigation/impersonation_banner.dart';
+import 'navigation/shell_top_bars.dart';
 import 'navigation/role_shell.dart';
 import 'theme/app_theme.dart';
 import 'theme/theme_controller.dart';
@@ -43,6 +43,9 @@ class NiluferApp extends StatelessWidget {
             GlobalWidgetsLocalizations.delegate,
             GlobalCupertinoLocalizations.delegate,
           ],
+          // Kabuk seviyesi şeritler (impersonation + duyuru) — tüm rotalar.
+          builder: (context, child) =>
+              ShellTopBars(child: child ?? const SizedBox.shrink()),
           home: const _AuthGate(),
         ),
       ),
@@ -98,9 +101,7 @@ class _AuthGate extends StatelessWidget {
         if (auth.mustChangePassword) {
           return const ForceChangePasswordScreen();
         }
-        return const Column(
-          children: [ImpersonationBanner(), Expanded(child: RoleShell())],
-        );
+        return const RoleShell();
     }
   }
 }

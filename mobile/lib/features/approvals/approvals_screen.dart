@@ -1,13 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:provider/provider.dart';
 
+import '../../auth/auth_provider.dart';
 import '../../core/api_client.dart';
 import '../../models/advance.dart';
 import '../../models/contract.dart';
 import '../../models/job.dart';
 import '../../models/leave_request.dart';
 import '../../models/quote.dart';
+import '../../models/user.dart';
 import '../../navigation/manager_nav.dart';
+import '../search/search_action.dart';
 import '../../theme/app_colors.dart';
 import '../staff/leave_balance_card.dart';
 import '../../widgets/state_views.dart';
@@ -58,7 +62,9 @@ class _AccentCard extends StatelessWidget {
 
 /// web/src/app/(dashboard)/bekleyen-onaylar sayfasıyla aynı üç kaynağı
 /// birleştirir: yeni teklifler, bekleyen avanslar, süresi yaklaşan
-/// sözleşmeler. Yalnızca OWNER/MANAGER (bkz. role_shell.dart).
+/// sözleşmeler. OWNER/MANAGER tam kuyruk; TEAM_LEAD yalnızca izin
+/// talepleri + saha raporu kuyruğunu görür (web ile aynı: teklif/avans/
+/// sözleşme uçları TEAM_LEAD'e kapalı, hiç çağrılmaz).
 class ApprovalsScreen extends StatefulWidget {
   const ApprovalsScreen({super.key});
 
@@ -93,10 +99,18 @@ class _ApprovalsScreenState extends State<ApprovalsScreen> {
       _loading = true;
       _error = null;
     });
+    final isTeamLead =
+        context.read<AuthProvider>().user?.role == AppRole.teamLead;
     final results = await Future.wait<Object?>([
-      _api.newQuotes().catchError((_) => <QuoteRequest>[]),
-      _api.pendingAdvances().catchError((_) => <AdvanceRequest>[]),
-      _api.expiringContracts().catchError((_) => <Contract>[]),
+      isTeamLead
+          ? Future.value(<QuoteRequest>[])
+          : _api.newQuotes().catchError((_) => <QuoteRequest>[]),
+      isTeamLead
+          ? Future.value(<AdvanceRequest>[])
+          : _api.pendingAdvances().catchError((_) => <AdvanceRequest>[]),
+      isTeamLead
+          ? Future.value(<Contract>[])
+          : _api.expiringContracts().catchError((_) => <Contract>[]),
       _api.pendingReportJobs().catchError((_) => <Job>[]),
       _api.pendingLeaveRequests().catchError((_) => <LeaveRequest>[]),
     ]);
@@ -208,6 +222,7 @@ class _ApprovalsScreenState extends State<ApprovalsScreen> {
       appBar: AppBar(
         leading: ManagerNav.maybeLeading(context),
         title: Text('Bekleyen Onaylar${_total > 0 ? ' ($_total)' : ''}'),
+        actions: const [SearchAction()],
       ),
       body: _loading
           ? const LoadingView()

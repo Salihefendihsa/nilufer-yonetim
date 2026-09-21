@@ -1,16 +1,14 @@
 import 'package:flutter/material.dart';
 
-import '../features/calendar/calendar_screen.dart';
 import '../features/dashboard/dashboard_screen.dart';
-import '../features/evaluations/evaluations_screen.dart';
 import '../features/jobs/jobs_list_screen.dart';
-import '../features/leave_requests/leave_requests_screen.dart';
-import '../features/payslip/payslip_screen.dart';
 import '../features/messages/messages_list_screen.dart';
 import '../features/notifications/notifications_screen.dart';
+import '../models/user.dart';
 import '../theme/app_colors.dart';
 import 'app_drawer.dart';
 import 'manager_nav.dart';
+import 'nav_items.dart';
 
 /// STAFF (Personel) rolüne özel kabuk — Stitch "personel" paketindeki 4
 /// sekmeli alt navigasyon + kayan çekmece düzeni (bkz. TeamLeadShell/
@@ -60,30 +58,8 @@ class _StaffShellState extends State<StaffShell> {
     ),
   ];
 
-  static const _groups = <AppDrawerGroup>[
-    AppDrawerGroup([
-      AppDrawerEntry('Takvim', Icons.calendar_month_outlined, _buildCalendar),
-      // Formal Değerlendirme sistemi — kendi aldığı değerlendirmeleri salt
-      // okunur görür, değerlendirenin kimliği backend tarafından zaten gizlenir.
-      AppDrawerEntry(
-        'Değerlendirmelerim',
-        Icons.checklist_rtl_outlined,
-        _buildEvaluations,
-      ),
-      AppDrawerEntry(
-        'İzinlerim',
-        Icons.event_busy_outlined,
-        _buildLeaveRequests,
-      ),
-      // Bölüm AN (9. tur): kişisel bordro özeti (salt görüntüleme).
-      AppDrawerEntry('Bordrom', Icons.receipt_long_outlined, _buildPayslip),
-    ]),
-  ];
-
-  static Widget _buildCalendar(BuildContext _) => const CalendarScreen();
-  static Widget _buildEvaluations(BuildContext _) => const EvaluationsScreen();
-  static Widget _buildLeaveRequests(BuildContext _) => const LeaveRequestsScreen();
-  static Widget _buildPayslip(BuildContext _) => const PayslipScreen();
+  /// Çekmece içeriği: navigation/nav_items.dart (tek kaynak).
+  static final _groups = navGroupsFor(AppRole.staff);
 
   @override
   Widget build(BuildContext context) {
@@ -91,7 +67,7 @@ class _StaffShellState extends State<StaffShell> {
       openDrawer: () => _scaffoldKey.currentState?.openDrawer(),
       child: Scaffold(
         key: _scaffoldKey,
-        drawer: const AppDrawer(roleLabel: 'Personel', groups: _groups),
+        drawer: AppDrawer(roleLabel: 'Personel', groups: _groups),
         body: IndexedStack(
           index: _index,
           children: _tabs.map((t) => t.screen).toList(),

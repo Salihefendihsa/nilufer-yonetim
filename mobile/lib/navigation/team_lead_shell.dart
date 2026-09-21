@@ -1,17 +1,14 @@
 import 'package:flutter/material.dart';
 
-import '../features/calendar/calendar_screen.dart';
 import '../features/dashboard/dashboard_screen.dart';
 import '../features/jobs/jobs_list_screen.dart';
-import '../features/leave_requests/leave_requests_screen.dart';
-import '../features/payslip/payslip_screen.dart';
 import '../features/messages/messages_list_screen.dart';
 import '../features/notifications/notifications_screen.dart';
-import '../features/performance/performance_screen.dart';
-import '../features/stock/stock_list_screen.dart';
+import '../models/user.dart';
 import '../theme/app_colors.dart';
 import 'app_drawer.dart';
 import 'manager_nav.dart';
+import 'nav_items.dart';
 
 /// TEAM_LEAD (Şef) rolüne özel kabuk — Stitch "sef" paketindeki 4 sekmeli alt
 /// navigasyon + kayan çekmece düzeni.
@@ -21,7 +18,7 @@ import 'manager_nav.dart';
 /// Takvim, Bildirimler, Mesajlar, Performans, İşler, Ayarlar.
 ///
 /// Burada BULUNMAYANLAR (şefin yetkisi yok, bilerek eklenmedi):
-/// Bekleyen Onaylar, Müşteriler, Personel yönetimi, Sözleşmeler,
+/// Müşteriler, Personel yönetimi, Sözleşmeler,
 /// Teklifler, Para/Finans, Raporlar, Denetim/Sistem/Kullanım İstatistikleri.
 /// Stok ise salt okunur + satın alma talebi (Faz 8'de zaten backend/Flutter'da
 /// tam uygulanmıştı) kapsamında **çekmeceye eklendi** (2026-09-10 parite
@@ -61,30 +58,10 @@ class _TeamLeadShellState extends State<TeamLeadShell> {
     ),
   ];
 
-  static const _groups = <AppDrawerGroup>[
-    AppDrawerGroup([
-      AppDrawerEntry('Takvim', Icons.calendar_month_outlined, _buildCalendar),
-      AppDrawerEntry(
-        'Performans',
-        Icons.emoji_events_outlined,
-        _buildPerformance,
-      ),
-      AppDrawerEntry('Stok', Icons.inventory_2_outlined, _buildStock),
-      AppDrawerEntry(
-        'İzinlerim',
-        Icons.event_busy_outlined,
-        _buildLeaveRequests,
-      ),
-      // Bölüm AN (9. tur): kişisel bordro özeti (salt görüntüleme).
-      AppDrawerEntry('Bordrom', Icons.receipt_long_outlined, _buildPayslip),
-    ]),
-  ];
-
-  static Widget _buildCalendar(BuildContext _) => const CalendarScreen();
-  static Widget _buildPerformance(BuildContext _) => const PerformanceScreen();
-  static Widget _buildStock(BuildContext _) => const StockListScreen();
-  static Widget _buildLeaveRequests(BuildContext _) => const LeaveRequestsScreen();
-  static Widget _buildPayslip(BuildContext _) => const PayslipScreen();
+  /// Çekmece içeriği: navigation/nav_items.dart (tek kaynak). Tasarım
+  /// denetimi #1 ile "Bekleyen Onaylar" eklendi (web'de TEAM_LEAD izin
+  /// taleplerini oradan karara bağlıyordu, mobilde giriş yoktu).
+  static final _groups = navGroupsFor(AppRole.teamLead);
 
   @override
   Widget build(BuildContext context) {
@@ -92,7 +69,7 @@ class _TeamLeadShellState extends State<TeamLeadShell> {
       openDrawer: () => _scaffoldKey.currentState?.openDrawer(),
       child: Scaffold(
         key: _scaffoldKey,
-        drawer: const AppDrawer(roleLabel: 'Ekip Lideri', groups: _groups),
+        drawer: AppDrawer(roleLabel: 'Ekip Lideri', groups: _groups),
         body: IndexedStack(
           index: _index,
           children: _tabs.map((t) => t.screen).toList(),

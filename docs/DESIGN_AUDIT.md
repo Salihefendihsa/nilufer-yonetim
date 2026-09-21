@@ -14,6 +14,27 @@ ve **koyu modda çalışmayan** sabit `AppColors` deseni var (76 dosya).
 
 ---
 
+## 0. Uygulama Durumu — Tasarım Yükseltmesi Turu (2026-09-21)
+
+§4'teki öncelik listesi sırayla uygulanıyor. İşaretler: ✅ tamamlandı ·
+🔄 kısmi (yüzde) · ⏸ kullanıcı kararı bekliyor · ⬜ başlanmadı.
+
+| # | İş | Durum | Not |
+|---|---|---|---|
+| 1 | Mobil kabuk navigasyon boşlukları | ✅ | MANAGER: 4. sekme "Daha Fazla" (Bildirimler → çekmece/Daha Fazla "Genel" grubu; FAB simetrisi nedeniyle 5. sekme eklenmedi). TEAM_LEAD: çekmeceye Bekleyen Onaylar (ApprovalsScreen TEAM_LEAD için teklif/avans/sözleşme uçlarını çağırmaz — web ile aynı). OWNER çekmecesi: Şikayetler, Yönetici Özeti, Bildirimler, İş Şablonları, Etiketler, Org Şeması eklendi. CUSTOMER çekmecesi: Şikayetlerim, Verilerimi İndir eklendi. |
+| 2 | Drawer / "Daha Fazla" tek kaynak | ✅ | `navigation/nav_items.dart` → `navGroupsFor(role)`; `AppDrawer` ve `MoreMenuScreen` (tüm roller için tek widget, gruplu başlıklar) aynı listeden beslenir. `customer_more_menu_screen.dart` silindi. Hamburger: `MoreMenuScreen` ve `StaffListScreen`'e `ManagerNav.maybeLeading` eklendi. |
+| 3 | Duyuru şeridi + Arama kabuk seviyesine | ✅ | `navigation/shell_top_bars.dart` `MaterialApp.builder` içinde Navigator'ı sarar: impersonation + duyuru şeridi TÜM rotalarda (sekme + push edilen ekranlar). `AnnouncementStrip` salt görsel; Ana Sayfa gövdelerindeki 4 kopya kaldırıldı. Arama: `features/search/search_action.dart` tüm sekme AppBar'larında (Ana Sayfa, İşler, Onaylar, Mesajlar, Bildirimler, Takvim, Personel, Daha Fazla) + her rolün çekmecesinde "Ara". Çift status-bar boşluğu (eski `_AuthGate` Column) `MediaQuery.removePadding` ile giderildi. |
+| 4 | Web Ayarlar 4 sekme | ⬜ | |
+| 5 | Web Personel detay paneli | ⬜ | |
+| 6 | Web tipografi bileşenleri | ⬜ | |
+| 7 | Web grafik paleti | ⬜ | |
+| 8 | Mobil AppTextStyles | ⬜ | |
+| 9 | Mobil koyu mod | ⬜ | |
+| 10 | Boş durumlar | ⬜ | |
+| 11 | Web bottom nav | ⏸ | Ürün kararı — kullanıcı kararı bekliyor, uygulanmadı. |
+
+---
+
 ## 1. Navigasyon Eksiklikleri (ÖNCELİKLİ)
 
 ### 1.1 Web

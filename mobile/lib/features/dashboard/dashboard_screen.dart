@@ -15,9 +15,8 @@ import '../../widgets/stat_card.dart';
 import '../advances/advance_request_sheet.dart';
 import '../jobs/job_detail_screen.dart';
 import '../jobs/jobs_api.dart';
-import '../search/search_screen.dart';
+import '../search/search_action.dart';
 import '../team/team_api.dart';
-import '../../widgets/announcement_banner.dart';
 import '../../widgets/clock_card.dart';
 import '../../widgets/badges.dart';
 import 'dashboard_api.dart';
@@ -151,13 +150,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
         ),
         actions: [
           // Bölüm I (3. tur): global arama — tüm roller (sunucu kapsam uygular).
-          IconButton(
-            icon: const Icon(Icons.search_rounded),
-            tooltip: 'Ara',
-            onPressed: () => Navigator.of(context).push(
-              MaterialPageRoute(builder: (_) => const SearchScreen()),
-            ),
-          ),
+          const SearchAction(),
           IconButton(
             icon: const Icon(Icons.logout_rounded),
             tooltip: 'Çıkış yap',
@@ -198,8 +191,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
-        // Bölüm AK (8. tur): sistem geneli duyuru şeridi
-        const AnnouncementBanner(),
         StatCardGrid(
           children: [
             AppStatCard(
@@ -540,8 +531,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
-        // Bölüm AK (8. tur): sistem geneli duyuru şeridi
-        const AnnouncementBanner(),
         // Bölüm AR (9. tur): şefin kendi günlük puantajı
         const ClockCard(),
         Text(
@@ -782,8 +771,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
-        // Bölüm AK (8. tur): sistem geneli duyuru şeridi
-        const AnnouncementBanner(),
         Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -958,8 +945,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
-        // Bölüm AK (8. tur): sistem geneli duyuru şeridi
-        const AnnouncementBanner(),
         Container(
           padding: const EdgeInsets.all(20),
           decoration: BoxDecoration(

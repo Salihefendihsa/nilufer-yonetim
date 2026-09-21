@@ -9,6 +9,7 @@ import '../../models/paginated.dart';
 import '../../models/user.dart';
 import '../../theme/app_colors.dart';
 import '../../navigation/manager_nav.dart';
+import '../search/search_action.dart';
 import '../../widgets/state_views.dart';
 import '../../widgets/stat_card.dart';
 import '../stock/stock_api.dart';
@@ -250,6 +251,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
         leading: ManagerNav.maybeLeading(context),
         title: const Text('Bildirimler'),
         actions: [
+          const SearchAction(),
           IconButton(
             icon: const Icon(Icons.done_all_rounded),
             onPressed: _markAllRead,

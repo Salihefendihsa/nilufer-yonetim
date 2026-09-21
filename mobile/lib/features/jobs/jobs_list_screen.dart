@@ -10,6 +10,7 @@ import '../../models/job.dart';
 import '../../models/user.dart';
 import '../../theme/app_colors.dart';
 import '../../navigation/manager_nav.dart';
+import '../search/search_action.dart';
 import '../../widgets/staggered_fade_in.dart';
 import '../../widgets/state_views.dart';
 import 'jobs_api.dart';
@@ -100,6 +101,7 @@ class _JobsListScreenState extends State<JobsListScreen> {
         leading: ManagerNav.maybeLeading(context),
         title: const Text('İşler'),
         actions: [
+          const SearchAction(),
           if (_canCreate)
             IconButton(
               icon: const Icon(Icons.add_task_rounded),

@@ -1,34 +1,30 @@
 import 'package:flutter/material.dart';
 
-import '../features/admin/job_templates_screen.dart';
-import '../features/customers/customer_tags.dart';
-import '../features/approvals/approvals_screen.dart';
-import '../features/calendar/calendar_screen.dart';
-import '../features/contracts/contracts_list_screen.dart';
-import '../features/customers/customers_list_screen.dart';
 import '../features/dashboard/dashboard_screen.dart';
-import '../features/finance/finance_screen.dart';
 import '../features/jobs/job_form_screen.dart';
 import '../features/jobs/jobs_list_screen.dart';
 import '../features/messages/messages_list_screen.dart';
-import '../features/notifications/notifications_screen.dart';
-import '../features/performance/performance_screen.dart';
-import '../features/quotes/quotes_list_screen.dart';
-import '../features/reports/reports_screen.dart';
-import '../features/staff/staff_list_screen.dart';
-import '../features/stock/stock_list_screen.dart';
+import '../models/user.dart';
 import '../theme/app_colors.dart';
 import 'app_drawer.dart';
 import 'manager_nav.dart';
+import 'more_menu_screen.dart';
+import 'nav_items.dart';
 
 /// MANAGER (Müdür) rolüne özel kabuk — Stitch "mudur" paketindeki 4 sekmeli
 /// yüzen alt navigasyon + ortadaki 56px "yeni iş" butonu + kayan menü
 /// çekmecesi düzeninin Flutter karşılığı.
 ///
-/// Çekmecedeki sayfa listesi, Stitch'teki `data-path` değerleriyle ve müdürün
-/// gerçek yetki haritasıyla birebir örtüşür: Denetim Logları / Sistem Durumu /
-/// Kullanım İstatistikleri MANAGER'a kapalı olduğu için burada YOKTUR
+/// Çekmece ve "Daha Fazla" sekmesi `navGroupsFor(AppRole.manager)`'dan
+/// beslenir (tek kaynak). Denetim Logları / Sistem Durumu / Kullanım
+/// İstatistikleri MANAGER'a kapalı olduğu için orada YOKTUR
 /// (bkz. docs/STITCH_FEATURE_MATRIX.md — Faz 6).
+///
+/// Tasarım denetimi #1: önceden 4. sekme "Bildirimler"di ve "Daha Fazla"
+/// yoktu → çekmecede olmayan Şikayetler ve Yönetici Özeti MANAGER için
+/// mobilde erişilemezdi. Ortadaki FAB simetriyi (2 | FAB | 2) gerektirdiği
+/// için 5. sekme eklenemez; Bildirimler çekmece/"Daha Fazla"nın "Genel"
+/// grubuna taşındı, 4. sekme "Daha Fazla" oldu.
 class ManagerShell extends StatefulWidget {
   const ManagerShell({super.key});
 
@@ -48,72 +44,14 @@ class _ManagerShellState extends State<ManagerShell> {
     ),
     (label: 'İşler', icon: Icons.assignment_rounded, screen: JobsListScreen()),
     (
-      label: 'Bildirimler',
-      icon: Icons.notifications_rounded,
-      screen: NotificationsScreen(),
-    ),
-    (
       label: 'Mesajlar',
       icon: Icons.chat_bubble_rounded,
       screen: MessagesListScreen(),
     ),
+    (label: 'Daha Fazla', icon: Icons.menu_rounded, screen: MoreMenuScreen()),
   ];
 
-  static const _groups = <AppDrawerGroup>[
-    AppDrawerGroup([
-      AppDrawerEntry(
-        'Takvim',
-        Icons.calendar_month_outlined,
-        _buildCalendar,
-      ),
-      AppDrawerEntry(
-        'Bekleyen Onaylar',
-        Icons.fact_check_outlined,
-        _buildApprovals,
-      ),
-    ], title: 'Genel'),
-    AppDrawerGroup([
-      AppDrawerEntry('Müşteriler', Icons.people_outline_rounded, _buildCustomers),
-      AppDrawerEntry('Personel', Icons.groups_outlined, _buildStaff),
-      AppDrawerEntry(
-        'Performans',
-        Icons.emoji_events_outlined,
-        _buildPerformance,
-      ),
-      AppDrawerEntry('Stok', Icons.inventory_2_outlined, _buildStock),
-      // Bölüm T (5. tur): MANAGER de şablon yönetir.
-      AppDrawerEntry(
-        'İş Şablonları',
-        Icons.dashboard_customize_outlined,
-        _buildJobTemplates,
-      ),
-      // Bölüm X (6. tur): MANAGER de etiket tanımlar.
-      AppDrawerEntry(
-        'Müşteri Etiketleri',
-        Icons.label_outline_rounded,
-        _buildCustomerTags,
-      ),
-    ], title: 'Operasyon'),
-    AppDrawerGroup([
-      AppDrawerEntry('Sözleşmeler', Icons.description_outlined, _buildContracts),
-      AppDrawerEntry('Teklifler', Icons.request_quote_outlined, _buildQuotes),
-      AppDrawerEntry('Para', Icons.payments_outlined, _buildFinance),
-      AppDrawerEntry('Raporlar', Icons.bar_chart_rounded, _buildReports),
-    ], title: 'Finans'),
-  ];
-
-  static Widget _buildCalendar(BuildContext _) => const CalendarScreen();
-  static Widget _buildApprovals(BuildContext _) => const ApprovalsScreen();
-  static Widget _buildCustomers(BuildContext _) => const CustomersListScreen();
-  static Widget _buildStaff(BuildContext _) => const StaffListScreen();
-  static Widget _buildPerformance(BuildContext _) => const PerformanceScreen();
-  static Widget _buildStock(BuildContext _) => const StockListScreen();
-  static Widget _buildJobTemplates(BuildContext _) => const JobTemplatesScreen();
-  static Widget _buildCustomerTags(BuildContext _) => const CustomerTagsScreen();
-  static Widget _buildContracts(BuildContext _) => const ContractsListScreen();
-  static Widget _buildQuotes(BuildContext _) => const QuotesListScreen();
-  static Widget _buildFinance(BuildContext _) => const FinanceScreen();
-  static Widget _buildReports(BuildContext _) => const ReportsScreen();
+  static final _groups = navGroupsFor(AppRole.manager);
 
   @override
   Widget build(BuildContext context) {
@@ -121,7 +59,7 @@ class _ManagerShellState extends State<ManagerShell> {
       openDrawer: () => _scaffoldKey.currentState?.openDrawer(),
       child: Scaffold(
         key: _scaffoldKey,
-        drawer: const AppDrawer(roleLabel: 'Müdür', groups: _groups),
+        drawer: AppDrawer(roleLabel: 'Müdür', groups: _groups),
         body: IndexedStack(
           index: _index,
           children: _tabs.map((t) => t.screen).toList(),
