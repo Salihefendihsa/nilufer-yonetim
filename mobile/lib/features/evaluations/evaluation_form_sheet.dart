@@ -4,6 +4,8 @@ import '../../core/api_client.dart';
 import '../../models/evaluation.dart';
 import '../../models/staff.dart';
 import '../../theme/app_colors.dart';
+import '../../theme/app_palette.dart';
+import '../../theme/app_text_styles.dart';
 import 'evaluations_api.dart';
 
 /// web/src/app/(dashboard)/performans/EvaluationsTab.tsx:EvaluationFormModal
@@ -34,7 +36,8 @@ class _EvaluationFormSheetState extends State<EvaluationFormSheet> {
   bool _submitting = false;
   String? _error;
 
-  bool get _readOnly => widget.existing != null && widget.existing!.status != 'DRAFT';
+  bool get _readOnly =>
+      widget.existing != null && widget.existing!.status != 'DRAFT';
 
   int? _existingScoreFor(String criterionId) {
     for (final s in widget.existing?.scores ?? const <EvaluationScoreItem>[]) {
@@ -49,7 +52,9 @@ class _EvaluationFormSheetState extends State<EvaluationFormSheet> {
     _scores = {
       for (final c in widget.criteria) c.id: _existingScoreFor(c.id) ?? 10,
     };
-    _commentController = TextEditingController(text: widget.existing?.comment ?? '');
+    _commentController = TextEditingController(
+      text: widget.existing?.comment ?? '',
+    );
     _managerScoreController = TextEditingController(
       text: widget.existing?.managerScore?.toString() ?? '',
     );
@@ -68,7 +73,9 @@ class _EvaluationFormSheetState extends State<EvaluationFormSheet> {
       _error = null;
     });
     try {
-      final comment = _commentController.text.trim().isEmpty ? null : _commentController.text.trim();
+      final comment = _commentController.text.trim().isEmpty
+          ? null
+          : _commentController.text.trim();
       final managerScore = _managerScoreController.text.trim().isEmpty
           ? null
           : int.tryParse(_managerScoreController.text.trim());
@@ -97,9 +104,7 @@ class _EvaluationFormSheetState extends State<EvaluationFormSheet> {
       }
       if (mounted) Navigator.of(context).pop(true);
     } catch (e) {
-      setState(
-        () => _error = e is ApiException ? e.message : 'Kaydedilemedi',
-      );
+      setState(() => _error = e is ApiException ? e.message : 'Kaydedilemedi');
     } finally {
       if (mounted) setState(() => _submitting = false);
     }
@@ -107,6 +112,8 @@ class _EvaluationFormSheetState extends State<EvaluationFormSheet> {
 
   @override
   Widget build(BuildContext context) {
+    final cs = context.colors;
+    final tx = context.text;
     return DraggableScrollableSheet(
       initialChildSize: 0.85,
       expand: false,
@@ -122,11 +129,11 @@ class _EvaluationFormSheetState extends State<EvaluationFormSheet> {
           children: [
             Text(
               '${widget.staff.fullName} — Değerlendirme',
-              style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 15),
+              style: tx.subtitle.copyWith(fontWeight: FontWeight.w700),
             ),
             const SizedBox(height: 12),
             if (_error != null) ...[
-              Text(_error!, style: const TextStyle(color: AppColors.danger500, fontSize: 12.5)),
+              Text(_error!, style: tx.bodySmall.copyWith(color: cs.danger500)),
               const SizedBox(height: 8),
             ],
             if (_readOnly)
@@ -134,18 +141,18 @@ class _EvaluationFormSheetState extends State<EvaluationFormSheet> {
                 margin: const EdgeInsets.only(bottom: 12),
                 padding: const EdgeInsets.all(10),
                 decoration: BoxDecoration(
-                  color: AppColors.warning50,
+                  color: cs.warning50,
                   borderRadius: BorderRadius.circular(AppRadius.card),
                 ),
                 child: Text(
                   'Bu değerlendirme ${widget.existing!.status == 'LOCKED' ? 'kilitli' : 'gönderilmiş'} — salt okunur.',
-                  style: const TextStyle(fontSize: 12, color: AppColors.warning600),
+                  style: tx.caption.copyWith(color: cs.warning600),
                 ),
               ),
             if (widget.criteria.isEmpty)
-              const Text(
+              Text(
                 'Henüz aktif kriter yok — Ayarlar → Değerlendirme Kriterleri\'nden ekleyin.',
-                style: TextStyle(fontSize: 12.5, color: AppColors.textSecondary),
+                style: tx.bodySmall,
               )
             else
               for (final c in widget.criteria)
@@ -157,8 +164,13 @@ class _EvaluationFormSheetState extends State<EvaluationFormSheet> {
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          Text(c.name, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
-                          Text('${_scores[c.id]}/20', style: const TextStyle(fontSize: 13, color: AppColors.textSecondary)),
+                          Text(
+                            c.name,
+                            style: tx.bodySmall.copyWith(
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                          Text('${_scores[c.id]}/20', style: tx.bodySmall),
                         ],
                       ),
                       Slider(
@@ -171,7 +183,7 @@ class _EvaluationFormSheetState extends State<EvaluationFormSheet> {
                             : (v) => setState(() => _scores[c.id] = v.round()),
                       ),
                       if (c.description != null)
-                        Text(c.description!, style: const TextStyle(fontSize: 11, color: AppColors.textFaint)),
+                        Text(c.description!, style: tx.label),
                     ],
                   ),
                 ),
@@ -199,14 +211,18 @@ class _EvaluationFormSheetState extends State<EvaluationFormSheet> {
                 children: [
                   Expanded(
                     child: OutlinedButton(
-                      onPressed: _submitting || widget.criteria.isEmpty ? null : () => _save(submit: false),
+                      onPressed: _submitting || widget.criteria.isEmpty
+                          ? null
+                          : () => _save(submit: false),
                       child: const Text('Taslak Kaydet'),
                     ),
                   ),
                   const SizedBox(width: 8),
                   Expanded(
                     child: ElevatedButton(
-                      onPressed: _submitting || widget.criteria.isEmpty ? null : () => _save(submit: true),
+                      onPressed: _submitting || widget.criteria.isEmpty
+                          ? null
+                          : () => _save(submit: true),
                       child: Text(_submitting ? 'Gönderiliyor...' : 'Gönder'),
                     ),
                   ),

@@ -251,8 +251,9 @@ class _AddSheetState extends State<_AddSheet> {
       firstDate: DateTime.now().subtract(const Duration(days: 3650)),
       lastDate: DateTime.now().add(const Duration(days: 3650)),
     );
-    if (picked != null)
+    if (picked != null) {
       setState(() => isLast ? _last = picked : _next = picked);
+    }
   }
 
   Future<void> _save() async {

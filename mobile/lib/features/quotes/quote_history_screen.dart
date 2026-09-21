@@ -4,6 +4,8 @@ import 'package:intl/intl.dart';
 import '../../core/api_client.dart';
 import '../../models/quote.dart';
 import '../../theme/app_colors.dart';
+import '../../theme/app_palette.dart';
+import '../../theme/app_text_styles.dart';
 import '../../widgets/state_views.dart';
 import 'quotes_api.dart';
 
@@ -57,6 +59,8 @@ class _QuoteHistoryScreenState extends State<QuoteHistoryScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final cs = context.colors;
+    final tx = context.text;
     return Scaffold(
       appBar: AppBar(title: Text('${widget.quote.fullName} — Tarihçe')),
       body: _loading
@@ -70,7 +74,7 @@ class _QuoteHistoryScreenState extends State<QuoteHistoryScreen> {
             )
           : RefreshIndicator(
               onRefresh: _load,
-              color: AppColors.primary600,
+              color: cs.accentSoft,
               child: ListView.separated(
                 padding: const EdgeInsets.all(16),
                 itemCount: _entries.length,
@@ -80,38 +84,28 @@ class _QuoteHistoryScreenState extends State<QuoteHistoryScreen> {
                   return Container(
                     padding: const EdgeInsets.all(14),
                     decoration: BoxDecoration(
-                      color: AppColors.surfaceCard,
+                      color: cs.surfaceCard,
                       borderRadius: BorderRadius.circular(AppRadius.card),
-                      border: Border.all(color: AppColors.borderDefault),
+                      border: Border.all(color: cs.borderDefault),
                     ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
                           quoteHistoryActionLabelTr(e.action),
-                          style: const TextStyle(
-                            fontWeight: FontWeight.w700,
-                            fontSize: 13.5,
-                          ),
+                          style: tx.body.copyWith(fontWeight: FontWeight.w700),
                         ),
                         const SizedBox(height: 2),
                         Text(
                           '${e.actorName} · '
                           '${_historyDateFormat.format(DateTime.parse(e.createdAt))}',
-                          style: const TextStyle(
-                            fontSize: 11.5,
-                            color: AppColors.textSecondary,
-                          ),
+                          style: tx.caption,
                         ),
                         if (e.detail != null && e.detail!.isNotEmpty) ...[
                           const SizedBox(height: 6),
                           Text(
                             e.detail!,
-                            style: const TextStyle(
-                              fontSize: 11,
-                              color: AppColors.textFaint,
-                              fontFamily: 'monospace',
-                            ),
+                            style: tx.label.copyWith(fontFamily: 'monospace'),
                           ),
                         ],
                       ],

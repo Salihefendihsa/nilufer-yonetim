@@ -87,12 +87,13 @@ class _CustomerDataDeletionScreenState
         '/customers/me/deletion-request',
       );
       final data = json['data'] as Map<String, dynamic>?;
-      if (mounted)
+      if (mounted) {
         setState(
           () => _latest = data == null
               ? null
               : DataDeletionRequest.fromJson(data),
         );
+      }
     } catch (_) {
     } finally {
       if (mounted) setState(() => _loading = false);
@@ -137,9 +138,10 @@ class _CustomerDataDeletionScreenState
       }
       await _load();
     } on ApiException catch (e) {
-      if (mounted)
+      if (mounted) {
         ScaffoldMessenger.of(context)
             .showSnackBar(SnackBar(content: Text(e.message)));
+      }
     } finally {
       if (mounted) setState(() => _busy = false);
     }
@@ -272,10 +274,11 @@ class _DataDeletionRequestsScreenState
         );
       }
     } catch (e) {
-      if (mounted)
+      if (mounted) {
         setState(
           () => _error = e is ApiException ? e.message : 'Talepler yüklenemedi',
         );
+      }
     } finally {
       if (mounted) setState(() => _loading = false);
     }
@@ -358,14 +361,16 @@ class _DataDeletionRequestsScreenState
     setState(() => _busyId = id);
     try {
       await fn();
-      if (mounted)
+      if (mounted) {
         ScaffoldMessenger.of(context)
             .showSnackBar(SnackBar(content: Text(okMessage)));
+      }
       await _load();
     } on ApiException catch (e) {
-      if (mounted)
+      if (mounted) {
         ScaffoldMessenger.of(context)
             .showSnackBar(SnackBar(content: Text(e.message)));
+      }
     } finally {
       if (mounted) setState(() => _busyId = null);
     }

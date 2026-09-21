@@ -7,17 +7,23 @@ import '../../core/api_client.dart';
 import '../../models/leave_request.dart';
 import '../../models/user.dart';
 import '../../theme/app_colors.dart';
+import '../../theme/app_palette.dart';
+import '../../theme/app_text_styles.dart';
 import '../staff/leave_balance_card.dart';
 import '../../widgets/state_views.dart';
 import 'leave_requests_api.dart';
 
 final _dateFormat = DateFormat('d MMM yyyy', 'tr_TR');
 
-const _statusLabels = {'PENDING': 'Bekliyor', 'APPROVED': 'Onaylandı', 'REJECTED': 'Reddedildi'};
-const _statusColors = {
-  'PENDING': AppColors.warning600,
-  'APPROVED': AppColors.primary700,
-  'REJECTED': AppColors.danger500,
+const _statusLabels = {
+  'PENDING': 'Bekliyor',
+  'APPROVED': 'Onaylandı',
+  'REJECTED': 'Reddedildi',
+};
+Map<String, Color> _statusColors(AppPalette cs) => {
+  'PENDING': cs.warning600,
+  'APPROVED': cs.primary700,
+  'REJECTED': cs.danger500,
 };
 
 /// web/src/app/(dashboard)/izinlerim/page.tsx ile aynı akış — STAFF/TEAM_LEAD
@@ -60,7 +66,9 @@ class _LeaveRequestsScreenState extends State<LeaveRequestsScreen> {
       if (_isTeamLead) {
         final myStaffId = mine.isNotEmpty ? mine.first.staffId : null;
         final all = await _api.list();
-        team = all.where((l) => l.status == 'PENDING' && l.staffId != myStaffId).toList();
+        team = all
+            .where((l) => l.status == 'PENDING' && l.staffId != myStaffId)
+            .toList();
       }
       setState(() {
         _mine = mine;
@@ -68,7 +76,9 @@ class _LeaveRequestsScreenState extends State<LeaveRequestsScreen> {
       });
     } catch (e) {
       setState(
-        () => _error = e is ApiException ? e.message : 'İzin talepleri yüklenemedi',
+        () => _error = e is ApiException
+            ? e.message
+            : 'İzin talepleri yüklenemedi',
       );
     } finally {
       if (mounted) setState(() => _loading = false);
@@ -83,7 +93,9 @@ class _LeaveRequestsScreenState extends State<LeaveRequestsScreen> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(e is ApiException ? e.message : 'İşlem başarısız')),
+          SnackBar(
+            content: Text(e is ApiException ? e.message : 'İşlem başarısız'),
+          ),
         );
       }
     } finally {
@@ -92,6 +104,7 @@ class _LeaveRequestsScreenState extends State<LeaveRequestsScreen> {
   }
 
   Future<void> _openCreateForm() async {
+    final tx = context.text;
     DateTime? startDate;
     DateTime? endDate;
     final reasonController = TextEditingController();
@@ -111,7 +124,10 @@ class _LeaveRequestsScreenState extends State<LeaveRequestsScreen> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text('Yeni İzin Talebi', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 15)),
+              Text(
+                'Yeni İzin Talebi',
+                style: tx.subtitle.copyWith(fontWeight: FontWeight.w700),
+              ),
               const SizedBox(height: 12),
               Row(
                 children: [
@@ -124,9 +140,15 @@ class _LeaveRequestsScreenState extends State<LeaveRequestsScreen> {
                           firstDate: DateTime.now(),
                           lastDate: DateTime(2100),
                         );
-                        if (picked != null) setSheetState(() => startDate = picked);
+                        if (picked != null) {
+                          setSheetState(() => startDate = picked);
+                        }
                       },
-                      child: Text(startDate == null ? 'Başlangıç' : _dateFormat.format(startDate!)),
+                      child: Text(
+                        startDate == null
+                            ? 'Başlangıç'
+                            : _dateFormat.format(startDate!),
+                      ),
                     ),
                   ),
                   const SizedBox(width: 8),
@@ -139,9 +161,15 @@ class _LeaveRequestsScreenState extends State<LeaveRequestsScreen> {
                           firstDate: startDate ?? DateTime.now(),
                           lastDate: DateTime(2100),
                         );
-                        if (picked != null) setSheetState(() => endDate = picked);
+                        if (picked != null) {
+                          setSheetState(() => endDate = picked);
+                        }
                       },
-                      child: Text(endDate == null ? 'Bitiş' : _dateFormat.format(endDate!)),
+                      child: Text(
+                        endDate == null
+                            ? 'Bitiş'
+                            : _dateFormat.format(endDate!),
+                      ),
                     ),
                   ),
                 ],
@@ -156,7 +184,9 @@ class _LeaveRequestsScreenState extends State<LeaveRequestsScreen> {
               const SizedBox(height: 16),
               ElevatedButton(
                 onPressed: () async {
-                  if (startDate == null || endDate == null || reasonController.text.trim().isEmpty) {
+                  if (startDate == null ||
+                      endDate == null ||
+                      reasonController.text.trim().isEmpty) {
                     ScaffoldMessenger.of(ctx).showSnackBar(
                       const SnackBar(content: Text('Tüm alanlar zorunludur')),
                     );
@@ -172,7 +202,13 @@ class _LeaveRequestsScreenState extends State<LeaveRequestsScreen> {
                   } catch (e) {
                     if (ctx.mounted) {
                       ScaffoldMessenger.of(ctx).showSnackBar(
-                        SnackBar(content: Text(e is ApiException ? e.message : 'Talep oluşturulamadı')),
+                        SnackBar(
+                          content: Text(
+                            e is ApiException
+                                ? e.message
+                                : 'Talep oluşturulamadı',
+                          ),
+                        ),
                       );
                     }
                   }
@@ -190,11 +226,16 @@ class _LeaveRequestsScreenState extends State<LeaveRequestsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final cs = context.colors;
+    final tx = context.text;
     return Scaffold(
       appBar: AppBar(
         title: const Text('İzin Taleplerim'),
         actions: [
-          IconButton(icon: const Icon(Icons.add_rounded), onPressed: _openCreateForm),
+          IconButton(
+            icon: const Icon(Icons.add_rounded),
+            onPressed: _openCreateForm,
+          ),
         ],
       ),
       body: _loading
@@ -203,27 +244,28 @@ class _LeaveRequestsScreenState extends State<LeaveRequestsScreen> {
           ? ErrorRetryView(message: _error!, onRetry: _load)
           : RefreshIndicator(
               onRefresh: _load,
-              color: AppColors.primary600,
+              color: cs.accentSoft,
               child: ListView(
                 padding: const EdgeInsets.all(16),
                 children: [
                   if (_teamPending.isNotEmpty) ...[
-                    const Text(
+                    Text(
                       'Ekibimin Bekleyen Talepleri',
-                      style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13.5),
+                      style: tx.body.copyWith(fontWeight: FontWeight.w700),
                     ),
                     const SizedBox(height: 8),
-                    for (final leave in _teamPending) _TeamLeaveCard(
-                      leave: leave,
-                      busy: _busyId == leave.id,
-                      onApprove: () => _decide(leave, 'APPROVED'),
-                      onReject: () => _decide(leave, 'REJECTED'),
-                    ),
+                    for (final leave in _teamPending)
+                      _TeamLeaveCard(
+                        leave: leave,
+                        busy: _busyId == leave.id,
+                        onApprove: () => _decide(leave, 'APPROVED'),
+                        onReject: () => _decide(leave, 'REJECTED'),
+                      ),
                     const SizedBox(height: 20),
                   ],
-                  const Text(
+                  Text(
                     'Taleplerim',
-                    style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13.5),
+                    style: tx.body.copyWith(fontWeight: FontWeight.w700),
                   ),
                   const SizedBox(height: 8),
                   if (_mine.isEmpty)
@@ -246,13 +288,15 @@ class _MyLeaveCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final cs = context.colors;
+    final tx = context.text;
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: AppColors.surfaceCard,
+        color: cs.surfaceCard,
         borderRadius: BorderRadius.circular(AppRadius.card),
-        border: Border.all(color: AppColors.borderDefault),
+        border: Border.all(color: cs.borderDefault),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -262,30 +306,32 @@ class _MyLeaveCard extends StatelessWidget {
             children: [
               Text(
                 '${_dateFormat.format(DateTime.parse(leave.startDate))} – ${_dateFormat.format(DateTime.parse(leave.endDate))}',
-                style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13),
+                style: tx.bodySmall.copyWith(fontWeight: FontWeight.w700),
               ),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                 decoration: BoxDecoration(
-                  color: (_statusColors[leave.status] ?? AppColors.textFaint).withValues(alpha: 0.12),
+                  color: (_statusColors(cs)[leave.status] ?? cs.textFaint)
+                      .withValues(alpha: 0.12),
                   borderRadius: BorderRadius.circular(AppRadius.pill),
                 ),
                 child: Text(
                   _statusLabels[leave.status] ?? leave.status,
-                  style: TextStyle(
-                    fontSize: 10.5,
-                    fontWeight: FontWeight.w700,
-                    color: _statusColors[leave.status],
+                  style: tx.label.copyWith(
+                    color: _statusColors(cs)[leave.status],
                   ),
                 ),
               ),
             ],
           ),
           const SizedBox(height: 4),
-          Text(leave.reason, style: const TextStyle(fontSize: 12.5, color: AppColors.textSecondary)),
+          Text(leave.reason, style: tx.bodySmall),
           if (leave.decisionNote != null) ...[
             const SizedBox(height: 4),
-            Text('Not: ${leave.decisionNote}', style: const TextStyle(fontSize: 11.5, color: AppColors.textFaint)),
+            Text(
+              'Not: ${leave.decisionNote}',
+              style: tx.caption.copyWith(color: cs.textFaint),
+            ),
           ],
         ],
       ),
@@ -307,33 +353,40 @@ class _TeamLeaveCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final cs = context.colors;
+    final tx = context.text;
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: AppColors.surfaceCard,
+        color: cs.surfaceCard,
         borderRadius: BorderRadius.circular(AppRadius.card),
-        border: const Border(
-          left: BorderSide(color: AppColors.danger500, width: 4),
-          top: BorderSide(color: AppColors.borderDefault),
-          right: BorderSide(color: AppColors.borderDefault),
-          bottom: BorderSide(color: AppColors.borderDefault),
+        border: Border(
+          left: BorderSide(color: cs.danger500, width: 4),
+          top: BorderSide(color: cs.borderDefault),
+          right: BorderSide(color: cs.borderDefault),
+          bottom: BorderSide(color: cs.borderDefault),
         ),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(leave.staffName ?? 'Personel', style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13.5)),
+          Text(
+            leave.staffName ?? 'Personel',
+            style: tx.body.copyWith(fontWeight: FontWeight.w700),
+          ),
           Text(
             '${_dateFormat.format(DateTime.parse(leave.startDate))} – ${_dateFormat.format(DateTime.parse(leave.endDate))} · ${leave.reason}'
             '${leave.requestedDays != null ? ' · ${leave.requestedDays} gün' : ''}',
-            style: const TextStyle(fontSize: 11.5, color: AppColors.textSecondary),
+            style: tx.caption,
           ),
           // Bölüm AH (8. tur): bakiye aşımı uyarısı — onayı engellemez.
           if (leave.exceedsBalance)
             Padding(
               padding: const EdgeInsets.only(top: 4),
-              child: LeaveBalanceExceedBadge(remainingDays: leave.remainingDays),
+              child: LeaveBalanceExceedBadge(
+                remainingDays: leave.remainingDays,
+              ),
             ),
           const SizedBox(height: 8),
           Row(
@@ -341,7 +394,9 @@ class _TeamLeaveCard extends StatelessWidget {
               Expanded(
                 child: OutlinedButton(
                   onPressed: busy ? null : onReject,
-                  style: OutlinedButton.styleFrom(foregroundColor: AppColors.danger600),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: cs.danger600,
+                  ),
                   child: const Text('Reddet'),
                 ),
               ),
@@ -349,7 +404,9 @@ class _TeamLeaveCard extends StatelessWidget {
               Expanded(
                 child: ElevatedButton(
                   onPressed: busy ? null : onApprove,
-                  style: ElevatedButton.styleFrom(backgroundColor: AppColors.success600),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: cs.success600,
+                  ),
                   child: const Text('Onayla'),
                 ),
               ),

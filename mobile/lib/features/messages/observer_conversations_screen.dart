@@ -4,10 +4,12 @@ import 'package:intl/intl.dart';
 import '../../auth/auth_provider.dart';
 import '../../core/api_client.dart';
 import '../../models/conversation.dart';
-import '../../theme/app_colors.dart';
+import '../../theme/app_palette.dart';
+import '../../theme/app_text_styles.dart';
 import '../../widgets/state_views.dart';
 import 'chat_screen.dart';
 import 'messages_api.dart';
+
 import 'package:provider/provider.dart';
 
 final _timeFormat = DateFormat('d MMM, HH:mm', 'tr_TR');
@@ -57,6 +59,8 @@ class _ObserverConversationsScreenState
 
   @override
   Widget build(BuildContext context) {
+    final cs = context.colors;
+    final tx = context.text;
     final myId = context.read<AuthProvider>().user?.id;
 
     return Scaffold(
@@ -72,7 +76,7 @@ class _ObserverConversationsScreenState
             )
           : RefreshIndicator(
               onRefresh: _load,
-              color: AppColors.primary600,
+              color: cs.accentSoft,
               child: ListView.separated(
                 itemCount: _conversations.length,
                 separatorBuilder: (_, __) => const Divider(height: 1),
@@ -84,29 +88,26 @@ class _ObserverConversationsScreenState
                       '${c.participantA.fullName} ↔ ${c.participantB.fullName}';
                   return ListTile(
                     leading: CircleAvatar(
-                      backgroundColor: AppColors.surfaceMuted,
+                      backgroundColor: cs.surfaceMuted,
                       child: Icon(
                         isMine
                             ? Icons.chat_bubble_rounded
                             : Icons.visibility_outlined,
                         size: 18,
-                        color: AppColors.textSecondary,
+                        color: cs.textSecondary,
                       ),
                     ),
                     title: Text(
                       title,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        fontWeight: FontWeight.w700,
-                        fontSize: 13,
-                      ),
+                      style: tx.bodySmall.copyWith(fontWeight: FontWeight.w700),
                     ),
                     subtitle: Text(
                       c.lastMessage?.content ?? 'Henüz mesaj yok',
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(fontSize: 12),
+                      style: tx.caption,
                     ),
                     trailing: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
@@ -114,18 +115,9 @@ class _ObserverConversationsScreenState
                       children: [
                         Text(
                           _timeFormat.format(DateTime.parse(c.updatedAt)),
-                          style: const TextStyle(
-                            fontSize: 10.5,
-                            color: AppColors.textFaint,
-                          ),
+                          style: tx.label,
                         ),
-                        Text(
-                          '${c.messageCount} mesaj',
-                          style: const TextStyle(
-                            fontSize: 10.5,
-                            color: AppColors.textFaint,
-                          ),
-                        ),
+                        Text('${c.messageCount} mesaj', style: tx.label),
                       ],
                     ),
                     onTap: () => Navigator.of(context).push(

@@ -6,6 +6,8 @@ import '../../core/file_download.dart';
 import '../../models/contract.dart';
 import '../../models/customer.dart';
 import '../../theme/app_colors.dart';
+import '../../theme/app_palette.dart';
+import '../../theme/app_text_styles.dart';
 import '../../widgets/state_views.dart';
 import '../../widgets/stat_card.dart';
 import '../customers/customers_api.dart';
@@ -46,7 +48,9 @@ class _ContractsListScreenState extends State<ContractsListScreen> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(e is ApiException ? e.message : 'PDF indirilemedi')),
+          SnackBar(
+            content: Text(e is ApiException ? e.message : 'PDF indirilemedi'),
+          ),
         );
       }
     } finally {
@@ -91,6 +95,7 @@ class _ContractsListScreenState extends State<ContractsListScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final cs = context.colors;
     return Scaffold(
       appBar: AppBar(
         title: const Text('Sözleşmeler'),
@@ -99,11 +104,12 @@ class _ContractsListScreenState extends State<ContractsListScreen> {
             IconButton(
               icon: Badge(
                 label: Text('${_healthCheck.length}'),
-                backgroundColor: AppColors.warning600,
+                backgroundColor: cs.warning600,
                 child: const Icon(Icons.favorite_border_rounded),
               ),
               tooltip: 'Otomasyon gecikmeleri',
-              onPressed: () => setState(() => _healthCheckOpen = !_healthCheckOpen),
+              onPressed: () =>
+                  setState(() => _healthCheckOpen = !_healthCheckOpen),
             ),
           IconButton(
             icon: const Icon(Icons.add_rounded),
@@ -150,9 +156,8 @@ class _ContractsListScreenState extends State<ContractsListScreen> {
     try {
       await _api.renew(c.id);
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Sözleşme yenilendi')),
-        );
+        ScaffoldMessenger.of(context)
+            .showSnackBar(const SnackBar(content: Text('Sözleşme yenilendi')));
       }
       _load();
     } catch (e) {
@@ -169,6 +174,8 @@ class _ContractsListScreenState extends State<ContractsListScreen> {
   }
 
   Widget _buildBody() {
+    final cs = context.colors;
+    final tx = context.text;
     if (_loading) return const LoadingView();
     if (_error != null) return ErrorRetryView(message: _error!, onRetry: _load);
     if (_contracts.isEmpty)
@@ -179,7 +186,7 @@ class _ContractsListScreenState extends State<ContractsListScreen> {
 
     return RefreshIndicator(
       onRefresh: _load,
-      color: AppColors.primary600,
+      color: cs.accentSoft,
       child: ListView(
         padding: const EdgeInsets.all(16),
         children: [
@@ -195,8 +202,8 @@ class _ContractsListScreenState extends State<ContractsListScreen> {
                   label: 'Aylık Tekrarlayan Gelir',
                   value: _currency.format(_summary!.monthlyRecurringRevenue),
                   icon: Icons.repeat_rounded,
-                  iconColor: AppColors.success600,
-                  iconBackground: AppColors.success50,
+                  iconColor: cs.success600,
+                  iconBackground: cs.success50,
                   caption: 'Periyot aylığa normalize edilmiştir',
                 ),
               ],
@@ -208,16 +215,15 @@ class _ContractsListScreenState extends State<ContractsListScreen> {
               margin: const EdgeInsets.only(bottom: 12),
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: AppColors.danger50,
+                color: cs.danger50,
                 borderRadius: BorderRadius.circular(AppRadius.card),
-                border: Border.all(color: AppColors.danger500),
+                border: Border.all(color: cs.danger500),
               ),
               child: Text(
                 '${_expiring.length} sözleşme önümüzdeki 30 gün içinde sona eriyor',
-                style: const TextStyle(
-                  color: AppColors.danger600,
+                style: tx.bodySmall.copyWith(
+                  color: cs.danger600,
                   fontWeight: FontWeight.w700,
-                  fontSize: 12.5,
                 ),
               ),
             ),
@@ -226,25 +232,24 @@ class _ContractsListScreenState extends State<ContractsListScreen> {
               margin: const EdgeInsets.only(bottom: 12),
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: AppColors.warning50,
+                color: cs.warning50,
                 borderRadius: BorderRadius.circular(AppRadius.card),
-                border: Border.all(color: AppColors.warning500),
+                border: Border.all(color: cs.warning500),
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
                     '${_healthCheck.length} sözleşmenin otomasyonu gecikmiş',
-                    style: const TextStyle(
-                      color: AppColors.warning600,
+                    style: tx.bodySmall.copyWith(
+                      color: cs.warning600,
                       fontWeight: FontWeight.w700,
-                      fontSize: 12.5,
                     ),
                   ),
                   const SizedBox(height: 4),
-                  const Text(
+                  Text(
                     'Beklenen otomatik iş tarihi geçmiş ama iş henüz oluşturulmamış.',
-                    style: TextStyle(fontSize: 11.5, color: AppColors.textSecondary),
+                    style: tx.caption,
                   ),
                   const SizedBox(height: 10),
                   for (final item in _healthCheck)
@@ -252,7 +257,7 @@ class _ContractsListScreenState extends State<ContractsListScreen> {
                       margin: const EdgeInsets.only(bottom: 8),
                       padding: const EdgeInsets.all(10),
                       decoration: BoxDecoration(
-                        color: AppColors.surfaceCard,
+                        color: cs.surfaceCard,
                         borderRadius: BorderRadius.circular(AppRadius.chip),
                       ),
                       child: Row(
@@ -263,29 +268,34 @@ class _ContractsListScreenState extends State<ContractsListScreen> {
                               children: [
                                 Text(
                                   item.customerName,
-                                  style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 12.5),
+                                  style: tx.bodySmall.copyWith(
+                                    fontWeight: FontWeight.w600,
+                                  ),
                                 ),
                                 Text(
                                   '${item.serviceType ?? "Hizmet belirtilmemiş"} · ${item.daysOverdue} gün gecikmiş',
-                                  style: const TextStyle(fontSize: 11, color: AppColors.textSecondary),
+                                  style: tx.label.copyWith(
+                                    color: cs.textSecondary,
+                                  ),
                                 ),
                               ],
                             ),
                           ),
                           TextButton.icon(
                             onPressed: () async {
-                              final created = await Navigator.of(context).push<bool>(
-                                MaterialPageRoute(
-                                  builder: (_) => JobFormScreen(
-                                    prefillCustomerId: item.customerId,
-                                    prefillServiceType: item.serviceType,
-                                  ),
-                                ),
-                              );
+                              final created = await Navigator.of(context)
+                                  .push<bool>(
+                                    MaterialPageRoute(
+                                      builder: (_) => JobFormScreen(
+                                        prefillCustomerId: item.customerId,
+                                        prefillServiceType: item.serviceType,
+                                      ),
+                                    ),
+                                  );
                               if (created == true) _load();
                             },
                             icon: const Icon(Icons.build_outlined, size: 16),
-                            label: const Text('Şimdi Oluştur', style: TextStyle(fontSize: 12)),
+                            label: Text('Şimdi Oluştur', style: tx.caption),
                           ),
                         ],
                       ),
@@ -299,9 +309,9 @@ class _ContractsListScreenState extends State<ContractsListScreen> {
               child: Container(
                 padding: const EdgeInsets.all(14),
                 decoration: BoxDecoration(
-                  color: AppColors.surfaceCard,
+                  color: cs.surfaceCard,
                   borderRadius: BorderRadius.circular(AppRadius.card),
-                  border: Border.all(color: AppColors.borderDefault),
+                  border: Border.all(color: cs.borderDefault),
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -312,9 +322,8 @@ class _ContractsListScreenState extends State<ContractsListScreen> {
                         Expanded(
                           child: Text(
                             c.serviceType ?? 'Sözleşme',
-                            style: const TextStyle(
+                            style: tx.subtitle.copyWith(
                               fontWeight: FontWeight.w700,
-                              fontSize: 14,
                             ),
                           ),
                         ),
@@ -324,15 +333,12 @@ class _ContractsListScreenState extends State<ContractsListScreen> {
                             vertical: 3,
                           ),
                           decoration: BoxDecoration(
-                            color: AppColors.surfaceSubtle,
+                            color: cs.surfaceSubtle,
                             borderRadius: BorderRadius.circular(AppRadius.pill),
                           ),
                           child: Text(
                             contractStatusLabelTr(c.status),
-                            style: const TextStyle(
-                              fontSize: 10.5,
-                              fontWeight: FontWeight.w700,
-                            ),
+                            style: tx.label,
                           ),
                         ),
                       ],
@@ -340,20 +346,16 @@ class _ContractsListScreenState extends State<ContractsListScreen> {
                     const SizedBox(height: 4),
                     Text(
                       '${_dateFormat.format(DateTime.parse(c.startDate))} → ${_dateFormat.format(DateTime.parse(c.endDate))} (${c.durationMonths} ay)',
-                      style: const TextStyle(
-                        fontSize: 12,
-                        color: AppColors.textSecondary,
-                      ),
+                      style: tx.caption,
                     ),
                     if (c.amount != null) ...[
                       const SizedBox(height: 4),
                       Text(
                         '${_currency.format(c.amount)}'
                         '${c.recurrenceType != null ? ' · ${recurrenceTypeLabelTr(c.recurrenceType)}' : ''}',
-                        style: const TextStyle(
-                          fontSize: 13,
+                        style: tx.bodySmall.copyWith(
                           fontWeight: FontWeight.w700,
-                          color: AppColors.primary700,
+                          color: cs.accent,
                         ),
                       ),
                     ],
@@ -362,10 +364,17 @@ class _ContractsListScreenState extends State<ContractsListScreen> {
                       children: [
                         Expanded(
                           child: OutlinedButton.icon(
-                            onPressed: _pdfDownloadingId == c.id ? null : () => _downloadContractPdf(c),
-                            icon: const Icon(Icons.picture_as_pdf_outlined, size: 16),
+                            onPressed: _pdfDownloadingId == c.id
+                                ? null
+                                : () => _downloadContractPdf(c),
+                            icon: const Icon(
+                              Icons.picture_as_pdf_outlined,
+                              size: 16,
+                            ),
                             label: Text(
-                              _pdfDownloadingId == c.id ? 'İndiriliyor...' : 'PDF İndir',
+                              _pdfDownloadingId == c.id
+                                  ? 'İndiriliyor...'
+                                  : 'PDF İndir',
                             ),
                           ),
                         ),
@@ -373,7 +382,9 @@ class _ContractsListScreenState extends State<ContractsListScreen> {
                           const SizedBox(width: 8),
                           Expanded(
                             child: OutlinedButton.icon(
-                              onPressed: _busyId == c.id ? null : () => _renew(c),
+                              onPressed: _busyId == c.id
+                                  ? null
+                                  : () => _renew(c),
                               icon: const Icon(Icons.refresh_rounded, size: 16),
                               label: Text(
                                 _busyId == c.id ? 'İşleniyor...' : 'Yenile',
@@ -479,6 +490,7 @@ class _ContractFormScreenState extends State<_ContractFormScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final tx = context.text;
     return Scaffold(
       appBar: AppBar(title: const Text('Yeni Sözleşme')),
       body: _loadingOptions
@@ -603,7 +615,7 @@ class _ContractFormScreenState extends State<_ContractFormScreen> {
                     const SizedBox(height: 12),
                     Text(
                       _error!,
-                      style: const TextStyle(color: Colors.red, fontSize: 13),
+                      style: tx.bodySmall.copyWith(color: Colors.red),
                     ),
                   ],
                   const SizedBox(height: 20),
@@ -657,8 +669,14 @@ class _MyContractsScreenState extends State<MyContractsScreen> {
             'Duraklatılan sözleşme için periyodik işler planlanmaz. İstediğiniz zaman devam ettirebilirsiniz.',
           ),
           actions: [
-            TextButton(onPressed: () => Navigator.of(ctx).pop(false), child: const Text('Vazgeç')),
-            ElevatedButton(onPressed: () => Navigator.of(ctx).pop(true), child: const Text('Duraklat')),
+            TextButton(
+              onPressed: () => Navigator.of(ctx).pop(false),
+              child: const Text('Vazgeç'),
+            ),
+            ElevatedButton(
+              onPressed: () => Navigator.of(ctx).pop(true),
+              child: const Text('Duraklat'),
+            ),
           ],
         ),
       );
@@ -673,21 +691,26 @@ class _MyContractsScreenState extends State<MyContractsScreen> {
       }
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(c.isPaused ? 'Sözleşme devam ettirildi' : 'Sözleşme duraklatıldı')),
+          SnackBar(
+            content: Text(
+              c.isPaused ? 'Sözleşme devam ettirildi' : 'Sözleşme duraklatıldı',
+            ),
+          ),
         );
       }
       await _load();
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(e is ApiException ? e.message : 'İşlem yapılamadı')),
+          SnackBar(
+            content: Text(e is ApiException ? e.message : 'İşlem yapılamadı'),
+          ),
         );
       }
     } finally {
       if (mounted) setState(() => _toggleBusyId = null);
     }
   }
-
 
   Future<void> _downloadContractPdf(Contract c) async {
     setState(() => _pdfDownloadingId = c.id);
@@ -696,7 +719,9 @@ class _MyContractsScreenState extends State<MyContractsScreen> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(e is ApiException ? e.message : 'PDF indirilemedi')),
+          SnackBar(
+            content: Text(e is ApiException ? e.message : 'PDF indirilemedi'),
+          ),
         );
       }
     } finally {
@@ -730,6 +755,8 @@ class _MyContractsScreenState extends State<MyContractsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final cs = context.colors;
+    final tx = context.text;
     return Scaffold(
       appBar: AppBar(title: const Text('Sözleşmelerim')),
       body: _loading
@@ -743,7 +770,7 @@ class _MyContractsScreenState extends State<MyContractsScreen> {
             )
           : RefreshIndicator(
               onRefresh: _load,
-              color: AppColors.primary600,
+              color: cs.accentSoft,
               child: ListView.separated(
                 padding: const EdgeInsets.all(16),
                 itemCount: _contracts.length,
@@ -753,9 +780,9 @@ class _MyContractsScreenState extends State<MyContractsScreen> {
                   return Container(
                     padding: const EdgeInsets.all(14),
                     decoration: BoxDecoration(
-                      color: AppColors.surfaceCard,
+                      color: cs.surfaceCard,
                       borderRadius: BorderRadius.circular(AppRadius.card),
-                      border: Border.all(color: AppColors.borderDefault),
+                      border: Border.all(color: cs.borderDefault),
                     ),
                     child: Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -766,50 +793,47 @@ class _MyContractsScreenState extends State<MyContractsScreen> {
                             children: [
                               Text(
                                 c.serviceType ?? 'Sözleşme',
-                                style: const TextStyle(
+                                style: tx.subtitle.copyWith(
                                   fontWeight: FontWeight.w700,
-                                  fontSize: 14,
                                 ),
                               ),
                               const SizedBox(height: 4),
                               Text(
                                 '${_dateFormat.format(DateTime.parse(c.startDate))} → ${_dateFormat.format(DateTime.parse(c.endDate))}',
-                                style: const TextStyle(
-                                  fontSize: 12,
-                                  color: AppColors.textSecondary,
-                                ),
+                                style: tx.caption,
                               ),
                               Text(
                                 contractStatusLabelTr(c.status),
-                                style: const TextStyle(
-                                  fontSize: 12,
+                                style: tx.caption.copyWith(
                                   fontWeight: FontWeight.w600,
                                 ),
                               ),
                               if (c.isPaused)
                                 Container(
                                   margin: const EdgeInsets.only(top: 4),
-                                  padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
-                                  decoration: BoxDecoration(
-                                    color: AppColors.warning50,
-                                    borderRadius: BorderRadius.circular(AppRadius.pill),
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 7,
+                                    vertical: 2,
                                   ),
-                                  child: const Text(
+                                  decoration: BoxDecoration(
+                                    color: cs.warning50,
+                                    borderRadius: BorderRadius.circular(
+                                      AppRadius.pill,
+                                    ),
+                                  ),
+                                  child: Text(
                                     'Duraklatıldı',
-                                    style: TextStyle(
-                                      fontSize: 10.5,
-                                      fontWeight: FontWeight.w700,
-                                      color: AppColors.warning600,
+                                    style: tx.label.copyWith(
+                                      color: cs.warning600,
                                     ),
                                   ),
                                 ),
                               if (c.amount != null)
                                 Text(
                                   _currency.format(c.amount),
-                                  style: const TextStyle(
-                                    fontSize: 13,
+                                  style: tx.bodySmall.copyWith(
                                     fontWeight: FontWeight.w700,
-                                    color: AppColors.primary700,
+                                    color: cs.accent,
                                   ),
                                 ),
                               // Bölüm Q: yalnızca aktif sözleşmede duraklat/devam.
@@ -817,12 +841,18 @@ class _MyContractsScreenState extends State<MyContractsScreen> {
                                 Padding(
                                   padding: const EdgeInsets.only(top: 6),
                                   child: OutlinedButton.icon(
-                                    onPressed: _toggleBusyId == c.id ? null : () => _togglePause(c),
+                                    onPressed: _toggleBusyId == c.id
+                                        ? null
+                                        : () => _togglePause(c),
                                     icon: Icon(
-                                      c.isPaused ? Icons.play_circle_outline_rounded : Icons.pause_circle_outline_rounded,
+                                      c.isPaused
+                                          ? Icons.play_circle_outline_rounded
+                                          : Icons.pause_circle_outline_rounded,
                                       size: 16,
                                     ),
-                                    label: Text(c.isPaused ? 'Devam Ettir' : 'Duraklat'),
+                                    label: Text(
+                                      c.isPaused ? 'Devam Ettir' : 'Duraklat',
+                                    ),
                                   ),
                                 ),
                             ],
@@ -833,11 +863,18 @@ class _MyContractsScreenState extends State<MyContractsScreen> {
                               ? const SizedBox(
                                   width: 16,
                                   height: 16,
-                                  child: CircularProgressIndicator(strokeWidth: 2),
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                  ),
                                 )
-                              : const Icon(Icons.picture_as_pdf_outlined, size: 20),
+                              : const Icon(
+                                  Icons.picture_as_pdf_outlined,
+                                  size: 20,
+                                ),
                           tooltip: 'PDF İndir',
-                          onPressed: _pdfDownloadingId == c.id ? null : () => _downloadContractPdf(c),
+                          onPressed: _pdfDownloadingId == c.id
+                              ? null
+                              : () => _downloadContractPdf(c),
                         ),
                       ],
                     ),

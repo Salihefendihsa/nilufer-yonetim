@@ -84,8 +84,9 @@ class _CalendarExportCardState extends State<CalendarExportCard> {
       Uri.parse(url),
       mode: LaunchMode.externalApplication,
     );
-    if (!ok)
+    if (!ok) {
       _snack('Takvim uygulaması açılamadı — linki kopyalayıp elle ekleyin.');
+    }
   }
 
   Future<void> _openGoogle() async {

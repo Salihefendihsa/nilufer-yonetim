@@ -4,6 +4,8 @@ import 'package:intl/intl.dart';
 import '../../core/api_client.dart';
 import '../../models/product.dart';
 import '../../theme/app_colors.dart';
+import '../../theme/app_palette.dart';
+import '../../theme/app_text_styles.dart';
 import '../../widgets/state_views.dart';
 import 'stock_api.dart';
 
@@ -50,6 +52,8 @@ class _StockMovementsScreenState extends State<StockMovementsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final cs = context.colors;
+    final tx = context.text;
     return Scaffold(
       appBar: AppBar(title: Text('${widget.product.name} — Hareketler')),
       body: _loading
@@ -63,7 +67,7 @@ class _StockMovementsScreenState extends State<StockMovementsScreen> {
             )
           : RefreshIndicator(
               onRefresh: _load,
-              color: AppColors.primary600,
+              color: cs.accentSoft,
               child: ListView.separated(
                 padding: const EdgeInsets.all(16),
                 itemCount: _movements.length,
@@ -74,9 +78,9 @@ class _StockMovementsScreenState extends State<StockMovementsScreen> {
                   return Container(
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
-                      color: AppColors.surfaceCard,
+                      color: cs.surfaceCard,
                       borderRadius: BorderRadius.circular(AppRadius.card),
-                      border: Border.all(color: AppColors.borderDefault),
+                      border: Border.all(color: cs.borderDefault),
                     ),
                     child: Row(
                       children: [
@@ -85,11 +89,8 @@ class _StockMovementsScreenState extends State<StockMovementsScreen> {
                           height: 32,
                           alignment: Alignment.center,
                           decoration: BoxDecoration(
-                            color:
-                                (isIn
-                                        ? AppColors.success500
-                                        : AppColors.danger500)
-                                    .withValues(alpha: 0.12),
+                            color: (isIn ? cs.success500 : cs.danger500)
+                                .withValues(alpha: 0.12),
                             shape: BoxShape.circle,
                           ),
                           child: Icon(
@@ -97,9 +98,7 @@ class _StockMovementsScreenState extends State<StockMovementsScreen> {
                                 ? Icons.arrow_downward_rounded
                                 : Icons.arrow_upward_rounded,
                             size: 16,
-                            color: isIn
-                                ? AppColors.success600
-                                : AppColors.danger600,
+                            color: isIn ? cs.success600 : cs.danger600,
                           ),
                         ),
                         const SizedBox(width: 12),
@@ -109,30 +108,18 @@ class _StockMovementsScreenState extends State<StockMovementsScreen> {
                             children: [
                               Text(
                                 '${isIn ? '+' : '-'}${m.quantity.toStringAsFixed(1)} ${widget.product.unit}',
-                                style: TextStyle(
+                                style: tx.body.copyWith(
                                   fontWeight: FontWeight.w700,
-                                  fontSize: 13.5,
-                                  color: isIn
-                                      ? AppColors.success600
-                                      : AppColors.danger600,
+                                  color: isIn ? cs.success600 : cs.danger600,
                                 ),
                               ),
                               if (m.note != null)
-                                Text(
-                                  m.note!,
-                                  style: const TextStyle(
-                                    fontSize: 12,
-                                    color: AppColors.textSecondary,
-                                  ),
-                                ),
+                                Text(m.note!, style: tx.caption),
                               Text(
                                 _dateTimeFormat.format(
                                   DateTime.parse(m.createdAt),
                                 ),
-                                style: const TextStyle(
-                                  fontSize: 11,
-                                  color: AppColors.textFaint,
-                                ),
+                                style: tx.label,
                               ),
                             ],
                           ),

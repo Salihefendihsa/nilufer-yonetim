@@ -48,8 +48,9 @@ class CustomerDocument {
 
   String get sizeLabel {
     if (fileSize < 1024) return '$fileSize B';
-    if (fileSize < 1024 * 1024)
+    if (fileSize < 1024 * 1024) {
       return '${(fileSize / 1024).toStringAsFixed(0)} KB';
+    }
     return '${(fileSize / (1024 * 1024)).toStringAsFixed(1)} MB';
   }
 }
@@ -111,10 +112,11 @@ class _CustomerDocumentsTabState extends State<CustomerDocumentsTab> {
       final docs = await _api.list(widget.customerId);
       if (mounted) setState(() => _docs = docs);
     } catch (e) {
-      if (mounted)
+      if (mounted) {
         setState(
           () => _error = e is ApiException ? e.message : 'Belgeler yüklenemedi',
         );
+      }
     } finally {
       if (mounted) setState(() => _loading = false);
     }
@@ -188,9 +190,10 @@ class _CustomerDocumentsTabState extends State<CustomerDocumentsTab> {
       await _api.delete(widget.customerId, d.id);
       await _load();
     } on ApiException catch (e) {
-      if (mounted)
+      if (mounted) {
         ScaffoldMessenger.of(context)
             .showSnackBar(SnackBar(content: Text(e.message)));
+      }
     } finally {
       if (mounted) setState(() => _busy = false);
     }

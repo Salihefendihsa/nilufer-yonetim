@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 
 import '../../core/api_client.dart';
 import '../../theme/app_colors.dart';
+import '../../theme/app_palette.dart';
+import '../../theme/app_text_styles.dart';
 import '../../widgets/state_views.dart';
 import '../evaluations/evaluations_screen.dart';
 import '../../widgets/badges.dart';
@@ -63,8 +65,8 @@ class LeaderboardEntry {
         ratedJobsCount: (json['ratedJobsCount'] as num?)?.toInt() ?? 0,
         onTimeRate: (json['onTimeRate'] as num?)?.toDouble(),
         onTimeMeasuredJobs: (json['onTimeMeasuredJobs'] as num?)?.toInt() ?? 0,
-        targetCompletionPercent:
-            (json['targetCompletionPercent'] as num?)?.toDouble(),
+        targetCompletionPercent: (json['targetCompletionPercent'] as num?)
+            ?.toDouble(),
         achievementTier: json['achievementTier'] as String?,
       );
 }
@@ -179,8 +181,12 @@ class _PerformanceScreenState extends State<PerformanceScreen> {
   /// görseli sağlıyor; bu ikisi sayısal karşılaştırmayı görsel bir çubuğa
   /// çeviriyor (grafik kütüphanesi eklenmeden, mevcut çubuk-satır deseniyle).
   Widget _buildRankingCharts() {
+    final cs = context.colors;
+    final tx = context.text;
     final byJobs = [..._entries]
-      ..sort((a, b) => b.completedJobsInPeriod.compareTo(a.completedJobsInPeriod));
+      ..sort(
+        (a, b) => b.completedJobsInPeriod.compareTo(a.completedJobsInPeriod),
+      );
     final maxJobs = byJobs.isNotEmpty ? byJobs.first.completedJobsInPeriod : 0;
 
     final rated = _entries.where((e) => e.averageRating != null).toList()
@@ -191,9 +197,9 @@ class _PerformanceScreenState extends State<PerformanceScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
+          Text(
             'Tamamlanan İşe Göre Sıralama',
-            style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13.5),
+            style: tx.body.copyWith(fontWeight: FontWeight.w700),
           ),
           const SizedBox(height: 8),
           for (final e in byJobs.take(8))
@@ -207,7 +213,7 @@ class _PerformanceScreenState extends State<PerformanceScreen> {
                       e.fullName,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(fontSize: 11.5),
+                      style: tx.caption,
                     ),
                   ),
                   Expanded(
@@ -218,8 +224,8 @@ class _PerformanceScreenState extends State<PerformanceScreen> {
                             ? 0
                             : e.completedJobsInPeriod / maxJobs,
                         minHeight: 8,
-                        backgroundColor: AppColors.surfaceMuted,
-                        color: AppColors.primary500,
+                        backgroundColor: cs.surfaceMuted,
+                        color: cs.primary500,
                       ),
                     ),
                   ),
@@ -229,10 +235,7 @@ class _PerformanceScreenState extends State<PerformanceScreen> {
                     child: Text(
                       '${e.completedJobsInPeriod}',
                       textAlign: TextAlign.right,
-                      style: const TextStyle(
-                        fontSize: 11.5,
-                        fontWeight: FontWeight.w700,
-                      ),
+                      style: tx.caption.copyWith(fontWeight: FontWeight.w700),
                     ),
                   ),
                 ],
@@ -240,9 +243,9 @@ class _PerformanceScreenState extends State<PerformanceScreen> {
             ),
           if (rated.isNotEmpty) ...[
             const SizedBox(height: 14),
-            const Text(
+            Text(
               'Müşteri Puanına Göre Sıralama',
-              style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13.5),
+              style: tx.body.copyWith(fontWeight: FontWeight.w700),
             ),
             const SizedBox(height: 8),
             for (final e in rated.take(8))
@@ -256,7 +259,7 @@ class _PerformanceScreenState extends State<PerformanceScreen> {
                         e.fullName,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(fontSize: 11.5),
+                        style: tx.caption,
                       ),
                     ),
                     Expanded(
@@ -265,8 +268,8 @@ class _PerformanceScreenState extends State<PerformanceScreen> {
                         child: LinearProgressIndicator(
                           value: (e.averageRating! / 5).clamp(0, 1),
                           minHeight: 8,
-                          backgroundColor: AppColors.surfaceMuted,
-                          color: AppColors.warning500,
+                          backgroundColor: cs.surfaceMuted,
+                          color: cs.warning500,
                         ),
                       ),
                     ),
@@ -276,10 +279,7 @@ class _PerformanceScreenState extends State<PerformanceScreen> {
                       child: Text(
                         e.averageRating!.toStringAsFixed(2),
                         textAlign: TextAlign.right,
-                        style: const TextStyle(
-                          fontSize: 11.5,
-                          fontWeight: FontWeight.w700,
-                        ),
+                        style: tx.caption.copyWith(fontWeight: FontWeight.w700),
                       ),
                     ),
                   ],
@@ -293,6 +293,8 @@ class _PerformanceScreenState extends State<PerformanceScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final cs = context.colors;
+    final tx = context.text;
     return Scaffold(
       appBar: AppBar(
         bottom: PreferredSize(
@@ -311,10 +313,7 @@ class _PerformanceScreenState extends State<PerformanceScreen> {
                   Padding(
                     padding: const EdgeInsets.only(right: 8),
                     child: ChoiceChip(
-                      label: Text(
-                        option.$2,
-                        style: const TextStyle(fontSize: 12),
-                      ),
+                      label: Text(option.$2, style: tx.caption),
                       selected: _period == option.$1,
                       onSelected: (_) {
                         setState(() => _period = option.$1);
@@ -354,7 +353,7 @@ class _PerformanceScreenState extends State<PerformanceScreen> {
             )
           : RefreshIndicator(
               onRefresh: _load,
-              color: AppColors.primary600,
+              color: cs.accentSoft,
               child: ListView.separated(
                 padding: const EdgeInsets.all(16),
                 itemCount:
@@ -369,9 +368,9 @@ class _PerformanceScreenState extends State<PerformanceScreen> {
                     return Container(
                       padding: const EdgeInsets.all(14),
                       decoration: BoxDecoration(
-                        color: AppColors.surfaceCard,
+                        color: cs.surfaceCard,
                         borderRadius: BorderRadius.circular(AppRadius.card),
-                        border: Border.all(color: AppColors.borderDefault),
+                        border: Border.all(color: cs.borderDefault),
                       ),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -382,9 +381,8 @@ class _PerformanceScreenState extends State<PerformanceScreen> {
                                 : _period == 'last_month'
                                 ? 'Geçen Ayın Özeti'
                                 : 'Bu Ayın Özeti',
-                            style: TextStyle(
+                            style: tx.subtitle.copyWith(
                               fontWeight: FontWeight.w700,
-                              fontSize: 14,
                             ),
                           ),
                           const SizedBox(height: 6),
@@ -392,44 +390,33 @@ class _PerformanceScreenState extends State<PerformanceScreen> {
                             '${sm.totalCompletedInPeriod} tamamlanan iş · '
                             'önceki dönem ${sm.totalCompletedPreviousPeriod} · '
                             'kişi başı ${sm.jobsPerStaff.toStringAsFixed(1)}',
-                            style: const TextStyle(
-                              fontSize: 12.5,
-                              color: AppColors.textSecondary,
-                            ),
+                            style: tx.bodySmall,
                           ),
                           Text(
                             '${sm.staffCount} personel bu listede',
-                            style: const TextStyle(
-                              fontSize: 12.5,
-                              color: AppColors.textSecondary,
-                            ),
+                            style: tx.bodySmall,
                           ),
                           if (sm.averageRating != null)
                             Text(
                               'Ortalama puan ${sm.averageRating!.toStringAsFixed(1)}'
                               ' (${sm.ratedJobsCount} puanlanmış iş)',
-                              style: const TextStyle(
-                                fontSize: 12.5,
-                                color: AppColors.textSecondary,
-                              ),
+                              style: tx.bodySmall,
                             ),
                           if (sm.onTimeRate != null)
                             Text(
                               'Zamanında tamamlama '
                               '%${sm.onTimeRate!.toStringAsFixed(0)}',
-                              style: const TextStyle(
-                                fontSize: 12.5,
+                              style: tx.bodySmall.copyWith(
                                 fontWeight: FontWeight.w600,
-                                color: AppColors.success600,
+                                color: cs.success600,
                               ),
                             ),
                           if (_monthlyTarget != null)
                             Text(
                               'Kişi başı aylık hedef: $_monthlyTarget iş',
-                              style: const TextStyle(
-                                fontSize: 12.5,
+                              style: tx.bodySmall.copyWith(
                                 fontWeight: FontWeight.w600,
-                                color: AppColors.primary700,
+                                color: cs.accent,
                               ),
                             ),
                         ],
@@ -452,13 +439,13 @@ class _PerformanceScreenState extends State<PerformanceScreen> {
                       ? const Color(0xFF9AA5B1)
                       : rank == 3
                       ? const Color(0xFFB08D57)
-                      : AppColors.textFaint;
+                      : cs.textFaint;
                   return Container(
                     padding: const EdgeInsets.all(14),
                     decoration: BoxDecoration(
-                      color: AppColors.surfaceCard,
+                      color: cs.surfaceCard,
                       borderRadius: BorderRadius.circular(AppRadius.card),
-                      border: Border.all(color: AppColors.borderDefault),
+                      border: Border.all(color: cs.borderDefault),
                     ),
                     child: Row(
                       children: [
@@ -489,9 +476,8 @@ class _PerformanceScreenState extends State<PerformanceScreen> {
                                     child: Text(
                                       e.fullName,
                                       overflow: TextOverflow.ellipsis,
-                                      style: const TextStyle(
+                                      style: tx.subtitle.copyWith(
                                         fontWeight: FontWeight.w700,
-                                        fontSize: 14,
                                       ),
                                     ),
                                   ),
@@ -504,21 +490,17 @@ class _PerformanceScreenState extends State<PerformanceScreen> {
                               Text(
                                 '${e.position} · ${e.completedJobsInPeriod} iş '
                                 '(önceki dönem ${e.completedJobsPreviousPeriod})',
-                                style: const TextStyle(
-                                  fontSize: 12,
-                                  color: AppColors.textSecondary,
-                                ),
+                                style: tx.caption,
                               ),
                               if (e.onTimeRate != null)
                                 Text(
                                   'Zamanında %${e.onTimeRate!.toStringAsFixed(0)}'
                                   ' (${e.onTimeMeasuredJobs} planlı iş)',
-                                  style: TextStyle(
-                                    fontSize: 11.5,
+                                  style: tx.caption.copyWith(
                                     fontWeight: FontWeight.w600,
                                     color: e.onTimeRate! >= 90
-                                        ? AppColors.success600
-                                        : AppColors.warning600,
+                                        ? cs.success600
+                                        : cs.warning600,
                                   ),
                                 ),
                               if (e.targetCompletionPercent != null)
@@ -526,12 +508,11 @@ class _PerformanceScreenState extends State<PerformanceScreen> {
                                   'Hedefin '
                                   '%${e.targetCompletionPercent!.toStringAsFixed(0)}'
                                   "'i",
-                                  style: TextStyle(
-                                    fontSize: 11.5,
+                                  style: tx.caption.copyWith(
                                     fontWeight: FontWeight.w700,
                                     color: e.targetCompletionPercent! >= 100
-                                        ? AppColors.success600
-                                        : AppColors.warning600,
+                                        ? cs.success600
+                                        : cs.warning600,
                                   ),
                                 ),
                             ],
@@ -540,18 +521,17 @@ class _PerformanceScreenState extends State<PerformanceScreen> {
                         if (e.averageRating != null)
                           Row(
                             children: [
-                              const Icon(
+                              Icon(
                                 Icons.star_rounded,
                                 size: 16,
-                                color: AppColors.warning500,
+                                color: cs.warning500,
                               ),
                               const SizedBox(width: 2),
                               Text(
                                 '${e.averageRating!.toStringAsFixed(2)}'
                                 ' (${e.ratedJobsCount})',
-                                style: const TextStyle(
+                                style: tx.bodySmall.copyWith(
                                   fontWeight: FontWeight.w700,
-                                  fontSize: 12.5,
                                 ),
                               ),
                             ],

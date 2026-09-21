@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 
 import '../../core/api_client.dart';
 import '../../theme/app_colors.dart';
+import '../../theme/app_palette.dart';
+import '../../theme/app_text_styles.dart';
 import '../../widgets/state_views.dart';
 
 /// web/src/app/(dashboard)/ayarlar/page.tsx: ServiceTypesSection ve
@@ -83,9 +85,7 @@ class _NamedListSettingsScreenState extends State<NamedListSettingsScreen> {
             .toList(),
       );
     } catch (e) {
-      setState(
-        () => _error = e is ApiException ? e.message : 'Yüklenemedi',
-      );
+      setState(() => _error = e is ApiException ? e.message : 'Yüklenemedi');
     } finally {
       if (mounted) setState(() => _loading = false);
     }
@@ -143,14 +143,14 @@ class _NamedListSettingsScreenState extends State<NamedListSettingsScreen> {
   void _showError(Object e) {
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(e is ApiException ? e.message : 'Güncellenemedi'),
-      ),
+      SnackBar(content: Text(e is ApiException ? e.message : 'Güncellenemedi')),
     );
   }
 
   @override
   Widget build(BuildContext context) {
+    final cs = context.colors;
+    final tx = context.text;
     return Scaffold(
       appBar: AppBar(title: Text(widget.title)),
       body: _loading
@@ -160,13 +160,7 @@ class _NamedListSettingsScreenState extends State<NamedListSettingsScreen> {
           : ListView(
               padding: const EdgeInsets.all(16),
               children: [
-                Text(
-                  widget.description,
-                  style: const TextStyle(
-                    fontSize: 12.5,
-                    color: AppColors.textSecondary,
-                  ),
-                ),
+                Text(widget.description, style: tx.bodySmall),
                 const SizedBox(height: 12),
                 if (_items.isEmpty)
                   const Padding(
@@ -186,9 +180,9 @@ class _NamedListSettingsScreenState extends State<NamedListSettingsScreen> {
                         vertical: 6,
                       ),
                       decoration: BoxDecoration(
-                        color: AppColors.surfaceCard,
+                        color: cs.surfaceCard,
                         borderRadius: BorderRadius.circular(AppRadius.card),
-                        border: Border.all(color: AppColors.borderDefault),
+                        border: Border.all(color: cs.borderDefault),
                       ),
                       child: editing
                           ? Row(
@@ -220,11 +214,10 @@ class _NamedListSettingsScreenState extends State<NamedListSettingsScreen> {
                                 Expanded(
                                   child: Text(
                                     item.name,
-                                    style: TextStyle(
-                                      fontSize: 13.5,
+                                    style: tx.body.copyWith(
                                       color: item.isActive
-                                          ? AppColors.textPrimary
-                                          : AppColors.textFaint,
+                                          ? cs.textPrimary
+                                          : cs.textFaint,
                                       decoration: item.isActive
                                           ? null
                                           : TextDecoration.lineThrough,
@@ -249,11 +242,10 @@ class _NamedListSettingsScreenState extends State<NamedListSettingsScreen> {
                                     item.isActive
                                         ? 'Pasifleştir'
                                         : 'Aktifleştir',
-                                    style: TextStyle(
+                                    style: tx.bodySmall.copyWith(
                                       color: item.isActive
-                                          ? AppColors.danger500
-                                          : AppColors.primary600,
-                                      fontSize: 12.5,
+                                          ? cs.danger500
+                                          : cs.primary600,
                                     ),
                                   ),
                                 ),

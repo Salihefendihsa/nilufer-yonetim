@@ -126,8 +126,9 @@ class _OnboardingCardState extends State<OnboardingCard> {
   Widget build(BuildContext context) {
     final cs = context.colors;
     final tx = context.text;
-    if (_loading || _data == null || _data!.items.isEmpty)
+    if (_loading || _data == null || _data!.items.isEmpty) {
       return const SizedBox.shrink();
+    }
     final d = _data!;
     return Container(
       margin: const EdgeInsets.only(top: 12),

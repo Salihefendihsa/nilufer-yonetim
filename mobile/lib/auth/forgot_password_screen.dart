@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 
 import '../core/api_client.dart';
-import '../theme/app_colors.dart';
+import '../theme/app_palette.dart';
+import '../theme/app_text_styles.dart';
 
 /// web/src/app/sifremi-unuttum/page.tsx ile aynı akış — kullanıcı var/yok
 /// fark etmeksizin aynı başarı mesajı gösterilir (email enumeration'ı
@@ -49,6 +50,8 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final cs = context.colors;
+    final tx = context.text;
     return Scaffold(
       appBar: AppBar(title: const Text('Şifremi Unuttum')),
       body: SafeArea(
@@ -58,18 +61,18 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
               ? Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    const Icon(
+                    Icon(
                       Icons.mark_email_read_outlined,
                       size: 48,
-                      color: AppColors.primary600,
+                      color: cs.accentSoft,
                     ),
                     const SizedBox(height: 16),
-                    const Text(
+                    Text(
                       'Bu e-posta adresi sistemde kayıtlıysa, şifrenizi '
                       'sıfırlamak için bir bağlantı gönderildi. Gelen '
                       'kutunuzu kontrol edin.',
                       textAlign: TextAlign.center,
-                      style: TextStyle(fontSize: 13, color: AppColors.textSecondary),
+                      style: tx.bodySmall,
                     ),
                   ],
                 )
@@ -77,10 +80,10 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    const Text(
+                    Text(
                       'Hesabınıza kayıtlı e-posta adresini girin, size bir '
                       'sıfırlama bağlantısı gönderelim.',
-                      style: TextStyle(fontSize: 13, color: AppColors.textSecondary),
+                      style: tx.bodySmall,
                     ),
                     const SizedBox(height: 20),
                     TextField(
@@ -90,12 +93,19 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                     ),
                     if (_error != null) ...[
                       const SizedBox(height: 12),
-                      Text(_error!, style: const TextStyle(color: AppColors.danger500, fontSize: 12.5)),
+                      Text(
+                        _error!,
+                        style: tx.bodySmall.copyWith(color: cs.danger500),
+                      ),
                     ],
                     const SizedBox(height: 20),
                     ElevatedButton(
                       onPressed: _loading ? null : _submit,
-                      child: Text(_loading ? 'Gönderiliyor...' : 'Sıfırlama Bağlantısı Gönder'),
+                      child: Text(
+                        _loading
+                            ? 'Gönderiliyor...'
+                            : 'Sıfırlama Bağlantısı Gönder',
+                      ),
                     ),
                   ],
                 ),

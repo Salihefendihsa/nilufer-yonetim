@@ -190,9 +190,10 @@ class _CustomerTagEditorState extends State<CustomerTagEditor> {
       );
       if (mounted) setState(() => _current = updated);
     } on ApiException catch (e) {
-      if (mounted)
+      if (mounted) {
         ScaffoldMessenger.of(context)
             .showSnackBar(SnackBar(content: Text(e.message)));
+      }
     } finally {
       if (mounted) setState(() => _busy = false);
     }
@@ -272,11 +273,12 @@ class _CustomerTagsScreenState extends State<CustomerTagsScreen> {
       final items = await _api.list(includeInactive: true);
       if (mounted) setState(() => _items = items);
     } catch (e) {
-      if (mounted)
+      if (mounted) {
         setState(
           () =>
               _error = e is ApiException ? e.message : 'Etiketler yüklenemedi',
         );
+      }
     } finally {
       if (mounted) setState(() => _loading = false);
     }
@@ -363,9 +365,10 @@ class _CustomerTagsScreenState extends State<CustomerTagsScreen> {
                     }
                     if (ctx.mounted) Navigator.of(ctx).pop(true);
                   } on ApiException catch (e) {
-                    if (ctx.mounted)
+                    if (ctx.mounted) {
                       ScaffoldMessenger.of(ctx)
                           .showSnackBar(SnackBar(content: Text(e.message)));
+                    }
                   }
                 },
                 child: const Text('Kaydet'),
@@ -407,9 +410,10 @@ class _CustomerTagsScreenState extends State<CustomerTagsScreen> {
       await _api.delete(t.id);
       await _load();
     } on ApiException catch (e) {
-      if (mounted)
+      if (mounted) {
         ScaffoldMessenger.of(context)
             .showSnackBar(SnackBar(content: Text(e.message)));
+      }
     } finally {
       if (mounted) setState(() => _busy = false);
     }

@@ -5,6 +5,8 @@ import '../../core/api_client.dart';
 import '../../core/file_download.dart';
 import '../../models/customer.dart';
 import '../../theme/app_colors.dart';
+import '../../theme/app_palette.dart';
+import '../../theme/app_text_styles.dart';
 import '../../widgets/charts.dart';
 import '../../widgets/state_views.dart';
 import '../../widgets/stat_card.dart';
@@ -113,9 +115,8 @@ class _FinanceScreenState extends State<FinanceScreen>
       await _api.deleteExpense(expense.id);
       await _loadExpenses();
       if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(const SnackBar(content: Text('Gider silindi.')));
+        ScaffoldMessenger.of(context)
+            .showSnackBar(const SnackBar(content: Text('Gider silindi.')));
       }
     } catch (e) {
       if (mounted) {
@@ -150,7 +151,10 @@ class _FinanceScreenState extends State<FinanceScreen>
   Future<void> _downloadReceipt(Payment p) async {
     setState(() => _receiptDownloadingId = p.id);
     try {
-      await downloadAndShare('/payments/${p.id}/receipt/pdf', 'makbuz-${p.id}.pdf');
+      await downloadAndShare(
+        '/payments/${p.id}/receipt/pdf',
+        'makbuz-${p.id}.pdf',
+      );
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -182,7 +186,8 @@ class _FinanceScreenState extends State<FinanceScreen>
       setState(() {
         _summary = results[0] as PaymentsSummary;
         _payments = (results[1] as dynamic).data as List<Payment>;
-        _revenueTrend = (trendJson['data'] as List).cast<Map<String, dynamic>>();
+        _revenueTrend = (trendJson['data'] as List)
+            .cast<Map<String, dynamic>>();
       });
     } catch (e) {
       setState(
@@ -260,6 +265,8 @@ class _FinanceScreenState extends State<FinanceScreen>
   }
 
   Widget _buildExpensesBody() {
+    final cs = context.colors;
+    final tx = context.text;
     if (_loadingExpenses) return const LoadingView();
     if (_expensesError != null) {
       return ErrorRetryView(message: _expensesError!, onRetry: _loadExpenses);
@@ -273,7 +280,7 @@ class _FinanceScreenState extends State<FinanceScreen>
 
     return RefreshIndicator(
       onRefresh: _loadExpenses,
-      color: AppColors.primary600,
+      color: cs.accentSoft,
       child: ListView(
         padding: const EdgeInsets.all(16),
         children: [
@@ -283,8 +290,8 @@ class _FinanceScreenState extends State<FinanceScreen>
                 label: 'Toplam Gider',
                 value: _currency.format(totalAmount),
                 icon: Icons.receipt_long_rounded,
-                iconColor: AppColors.danger500,
-                iconBackground: AppColors.danger50,
+                iconColor: cs.danger500,
+                iconBackground: cs.danger50,
               ),
               for (final entry in categoryTotals.entries)
                 AppStatCard(
@@ -336,9 +343,9 @@ class _FinanceScreenState extends State<FinanceScreen>
                 child: Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: AppColors.surfaceCard,
+                    color: cs.surfaceCard,
                     borderRadius: BorderRadius.circular(AppRadius.card),
-                    border: Border.all(color: AppColors.borderDefault),
+                    border: Border.all(color: cs.borderDefault),
                   ),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -349,9 +356,8 @@ class _FinanceScreenState extends State<FinanceScreen>
                           children: [
                             Text(
                               expenseCategoryLabelTr(e.category),
-                              style: const TextStyle(
+                              style: tx.bodySmall.copyWith(
                                 fontWeight: FontWeight.w600,
-                                fontSize: 13,
                               ),
                             ),
                             Text(
@@ -362,10 +368,7 @@ class _FinanceScreenState extends State<FinanceScreen>
                                   e.recordedByUserName!,
                               ].join(' · '),
                               maxLines: 2,
-                              style: const TextStyle(
-                                fontSize: 11,
-                                color: AppColors.textFaint,
-                              ),
+                              style: tx.label,
                             ),
                           ],
                         ),
@@ -376,9 +379,9 @@ class _FinanceScreenState extends State<FinanceScreen>
                         children: [
                           Text(
                             _currency.format(e.amount),
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontWeight: FontWeight.w700,
-                              color: AppColors.danger500,
+                              color: cs.danger500,
                             ),
                           ),
                           SizedBox(
@@ -395,9 +398,9 @@ class _FinanceScreenState extends State<FinanceScreen>
                                     padding: EdgeInsets.zero,
                                     iconSize: 18,
                                     tooltip: 'Sil',
-                                    icon: const Icon(
+                                    icon: Icon(
                                       Icons.delete_outline_rounded,
-                                      color: AppColors.textFaint,
+                                      color: cs.textFaint,
                                     ),
                                     onPressed: () => _deleteExpense(e),
                                   ),
@@ -415,13 +418,15 @@ class _FinanceScreenState extends State<FinanceScreen>
   }
 
   Widget _buildBody() {
+    final cs = context.colors;
+    final tx = context.text;
     if (_loading) return const LoadingView();
     if (_error != null) return ErrorRetryView(message: _error!, onRetry: _load);
     final s = _summary!;
 
     return RefreshIndicator(
       onRefresh: _load,
-      color: AppColors.primary600,
+      color: cs.accentSoft,
       child: ListView(
         padding: const EdgeInsets.all(16),
         children: [
@@ -446,22 +451,22 @@ class _FinanceScreenState extends State<FinanceScreen>
                 label: 'Toplam Tahsilat',
                 value: _currency.format(s.allTimeTotal),
                 icon: Icons.account_balance_wallet_outlined,
-                iconColor: AppColors.info600,
-                iconBackground: AppColors.info50,
+                iconColor: cs.info600,
+                iconBackground: cs.info50,
               ),
               AppStatCard(
                 label: 'Bekleyen Bakiye',
                 value: _currency.format(s.totalOutstandingBalance),
                 icon: Icons.warning_amber_rounded,
-                iconColor: AppColors.danger500,
-                iconBackground: AppColors.danger50,
+                iconColor: cs.danger500,
+                iconBackground: cs.danger50,
               ),
               AppStatCard(
                 label: 'Bekleyen Avans',
                 value: _currency.format(s.pendingAdvancesTotal),
                 icon: Icons.hourglass_empty_rounded,
-                iconColor: AppColors.warning600,
-                iconBackground: AppColors.warning50,
+                iconColor: cs.warning600,
+                iconBackground: cs.warning50,
                 caption: '${s.pendingAdvancesCount} talep',
               ),
               if (s.netProfitThisMonth != null)
@@ -469,8 +474,8 @@ class _FinanceScreenState extends State<FinanceScreen>
                   label: 'Net Kâr (Ay)',
                   value: _currency.format(s.netProfitThisMonth),
                   icon: Icons.trending_up_rounded,
-                  iconColor: AppColors.success600,
-                  iconBackground: AppColors.success50,
+                  iconColor: cs.success600,
+                  iconBackground: cs.success50,
                   caption: s.profitMargin != null
                       ? '%${s.profitMargin!.toStringAsFixed(1)} marj — yalnızca personel maaşı düşülerek hesaplanır'
                       : null,
@@ -479,9 +484,9 @@ class _FinanceScreenState extends State<FinanceScreen>
           ),
           if (_revenueTrend.isNotEmpty) ...[
             const SizedBox(height: 20),
-            const Text(
+            Text(
               'Ciro Trendi',
-              style: TextStyle(fontWeight: FontWeight.w700, fontSize: 14.5),
+              style: tx.subtitle.copyWith(fontWeight: FontWeight.w700),
             ),
             const SizedBox(height: 8),
             RevenueTrendChart(
@@ -497,17 +502,17 @@ class _FinanceScreenState extends State<FinanceScreen>
           ],
           if (s.paymentTypeBreakdown.isNotEmpty) ...[
             const SizedBox(height: 20),
-            const Text(
+            Text(
               'Ödeme Türü Dağılımı (Bu Ay)',
-              style: TextStyle(fontWeight: FontWeight.w700, fontSize: 14.5),
+              style: tx.subtitle.copyWith(fontWeight: FontWeight.w700),
             ),
             const SizedBox(height: 8),
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
               decoration: BoxDecoration(
-                color: AppColors.surfaceCard,
+                color: cs.surfaceCard,
                 borderRadius: BorderRadius.circular(AppRadius.card),
-                border: Border.all(color: AppColors.borderDefault),
+                border: Border.all(color: cs.borderDefault),
               ),
               child: Column(
                 children: [
@@ -519,21 +524,17 @@ class _FinanceScreenState extends State<FinanceScreen>
                           Expanded(
                             child: Text(
                               paymentTypeLabelTr(entry.paymentType),
-                              style: const TextStyle(fontSize: 13),
+                              style: tx.bodySmall,
                             ),
                           ),
                           Text(
                             '${entry.count} işlem',
-                            style: const TextStyle(
-                              fontSize: 11.5,
-                              color: AppColors.textFaint,
-                            ),
+                            style: tx.caption.copyWith(color: cs.textFaint),
                           ),
                           const SizedBox(width: 10),
                           Text(
                             _currency.format(entry.total),
-                            style: const TextStyle(
-                              fontSize: 13,
+                            style: tx.bodySmall.copyWith(
                               fontWeight: FontWeight.w700,
                             ),
                           ),
@@ -545,9 +546,9 @@ class _FinanceScreenState extends State<FinanceScreen>
             ),
           ],
           const SizedBox(height: 20),
-          const Text(
+          Text(
             'Son Tahsilatlar',
-            style: TextStyle(fontWeight: FontWeight.w700, fontSize: 14.5),
+            style: tx.subtitle.copyWith(fontWeight: FontWeight.w700),
           ),
           const SizedBox(height: 8),
           if (_payments.isEmpty)
@@ -562,9 +563,9 @@ class _FinanceScreenState extends State<FinanceScreen>
                 child: Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: AppColors.surfaceCard,
+                    color: cs.surfaceCard,
                     borderRadius: BorderRadius.circular(AppRadius.card),
-                    border: Border.all(color: AppColors.borderDefault),
+                    border: Border.all(color: cs.borderDefault),
                   ),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -579,9 +580,8 @@ class _FinanceScreenState extends State<FinanceScreen>
                                       p.paymentType),
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
-                              style: const TextStyle(
+                              style: tx.bodySmall.copyWith(
                                 fontWeight: FontWeight.w600,
-                                fontSize: 13,
                               ),
                             ),
                             Text(
@@ -594,10 +594,7 @@ class _FinanceScreenState extends State<FinanceScreen>
                                   p.collectedByStaffName!,
                               ].join(' · '),
                               maxLines: 2,
-                              style: const TextStyle(
-                                fontSize: 11,
-                                color: AppColors.textFaint,
-                              ),
+                              style: tx.label,
                             ),
                           ],
                         ),
@@ -608,9 +605,9 @@ class _FinanceScreenState extends State<FinanceScreen>
                         children: [
                           Text(
                             _currency.format(p.amount),
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontWeight: FontWeight.w700,
-                              color: AppColors.success600,
+                              color: cs.success600,
                             ),
                           ),
                           SizedBox(
@@ -627,9 +624,9 @@ class _FinanceScreenState extends State<FinanceScreen>
                                     padding: EdgeInsets.zero,
                                     iconSize: 18,
                                     tooltip: 'PDF makbuz indir/paylaş',
-                                    icon: const Icon(
+                                    icon: Icon(
                                       Icons.receipt_outlined,
-                                      color: AppColors.textFaint,
+                                      color: cs.textFaint,
                                     ),
                                     onPressed: () => _downloadReceipt(p),
                                   ),
@@ -646,7 +643,6 @@ class _FinanceScreenState extends State<FinanceScreen>
     );
   }
 }
-
 
 class _PaymentFormScreen extends StatefulWidget {
   const _PaymentFormScreen();
@@ -681,9 +677,10 @@ class _PaymentFormScreenState extends State<_PaymentFormScreen> {
     try {
       final res = await _customersApi.list(page: 1);
       // Tahsil eden personel listesi zorunlu degil; alinamazsa alan bos kalir.
-      final staff = await _staffApi.list().then((r) => r.data).catchError(
-        (_) => <Staff>[],
-      );
+      final staff = await _staffApi
+          .list()
+          .then((r) => r.data)
+          .catchError((_) => <Staff>[]);
       setState(() {
         _customers = res.data;
         _staff = staff;
@@ -724,6 +721,8 @@ class _PaymentFormScreenState extends State<_PaymentFormScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final cs = context.colors;
+    final tx = context.text;
     return Scaffold(
       appBar: AppBar(title: const Text('Yeni Tahsilat')),
       body: _loadingOptions
@@ -813,7 +812,7 @@ class _PaymentFormScreenState extends State<_PaymentFormScreen> {
                     const SizedBox(height: 12),
                     Text(
                       _error!,
-                      style: const TextStyle(color: AppColors.danger500, fontSize: 13),
+                      style: tx.bodySmall.copyWith(color: cs.danger500),
                     ),
                   ],
                   const SizedBox(height: 20),
@@ -850,18 +849,19 @@ class _CategoryChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final cs = context.colors;
+    final tx = context.text;
     return ChoiceChip(
       label: Text(label),
       selected: selected,
       onSelected: (_) => onTap(),
-      selectedColor: AppColors.primary600,
-      labelStyle: TextStyle(
-        color: selected ? Colors.white : AppColors.textSecondary,
-        fontSize: 12.5,
+      selectedColor: cs.primary600,
+      labelStyle: tx.bodySmall.copyWith(
+        color: selected ? Colors.white : cs.textSecondary,
         fontWeight: FontWeight.w600,
       ),
-      backgroundColor: AppColors.surfaceCard,
-      side: BorderSide(color: AppColors.borderDefault),
+      backgroundColor: cs.surfaceCard,
+      side: BorderSide(color: cs.borderDefault),
     );
   }
 }
@@ -906,6 +906,8 @@ class _ExpenseFormScreenState extends State<_ExpenseFormScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final cs = context.colors;
+    final tx = context.text;
     return Scaffold(
       appBar: AppBar(title: const Text('Yeni Gider')),
       body: Form(
@@ -934,8 +936,7 @@ class _ExpenseFormScreenState extends State<_ExpenseFormScreen> {
                 decimal: true,
               ),
               decoration: const InputDecoration(labelText: 'Tutar (₺) *'),
-              validator: (v) =>
-                  (v == null || double.tryParse(v.trim()) == null)
+              validator: (v) => (v == null || double.tryParse(v.trim()) == null)
                   ? 'Geçerli bir tutar girin'
                   : null,
             ),
@@ -964,10 +965,7 @@ class _ExpenseFormScreenState extends State<_ExpenseFormScreen> {
             ),
             if (_error != null) ...[
               const SizedBox(height: 12),
-              Text(
-                _error!,
-                style: const TextStyle(color: AppColors.danger500, fontSize: 13),
-              ),
+              Text(_error!, style: tx.bodySmall.copyWith(color: cs.danger500)),
             ],
             const SizedBox(height: 20),
             ElevatedButton(

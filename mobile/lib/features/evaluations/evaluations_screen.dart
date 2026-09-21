@@ -8,6 +8,8 @@ import '../../models/evaluation.dart';
 import '../../models/staff.dart';
 import '../../models/user.dart';
 import '../../theme/app_colors.dart';
+import '../../theme/app_palette.dart';
+import '../../theme/app_text_styles.dart';
 import '../../widgets/state_views.dart';
 import '../staff/staff_api.dart';
 import 'evaluations_api.dart';
@@ -41,8 +43,7 @@ class _EvaluationsScreenState extends State<EvaluationsScreen> {
     return role == AppRole.owner || role == AppRole.manager;
   }
 
-  bool get _isOwner =>
-      context.read<AuthProvider>().user?.role == AppRole.owner;
+  bool get _isOwner => context.read<AuthProvider>().user?.role == AppRole.owner;
 
   List<EvaluationPeriod> _periods = [];
   EvaluationPeriod? _selectedPeriod;
@@ -89,7 +90,9 @@ class _EvaluationsScreenState extends State<EvaluationsScreen> {
       await _loadEvaluations();
     } catch (e) {
       setState(
-        () => _error = e is ApiException ? e.message : 'Değerlendirmeler yüklenemedi',
+        () => _error = e is ApiException
+            ? e.message
+            : 'Değerlendirmeler yüklenemedi',
       );
     } finally {
       if (mounted) setState(() => _loading = false);
@@ -112,7 +115,9 @@ class _EvaluationsScreenState extends State<EvaluationsScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(e is ApiException ? e.message : 'Değerlendirmeler yüklenemedi'),
+            content: Text(
+              e is ApiException ? e.message : 'Değerlendirmeler yüklenemedi',
+            ),
           ),
         );
       }
@@ -120,6 +125,7 @@ class _EvaluationsScreenState extends State<EvaluationsScreen> {
   }
 
   Future<void> _createPeriod() async {
+    final tx = context.text;
     final labelController = TextEditingController();
     final bonusThresholdController = TextEditingController();
     final bonusAmountController = TextEditingController();
@@ -140,9 +146,9 @@ class _EvaluationsScreenState extends State<EvaluationsScreen> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text(
+              Text(
                 'Yeni Değerlendirme Dönemi',
-                style: TextStyle(fontWeight: FontWeight.w700, fontSize: 15),
+                style: tx.subtitle.copyWith(fontWeight: FontWeight.w700),
               ),
               const SizedBox(height: 12),
               TextField(
@@ -163,7 +169,11 @@ class _EvaluationsScreenState extends State<EvaluationsScreen> {
                         );
                         if (picked != null) setSheetState(() => start = picked);
                       },
-                      child: Text(start == null ? 'Başlangıç' : _dateFormat.format(start!)),
+                      child: Text(
+                        start == null
+                            ? 'Başlangıç'
+                            : _dateFormat.format(start!),
+                      ),
                     ),
                   ),
                   const SizedBox(width: 8),
@@ -178,7 +188,9 @@ class _EvaluationsScreenState extends State<EvaluationsScreen> {
                         );
                         if (picked != null) setSheetState(() => end = picked);
                       },
-                      child: Text(end == null ? 'Bitiş' : _dateFormat.format(end!)),
+                      child: Text(
+                        end == null ? 'Bitiş' : _dateFormat.format(end!),
+                      ),
                     ),
                   ),
                 ],
@@ -212,7 +224,9 @@ class _EvaluationsScreenState extends State<EvaluationsScreen> {
               const SizedBox(height: 16),
               ElevatedButton(
                 onPressed: () async {
-                  if (labelController.text.trim().isEmpty || start == null || end == null) {
+                  if (labelController.text.trim().isEmpty ||
+                      start == null ||
+                      end == null) {
                     ScaffoldMessenger.of(ctx).showSnackBar(
                       const SnackBar(content: Text('Tüm alanlar zorunludur')),
                     );
@@ -235,7 +249,11 @@ class _EvaluationsScreenState extends State<EvaluationsScreen> {
                     if (ctx.mounted) {
                       ScaffoldMessenger.of(ctx).showSnackBar(
                         SnackBar(
-                          content: Text(e is ApiException ? e.message : 'Dönem oluşturulamadı'),
+                          content: Text(
+                            e is ApiException
+                                ? e.message
+                                : 'Dönem oluşturulamadı',
+                          ),
                         ),
                       );
                     }
@@ -281,7 +299,11 @@ class _EvaluationsScreenState extends State<EvaluationsScreen> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(e is ApiException ? e.message : 'Dönem kilitlenemedi')),
+          SnackBar(
+            content: Text(
+              e is ApiException ? e.message : 'Dönem kilitlenemedi',
+            ),
+          ),
         );
       }
     }
@@ -334,7 +356,9 @@ class _EvaluationsScreenState extends State<EvaluationsScreen> {
       }
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(approve ? 'Prim onaylandı.' : 'Prim reddedildi.')),
+          SnackBar(
+            content: Text(approve ? 'Prim onaylandı.' : 'Prim reddedildi.'),
+          ),
         );
       }
       final pending = await _api.listPendingStaffBonuses();
@@ -342,7 +366,11 @@ class _EvaluationsScreenState extends State<EvaluationsScreen> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(e is ApiException ? e.message : 'İşlem tamamlanamadı')),
+          SnackBar(
+            content: Text(
+              e is ApiException ? e.message : 'İşlem tamamlanamadı',
+            ),
+          ),
         );
       }
     } finally {
@@ -354,36 +382,38 @@ class _EvaluationsScreenState extends State<EvaluationsScreen> {
   /// tanımlıysa otomatik oluşan onay bekleyen prim önerileri — para OTOMATİK
   /// ÖDENMEZ, onaylanınca backend'de bir Expense(BONUS) kaydı oluşur.
   Widget _buildPendingBonusesSection() {
+    final cs = context.colors;
+    final tx = context.text;
     if (_pendingBonuses.isEmpty) return const SizedBox.shrink();
     return Container(
       margin: const EdgeInsets.fromLTRB(16, 0, 16, 8),
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: AppColors.warning50,
+        color: cs.warning50,
         borderRadius: BorderRadius.circular(AppRadius.card),
-        border: Border.all(color: AppColors.warning500.withValues(alpha: 0.25)),
+        border: Border.all(color: cs.warning500.withValues(alpha: 0.25)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              const Icon(Icons.card_giftcard_rounded, size: 16, color: AppColors.warning600),
+              Icon(Icons.card_giftcard_rounded, size: 16, color: cs.warning600),
               const SizedBox(width: 6),
-              const Text(
+              Text(
                 'Bekleyen Primler',
-                style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13),
+                style: tx.bodySmall.copyWith(fontWeight: FontWeight.w700),
               ),
               const SizedBox(width: 6),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                 decoration: BoxDecoration(
-                  color: AppColors.warning50,
+                  color: cs.warning50,
                   borderRadius: BorderRadius.circular(999),
                 ),
                 child: Text(
                   '${_pendingBonuses.length}',
-                  style: const TextStyle(fontSize: 10.5, fontWeight: FontWeight.w700, color: AppColors.warning600),
+                  style: tx.label.copyWith(color: cs.warning600),
                 ),
               ),
             ],
@@ -406,11 +436,13 @@ class _EvaluationsScreenState extends State<EvaluationsScreen> {
                         children: [
                           Text(
                             b.staffFullName ?? 'Personel',
-                            style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 12.5),
+                            style: tx.bodySmall.copyWith(
+                              fontWeight: FontWeight.w600,
+                            ),
                           ),
                           Text(
                             '${b.evaluationPeriodLabel ?? "Dönem"} · ${b.amount.toStringAsFixed(0)} ₺',
-                            style: const TextStyle(fontSize: 11, color: AppColors.textSecondary),
+                            style: tx.label.copyWith(color: cs.textSecondary),
                           ),
                         ],
                       ),
@@ -423,12 +455,20 @@ class _EvaluationsScreenState extends State<EvaluationsScreen> {
                       )
                     else ...[
                       IconButton(
-                        icon: const Icon(Icons.check_circle_outline, color: AppColors.primary600, size: 20),
+                        icon: Icon(
+                          Icons.check_circle_outline,
+                          color: cs.accentSoft,
+                          size: 20,
+                        ),
                         onPressed: () => _decideBonus(b, true),
                         tooltip: 'Onayla',
                       ),
                       IconButton(
-                        icon: const Icon(Icons.cancel_outlined, color: AppColors.danger500, size: 20),
+                        icon: Icon(
+                          Icons.cancel_outlined,
+                          color: cs.danger500,
+                          size: 20,
+                        ),
                         onPressed: () => _decideBonus(b, false),
                         tooltip: 'Reddet',
                       ),
@@ -443,6 +483,8 @@ class _EvaluationsScreenState extends State<EvaluationsScreen> {
   }
 
   Widget _buildManagerView() {
+    final cs = context.colors;
+    final tx = context.text;
     return Column(
       children: [
         _buildPendingBonusesSection(),
@@ -453,18 +495,25 @@ class _EvaluationsScreenState extends State<EvaluationsScreen> {
               Expanded(
                 child: DropdownButtonFormField<String>(
                   initialValue: _selectedPeriod?.id,
-                  decoration: const InputDecoration(isDense: true, labelText: 'Dönem'),
+                  decoration: const InputDecoration(
+                    isDense: true,
+                    labelText: 'Dönem',
+                  ),
                   items: _periods
                       .map(
                         (p) => DropdownMenuItem(
                           value: p.id,
-                          child: Text(p.label + (p.isLocked ? ' (Kilitli)' : '')),
+                          child: Text(
+                            p.label + (p.isLocked ? ' (Kilitli)' : ''),
+                          ),
                         ),
                       )
                       .toList(),
                   onChanged: (id) {
                     setState(
-                      () => _selectedPeriod = _periods.firstWhere((p) => p.id == id),
+                      () => _selectedPeriod = _periods.firstWhere(
+                        (p) => p.id == id,
+                      ),
                     );
                     _loadEvaluations();
                   },
@@ -475,9 +524,11 @@ class _EvaluationsScreenState extends State<EvaluationsScreen> {
                 tooltip: 'Yeni Dönem',
                 onPressed: _createPeriod,
               ),
-              if (_isOwner && _selectedPeriod != null && !_selectedPeriod!.isLocked)
+              if (_isOwner &&
+                  _selectedPeriod != null &&
+                  !_selectedPeriod!.isLocked)
                 IconButton(
-                  icon: const Icon(Icons.lock_outline, color: AppColors.warning500),
+                  icon: Icon(Icons.lock_outline, color: cs.warning500),
                   tooltip: 'Dönemi Kilitle',
                   onPressed: _lockPeriod,
                 ),
@@ -492,7 +543,7 @@ class _EvaluationsScreenState extends State<EvaluationsScreen> {
                 )
               : RefreshIndicator(
                   onRefresh: _loadEvaluations,
-                  color: AppColors.primary600,
+                  color: cs.accentSoft,
                   child: ListView.separated(
                     itemCount: _staff.length,
                     separatorBuilder: (_, __) => const Divider(height: 1),
@@ -500,31 +551,45 @@ class _EvaluationsScreenState extends State<EvaluationsScreen> {
                       final s = _staff[i];
                       final mine = _myEvaluationFor(s.id);
                       return ListTile(
-                        title: Text(s.fullName, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13.5)),
-                        subtitle: Text(s.position, style: const TextStyle(fontSize: 12)),
+                        title: Text(
+                          s.fullName,
+                          style: tx.body.copyWith(fontWeight: FontWeight.w600),
+                        ),
+                        subtitle: Text(s.position, style: tx.caption),
                         trailing: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
                             if (mine != null) ...[
                               Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 8,
+                                  vertical: 4,
+                                ),
                                 decoration: BoxDecoration(
-                                  color: AppColors.surfaceMuted,
-                                  borderRadius: BorderRadius.circular(AppRadius.pill),
+                                  color: cs.surfaceMuted,
+                                  borderRadius: BorderRadius.circular(
+                                    AppRadius.pill,
+                                  ),
                                 ),
                                 child: Text(
                                   _statusLabels[mine.status] ?? mine.status,
-                                  style: const TextStyle(fontSize: 10.5, fontWeight: FontWeight.w600),
+                                  style: tx.label.copyWith(
+                                    fontWeight: FontWeight.w600,
+                                  ),
                                 ),
                               ),
                               const SizedBox(width: 8),
                             ],
                             TextButton(
-                              onPressed: _selectedPeriod!.isLocked ? null : () => _openEvaluate(s),
+                              onPressed: _selectedPeriod!.isLocked
+                                  ? null
+                                  : () => _openEvaluate(s),
                               child: Text(
                                 mine == null
                                     ? 'Değerlendir'
-                                    : (mine.status == 'DRAFT' ? 'Düzenle' : 'Görüntüle'),
+                                    : (mine.status == 'DRAFT'
+                                          ? 'Düzenle'
+                                          : 'Görüntüle'),
                               ),
                             ),
                           ],
@@ -539,6 +604,8 @@ class _EvaluationsScreenState extends State<EvaluationsScreen> {
   }
 
   Widget _buildSelfView() {
+    final cs = context.colors;
+    final tx = context.text;
     if (_evaluations.isEmpty) {
       return const EmptyStateView(
         title: 'Henüz değerlendirme yok',
@@ -548,7 +615,7 @@ class _EvaluationsScreenState extends State<EvaluationsScreen> {
     }
     return RefreshIndicator(
       onRefresh: _loadEvaluations,
-      color: AppColors.primary600,
+      color: cs.accentSoft,
       child: ListView.builder(
         padding: const EdgeInsets.all(16),
         itemCount: _evaluations.length,
@@ -565,19 +632,22 @@ class _EvaluationsScreenState extends State<EvaluationsScreen> {
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 4,
+                        ),
                         decoration: BoxDecoration(
-                          color: AppColors.surfaceMuted,
+                          color: cs.surfaceMuted,
                           borderRadius: BorderRadius.circular(AppRadius.pill),
                         ),
                         child: Text(
                           _statusLabels[e.status] ?? e.status,
-                          style: const TextStyle(fontSize: 10.5, fontWeight: FontWeight.w600),
+                          style: tx.label.copyWith(fontWeight: FontWeight.w600),
                         ),
                       ),
                       Text(
                         _dateFormat.format(DateTime.parse(e.createdAt)),
-                        style: const TextStyle(fontSize: 11, color: AppColors.textFaint),
+                        style: tx.label,
                       ),
                     ],
                   ),
@@ -588,18 +658,20 @@ class _EvaluationsScreenState extends State<EvaluationsScreen> {
                       if (e.averageScore != null)
                         Text(
                           'Ortalama: ${e.averageScore}/20',
-                          style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13),
+                          style: tx.bodySmall.copyWith(
+                            fontWeight: FontWeight.w700,
+                          ),
                         ),
                       if (e.managerScore != null)
                         Text(
                           'Genel Puan: ${e.managerScore}/20',
-                          style: const TextStyle(fontSize: 12.5, color: AppColors.textSecondary),
+                          style: tx.bodySmall,
                         ),
                     ],
                   ),
                   if (e.comment != null && e.comment!.isNotEmpty) ...[
                     const SizedBox(height: 8),
-                    Text(e.comment!, style: const TextStyle(fontSize: 12.5)),
+                    Text(e.comment!, style: tx.bodySmall),
                   ],
                 ],
               ),

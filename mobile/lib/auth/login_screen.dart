@@ -3,6 +3,8 @@ import 'package:provider/provider.dart';
 
 import '../models/user.dart';
 import '../theme/app_colors.dart';
+import '../theme/app_palette.dart';
+import '../theme/app_text_styles.dart';
 import '../theme/theme_controller.dart';
 import 'auth_provider.dart';
 import 'forgot_password_screen.dart';
@@ -28,11 +30,36 @@ class _RoleOption {
 }
 
 const _roleOptions = <_RoleOption>[
-  _RoleOption(AppRole.owner, 'Patron', Icons.workspace_premium_rounded, 'Şirketin tüm görünümü'),
-  _RoleOption(AppRole.manager, 'Müdür', Icons.work_outline_rounded, 'Operasyon ve finans'),
-  _RoleOption(AppRole.teamLead, 'Şef', Icons.groups_outlined, 'Ekip planlama ve takip'),
-  _RoleOption(AppRole.staff, 'Personel', Icons.build_outlined, 'Günlük işler ve raporlar'),
-  _RoleOption(AppRole.customer, 'Müşteri', Icons.home_outlined, 'Hizmetler ve randevular'),
+  _RoleOption(
+    AppRole.owner,
+    'Patron',
+    Icons.workspace_premium_rounded,
+    'Şirketin tüm görünümü',
+  ),
+  _RoleOption(
+    AppRole.manager,
+    'Müdür',
+    Icons.work_outline_rounded,
+    'Operasyon ve finans',
+  ),
+  _RoleOption(
+    AppRole.teamLead,
+    'Şef',
+    Icons.groups_outlined,
+    'Ekip planlama ve takip',
+  ),
+  _RoleOption(
+    AppRole.staff,
+    'Personel',
+    Icons.build_outlined,
+    'Günlük işler ve raporlar',
+  ),
+  _RoleOption(
+    AppRole.customer,
+    'Müşteri',
+    Icons.home_outlined,
+    'Hizmetler ve randevular',
+  ),
 ];
 
 class _LoginScreenState extends State<LoginScreen> {
@@ -72,10 +99,13 @@ class _LoginScreenState extends State<LoginScreen> {
         transitionsBuilder: (_, animation, _, child) => FadeTransition(
           opacity: animation,
           child: SlideTransition(
-            position: Tween<Offset>(
-              begin: const Offset(0.06, 0),
-              end: Offset.zero,
-            ).animate(CurvedAnimation(parent: animation, curve: Curves.easeOut)),
+            position:
+                Tween<Offset>(
+                  begin: const Offset(0.06, 0),
+                  end: Offset.zero,
+                ).animate(
+                  CurvedAnimation(parent: animation, curve: Curves.easeOut),
+                ),
             child: child,
           ),
         ),
@@ -85,6 +115,8 @@ class _LoginScreenState extends State<LoginScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final cs = context.colors;
+    final tx = context.text;
     final auth = context.watch<AuthProvider>();
     final themeController = context.watch<ThemeController>();
     final isDark = Theme.of(context).brightness == Brightness.dark;
@@ -110,15 +142,19 @@ class _LoginScreenState extends State<LoginScreen> {
               ),
               icon: AnimatedSwitcher(
                 duration: const Duration(milliseconds: 180),
-                transitionBuilder: (child, anim) =>
-                    RotationTransition(turns: anim, child: FadeTransition(opacity: anim, child: child)),
+                transitionBuilder: (child, anim) => RotationTransition(
+                  turns: anim,
+                  child: FadeTransition(opacity: anim, child: child),
+                ),
                 child: Icon(
                   isDark ? Icons.light_mode_rounded : Icons.dark_mode_rounded,
                   key: ValueKey(isDark),
                   size: 20,
                 ),
               ),
-              onPressed: () => themeController.setMode(isDark ? ThemeMode.light : ThemeMode.dark),
+              onPressed: () => themeController.setMode(
+                isDark ? ThemeMode.light : ThemeMode.dark,
+              ),
             ),
           ),
           SafeArea(
@@ -127,9 +163,9 @@ class _LoginScreenState extends State<LoginScreen> {
               child: Container(
                 padding: const EdgeInsets.fromLTRB(20, 18, 20, 20),
                 decoration: BoxDecoration(
-                  color: AppColors.surfaceCard,
+                  color: cs.surfaceCard,
                   borderRadius: BorderRadius.circular(24),
-                  border: Border.all(color: AppColors.borderDefault),
+                  border: Border.all(color: cs.borderDefault),
                   boxShadow: [
                     BoxShadow(
                       color: Colors.black.withValues(alpha: 0.08),
@@ -159,23 +195,32 @@ class _LoginScreenState extends State<LoginScreen> {
                                   ? null
                                   : () {
                                       setState(() => _selected = o);
-                                      context.read<AuthProvider>().loginError = null;
+                                      context.read<AuthProvider>().loginError =
+                                          null;
                                     },
                               child: AnimatedContainer(
                                 duration: const Duration(milliseconds: 200),
                                 curve: Curves.easeOut,
                                 width: 76,
-                                padding: const EdgeInsets.symmetric(vertical: 10),
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 10,
+                                ),
                                 decoration: BoxDecoration(
-                                  color: active ? AppColors.primary600 : AppColors.surfaceSubtle,
+                                  color: active
+                                      ? cs.primary600
+                                      : cs.surfaceSubtle,
                                   borderRadius: BorderRadius.circular(16),
                                   border: Border.all(
-                                    color: active ? AppColors.primary600 : AppColors.borderDefault,
+                                    color: active
+                                        ? cs.primary600
+                                        : cs.borderDefault,
                                   ),
                                   boxShadow: active
                                       ? [
                                           BoxShadow(
-                                            color: AppColors.primary600.withValues(alpha: 0.28),
+                                            color: cs.primary600.withValues(
+                                              alpha: 0.28,
+                                            ),
                                             blurRadius: 12,
                                             offset: const Offset(0, 4),
                                           ),
@@ -188,15 +233,18 @@ class _LoginScreenState extends State<LoginScreen> {
                                     Icon(
                                       o.icon,
                                       size: 22,
-                                      color: active ? Colors.white : AppColors.textSecondary,
+                                      color: active
+                                          ? Colors.white
+                                          : cs.textSecondary,
                                     ),
                                     const SizedBox(height: 6),
                                     Text(
                                       o.label,
-                                      style: TextStyle(
-                                        fontSize: 11.5,
+                                      style: tx.caption.copyWith(
                                         fontWeight: FontWeight.w700,
-                                        color: active ? Colors.white : AppColors.textSecondary,
+                                        color: active
+                                            ? Colors.white
+                                            : cs.textSecondary,
                                       ),
                                     ),
                                   ],
@@ -215,17 +263,12 @@ class _LoginScreenState extends State<LoginScreen> {
                           children: [
                             Text(
                               '${_selected.label} Girişi',
-                              style: const TextStyle(
-                                fontSize: 20,
+                              style: tx.display.copyWith(
                                 fontWeight: FontWeight.w800,
-                                color: AppColors.textPrimary,
                               ),
                             ),
                             const SizedBox(height: 2),
-                            Text(
-                              _selected.hint,
-                              style: const TextStyle(fontSize: 12.5, color: AppColors.textSecondary),
-                            ),
+                            Text(_selected.hint, style: tx.bodySmall),
                           ],
                         ),
                       ),
@@ -239,8 +282,12 @@ class _LoginScreenState extends State<LoginScreen> {
                           prefixIcon: Icon(Icons.mail_outline_rounded),
                         ),
                         validator: (v) {
-                          if (v == null || v.trim().isEmpty) return 'E-posta gerekli';
-                          if (!v.contains('@')) return 'Geçerli bir e-posta girin';
+                          if (v == null || v.trim().isEmpty) {
+                            return 'E-posta gerekli';
+                          }
+                          if (!v.contains('@')) {
+                            return 'Geçerli bir e-posta girin';
+                          }
                           return null;
                         },
                       ),
@@ -254,19 +301,23 @@ class _LoginScreenState extends State<LoginScreen> {
                           prefixIcon: const Icon(Icons.lock_outline_rounded),
                           suffixIcon: IconButton(
                             icon: Icon(
-                              _obscure ? Icons.visibility_outlined : Icons.visibility_off_outlined,
+                              _obscure
+                                  ? Icons.visibility_outlined
+                                  : Icons.visibility_off_outlined,
                             ),
-                            onPressed: () => setState(() => _obscure = !_obscure),
+                            onPressed: () =>
+                                setState(() => _obscure = !_obscure),
                           ),
                         ),
-                        validator: (v) => (v == null || v.isEmpty) ? 'Şifre gerekli' : null,
+                        validator: (v) =>
+                            (v == null || v.isEmpty) ? 'Şifre gerekli' : null,
                         onFieldSubmitted: (_) => _submit(),
                       ),
                       Align(
                         alignment: Alignment.centerRight,
                         child: TextButton(
                           onPressed: _openForgotPassword,
-                          child: const Text('Şifremi Unuttum', style: TextStyle(fontSize: 12.5)),
+                          child: Text('Şifremi Unuttum', style: tx.bodySmall),
                         ),
                       ),
                       // Sakin hata kutusu — ne olduğunu ve ne yapılacağını söyler.
@@ -279,19 +330,29 @@ class _LoginScreenState extends State<LoginScreen> {
                                 margin: const EdgeInsets.only(top: 8),
                                 padding: const EdgeInsets.all(12),
                                 decoration: BoxDecoration(
-                                  color: AppColors.danger50,
-                                  borderRadius: BorderRadius.circular(AppRadius.chip),
-                                  border: Border.all(color: AppColors.danger500.withValues(alpha: 0.25)),
+                                  color: cs.danger50,
+                                  borderRadius: BorderRadius.circular(
+                                    AppRadius.chip,
+                                  ),
+                                  border: Border.all(
+                                    color: cs.danger500.withValues(alpha: 0.25),
+                                  ),
                                 ),
                                 child: Row(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
-                                    const Icon(Icons.info_outline_rounded, color: AppColors.danger500, size: 18),
+                                    Icon(
+                                      Icons.info_outline_rounded,
+                                      color: cs.danger500,
+                                      size: 18,
+                                    ),
                                     const SizedBox(width: 8),
                                     Expanded(
                                       child: Text(
                                         _friendly(auth.loginError!),
-                                        style: const TextStyle(color: AppColors.danger600, fontSize: 13),
+                                        style: tx.bodySmall.copyWith(
+                                          color: cs.danger600,
+                                        ),
                                       ),
                                     ),
                                   ],
@@ -305,7 +366,10 @@ class _LoginScreenState extends State<LoginScreen> {
                             ? const SizedBox(
                                 width: 20,
                                 height: 20,
-                                child: CircularProgressIndicator(strokeWidth: 2.4, color: Colors.white),
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2.4,
+                                  color: Colors.white,
+                                ),
                               )
                             : const Text('Giriş Yap'),
                       ),
@@ -323,7 +387,9 @@ class _LoginScreenState extends State<LoginScreen> {
   /// Sunucu mesajlarını yumuşak, yol gösterici dile çevirir.
   static String _friendly(String message) {
     final m = message.toLowerCase();
-    if (m.contains('şifre') || m.contains('e-posta') || m.contains('geçersiz')) {
+    if (m.contains('şifre') ||
+        m.contains('e-posta') ||
+        m.contains('geçersiz')) {
       return 'E-posta veya şifre eşleşmedi. Yazımı kontrol edip tekrar deneyin.';
     }
     if (m.contains('çok fazla')) {
@@ -340,13 +406,15 @@ class _BrandHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final cs = context.colors;
+    final tx = context.text;
     return Container(
       height: topInset + 210,
-      decoration: const BoxDecoration(
+      decoration: BoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [AppColors.primary600, AppColors.primary800],
+          colors: [cs.primary600, cs.primary800],
         ),
         borderRadius: BorderRadius.vertical(bottom: Radius.circular(32)),
       ),
@@ -361,7 +429,10 @@ class _BrandHeader extends StatelessWidget {
               height: 160,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                border: Border.all(color: Colors.white.withValues(alpha: 0.12), width: 1.2),
+                border: Border.all(
+                  color: Colors.white.withValues(alpha: 0.12),
+                  width: 1.2,
+                ),
               ),
             ),
           ),
@@ -376,23 +447,32 @@ class _BrandHeader extends StatelessWidget {
                   decoration: BoxDecoration(
                     color: Colors.white.withValues(alpha: 0.15),
                     borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: Colors.white.withValues(alpha: 0.2)),
+                    border: Border.all(
+                      color: Colors.white.withValues(alpha: 0.2),
+                    ),
                   ),
-                  child: const Icon(Icons.pest_control_rounded, color: Colors.white, size: 28),
+                  child: const Icon(
+                    Icons.pest_control_rounded,
+                    color: Colors.white,
+                    size: 28,
+                  ),
                 ),
                 const SizedBox(width: 12),
-                const Expanded(
+                Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
                         'Nilüfer İlaçlama',
-                        style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800, color: Colors.white),
+                        style: tx.display.copyWith(
+                          fontWeight: FontWeight.w800,
+                          color: Colors.white,
+                        ),
                       ),
                       SizedBox(height: 2),
                       Text(
                         'Eviniz güvende, yaşamınız rahat',
-                        style: TextStyle(fontSize: 12.5, color: Colors.white70),
+                        style: tx.bodySmall.copyWith(color: Colors.white70),
                       ),
                     ],
                   ),

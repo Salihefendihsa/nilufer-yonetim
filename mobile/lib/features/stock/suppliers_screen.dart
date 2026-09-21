@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import '../../core/api_client.dart';
 import '../../models/product.dart';
 import '../../theme/app_colors.dart';
+import '../../theme/app_palette.dart';
+import '../../theme/app_text_styles.dart';
 import '../../widgets/state_views.dart';
 import 'stock_api.dart';
 
@@ -61,7 +63,9 @@ class _SuppliersScreenState extends State<SuppliersScreen> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(e is ApiException ? e.message : 'Güncellenemedi')),
+          SnackBar(
+            content: Text(e is ApiException ? e.message : 'Güncellenemedi'),
+          ),
         );
       }
     } finally {
@@ -70,6 +74,7 @@ class _SuppliersScreenState extends State<SuppliersScreen> {
   }
 
   Future<void> _openForm({Supplier? existing}) async {
+    final tx = context.text;
     final nameController = TextEditingController(text: existing?.name ?? '');
     final contactController = TextEditingController(
       text: existing?.contactPerson ?? '',
@@ -97,7 +102,7 @@ class _SuppliersScreenState extends State<SuppliersScreen> {
             children: [
               Text(
                 existing != null ? 'Tedarikçiyi Düzenle' : 'Yeni Tedarikçi',
-                style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 15),
+                style: tx.subtitle.copyWith(fontWeight: FontWeight.w700),
               ),
               const SizedBox(height: 12),
               TextField(
@@ -176,6 +181,8 @@ class _SuppliersScreenState extends State<SuppliersScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final cs = context.colors;
+    final tx = context.text;
     return Scaffold(
       appBar: AppBar(
         title: const Text('Tedarikçiler'),
@@ -197,7 +204,7 @@ class _SuppliersScreenState extends State<SuppliersScreen> {
             )
           : RefreshIndicator(
               onRefresh: _load,
-              color: AppColors.primary600,
+              color: cs.accentSoft,
               child: ListView.separated(
                 padding: const EdgeInsets.all(16),
                 itemCount: _suppliers.length,
@@ -207,9 +214,9 @@ class _SuppliersScreenState extends State<SuppliersScreen> {
                   return Container(
                     padding: const EdgeInsets.all(14),
                     decoration: BoxDecoration(
-                      color: AppColors.surfaceCard,
+                      color: cs.surfaceCard,
                       borderRadius: BorderRadius.circular(AppRadius.card),
-                      border: Border.all(color: AppColors.borderDefault),
+                      border: Border.all(color: cs.borderDefault),
                     ),
                     child: Row(
                       children: [
@@ -219,27 +226,21 @@ class _SuppliersScreenState extends State<SuppliersScreen> {
                             children: [
                               Text(
                                 s.name,
-                                style: TextStyle(
+                                style: tx.subtitle.copyWith(
                                   fontWeight: FontWeight.w700,
-                                  fontSize: 14,
                                   decoration: s.isActive
                                       ? null
                                       : TextDecoration.lineThrough,
                                   color: s.isActive
-                                      ? AppColors.textPrimary
-                                      : AppColors.textFaint,
+                                      ? cs.textPrimary
+                                      : cs.textFaint,
                                 ),
                               ),
                               Text(
-                                [
-                                  s.contactPerson,
-                                  s.phone,
-                                  s.email,
-                                ].where((v) => v != null && v.isNotEmpty).join(' · '),
-                                style: const TextStyle(
-                                  fontSize: 11.5,
-                                  color: AppColors.textSecondary,
-                                ),
+                                [s.contactPerson, s.phone, s.email]
+                                    .where((v) => v != null && v.isNotEmpty)
+                                    .join(' · '),
+                                style: tx.caption,
                               ),
                             ],
                           ),
@@ -254,9 +255,7 @@ class _SuppliersScreenState extends State<SuppliersScreen> {
                                 ? Icons.close_rounded
                                 : Icons.check_rounded,
                             size: 18,
-                            color: s.isActive
-                                ? AppColors.danger500
-                                : AppColors.primary600,
+                            color: s.isActive ? cs.danger500 : cs.primary600,
                           ),
                           onPressed: _busy ? null : () => _toggleActive(s),
                         ),
