@@ -7,6 +7,8 @@ import '../../auth/auth_provider.dart';
 import '../../core/api_client.dart';
 import '../../models/user.dart';
 import '../../theme/app_colors.dart';
+import '../../theme/app_palette.dart';
+import '../../theme/app_text_styles.dart';
 import '../../theme/theme_controller.dart';
 import '../../widgets/state_views.dart';
 import 'calendar_export_card.dart';
@@ -33,6 +35,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   String? _error;
   bool _emailEnabled = false;
   bool _dailyDigestEnabled = false;
+
   /// Bölüm AF (7. tur): haftalık yönetici özeti (OWNER).
   bool _weeklyDigestEnabled = true;
 
@@ -94,9 +97,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
         _dailyDigestEnabled = previousDigest;
         _weeklyDigestEnabled = previousWeekly;
       });
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(e.message)));
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text(e.message)));
     } finally {
       if (mounted) setState(() => _saving = false);
     }
@@ -104,6 +106,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final cs = context.colors;
+    final tx = context.text;
     final user = context.watch<AuthProvider>().user;
 
     return Scaffold(
@@ -122,10 +126,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     children: [
                       _row('Ad Soyad', user?.fullName ?? '—'),
                       _row('E-posta', user?.email ?? '—'),
-                      _row(
-                        'Rol',
-                        user != null ? roleLabelTr(user.role) : '—',
-                      ),
+                      _row('Rol', user != null ? roleLabelTr(user.role) : '—'),
                     ],
                   ),
                 ),
@@ -146,7 +147,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         subtitle: const Text(
                           'Size ait bildirimler e-posta olarak da gönderilsin.',
                         ),
-                        activeThumbColor: AppColors.primary600,
+                        activeThumbColor: cs.primary600,
                       ),
                       SwitchListTile(
                         contentPadding: EdgeInsets.zero,
@@ -158,7 +159,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         subtitle: const Text(
                           'Her sabah günün işlerini özetleyen e-posta.',
                         ),
-                        activeThumbColor: AppColors.primary600,
+                        activeThumbColor: cs.primary600,
                       ),
                       // Bölüm AF (7. tur): haftalık yönetici özeti (yalnızca OWNER'a gönderilir).
                       if (user?.role == AppRole.owner)
@@ -172,17 +173,19 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           subtitle: const Text(
                             'Her Pazartesi 08:00 — geçen haftanın yönetici özeti.',
                           ),
-                          activeThumbColor: AppColors.primary600,
+                          activeThumbColor: cs.primary600,
                         ),
                     ],
                   ),
                 ),
-                if (user?.role == AppRole.owner || user?.role == AppRole.manager) ...[
+                if (user?.role == AppRole.owner ||
+                    user?.role == AppRole.manager) ...[
                   const SizedBox(height: 12),
                   const _TwoFactorCard(),
                 ],
                 // Bölüm AP (9. tur): personel takvim aboneliği (ICS).
-                if (user?.role == AppRole.staff || user?.role == AppRole.teamLead) ...[
+                if (user?.role == AppRole.staff ||
+                    user?.role == AppRole.teamLead) ...[
                   const SizedBox(height: 12),
                   const CalendarExportCard(),
                 ],
@@ -190,17 +193,17 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 Container(
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
-                    color: AppColors.surfaceSubtle,
+                    color: cs.surfaceSubtle,
                     borderRadius: BorderRadius.circular(AppRadius.card),
-                    border: Border.all(color: AppColors.borderDefault),
+                    border: Border.all(color: cs.borderDefault),
                   ),
-                  child: const Row(
+                  child: Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Icon(
                         Icons.info_outline_rounded,
                         size: 18,
-                        color: AppColors.textSecondary,
+                        color: cs.textSecondary,
                       ),
                       SizedBox(width: 10),
                       Expanded(
@@ -208,11 +211,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           'Firma bilgileri, hizmet türleri, bölgeler, aylık hedefler '
                           've yedekleme gibi diğer sistem ayarları yalnızca işletme '
                           'sahibi tarafından yönetilebilir.',
-                          style: TextStyle(
-                            fontSize: 12.5,
-                            height: 1.45,
-                            color: AppColors.textSecondary,
-                          ),
+                          style: tx.bodySmall,
                         ),
                       ),
                     ],
@@ -223,32 +222,25 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
-  Widget _row(String label, String value) => Padding(
-    padding: const EdgeInsets.symmetric(vertical: 6),
-    child: Row(
-      children: [
-        Text(
-          label,
-          style: const TextStyle(
-            fontSize: 13,
-            color: AppColors.textSecondary,
-          ),
-        ),
-        const Spacer(),
-        Flexible(
-          child: Text(
-            value,
-            textAlign: TextAlign.right,
-            style: const TextStyle(
-              fontSize: 13.5,
-              fontWeight: FontWeight.w600,
-              color: AppColors.textPrimary,
+  Widget _row(String label, String value) {
+    final tx = context.text;
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 6),
+      child: Row(
+        children: [
+          Text(label, style: tx.bodySmall),
+          const Spacer(),
+          Flexible(
+            child: Text(
+              value,
+              textAlign: TextAlign.right,
+              style: tx.body.copyWith(fontWeight: FontWeight.w600),
             ),
           ),
-        ),
-      ],
-    ),
-  );
+        ],
+      ),
+    );
+  }
 }
 
 /// TOTP tabanlı 2FA — yalnızca OWNER/MANAGER (backend/src/routes/auth.ts).
@@ -314,7 +306,9 @@ class _TwoFactorCardState extends State<_TwoFactorCard> {
       _error = null;
     });
     try {
-      final res = await ApiClient.instance.post<Map<String, dynamic>>('/auth/2fa/setup');
+      final res = await ApiClient.instance.post<Map<String, dynamic>>(
+        '/auth/2fa/setup',
+      );
       if (!mounted) return;
       setState(() {
         _secret = res['secret'] as String;
@@ -371,7 +365,9 @@ class _TwoFactorCardState extends State<_TwoFactorCard> {
         _passwordController.clear();
       });
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('İki adımlı doğrulama devre dışı bırakıldı.')),
+        const SnackBar(
+          content: Text('İki adımlı doğrulama devre dışı bırakıldı.'),
+        ),
       );
     } on ApiException catch (e) {
       if (!mounted) return;
@@ -382,6 +378,8 @@ class _TwoFactorCardState extends State<_TwoFactorCard> {
   }
 
   void _openDisableSheet() {
+    final cs = context.colors;
+    final tx = context.text;
     _passwordController.clear();
     setState(() => _error = null);
     showModalBottomSheet(
@@ -399,9 +397,9 @@ class _TwoFactorCardState extends State<_TwoFactorCard> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              const Text(
+              Text(
                 'Devam etmek için mevcut şifrenizi girin.',
-                style: TextStyle(fontSize: 13.5, color: AppColors.textSecondary),
+                style: tx.body.copyWith(color: cs.textSecondary),
               ),
               const SizedBox(height: 12),
               TextField(
@@ -411,7 +409,10 @@ class _TwoFactorCardState extends State<_TwoFactorCard> {
               ),
               if (_error != null) ...[
                 const SizedBox(height: 8),
-                Text(_error!, style: const TextStyle(color: AppColors.danger500, fontSize: 12.5)),
+                Text(
+                  _error!,
+                  style: tx.bodySmall.copyWith(color: cs.danger500),
+                ),
               ],
               const SizedBox(height: 16),
               ElevatedButton(
@@ -421,12 +422,15 @@ class _TwoFactorCardState extends State<_TwoFactorCard> {
                         await _disable();
                         setSheetState(() {});
                       },
-                style: ElevatedButton.styleFrom(backgroundColor: AppColors.danger500),
+                style: ElevatedButton.styleFrom(backgroundColor: cs.danger500),
                 child: _busy
                     ? const SizedBox(
                         width: 18,
                         height: 18,
-                        child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: Colors.white,
+                        ),
                       )
                     : const Text('Devre Dışı Bırak'),
               ),
@@ -439,6 +443,8 @@ class _TwoFactorCardState extends State<_TwoFactorCard> {
 
   @override
   Widget build(BuildContext context) {
+    final cs = context.colors;
+    final tx = context.text;
     if (_loading) {
       return const _Card(title: 'İki Adımlı Doğrulama', child: LoadingView());
     }
@@ -451,17 +457,20 @@ class _TwoFactorCardState extends State<_TwoFactorCard> {
           if (_error != null && _recoveryCodes == null)
             Padding(
               padding: const EdgeInsets.only(bottom: 10),
-              child: Text(_error!, style: const TextStyle(color: AppColors.danger500, fontSize: 12.5)),
+              child: Text(
+                _error!,
+                style: tx.bodySmall.copyWith(color: cs.danger500),
+              ),
             ),
           if (_recoveryCodes != null) ...[
-            const Text(
+            Text(
               'Kurtarma Kodlarınız — bir daha gösterilmeyecek',
-              style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13),
+              style: tx.bodySmall.copyWith(fontWeight: FontWeight.w700),
             ),
             const SizedBox(height: 6),
-            const Text(
+            Text(
               'Authenticator cihazınıza erişemediğinizde bu kodlardan birini kullanabilirsiniz.',
-              style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
+              style: tx.caption,
             ),
             const SizedBox(height: 10),
             Wrap(
@@ -470,12 +479,18 @@ class _TwoFactorCardState extends State<_TwoFactorCard> {
               children: _recoveryCodes!
                   .map(
                     (c) => Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 6,
+                      ),
                       decoration: BoxDecoration(
-                        color: AppColors.surfaceSubtle,
+                        color: cs.surfaceSubtle,
                         borderRadius: BorderRadius.circular(8),
                       ),
-                      child: Text(c, style: const TextStyle(fontFamily: 'monospace', fontSize: 12)),
+                      child: Text(
+                        c,
+                        style: tx.caption.copyWith(fontFamily: 'monospace'),
+                      ),
                     ),
                   )
                   .toList(),
@@ -486,9 +501,9 @@ class _TwoFactorCardState extends State<_TwoFactorCard> {
               child: const Text('Kaydettim, kapat'),
             ),
           ] else if (_secret != null) ...[
-            const Text(
+            Text(
               'Authenticator uygulamanızla QR kodu okutun veya sırrı manuel girin, ardından 6 haneli kodu yazın.',
-              style: TextStyle(fontSize: 12.5, color: AppColors.textSecondary),
+              style: tx.bodySmall,
             ),
             const SizedBox(height: 12),
             Center(
@@ -502,7 +517,7 @@ class _TwoFactorCardState extends State<_TwoFactorCard> {
             Center(
               child: SelectableText(
                 _secret!,
-                style: const TextStyle(fontFamily: 'monospace', fontSize: 12.5),
+                style: tx.bodySmall.copyWith(fontFamily: 'monospace'),
               ),
             ),
             const SizedBox(height: 12),
@@ -532,7 +547,10 @@ class _TwoFactorCardState extends State<_TwoFactorCard> {
                         ? const SizedBox(
                             width: 18,
                             height: 18,
-                            child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: Colors.white,
+                            ),
                           )
                         : const Text('Etkinleştir'),
                   ),
@@ -547,21 +565,22 @@ class _TwoFactorCardState extends State<_TwoFactorCard> {
                     _enabled == true
                         ? 'Girişte authenticator uygulamanızdan bir kod istenir.'
                         : 'Girişte şifrenize ek olarak bir doğrulama kodu istensin.',
-                    style: const TextStyle(fontSize: 12.5, color: AppColors.textSecondary),
+                    style: tx.bodySmall,
                   ),
                 ),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 4,
+                  ),
                   decoration: BoxDecoration(
-                    color: _enabled == true ? AppColors.primary50 : AppColors.surfaceSubtle,
+                    color: _enabled == true ? cs.primary50 : cs.surfaceSubtle,
                     borderRadius: BorderRadius.circular(999),
                   ),
                   child: Text(
                     _enabled == true ? 'Etkin' : 'Devre dışı',
-                    style: TextStyle(
-                      fontSize: 11,
-                      fontWeight: FontWeight.w700,
-                      color: _enabled == true ? AppColors.primary600 : AppColors.textFaint,
+                    style: tx.label.copyWith(
+                      color: _enabled == true ? cs.primary600 : cs.textFaint,
                     ),
                   ),
                 ),
@@ -571,7 +590,7 @@ class _TwoFactorCardState extends State<_TwoFactorCard> {
             if (_enabled == true)
               OutlinedButton(
                 onPressed: _openDisableSheet,
-                style: OutlinedButton.styleFrom(foregroundColor: AppColors.danger500),
+                style: OutlinedButton.styleFrom(foregroundColor: cs.danger500),
                 child: const Text('Devre Dışı Bırak'),
               )
             else
@@ -581,7 +600,10 @@ class _TwoFactorCardState extends State<_TwoFactorCard> {
                     ? const SizedBox(
                         width: 18,
                         height: 18,
-                        child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: Colors.white,
+                        ),
                       )
                     : const Text('Kurulumu Başlat'),
               ),
@@ -598,6 +620,7 @@ class _ThemeCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final cs = context.colors;
     final controller = context.watch<ThemeController>();
     final options = <(ThemeMode, String, IconData)>[
       (ThemeMode.light, 'Açık', Icons.light_mode_outlined),
@@ -616,9 +639,11 @@ class _ThemeCard extends StatelessWidget {
               avatar: Icon(icon, size: 16),
               selected: controller.mode == mode,
               onSelected: (_) => context.read<ThemeController>().setMode(mode),
-              selectedColor: AppColors.primary600,
+              selectedColor: cs.primary600,
               labelStyle: TextStyle(
-                color: controller.mode == mode ? Colors.white : AppColors.textSecondary,
+                color: controller.mode == mode
+                    ? Colors.white
+                    : cs.textSecondary,
                 fontWeight: FontWeight.w600,
               ),
             ),
@@ -635,24 +660,19 @@ class _Card extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final cs = context.colors;
+    final tx = context.text;
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: AppColors.surfaceCard,
+        color: cs.surfaceCard,
         borderRadius: BorderRadius.circular(AppRadius.card),
-        border: Border.all(color: AppColors.borderDefault),
+        border: Border.all(color: cs.borderDefault),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            title,
-            style: const TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.w700,
-              color: AppColors.textPrimary,
-            ),
-          ),
+          Text(title, style: tx.subtitle.copyWith(fontWeight: FontWeight.w700)),
           const SizedBox(height: 8),
           child,
         ],

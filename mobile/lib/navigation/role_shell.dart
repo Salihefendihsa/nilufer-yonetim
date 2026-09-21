@@ -9,6 +9,7 @@ import '../features/jobs/jobs_list_screen.dart';
 import '../features/messages/messages_list_screen.dart';
 import '../models/user.dart';
 import '../theme/app_colors.dart';
+import '../theme/app_palette.dart';
 import 'app_drawer.dart';
 import 'manager_nav.dart';
 import 'manager_shell.dart';
@@ -85,6 +86,7 @@ class _RoleShellState extends State<RoleShell> {
 
   @override
   Widget build(BuildContext context) {
+    final cs = context.colors;
     final user = context.watch<AuthProvider>().user;
     if (user == null) return const SizedBox.shrink();
 
@@ -119,15 +121,15 @@ class _RoleShellState extends State<RoleShell> {
         bottomNavigationBar: NavigationBarTheme(
           data: NavigationBarThemeData(
             backgroundColor: Theme.of(context).colorScheme.surface,
-            indicatorColor: Theme.of(context).brightness == Brightness.dark ? AppDarkColors.primary50 : AppColors.primary50,
+            indicatorColor: Theme.of(context).brightness == Brightness.dark
+                ? AppDarkColors.primary50
+                : cs.primary50,
             labelTextStyle: WidgetStateProperty.resolveWith((states) {
               final selected = states.contains(WidgetState.selected);
               return TextStyle(
                 fontSize: 11.5,
                 fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
-                color: selected
-                    ? AppColors.primary700
-                    : AppColors.textSecondary,
+                color: selected ? cs.primary700 : cs.textSecondary,
               );
             }),
           ),
@@ -137,8 +139,8 @@ class _RoleShellState extends State<RoleShell> {
             destinations: items
                 .map(
                   (e) => NavigationDestination(
-                    icon: Icon(e.icon, color: AppColors.textSecondary),
-                    selectedIcon: Icon(e.icon, color: AppColors.primary700),
+                    icon: Icon(e.icon, color: cs.textSecondary),
+                    selectedIcon: Icon(e.icon, color: cs.accent),
                     label: e.label,
                   ),
                 )

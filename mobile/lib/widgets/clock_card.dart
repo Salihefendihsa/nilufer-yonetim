@@ -4,6 +4,8 @@ import 'package:intl/intl.dart';
 import '../core/api_client.dart';
 import '../models/attendance.dart';
 import '../theme/app_colors.dart';
+import '../theme/app_palette.dart';
+import '../theme/app_text_styles.dart';
 
 final _timeFormat = DateFormat('HH:mm', 'tr_TR');
 
@@ -87,6 +89,8 @@ class _ClockCardState extends State<ClockCard> {
 
   @override
   Widget build(BuildContext context) {
+    final cs = context.colors;
+    final tx = context.text;
     final r = _record;
     final clockedIn = r?.clockInAt != null;
     final clockedOut = r?.clockOutAt != null;
@@ -108,11 +112,9 @@ class _ClockCardState extends State<ClockCard> {
       margin: const EdgeInsets.only(bottom: 16),
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: AppColors.surfaceCard,
+        color: cs.surfaceCard,
         borderRadius: BorderRadius.circular(AppRadius.card),
-        border: Border.all(
-          color: working ? AppColors.success500 : AppColors.borderDefault,
-        ),
+        border: Border.all(color: working ? cs.success500 : cs.borderDefault),
       ),
       child: Row(
         children: [
@@ -121,14 +123,15 @@ class _ClockCardState extends State<ClockCard> {
             height: 40,
             alignment: Alignment.center,
             decoration: BoxDecoration(
-              color: (working ? AppColors.success500 : AppColors.primary600)
-                  .withValues(alpha: 0.12),
+              color: (working ? cs.success500 : cs.primary600).withValues(
+                alpha: 0.12,
+              ),
               borderRadius: BorderRadius.circular(12),
             ),
             child: Icon(
               Icons.timer_outlined,
               size: 20,
-              color: working ? AppColors.success600 : AppColors.primary700,
+              color: working ? cs.success600 : cs.primary700,
             ),
           ),
           const SizedBox(width: 12),
@@ -136,24 +139,15 @@ class _ClockCardState extends State<ClockCard> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
-                  'Puantaj',
-                  style: TextStyle(fontWeight: FontWeight.w700, fontSize: 14),
-                ),
                 Text(
-                  status,
-                  style: const TextStyle(
-                    fontSize: 12,
-                    color: AppColors.textSecondary,
-                  ),
+                  'Puantaj',
+                  style: tx.subtitle.copyWith(fontWeight: FontWeight.w700),
                 ),
+                Text(status, style: tx.caption),
                 if (_error != null)
                   Text(
                     _error!,
-                    style: const TextStyle(
-                      fontSize: 11.5,
-                      color: AppColors.danger600,
-                    ),
+                    style: tx.caption.copyWith(color: cs.danger600),
                   ),
               ],
             ),
@@ -168,9 +162,7 @@ class _ClockCardState extends State<ClockCard> {
           else if (!_loading && working)
             OutlinedButton.icon(
               onPressed: _busy ? null : () => _act('clock-out'),
-              style: OutlinedButton.styleFrom(
-                foregroundColor: AppColors.danger600,
-              ),
+              style: OutlinedButton.styleFrom(foregroundColor: cs.danger600),
               icon: const Icon(Icons.logout_rounded, size: 16),
               label: const Text('Çıkış Yap'),
             )
@@ -178,16 +170,12 @@ class _ClockCardState extends State<ClockCard> {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
               decoration: BoxDecoration(
-                color: AppColors.success50,
+                color: cs.success50,
                 borderRadius: BorderRadius.circular(999),
               ),
-              child: const Text(
+              child: Text(
                 'Tamamlandı',
-                style: TextStyle(
-                  fontSize: 11,
-                  fontWeight: FontWeight.w700,
-                  color: AppColors.success600,
-                ),
+                style: tx.label.copyWith(color: cs.success600),
               ),
             ),
         ],

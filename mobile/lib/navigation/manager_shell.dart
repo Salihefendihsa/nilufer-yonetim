@@ -5,7 +5,7 @@ import '../features/jobs/job_form_screen.dart';
 import '../features/jobs/jobs_list_screen.dart';
 import '../features/messages/messages_list_screen.dart';
 import '../models/user.dart';
-import '../theme/app_colors.dart';
+import '../theme/app_palette.dart';
 import 'app_drawer.dart';
 import 'manager_nav.dart';
 import 'more_menu_screen.dart';
@@ -55,6 +55,7 @@ class _ManagerShellState extends State<ManagerShell> {
 
   @override
   Widget build(BuildContext context) {
+    final cs = context.colors;
     return ManagerNav(
       openDrawer: () => _scaffoldKey.currentState?.openDrawer(),
       child: Scaffold(
@@ -69,7 +70,7 @@ class _ManagerShellState extends State<ManagerShell> {
           width: 56,
           child: FloatingActionButton(
             heroTag: 'manager-new-job',
-            backgroundColor: AppColors.primary500,
+            backgroundColor: cs.primary500,
             foregroundColor: Colors.white,
             elevation: 4,
             shape: const CircleBorder(),
@@ -82,10 +83,9 @@ class _ManagerShellState extends State<ManagerShell> {
             child: const Icon(Icons.add_rounded, size: 28),
           ),
         ),
-        floatingActionButtonLocation:
-            FloatingActionButtonLocation.centerDocked,
+        floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
         bottomNavigationBar: BottomAppBar(
-          color: AppColors.surfaceBase,
+          color: cs.surfaceBase,
           elevation: 8,
           shape: const CircularNotchedRectangle(),
           notchMargin: 8,
@@ -106,6 +106,7 @@ class _ManagerShellState extends State<ManagerShell> {
   }
 
   Widget _tabButton(int i) {
+    final cs = context.colors;
     final tab = _tabs[i];
     final selected = _index == i;
     return Expanded(
@@ -117,7 +118,7 @@ class _ManagerShellState extends State<ManagerShell> {
             Icon(
               tab.icon,
               size: 22,
-              color: selected ? AppColors.primary700 : AppColors.textSecondary,
+              color: selected ? cs.primary700 : cs.textSecondary,
             ),
             const SizedBox(height: 2),
             Text(
@@ -125,9 +126,7 @@ class _ManagerShellState extends State<ManagerShell> {
               style: TextStyle(
                 fontSize: 11,
                 fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
-                color: selected
-                    ? AppColors.primary700
-                    : AppColors.textSecondary,
+                color: selected ? cs.primary700 : cs.textSecondary,
               ),
             ),
           ],

@@ -6,6 +6,8 @@ import '../../core/api_client.dart';
 import '../../models/staff.dart';
 import '../../models/user.dart';
 import '../../theme/app_colors.dart';
+import '../../theme/app_palette.dart';
+import '../../theme/app_text_styles.dart';
 import '../../widgets/staggered_fade_in.dart';
 import '../../navigation/manager_nav.dart';
 import '../../widgets/state_views.dart';
@@ -14,12 +16,12 @@ import 'staff_api.dart';
 import 'staff_detail_screen.dart';
 import 'staff_form_screen.dart';
 
-const Map<StaffStatus, Color> _statusColors = {
-  StaffStatus.available: AppColors.success500,
-  StaffStatus.onJob: AppColors.info500,
-  StaffStatus.onBreak: AppColors.warning500,
-  StaffStatus.onLeave: AppColors.textFaint,
-  StaffStatus.offline: AppColors.neutral400,
+Map<StaffStatus, Color> _statusColors(AppPalette cs) => {
+  StaffStatus.available: cs.success500,
+  StaffStatus.onJob: cs.info500,
+  StaffStatus.onBreak: cs.warning500,
+  StaffStatus.onLeave: cs.textFaint,
+  StaffStatus.offline: cs.neutral400,
 };
 
 /// backend/src/controllers/staffController.ts:listStaff kapsamı zaten role
@@ -81,7 +83,9 @@ class _StaffListScreenState extends State<StaffListScreen> {
           const SearchAction(),
           if (_isOwner)
             IconButton(
-              icon: Icon(_showArchived ? Icons.groups_outlined : Icons.history_rounded),
+              icon: Icon(
+                _showArchived ? Icons.groups_outlined : Icons.history_rounded,
+              ),
               tooltip: _showArchived ? 'Aktif Personel' : 'Geçmiş Personel',
               onPressed: () {
                 setState(() => _showArchived = !_showArchived);
@@ -113,6 +117,8 @@ class _StaffListScreenState extends State<StaffListScreen> {
   }
 
   Widget _buildBody() {
+    final cs = context.colors;
+    final tx = context.text;
     if (_loading) return const LoadingView();
     if (_error != null) return ErrorRetryView(message: _error!, onRetry: _load);
     if (_staff.isEmpty)
@@ -123,14 +129,14 @@ class _StaffListScreenState extends State<StaffListScreen> {
 
     return RefreshIndicator(
       onRefresh: _load,
-      color: AppColors.primary600,
+      color: cs.accentSoft,
       child: ListView.separated(
         padding: const EdgeInsets.all(16),
         itemCount: _staff.length,
         separatorBuilder: (_, __) => const SizedBox(height: 8),
         itemBuilder: (context, i) {
           final s = _staff[i];
-          final color = _statusColors[s.status]!;
+          final color = _statusColors(context.colors)[s.status]!;
           final initials = s.fullName
               .trim()
               .split(RegExp(r'\s+'))
@@ -141,7 +147,7 @@ class _StaffListScreenState extends State<StaffListScreen> {
           return StaggeredFadeIn(
             index: i,
             child: Material(
-              color: AppColors.surfaceCard,
+              color: cs.surfaceCard,
               borderRadius: BorderRadius.circular(AppRadius.card),
               child: InkWell(
                 borderRadius: BorderRadius.circular(AppRadius.card),
@@ -154,7 +160,7 @@ class _StaffListScreenState extends State<StaffListScreen> {
                   padding: const EdgeInsets.all(14),
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(AppRadius.card),
-                    border: Border.all(color: AppColors.borderDefault),
+                    border: Border.all(color: cs.borderDefault),
                   ),
                   child: Row(
                     children: [
@@ -162,11 +168,11 @@ class _StaffListScreenState extends State<StaffListScreen> {
                         children: [
                           CircleAvatar(
                             radius: 22,
-                            backgroundColor: AppColors.primary100,
+                            backgroundColor: cs.primary100,
                             child: Text(
                               initials.isEmpty ? '?' : initials,
-                              style: const TextStyle(
-                                color: AppColors.primary700,
+                              style: TextStyle(
+                                color: cs.primary700,
                                 fontWeight: FontWeight.w700,
                               ),
                             ),
@@ -196,9 +202,8 @@ class _StaffListScreenState extends State<StaffListScreen> {
                           children: [
                             Text(
                               s.fullName,
-                              style: const TextStyle(
+                              style: tx.subtitle.copyWith(
                                 fontWeight: FontWeight.w700,
-                                fontSize: 14.5,
                               ),
                             ),
                             const SizedBox(height: 2),
@@ -207,19 +212,13 @@ class _StaffListScreenState extends State<StaffListScreen> {
                                 s.position,
                                 if (s.vehiclePlate != null) s.vehiclePlate!,
                               ].join(' · '),
-                              style: const TextStyle(
-                                fontSize: 12.5,
-                                color: AppColors.textSecondary,
-                              ),
+                              style: tx.bodySmall,
                             ),
                             if (s.supervisor != null)
                               Text(
                                 '${roleLabelTr(roleFromString(s.supervisor!.role))}: '
                                 '${s.supervisor!.fullName}',
-                                style: const TextStyle(
-                                  fontSize: 11.5,
-                                  color: AppColors.textFaint,
-                                ),
+                                style: tx.caption.copyWith(color: cs.textFaint),
                               ),
                             const SizedBox(height: 4),
                             Wrap(
@@ -237,22 +236,22 @@ class _StaffListScreenState extends State<StaffListScreen> {
                                       s.dailyJobCapacity != null &&
                                           s.todaysJobsCount >
                                               s.dailyJobCapacity!
-                                      ? AppColors.danger600
-                                      : AppColors.textSecondary,
+                                      ? cs.danger600
+                                      : cs.textSecondary,
                                 ),
                                 if (s.averageRating != null)
                                   _Pill(
                                     text:
                                         '★ ${s.averageRating!.toStringAsFixed(1)}'
                                         ' (${s.ratedJobsCount})',
-                                    color: AppColors.warning600,
+                                    color: cs.warning600,
                                   ),
                                 if (s.expiringCertificationCount > 0)
                                   _Pill(
                                     text:
                                         '${s.expiringCertificationCount} belge '
                                         'bitiyor',
-                                    color: AppColors.danger600,
+                                    color: cs.danger600,
                                   ),
                               ],
                             ),
@@ -270,11 +269,7 @@ class _StaffListScreenState extends State<StaffListScreen> {
                         ),
                         child: Text(
                           staffStatusLabelTr(s.status),
-                          style: TextStyle(
-                            fontSize: 11,
-                            fontWeight: FontWeight.w700,
-                            color: color,
-                          ),
+                          style: tx.label.copyWith(color: color),
                         ),
                       ),
                     ],
@@ -302,13 +297,6 @@ class _Pill extends StatelessWidget {
       color: color.withValues(alpha: 0.10),
       borderRadius: BorderRadius.circular(AppRadius.pill),
     ),
-    child: Text(
-      text,
-      style: TextStyle(
-        fontSize: 10.5,
-        fontWeight: FontWeight.w700,
-        color: color,
-      ),
-    ),
+    child: Text(text, style: context.text.label.copyWith(color: color)),
   );
 }

@@ -13,6 +13,8 @@ import '../../models/user.dart';
 import '../../navigation/manager_nav.dart';
 import '../search/search_action.dart';
 import '../../theme/app_colors.dart';
+import '../../theme/app_palette.dart';
+import '../../theme/app_text_styles.dart';
 import '../staff/leave_balance_card.dart';
 import '../../widgets/state_views.dart';
 import 'approvals_api.dart';
@@ -37,12 +39,13 @@ class _AccentCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final cs = context.colors;
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
       decoration: BoxDecoration(
-        color: AppColors.surfaceCard,
+        color: cs.surfaceCard,
         borderRadius: BorderRadius.circular(AppRadius.card),
-        border: Border.all(color: AppColors.borderDefault),
+        border: Border.all(color: cs.borderDefault),
       ),
       clipBehavior: Clip.antiAlias,
       child: IntrinsicHeight(
@@ -133,7 +136,9 @@ class _ApprovalsScreenState extends State<ApprovalsScreen> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(e is ApiException ? e.message : 'İşlem başarısız')),
+          SnackBar(
+            content: Text(e is ApiException ? e.message : 'İşlem başarısız'),
+          ),
         );
       }
     } finally {
@@ -167,9 +172,7 @@ class _ApprovalsScreenState extends State<ApprovalsScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(
-              e is ApiException ? e.message : 'Güncellenemedi',
-            ),
+            content: Text(e is ApiException ? e.message : 'Güncellenemedi'),
           ),
         );
       }
@@ -214,10 +217,15 @@ class _ApprovalsScreenState extends State<ApprovalsScreen> {
   }
 
   int get _total =>
-      _quotes.length + _advances.length + _expiring.length + _reportJobs.length + _leaveRequests.length;
+      _quotes.length +
+      _advances.length +
+      _expiring.length +
+      _reportJobs.length +
+      _leaveRequests.length;
 
   @override
   Widget build(BuildContext context) {
+    final cs = context.colors;
     return Scaffold(
       appBar: AppBar(
         leading: ManagerNav.maybeLeading(context),
@@ -249,7 +257,7 @@ class _ApprovalsScreenState extends State<ApprovalsScreen> {
                 Expanded(
                   child: RefreshIndicator(
                     onRefresh: _load,
-                    color: AppColors.primary600,
+                    color: cs.accentSoft,
                     child: ListView(
                       padding: const EdgeInsets.all(16),
                       children: [
@@ -367,7 +375,11 @@ class _FilterChips extends StatelessWidget {
         scrollDirection: Axis.horizontal,
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
         children: [
-          _Chip(label: 'Tümü', selected: value == null, onTap: () => onChanged(null)),
+          _Chip(
+            label: 'Tümü',
+            selected: value == null,
+            onTap: () => onChanged(null),
+          ),
           for (final key in _labels.keys)
             if ((counts[key] ?? 0) > 0)
               Padding(
@@ -388,28 +400,33 @@ class _Chip extends StatelessWidget {
   final String label;
   final bool selected;
   final VoidCallback onTap;
-  const _Chip({required this.label, required this.selected, required this.onTap});
+  const _Chip({
+    required this.label,
+    required this.selected,
+    required this.onTap,
+  });
 
   @override
   Widget build(BuildContext context) {
+    final cs = context.colors;
+    final tx = context.text;
     return GestureDetector(
       onTap: onTap,
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
         decoration: BoxDecoration(
-          color: selected ? AppColors.primary600 : AppColors.surfaceCard,
+          color: selected ? cs.primary600 : cs.surfaceCard,
           borderRadius: BorderRadius.circular(AppRadius.pill),
           border: Border.all(
-            color: selected ? AppColors.primary600 : AppColors.borderDefault,
+            color: selected ? cs.primary600 : cs.borderDefault,
           ),
         ),
         alignment: Alignment.center,
         child: Text(
           label,
-          style: TextStyle(
-            fontSize: 12.5,
+          style: tx.bodySmall.copyWith(
             fontWeight: FontWeight.w600,
-            color: selected ? Colors.white : AppColors.textSecondary,
+            color: selected ? Colors.white : cs.textSecondary,
           ),
         ),
       ),
@@ -425,10 +442,9 @@ class _SectionTitle extends StatelessWidget {
     padding: const EdgeInsets.only(bottom: 8, top: 4),
     child: Text(
       text,
-      style: const TextStyle(
+      style: context.text.body.copyWith(
         fontWeight: FontWeight.w700,
-        fontSize: 13.5,
-        color: AppColors.textSecondary,
+        color: context.colors.textSecondary,
       ),
     ),
   );
@@ -447,17 +463,19 @@ class _ReportCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final cs = context.colors;
+    final tx = context.text;
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: AppColors.surfaceCard,
+        color: cs.surfaceCard,
         borderRadius: BorderRadius.circular(AppRadius.card),
-        border: const Border(
-          left: BorderSide(color: AppColors.neutral600, width: 4),
-          top: BorderSide(color: AppColors.borderDefault),
-          right: BorderSide(color: AppColors.borderDefault),
-          bottom: BorderSide(color: AppColors.borderDefault),
+        border: Border(
+          left: BorderSide(color: cs.neutral600, width: 4),
+          top: BorderSide(color: cs.borderDefault),
+          right: BorderSide(color: cs.borderDefault),
+          bottom: BorderSide(color: cs.borderDefault),
         ),
       ),
       child: Column(
@@ -465,23 +483,18 @@ class _ReportCard extends StatelessWidget {
         children: [
           Text(
             job.customerName ?? 'Müşteri',
-            style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13.5),
+            style: tx.body.copyWith(fontWeight: FontWeight.w700),
           ),
           Text(
             '${job.serviceType} · ${job.assignedStaffName ?? 'Personel'}',
-            style: const TextStyle(
-              fontSize: 11.5,
-              color: AppColors.textSecondary,
-            ),
+            style: tx.caption,
           ),
           const SizedBox(height: 8),
           SizedBox(
             width: double.infinity,
             child: ElevatedButton(
               onPressed: busy ? null : onApprove,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.success600,
-              ),
+              style: ElevatedButton.styleFrom(backgroundColor: cs.success600),
               child: Text(busy ? 'İşleniyor...' : 'Raporu Onayla'),
             ),
           ),
@@ -505,29 +518,24 @@ class _QuoteCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final cs = context.colors;
+    final tx = context.text;
     return _AccentCard(
-      accentColor: AppColors.info500,
+      accentColor: cs.info500,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
             quote.fullName,
-            style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13.5),
+            style: tx.body.copyWith(fontWeight: FontWeight.w700),
           ),
-          Text(
-            '${quote.serviceType} · ${quote.phone}',
-            style: const TextStyle(
-              fontSize: 11.5,
-              color: AppColors.textSecondary,
-            ),
-          ),
+          Text('${quote.serviceType} · ${quote.phone}', style: tx.caption),
           if (quote.amount != null)
             Text(
               _currency.format(quote.amount),
-              style: const TextStyle(
-                fontSize: 12.5,
+              style: tx.bodySmall.copyWith(
                 fontWeight: FontWeight.w700,
-                color: AppColors.primary700,
+                color: cs.accent,
               ),
             ),
           const SizedBox(height: 8),
@@ -571,8 +579,10 @@ class _AdvanceCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final cs = context.colors;
+    final tx = context.text;
     return _AccentCard(
-      accentColor: AppColors.warning500,
+      accentColor: cs.warning500,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -581,28 +591,19 @@ class _AdvanceCard extends StatelessWidget {
             children: [
               Text(
                 advance.staffName ?? 'Personel',
-                style: const TextStyle(
-                  fontWeight: FontWeight.w700,
-                  fontSize: 13.5,
-                ),
+                style: tx.body.copyWith(fontWeight: FontWeight.w700),
               ),
               Text(
                 _currency.format(advance.amount),
-                style: const TextStyle(
+                style: TextStyle(
                   fontWeight: FontWeight.w700,
-                  color: AppColors.warning600,
+                  color: cs.warning600,
                 ),
               ),
             ],
           ),
           const SizedBox(height: 4),
-          Text(
-            advance.reason,
-            style: const TextStyle(
-              fontSize: 12,
-              color: AppColors.textSecondary,
-            ),
-          ),
+          Text(advance.reason, style: tx.caption),
           const SizedBox(height: 8),
           Row(
             children: [
@@ -610,7 +611,7 @@ class _AdvanceCard extends StatelessWidget {
                 child: OutlinedButton(
                   onPressed: busy ? null : onReject,
                   style: OutlinedButton.styleFrom(
-                    foregroundColor: AppColors.danger600,
+                    foregroundColor: cs.danger600,
                   ),
                   child: const Text('Reddet'),
                 ),
@@ -620,7 +621,7 @@ class _AdvanceCard extends StatelessWidget {
                 child: ElevatedButton(
                   onPressed: busy ? null : onApprove,
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.success600,
+                    backgroundColor: cs.success600,
                   ),
                   child: const Text('Onayla'),
                 ),
@@ -639,8 +640,10 @@ class _ExpiringContractCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final cs = context.colors;
+    final tx = context.text;
     return _AccentCard(
-      accentColor: AppColors.danger500,
+      accentColor: cs.danger500,
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
@@ -650,17 +653,11 @@ class _ExpiringContractCard extends StatelessWidget {
               children: [
                 Text(
                   contract.customerName ?? 'Müşteri',
-                  style: const TextStyle(
-                    fontWeight: FontWeight.w700,
-                    fontSize: 13.5,
-                  ),
+                  style: tx.body.copyWith(fontWeight: FontWeight.w700),
                 ),
                 Text(
                   'Bitiş: ${_dateFormat.format(DateTime.parse(contract.endDate))}',
-                  style: const TextStyle(
-                    fontSize: 11.5,
-                    color: AppColors.textSecondary,
-                  ),
+                  style: tx.caption,
                 ),
               ],
             ),
@@ -668,9 +665,9 @@ class _ExpiringContractCard extends StatelessWidget {
           if (contract.amount != null)
             Text(
               _currency.format(contract.amount),
-              style: const TextStyle(
+              style: TextStyle(
                 fontWeight: FontWeight.w700,
-                color: AppColors.danger600,
+                color: cs.danger600,
               ),
             ),
         ],
@@ -693,26 +690,30 @@ class _LeaveCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final cs = context.colors;
+    final tx = context.text;
     return _AccentCard(
-      accentColor: AppColors.danger500,
+      accentColor: cs.danger500,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
             leave.staffName ?? 'Personel',
-            style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13.5),
+            style: tx.body.copyWith(fontWeight: FontWeight.w700),
           ),
           Text(
             '${_dateFormat.format(DateTime.parse(leave.startDate))} – '
             '${_dateFormat.format(DateTime.parse(leave.endDate))} · ${leave.reason}'
             '${leave.requestedDays != null ? ' · ${leave.requestedDays} gün' : ''}',
-            style: const TextStyle(fontSize: 11.5, color: AppColors.textSecondary),
+            style: tx.caption,
           ),
           // Bölüm AH (8. tur): bakiye aşımı uyarısı — onayı engellemez.
           if (leave.exceedsBalance)
             Padding(
               padding: const EdgeInsets.only(top: 4),
-              child: LeaveBalanceExceedBadge(remainingDays: leave.remainingDays),
+              child: LeaveBalanceExceedBadge(
+                remainingDays: leave.remainingDays,
+              ),
             ),
           const SizedBox(height: 8),
           Row(
@@ -720,7 +721,9 @@ class _LeaveCard extends StatelessWidget {
               Expanded(
                 child: OutlinedButton(
                   onPressed: busy ? null : onReject,
-                  style: OutlinedButton.styleFrom(foregroundColor: AppColors.danger600),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: cs.danger600,
+                  ),
                   child: const Text('Reddet'),
                 ),
               ),
@@ -728,7 +731,9 @@ class _LeaveCard extends StatelessWidget {
               Expanded(
                 child: ElevatedButton(
                   onPressed: busy ? null : onApprove,
-                  style: ElevatedButton.styleFrom(backgroundColor: AppColors.success600),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: cs.success600,
+                  ),
                   child: const Text('Onayla'),
                 ),
               ),

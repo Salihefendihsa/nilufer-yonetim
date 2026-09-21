@@ -6,6 +6,7 @@ import '../features/messages/messages_list_screen.dart';
 import '../features/notifications/notifications_screen.dart';
 import '../models/user.dart';
 import '../theme/app_colors.dart';
+import '../theme/app_palette.dart';
 import 'app_drawer.dart';
 import 'manager_nav.dart';
 import 'nav_items.dart';
@@ -40,11 +41,7 @@ class _TeamLeadShellState extends State<TeamLeadShell> {
   int _index = 0;
 
   static const _tabs = <({String label, IconData icon, Widget screen})>[
-    (
-      label: 'Ana Sayfa',
-      icon: Icons.home_rounded,
-      screen: DashboardScreen(),
-    ),
+    (label: 'Ana Sayfa', icon: Icons.home_rounded, screen: DashboardScreen()),
     (label: 'İşler', icon: Icons.build_rounded, screen: JobsListScreen()),
     (
       label: 'Bildirimler',
@@ -65,6 +62,7 @@ class _TeamLeadShellState extends State<TeamLeadShell> {
 
   @override
   Widget build(BuildContext context) {
+    final cs = context.colors;
     return ManagerNav(
       openDrawer: () => _scaffoldKey.currentState?.openDrawer(),
       child: Scaffold(
@@ -77,15 +75,15 @@ class _TeamLeadShellState extends State<TeamLeadShell> {
         bottomNavigationBar: NavigationBarTheme(
           data: NavigationBarThemeData(
             backgroundColor: Theme.of(context).colorScheme.surface,
-            indicatorColor: Theme.of(context).brightness == Brightness.dark ? AppDarkColors.primary50 : AppColors.primary50,
+            indicatorColor: Theme.of(context).brightness == Brightness.dark
+                ? AppDarkColors.primary50
+                : cs.primary50,
             labelTextStyle: WidgetStateProperty.resolveWith((states) {
               final selected = states.contains(WidgetState.selected);
               return TextStyle(
                 fontSize: 11,
                 fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
-                color: selected
-                    ? AppColors.primary700
-                    : AppColors.textSecondary,
+                color: selected ? cs.primary700 : cs.textSecondary,
               );
             }),
           ),
@@ -96,8 +94,8 @@ class _TeamLeadShellState extends State<TeamLeadShell> {
             destinations: _tabs
                 .map(
                   (t) => NavigationDestination(
-                    icon: Icon(t.icon, color: AppColors.textSecondary),
-                    selectedIcon: Icon(t.icon, color: AppColors.primary700),
+                    icon: Icon(t.icon, color: cs.textSecondary),
+                    selectedIcon: Icon(t.icon, color: cs.accent),
                     label: t.label,
                   ),
                 )

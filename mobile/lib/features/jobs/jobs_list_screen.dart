@@ -9,6 +9,8 @@ import '../../core/api_client.dart';
 import '../../models/job.dart';
 import '../../models/user.dart';
 import '../../theme/app_colors.dart';
+import '../../theme/app_palette.dart';
+import '../../theme/app_text_styles.dart';
 import '../../navigation/manager_nav.dart';
 import '../search/search_action.dart';
 import '../../widgets/staggered_fade_in.dart';
@@ -19,12 +21,12 @@ import 'job_form_screen.dart';
 
 final _timeFormat = DateFormat('d MMM, HH:mm', 'tr_TR');
 
-const Map<JobStatus, Color> _statusColors = {
-  JobStatus.pending: AppColors.warning500,
-  JobStatus.scheduled: AppColors.primary400,
-  JobStatus.inProgress: AppColors.info500,
-  JobStatus.completed: AppColors.success500,
-  JobStatus.cancelled: AppColors.danger500,
+Map<JobStatus, Color> _statusColors(AppPalette cs) => {
+  JobStatus.pending: cs.warning500,
+  JobStatus.scheduled: cs.primary400,
+  JobStatus.inProgress: cs.info500,
+  JobStatus.completed: cs.success500,
+  JobStatus.cancelled: cs.danger500,
 };
 
 /// backend/src/controllers/jobsController.ts:listJobs kapsamı zaten role göre
@@ -147,7 +149,7 @@ class _JobsListScreenState extends State<JobsListScreen> {
                     child: _FilterChip(
                       label: jobStatusLabelTr(s),
                       selected: _filter == s,
-                      color: _statusColors[s],
+                      color: _statusColors(context.colors)[s],
                       onTap: () => setState(() {
                         _filter = s;
                         _load();
@@ -164,6 +166,7 @@ class _JobsListScreenState extends State<JobsListScreen> {
   }
 
   Widget _buildBody() {
+    final cs = context.colors;
     if (_loading) return const LoadingView();
     if (_error != null) return ErrorRetryView(message: _error!, onRetry: _load);
     if (_jobs.isEmpty)
@@ -174,7 +177,7 @@ class _JobsListScreenState extends State<JobsListScreen> {
 
     return RefreshIndicator(
       onRefresh: _load,
-      color: AppColors.primary600,
+      color: cs.accentSoft,
       child: ListView.separated(
         padding: const EdgeInsets.all(16),
         itemCount: _jobs.length,
@@ -216,23 +219,24 @@ class _FilterChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final base = color ?? AppColors.primary600;
+    final cs = context.colors;
+    final tx = context.text;
+    final base = color ?? cs.primary600;
     return GestureDetector(
       onTap: onTap,
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
         decoration: BoxDecoration(
-          color: selected ? base : AppColors.surfaceCard,
+          color: selected ? base : cs.surfaceCard,
           borderRadius: BorderRadius.circular(AppRadius.pill),
-          border: Border.all(color: selected ? base : AppColors.borderDefault),
+          border: Border.all(color: selected ? base : cs.borderDefault),
         ),
         alignment: Alignment.center,
         child: Text(
           label,
-          style: TextStyle(
-            fontSize: 12.5,
+          style: tx.bodySmall.copyWith(
             fontWeight: FontWeight.w600,
-            color: selected ? Colors.white : AppColors.textSecondary,
+            color: selected ? Colors.white : cs.textSecondary,
           ),
         ),
       ),
@@ -247,7 +251,9 @@ class _JobCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = _statusColors[job.status]!;
+    final cs = context.colors;
+    final tx = context.text;
+    final color = _statusColors(context.colors)[job.status]!;
     // NOT: BoxDecoration'da farklı renkli kenarlarla (Border(left: ..., top: ...))
     // borderRadius birlikte kullanılamaz — Flutter bunu paint() sırasında bir
     // assertion ile reddediyor ve bu kartın TÜM içeriği (metin dahil) hiç
@@ -255,7 +261,7 @@ class _JobCard extends StatelessWidget {
     // bulundu). Sol renkli şerit artık ayrı bir Container ile, tekdüze gri
     // kenarlıktan bağımsız olarak çiziliyor.
     return Material(
-      color: AppColors.surfaceCard,
+      color: cs.surfaceCard,
       borderRadius: BorderRadius.circular(AppRadius.card),
       child: InkWell(
         borderRadius: BorderRadius.circular(AppRadius.card),
@@ -263,7 +269,7 @@ class _JobCard extends StatelessWidget {
         child: Container(
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(AppRadius.card),
-            border: Border.all(color: AppColors.borderDefault),
+            border: Border.all(color: cs.borderDefault),
           ),
           clipBehavior: Clip.antiAlias,
           child: IntrinsicHeight(
@@ -283,9 +289,8 @@ class _JobCard extends StatelessWidget {
                             Expanded(
                               child: Text(
                                 job.customerName ?? 'Müşteri',
-                                style: const TextStyle(
+                                style: tx.subtitle.copyWith(
                                   fontWeight: FontWeight.w700,
-                                  fontSize: 14,
                                 ),
                               ),
                             ),
@@ -302,11 +307,7 @@ class _JobCard extends StatelessWidget {
                               ),
                               child: Text(
                                 jobStatusLabelTr(job.status),
-                                style: TextStyle(
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.w700,
-                                  color: color,
-                                ),
+                                style: tx.label.copyWith(color: color),
                               ),
                             ),
                           ],
@@ -316,42 +317,33 @@ class _JobCard extends StatelessWidget {
                           job.sequenceNo != null
                               ? '#${job.sequenceNo} · ${job.serviceType}'
                               : job.serviceType,
-                          style: const TextStyle(
-                            fontSize: 12.5,
-                            color: AppColors.textSecondary,
-                          ),
+                          style: tx.bodySmall,
                         ),
                         const SizedBox(height: 4),
                         Row(
                           children: [
-                            const Icon(
+                            Icon(
                               Icons.person_outline_rounded,
                               size: 13,
-                              color: AppColors.textFaint,
+                              color: cs.textFaint,
                             ),
                             const SizedBox(width: 4),
                             Text(
                               job.assignedStaffName ?? 'Atanmadı',
-                              style: const TextStyle(
-                                fontSize: 11.5,
-                                color: AppColors.textFaint,
-                              ),
+                              style: tx.caption.copyWith(color: cs.textFaint),
                             ),
                             if (job.scheduledAt != null) ...[
                               const SizedBox(width: 10),
-                              const Icon(
+                              Icon(
                                 Icons.schedule_rounded,
                                 size: 13,
-                                color: AppColors.textFaint,
+                                color: cs.textFaint,
                               ),
                               const SizedBox(width: 4),
                               Text(
                                 '${_timeFormat.format(job.scheduledAt!)}'
                                 '${job.scheduledEndAt != null ? ' – ${_timeFormat.format(job.scheduledEndAt!)}' : ''}',
-                                style: const TextStyle(
-                                  fontSize: 11.5,
-                                  color: AppColors.textFaint,
-                                ),
+                                style: tx.caption.copyWith(color: cs.textFaint),
                               ),
                             ],
                           ],

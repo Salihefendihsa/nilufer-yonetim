@@ -8,6 +8,8 @@ import '../../models/app_notification.dart';
 import '../../models/paginated.dart';
 import '../../models/user.dart';
 import '../../theme/app_colors.dart';
+import '../../theme/app_palette.dart';
+import '../../theme/app_text_styles.dart';
 import '../../navigation/manager_nav.dart';
 import '../search/search_action.dart';
 import '../../widgets/state_views.dart';
@@ -22,13 +24,14 @@ import 'notifications_api.dart';
 final _dateFormat = DateFormat('d MMMM, HH:mm', 'tr_TR');
 
 /// web/src/lib/notifications.ts: NOTIFICATION_CATEGORIES — aynı sıra/etiket/renk.
-const List<({String key, String label, Color color})> _categoryOrder = [
-  (key: 'job', label: 'İşler', color: AppColors.primary500),
-  (key: 'payment', label: 'Ödemeler', color: AppColors.info500),
-  (key: 'message', label: 'Mesajlar', color: AppColors.success500),
-  (key: 'alert', label: 'Uyarılar', color: AppColors.warning500),
-  (key: 'other', label: 'Diğer', color: AppColors.textFaint),
-];
+List<({String key, String label, Color color})> _categoryOrder(AppPalette cs) =>
+    [
+      (key: 'job', label: 'İşler', color: cs.primary500),
+      (key: 'payment', label: 'Ödemeler', color: cs.info500),
+      (key: 'message', label: 'Mesajlar', color: cs.success500),
+      (key: 'alert', label: 'Uyarılar', color: cs.warning500),
+      (key: 'other', label: 'Diğer', color: cs.textFaint),
+    ];
 
 /// Bildirime dokununca ilgili ekrana yönlendirir (backend/src/lib/notify.ts:
 /// NotificationLink ile birebir relatedType eşlemesi — web/src/lib/
@@ -105,6 +108,8 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
   /// Stok uyarısı bildirimi üzerinden doğrudan takviye talebi açar
   /// (Stitch Şef → Bildirimler: "Talep Oluştur").
   Future<void> _requestPurchase(AppNotification n) async {
+    final cs = context.colors;
+    final tx = context.text;
     final productId = n.relatedId;
     if (productId == null) return;
 
@@ -124,22 +129,16 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
+            Text(
               'Stok Takviye Talebi',
-              style: TextStyle(fontWeight: FontWeight.w700, fontSize: 15),
+              style: tx.subtitle.copyWith(fontWeight: FontWeight.w700),
             ),
+            const SizedBox(height: 4),
+            Text(n.body ?? '', style: tx.caption),
             const SizedBox(height: 4),
             Text(
-              n.body ?? '',
-              style: const TextStyle(
-                fontSize: 12,
-                color: AppColors.textSecondary,
-              ),
-            ),
-            const SizedBox(height: 4),
-            const Text(
               'Talebi yönetim sonuçlandırır; stok mal kabulünde artar.',
-              style: TextStyle(fontSize: 11.5, color: AppColors.textFaint),
+              style: tx.caption.copyWith(color: cs.textFaint),
             ),
             const SizedBox(height: 12),
             TextField(
@@ -157,9 +156,9 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
             ),
             const SizedBox(height: 16),
             ElevatedButton(
-              onPressed: () => Navigator.of(
-                ctx,
-              ).pop(double.tryParse(quantityController.text.trim())),
+              onPressed: () =>
+                  Navigator.of(ctx)
+                      .pop(double.tryParse(quantityController.text.trim())),
               child: const Text('Talep Oluştur'),
             ),
             const SizedBox(height: 12),
@@ -267,6 +266,8 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
   /// hesaplamasından (bkz. notifications_api.dart:summary()), ek bir
   /// istemci-taraflı türetme YAPILMAZ.
   Widget _buildSummary() {
+    final cs = context.colors;
+    final tx = context.text;
     final s = _summary;
     if (s == null) return const SizedBox.shrink();
     return Padding(
@@ -286,26 +287,26 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                 label: 'Okunmamış',
                 value: '${s.unread}',
                 icon: Icons.mark_email_unread_outlined,
-                iconColor: AppColors.danger500,
-                iconBackground: AppColors.danger50,
+                iconColor: cs.danger500,
+                iconBackground: cs.danger50,
               ),
               AppStatCard(
                 label: 'Bugün',
                 value: '${s.today}',
                 icon: Icons.today_rounded,
-                iconColor: AppColors.info600,
-                iconBackground: AppColors.info50,
+                iconColor: cs.info600,
+                iconBackground: cs.info50,
               ),
             ],
           ),
           if (s.total > 0) ...[
             const SizedBox(height: 14),
-            const Text(
+            Text(
               'Tip Dağılımı',
-              style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13.5),
+              style: tx.body.copyWith(fontWeight: FontWeight.w700),
             ),
             const SizedBox(height: 8),
-            for (final c in _categoryOrder)
+            for (final c in _categoryOrder(context.colors))
               if ((s.byCategory[c.key] ?? 0) > 0)
                 Padding(
                   padding: const EdgeInsets.only(bottom: 6),
@@ -313,13 +314,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                     children: [
                       SizedBox(
                         width: 70,
-                        child: Text(
-                          c.label,
-                          style: const TextStyle(
-                            fontSize: 11.5,
-                            color: AppColors.textSecondary,
-                          ),
-                        ),
+                        child: Text(c.label, style: tx.caption),
                       ),
                       Expanded(
                         child: ClipRRect(
@@ -327,7 +322,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                           child: LinearProgressIndicator(
                             value: (s.byCategory[c.key] ?? 0) / s.total,
                             minHeight: 8,
-                            backgroundColor: AppColors.surfaceMuted,
+                            backgroundColor: cs.surfaceMuted,
                             color: c.color,
                           ),
                         ),
@@ -338,8 +333,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                         child: Text(
                           '${s.byCategory[c.key] ?? 0}',
                           textAlign: TextAlign.right,
-                          style: const TextStyle(
-                            fontSize: 11.5,
+                          style: tx.caption.copyWith(
                             fontWeight: FontWeight.w700,
                           ),
                         ),
@@ -354,12 +348,15 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
   }
 
   Widget _buildBody() {
+    final cs = context.colors;
+    final tx = context.text;
     if (_loading) return const LoadingView();
     if (_error != null) return ErrorRetryView(message: _error!, onRetry: _load);
     if (_notifications.isEmpty) {
+      final cs = context.colors;
       return RefreshIndicator(
         onRefresh: _load,
-        color: AppColors.primary600,
+        color: cs.accentSoft,
         child: ListView(
           children: [
             _buildSummary(),
@@ -374,10 +371,11 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
 
     return RefreshIndicator(
       onRefresh: _load,
-      color: AppColors.primary600,
+      color: cs.accentSoft,
       child: ListView.separated(
         itemCount: _notifications.length + 1,
-        separatorBuilder: (_, i) => i == 0 ? const SizedBox.shrink() : const Divider(height: 1),
+        separatorBuilder: (_, i) =>
+            i == 0 ? const SizedBox.shrink() : const Divider(height: 1),
         itemBuilder: (context, index) {
           if (index == 0) return _buildSummary();
           final i = index - 1;
@@ -388,7 +386,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
             leading: Icon(
               unread ? Icons.circle : Icons.circle_outlined,
               size: 10,
-              color: unread ? AppColors.primary600 : AppColors.textFaint,
+              color: unread ? cs.primary600 : cs.textFaint,
             ),
             title: Text(
               n.title,
@@ -405,14 +403,11 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                     n.body!,
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(fontSize: 12.5),
+                    style: tx.bodySmall,
                   ),
                 Text(
                   _dateFormat.format(DateTime.parse(n.createdAt)),
-                  style: const TextStyle(
-                    fontSize: 11,
-                    color: AppColors.textFaint,
-                  ),
+                  style: tx.label,
                 ),
               ],
             ),
@@ -421,10 +416,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                 ? TextButton.icon(
                     onPressed: () => _requestPurchase(n),
                     icon: const Icon(Icons.shopping_cart_outlined, size: 15),
-                    label: const Text(
-                      'Talep Oluştur',
-                      style: TextStyle(fontSize: 11.5),
-                    ),
+                    label: Text('Talep Oluştur', style: tx.caption),
                     style: TextButton.styleFrom(
                       padding: const EdgeInsets.symmetric(horizontal: 6),
                       minimumSize: const Size(0, 0),
@@ -432,10 +424,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                     ),
                   )
                 : linked
-                ? const Icon(
-                    Icons.chevron_right_rounded,
-                    color: AppColors.textFaint,
-                  )
+                ? Icon(Icons.chevron_right_rounded, color: cs.textFaint)
                 : null,
             onTap: () => _onTap(n),
           );

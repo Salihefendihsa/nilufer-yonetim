@@ -7,6 +7,8 @@ import '../../core/api_client.dart';
 import '../../models/conversation.dart';
 import '../../models/user.dart';
 import '../../theme/app_colors.dart';
+import '../../theme/app_palette.dart';
+import '../../theme/app_text_styles.dart';
 import '../../navigation/manager_nav.dart';
 import '../search/search_action.dart';
 import '../../widgets/state_views.dart';
@@ -147,7 +149,9 @@ class _MessagesListScreenState extends State<MessagesListScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
-              e is ApiException ? e.message : 'Gözlemci erişimi kontrol edilemedi',
+              e is ApiException
+                  ? e.message
+                  : 'Gözlemci erişimi kontrol edilemedi',
             ),
           ),
         );
@@ -155,8 +159,7 @@ class _MessagesListScreenState extends State<MessagesListScreen> {
     }
   }
 
-  bool get _isOwner =>
-      context.read<AuthProvider>().user?.role == AppRole.owner;
+  bool get _isOwner => context.read<AuthProvider>().user?.role == AppRole.owner;
 
   bool get _canBroadcast {
     final role = context.read<AuthProvider>().user?.role;
@@ -168,6 +171,7 @@ class _MessagesListScreenState extends State<MessagesListScreen> {
   /// Şefin doğrudan ekibinin tamamına aynı mesajı göndermesi
   /// (Stitch Şef → Mesajlar: "Tüm Ekibime Toplu Duyuru Gönder").
   Future<void> _openBroadcastSheet() async {
+    final tx = context.text;
     final controller = TextEditingController();
     final text = await showModalBottomSheet<String>(
       context: context,
@@ -183,14 +187,14 @@ class _MessagesListScreenState extends State<MessagesListScreen> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
+            Text(
               'Tüm Ekibime Duyuru',
-              style: TextStyle(fontWeight: FontWeight.w700, fontSize: 15),
+              style: tx.subtitle.copyWith(fontWeight: FontWeight.w700),
             ),
             const SizedBox(height: 4),
-            const Text(
+            Text(
               'Mesaj, doğrudan size bağlı her ekip üyesine ayrı ayrı iletilir.',
-              style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
+              style: tx.caption,
             ),
             const SizedBox(height: 12),
             TextField(
@@ -267,6 +271,7 @@ class _MessagesListScreenState extends State<MessagesListScreen> {
   /// web/src/app/(dashboard)/mesajlar sayfasındaki özet kartlar — istemcide
   /// zaten çekilen `_conversations` kümesinden türetilir, ek uç gerekmez.
   Widget _buildSummary() {
+    final cs = context.colors;
     final unreadConversations = _conversations
         .where((c) => c.unreadCount > 0)
         .length;
@@ -295,8 +300,8 @@ class _MessagesListScreenState extends State<MessagesListScreen> {
             label: 'Okunmamış',
             value: '$totalUnread',
             icon: Icons.mark_chat_unread_outlined,
-            iconColor: AppColors.danger500,
-            iconBackground: AppColors.danger50,
+            iconColor: cs.danger500,
+            iconBackground: cs.danger50,
             caption: unreadConversations > 0
                 ? '$unreadConversations konuşmada'
                 : null,
@@ -305,8 +310,8 @@ class _MessagesListScreenState extends State<MessagesListScreen> {
             label: 'Bugün Aktif',
             value: '$activeToday',
             icon: Icons.today_rounded,
-            iconColor: AppColors.info600,
-            iconBackground: AppColors.info50,
+            iconColor: cs.info600,
+            iconBackground: cs.info50,
           ),
         ],
       ),
@@ -314,6 +319,8 @@ class _MessagesListScreenState extends State<MessagesListScreen> {
   }
 
   Widget _buildBody() {
+    final cs = context.colors;
+    final tx = context.text;
     if (_loading) return const LoadingView();
     if (_error != null) return ErrorRetryView(message: _error!, onRetry: _load);
     if (_conversations.isEmpty) {
@@ -327,10 +334,11 @@ class _MessagesListScreenState extends State<MessagesListScreen> {
 
     return RefreshIndicator(
       onRefresh: _load,
-      color: AppColors.primary600,
+      color: cs.accentSoft,
       child: ListView.separated(
         itemCount: _conversations.length + 1,
-        separatorBuilder: (_, i) => i == 0 ? const SizedBox.shrink() : const Divider(height: 1),
+        separatorBuilder: (_, i) =>
+            i == 0 ? const SizedBox.shrink() : const Divider(height: 1),
         itemBuilder: (context, index) {
           if (index == 0) return _buildSummary();
           final i = index - 1;
@@ -338,13 +346,13 @@ class _MessagesListScreenState extends State<MessagesListScreen> {
           final unread = c.unreadCount > 0;
           return ListTile(
             leading: CircleAvatar(
-              backgroundColor: AppColors.primary100,
+              backgroundColor: cs.primary100,
               child: Text(
                 c.participant.fullName.isNotEmpty
                     ? c.participant.fullName[0].toUpperCase()
                     : '?',
-                style: const TextStyle(
-                  color: AppColors.primary700,
+                style: TextStyle(
+                  color: cs.primary700,
                   fontWeight: FontWeight.w700,
                 ),
               ),
@@ -362,7 +370,7 @@ class _MessagesListScreenState extends State<MessagesListScreen> {
               overflow: TextOverflow.ellipsis,
               style: TextStyle(
                 fontSize: 12.5,
-                color: unread ? AppColors.textPrimary : AppColors.textSecondary,
+                color: unread ? cs.textPrimary : cs.textSecondary,
                 fontWeight: unread ? FontWeight.w600 : FontWeight.w400,
               ),
             ),
@@ -372,10 +380,7 @@ class _MessagesListScreenState extends State<MessagesListScreen> {
               children: [
                 Text(
                   _timeFormat.format(DateTime.parse(c.updatedAt)),
-                  style: const TextStyle(
-                    fontSize: 11,
-                    color: AppColors.textFaint,
-                  ),
+                  style: tx.label,
                 ),
                 if (unread) ...[
                   const SizedBox(height: 4),
@@ -385,16 +390,12 @@ class _MessagesListScreenState extends State<MessagesListScreen> {
                       vertical: 2,
                     ),
                     decoration: BoxDecoration(
-                      color: AppColors.primary600,
+                      color: cs.primary600,
                       borderRadius: BorderRadius.circular(AppRadius.pill),
                     ),
                     child: Text(
                       '${c.unreadCount}',
-                      style: const TextStyle(
-                        fontSize: 10.5,
-                        color: Colors.white,
-                        fontWeight: FontWeight.w700,
-                      ),
+                      style: tx.label.copyWith(color: Colors.white),
                     ),
                   ),
                 ],

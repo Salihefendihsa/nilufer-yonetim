@@ -4,6 +4,8 @@ import 'package:provider/provider.dart';
 import '../auth/auth_provider.dart';
 import '../features/search/search_action.dart';
 import '../theme/app_colors.dart';
+import '../theme/app_palette.dart';
+import '../theme/app_text_styles.dart';
 import 'app_drawer.dart';
 import 'manager_nav.dart';
 import 'nav_items.dart';
@@ -20,6 +22,7 @@ class MoreMenuScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final tx = context.text;
     final role = context.watch<AuthProvider>().user?.role;
     final groups = role == null ? const <AppDrawerGroup>[] : navGroupsFor(role);
 
@@ -38,12 +41,7 @@ class MoreMenuScreen extends StatelessWidget {
                 padding: const EdgeInsets.fromLTRB(4, 14, 4, 8),
                 child: Text(
                   group.title!.toUpperCase(),
-                  style: const TextStyle(
-                    fontSize: 11,
-                    letterSpacing: 0.6,
-                    fontWeight: FontWeight.w700,
-                    color: AppColors.textFaint,
-                  ),
+                  style: tx.label.copyWith(letterSpacing: 0.6),
                 ),
               ),
             for (final entry in group.entries)
@@ -64,25 +62,24 @@ class _MoreTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final cs = context.colors;
     return Material(
-      color: AppColors.surfaceCard,
+      color: cs.surfaceCard,
       borderRadius: BorderRadius.circular(AppRadius.card),
       child: ListTile(
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(AppRadius.card),
-          side: const BorderSide(color: AppColors.borderDefault),
+          side: BorderSide(color: cs.borderDefault),
         ),
-        leading: Icon(entry.icon, color: AppColors.primary700),
+        leading: Icon(entry.icon, color: cs.accent),
         title: Text(
           entry.label,
           style: const TextStyle(fontWeight: FontWeight.w600),
         ),
-        trailing: const Icon(
-          Icons.chevron_right_rounded,
-          color: AppColors.textFaint,
-        ),
-        onTap: () => Navigator.of(context)
-            .push(MaterialPageRoute(builder: entry.builder)),
+        trailing: Icon(Icons.chevron_right_rounded, color: cs.textFaint),
+        onTap: () =>
+            Navigator.of(context)
+                .push(MaterialPageRoute(builder: entry.builder)),
       ),
     );
   }

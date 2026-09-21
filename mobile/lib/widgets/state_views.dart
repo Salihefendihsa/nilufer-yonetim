@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
-import '../theme/app_colors.dart';
+import '../theme/app_palette.dart';
+import '../theme/app_text_styles.dart';
 
 /// Yükleniyor göstergesi — tüm ekranlarda ortak, Stitch'in "skeleton" yerine
 /// basit ama tutarlı bir spinner kullanır (kapsam gerçek veri odaklı tutuldu).
@@ -9,11 +10,9 @@ class LoadingView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Center(
-      child: CircularProgressIndicator(
-        color: AppColors.primary600,
-        strokeWidth: 2.5,
-      ),
+    final cs = context.colors;
+    return Center(
+      child: CircularProgressIndicator(color: cs.accentSoft, strokeWidth: 2.5),
     );
   }
 }
@@ -31,25 +30,20 @@ class ErrorRetryView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final cs = context.colors;
+    final tx = context.text;
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(24),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(
-              Icons.error_outline_rounded,
-              color: AppColors.danger500,
-              size: 40,
-            ),
+            Icon(Icons.error_outline_rounded, color: cs.danger500, size: 40),
             const SizedBox(height: 12),
             Text(
               message,
               textAlign: TextAlign.center,
-              style: const TextStyle(
-                color: AppColors.textSecondary,
-                fontSize: 14,
-              ),
+              style: tx.body.copyWith(color: cs.textSecondary),
             ),
             const SizedBox(height: 16),
             OutlinedButton.icon(
@@ -79,33 +73,20 @@ class EmptyStateView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final cs = context.colors;
+    final tx = context.text;
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(24),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(icon, color: AppColors.textFaint, size: 40),
+            Icon(icon, color: cs.textFaint, size: 40),
             const SizedBox(height: 12),
-            Text(
-              title,
-              textAlign: TextAlign.center,
-              style: const TextStyle(
-                color: AppColors.textPrimary,
-                fontWeight: FontWeight.w600,
-                fontSize: 15,
-              ),
-            ),
+            Text(title, textAlign: TextAlign.center, style: tx.subtitle),
             if (subtitle != null) ...[
               const SizedBox(height: 4),
-              Text(
-                subtitle!,
-                textAlign: TextAlign.center,
-                style: const TextStyle(
-                  color: AppColors.textSecondary,
-                  fontSize: 13,
-                ),
-              ),
+              Text(subtitle!, textAlign: TextAlign.center, style: tx.bodySmall),
             ],
           ],
         ),

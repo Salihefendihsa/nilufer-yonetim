@@ -4,6 +4,8 @@ import 'package:provider/provider.dart';
 import '../auth/auth_provider.dart';
 import '../features/settings/settings_screen.dart';
 import '../theme/app_colors.dart';
+import '../theme/app_palette.dart';
+import '../theme/app_text_styles.dart';
 
 class AppDrawerEntry {
   final String label;
@@ -36,6 +38,8 @@ class AppDrawer extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final cs = context.colors;
+    final tx = context.text;
     final user = context.watch<AuthProvider>().user;
 
     return Drawer(
@@ -47,11 +51,11 @@ class AppDrawer extends StatelessWidget {
           children: [
             Container(
               padding: const EdgeInsets.fromLTRB(20, 24, 20, 24),
-              decoration: const BoxDecoration(
+              decoration: BoxDecoration(
                 gradient: LinearGradient(
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
-                  colors: [AppColors.primary700, Color(0xFF1E3521)],
+                  colors: [cs.primary700, Color(0xFF1E3521)],
                 ),
               ),
               child: Row(
@@ -63,11 +67,7 @@ class AppDrawer extends StatelessWidget {
                       (user?.fullName.trim().isNotEmpty ?? false)
                           ? user!.fullName.trim()[0].toUpperCase()
                           : '?',
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 20,
-                        fontWeight: FontWeight.w700,
-                      ),
+                      style: tx.display.copyWith(color: Colors.white),
                     ),
                   ),
                   const SizedBox(width: 12),
@@ -79,9 +79,8 @@ class AppDrawer extends StatelessWidget {
                           user?.fullName ?? '',
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
+                          style: tx.subtitle.copyWith(
                             color: Colors.white,
-                            fontSize: 15,
                             fontWeight: FontWeight.w700,
                           ),
                         ),
@@ -97,9 +96,8 @@ class AppDrawer extends StatelessWidget {
                           ),
                           child: Text(
                             roleLabel,
-                            style: const TextStyle(
+                            style: tx.label.copyWith(
                               color: Colors.white,
-                              fontSize: 11,
                               fontWeight: FontWeight.w600,
                             ),
                           ),
@@ -120,61 +118,38 @@ class AppDrawer extends StatelessWidget {
                         padding: const EdgeInsets.fromLTRB(20, 14, 20, 6),
                         child: Text(
                           group.title!.toUpperCase(),
-                          style: const TextStyle(
-                            fontSize: 11,
-                            letterSpacing: 0.6,
-                            fontWeight: FontWeight.w700,
-                            color: AppColors.textFaint,
-                          ),
+                          style: tx.label.copyWith(letterSpacing: 0.6),
                         ),
                       ),
                     for (final entry in group.entries)
                       ListTile(
                         dense: true,
-                        leading: Icon(
-                          entry.icon,
-                          size: 21,
-                          color: AppColors.primary700,
-                        ),
-                        title: Text(
-                          entry.label,
-                          style: const TextStyle(
-                            fontSize: 14.5,
-                            fontWeight: FontWeight.w600,
-                            color: AppColors.textPrimary,
-                          ),
-                        ),
+                        leading: Icon(entry.icon, size: 21, color: cs.accent),
+                        title: Text(entry.label, style: tx.subtitle),
                         onTap: () => _open(context, entry.builder),
                       ),
                   ],
                   const Divider(height: 24),
                   ListTile(
                     dense: true,
-                    leading: const Icon(
+                    leading: Icon(
                       Icons.settings_outlined,
                       size: 21,
-                      color: AppColors.textSecondary,
+                      color: cs.textSecondary,
                     ),
-                    title: const Text(
-                      'Ayarlar',
-                      style: TextStyle(fontSize: 14.5, fontWeight: FontWeight.w600),
-                    ),
+                    title: Text('Ayarlar', style: tx.subtitle),
                     onTap: () => _open(context, (_) => const SettingsScreen()),
                   ),
                   ListTile(
                     dense: true,
-                    leading: const Icon(
+                    leading: Icon(
                       Icons.logout_rounded,
                       size: 21,
-                      color: AppColors.danger500,
+                      color: cs.danger500,
                     ),
-                    title: const Text(
+                    title: Text(
                       'Çıkış Yap',
-                      style: TextStyle(
-                        fontSize: 14.5,
-                        fontWeight: FontWeight.w600,
-                        color: AppColors.danger500,
-                      ),
+                      style: tx.subtitle.copyWith(color: cs.danger500),
                     ),
                     onTap: () {
                       Navigator.of(context).pop();
