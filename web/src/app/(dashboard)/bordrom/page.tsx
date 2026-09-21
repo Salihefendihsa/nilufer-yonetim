@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { LoadingBlock } from "@/components/LoadingBlock";
 import { SectionTitle } from "@/components/SectionTitle";
-import { ChevronLeft, ChevronRight, Receipt, TrendingUp, TrendingDown, Wallet, Banknote } from "lucide-react";
+import { ChevronLeft, ChevronRight, Receipt, TrendingUp, TrendingDown, Wallet, Banknote, Info } from "lucide-react";
 import { RequireRole } from "@/components/RequireRole";
 import { PageHeader } from "@/components/PageHeader";
 import { StatCard } from "@/components/StatCard";
@@ -135,6 +135,13 @@ function PayslipContent() {
                 <dd className="font-mono font-medium text-danger-500">−{money(a.amount)}</dd>
               </div>
             ))}
+            {/* Tasarım turu #10: boş ay — prim/avans satırı yoksa açık söylenir */}
+            {payslip.bonuses.length === 0 && payslip.advances.length === 0 && (
+              <div className="flex items-center gap-2 py-2.5 text-text-faint">
+                <Info size={14} strokeWidth={1.75} />
+                <dt className="text-xs">Bu ay onaylanmış prim veya avans yok — net tutar taban maaşa eşit.</dt>
+              </div>
+            )}
             <div className="flex justify-between py-3">
               <dt className="font-semibold text-text-primary">Net</dt>
               <dd className="font-mono text-base font-bold text-text-primary">{money(payslip.net)}</dd>

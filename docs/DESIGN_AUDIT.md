@@ -30,8 +30,17 @@ ve **koyu modda çalışmayan** sabit `AppColors` deseni var (76 dosya).
 | 7 | Web grafik paleti | ✅ | `lib/chartPalette.ts` + `--chart-success/warning/danger/danger-deep/info/purple/neutral/neutral-soft` (açık + iki koyu blok). 11 dosyada sabit hex → token (bekleyen-onaylar, kullanim-istatistikleri, musteriler, personel, raporlar, sistem-durumu, sozlesmeler, stok, teklifler, StatusBadge, TeamBriefingCard); yıldız `fill` → `currentColor`. Kalan hex kasıtlı: etiket preset renkleri (veri), hero nokta deseni, imza mürekkebi; hero `bg-white` yorumla kasıtlı bırakıldı. |
 | 8 | Mobil AppTextStyles | ✅ (%90) | `theme/app_text_styles.dart` — `context.text.{display,stat,title,subtitle,body,bodySmall,caption,label,navLabel,button}`; renkler paletten (koyu modda doğru). Satır-içi `TextStyle(` **561 → 55** (kalanlar `fontSize` içermeyen `copyWith`-benzeri küçük ayarlar ve tema dosyası; yarım punto boyutları 0). 3 partide 73 dosya geçirildi. Kalan 55 kullanım aşamalı temizlenecek — işlevsel etkisi yok. |
 | 9 | Mobil koyu mod | ✅ (%97) | `theme/app_palette.dart` — `AppPalette.light/dark`, `context.colors`, `accent/accentSoft` (koyu modda primary700 yerine primary400). Doğrudan `AppColors.*` kullanan dosya **76 → 2** (74/76 = %97); kalan ikisi kasıtlı: `customer_tags.colorFromHex` (bozuk hex için sabit fallback) ve `job_detail` imza mürekkebi (tuval her temada beyaz). Const renk tabloları (`_statusColors`, `_roleTones`, `_pieColors`, `toneColor` vb.) palet parametreli fonksiyonlara çevrildi. Gerçek cihazda koyu mod görsel doğrulaması bu turda yapılmadı (UI otomasyonu kapsam dışı). |
-| 10 | Boş durumlar | ⬜ | |
+| 10 | Boş durumlar | ✅ | `ChartCard.EmptyChart` ikonlu/açıklamalı boş durum; `TrendChart`/`SimpleBarChart` tüm değerler 0 ise de boş sayar (boş eksen yok). `bordrom` (web) ve `payslip_screen` (mobil) boş ay satırı ("prim/avans yok — net = taban maaş"). `yonetici-ozeti` bölüm başına "henüz veri yok". `sistem-durumu` zaten "İlk örnekler toplanıyor…" etiketiyle yeni EmptyChart'ı kullanır. |
 | 11 | Web bottom nav | ⏸ | Ürün kararı — kullanıcı kararı bekliyor, uygulanmadı. |
+
+
+### Tur özeti (2026-09-21)
+
+- **Tam:** #1 #2 #3 #4 #5 #6 #7 #10 · **Kısmi (ölçülü):** #8 (%90) #9 (%97) · **Kullanıcı kararı bekliyor:** #11 (web bottom nav — ürün kararı; uygulanmadı).
+- **Değişen dosyalar:** web ≈ 75 (5 yeni bileşen: `SegmentedTabs`, `ActionMenu`, `SectionTitle`, `LoadingBlock`, `lib/chartPalette`; `RoleActionsMenu` silindi) · mobil ≈ 80 (3 yeni: `nav_items`, `shell_top_bars`, `search_action`; `app_palette`, `app_text_styles`; `customer_more_menu_screen` silindi) · docs 1.
+- **Regresyon kontrolü:** web `tsc --noEmit` ✓, `eslint` ✓, `next build` ✓ (web'de `npm test` betiği yok); mobil `dart analyze` 78 info (tur başı 80, yeni uyarı/hata yok), `flutter test` 76/76 ✓; backend `npm test` 314/314 ✓ (tur ortasında, proje Postgres container'ı ile). **Not:** tur sırasında uzak main'e gelen `2d45999` commit'i backend'e `pino`/`@sentry/node`/`@aws-sdk/client-s3` ekledi; npm registry bu oturumda ECONNRESET verdiği için bu paketler kurulamadı → backend `tsc` o üç import'ta hata veriyor (bu turun değişiklikleriyle ilgisi yok; `npm install` başarılı olunca kendiliğinden düzelir).
+- **Aşamalı devam eden işler:** mobil satır-içi `TextStyle` kalan 55 kullanım (fontSize'sız küçük ayarlar); `Colors.white` (~60, renkli zeminlerde kasıtlı) ve `Colors.red` (~13, onay diyalogları) palet dışı — bir sonraki cila turunda `cs.textInverse`/`cs.danger500`'e alınabilir. Koyu mod gerçek cihaz görsel doğrulaması yapılmadı.
+- **Kapsam dışı bırakılanlar (bilinçli):** Stok satırı 6 buton (→ `ActionMenu` ile aynı kalıp uygulanabilir), Personel için ayrı detay sayfası/sekmeler, web modal derin link.
 
 ---
 

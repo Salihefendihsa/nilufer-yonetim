@@ -198,11 +198,17 @@ function ExecutiveSummaryContent() {
             {loading && !summary ? (
               <SkeletonGrid />
             ) : (
-              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
-                {kpis.map((kpi) => (
-                  <KpiCard key={kpi.key} kpi={kpi} />
-                ))}
-              </div>
+              kpis.length === 0 ? (
+                <p className="rounded-2xl border border-dashed border-border bg-surface-subtle/60 px-4 py-6 text-center text-xs text-text-faint">
+                  Bu bölüm için henüz veri yok.
+                </p>
+              ) : (
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+                  {kpis.map((kpi) => (
+                    <KpiCard key={kpi.key} kpi={kpi} />
+                  ))}
+                </div>
+              )
             )}
           </section>
         );

@@ -239,6 +239,23 @@ class _LinesCard extends StatelessWidget {
           a.date,
           color: cs.danger600,
         ),
+      // Tasarım turu #10: boş ay — prim/avans yoksa açıkça söylenir.
+      if (payslip.bonuses.isEmpty && payslip.advances.isEmpty)
+        Padding(
+          padding: const EdgeInsets.symmetric(vertical: 10),
+          child: Row(
+            children: [
+              Icon(Icons.info_outline_rounded, size: 16, color: cs.textFaint),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  'Bu ay onaylanmış prim veya avans yok — net tutar taban maaşa eşit.',
+                  style: tx.caption.copyWith(color: cs.textFaint),
+                ),
+              ),
+            ],
+          ),
+        ),
     ];
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
