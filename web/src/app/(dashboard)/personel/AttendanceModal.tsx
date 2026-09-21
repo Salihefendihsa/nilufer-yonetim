@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { LoadingBlock } from "@/components/LoadingBlock";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { Modal } from "@/components/Modal";
 import { api, ApiError } from "@/lib/api";
@@ -73,7 +74,7 @@ export function AttendanceModal({ open, onClose, staff }: AttendanceModalProps) 
         {error && <p className="rounded-2xl border border-danger-100 bg-danger-50 px-4 py-3 text-sm text-danger-500">{error}</p>}
 
         {loading || !data ? (
-          <p className="text-sm text-text-secondary">Yükleniyor...</p>
+          <LoadingBlock lines={3} />
         ) : (
           <>
             <div className="grid grid-cols-3 gap-3">

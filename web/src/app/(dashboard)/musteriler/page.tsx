@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { chartPalette } from "@/lib/chartPalette";
 import { Plus, Users, FileSpreadsheet, MapPin, Wallet, Upload } from "lucide-react";
 import { RequireRole } from "@/components/RequireRole";
 import { PageHeader } from "@/components/PageHeader";
@@ -150,7 +151,7 @@ function CustomersPageContent() {
       header: "Sözleşme",
       accessor: (row) =>
         row.activeContractCount > 0 ? (
-          <span className="rounded-full bg-primary-50 px-2 py-0.5 text-[11px] font-semibold text-primary-600">
+          <span className="rounded-full bg-primary-50 px-2 py-0.5 text-2xs font-semibold text-primary-600">
             {row.activeContractCount} aktif
           </span>
         ) : (
@@ -173,8 +174,8 @@ function CustomersPageContent() {
     const withRecentJob = rows.filter((r) => r.outstandingBalance <= 0 && r.lastJobDate !== null).length;
     const idle = rows.length - withDebt - withRecentJob;
     return [
-      { label: "bakiyesi olan", count: withDebt, color: "#C0392B" },
-      { label: "güncel", count: withRecentJob, color: "#15803D" },
+      { label: "bakiyesi olan", count: withDebt, color: chartPalette.danger },
+      { label: "güncel", count: withRecentJob, color: chartPalette.success },
       { label: "hiç iş almamış", count: Math.max(0, idle), color: "rgb(var(--border-strong))" },
     ];
   }, [rows]);

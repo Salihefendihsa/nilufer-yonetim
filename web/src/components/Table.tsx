@@ -98,11 +98,16 @@ export function Table<T>({
             </thead>
             <tbody>
               {loading ? (
-                <tr>
-                  <td colSpan={columns.length} className="px-6 py-12 text-center text-sm text-text-faint">
-                    Yükleniyor...
-                  </td>
-                </tr>
+                // İskelet satırlar — düz "Yükleniyor..." metni yerine (tasarım turu #6).
+                Array.from({ length: 5 }).map((_, r) => (
+                  <tr key={`skeleton-${r}`} className="border-b border-border/70 last:border-0" aria-busy="true">
+                    {columns.map((col, c) => (
+                      <td key={c} className="px-6 py-3.5">
+                        <div className={`skeleton h-3.5 ${c === 0 ? "w-3/4" : "w-1/2"}`} />
+                      </td>
+                    ))}
+                  </tr>
+                ))
               ) : data.length === 0 ? (
                 <tr>
                   <td colSpan={columns.length}>{emptyState}</td>

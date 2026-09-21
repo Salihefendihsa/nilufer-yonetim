@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { SectionTitle } from "@/components/SectionTitle";
 import { Download } from "lucide-react";
 import { ApiError, downloadFile } from "@/lib/api";
 import { useToast } from "@/lib/ToastProvider";
@@ -36,7 +37,7 @@ export function CustomerDataExportSection() {
           <Download size={17} strokeWidth={1.75} />
         </span>
         <div>
-          <h2 className="text-base font-semibold text-text-primary">Verilerimi İndir</h2>
+          <SectionTitle>Verilerimi İndir</SectionTitle>
           <p className="mt-0.5 text-sm text-text-secondary">
             Sistemde size ait kayıtların (profil, işler, sözleşmeler, ödemeler, randevu talepleri ve belge listesi) bir kopyasını JSON dosyası olarak indirin.
           </p>

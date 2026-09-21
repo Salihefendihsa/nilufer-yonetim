@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { LoadingBlock } from "@/components/LoadingBlock";
 import { Modal } from "@/components/Modal";
 import { EmptyState } from "@/components/EmptyState";
 import { api, ApiError } from "@/lib/api";
@@ -35,7 +36,7 @@ export function NewConversationModal({ open, onClose, onSelect }: NewConversatio
       {error && <p className="mb-3 rounded-2xl border border-danger-100 bg-danger-50 px-4 py-3 text-sm text-danger-500">{error}</p>}
 
       {loading ? (
-        <p className="py-8 text-center text-sm text-text-faint">Yükleniyor...</p>
+        <LoadingBlock rows={3} className="py-6" />
       ) : contacts.length === 0 ? (
         <EmptyState icon={Users} title="Konuşabileceğiniz kimse yok" description="Yetki kapsamınızda başka kullanıcı bulunmuyor." />
       ) : (

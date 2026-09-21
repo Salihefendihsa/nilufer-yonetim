@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { LoadingBlock } from "@/components/LoadingBlock";
 import { Eye, MailOpen, Megaphone, MessageCircle, Plus, Send, Users2 } from "lucide-react";
 import { EmptyState } from "@/components/EmptyState";
 import { PageHeader } from "@/components/PageHeader";
@@ -359,7 +360,7 @@ export default function MessagesPage() {
         <div className="flex w-full max-w-xs flex-col border-r border-border">
           <div className="overflow-y-auto">
             {loadingConversations ? (
-              <p className="p-6 text-center text-sm text-text-faint">Yükleniyor...</p>
+              <LoadingBlock rows={3} className="p-6" />
             ) : mode === "mine" ? (
               conversations.length === 0 ? (
                 <div className="p-4">
@@ -383,7 +384,7 @@ export default function MessagesPage() {
                               {initials(c.participant.fullName)}
                             </span>
                             {c.unreadCount > 0 && (
-                              <span className="absolute -right-1 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-warning-500 px-1 text-[10px] font-bold text-white ring-2 ring-surface-card">
+                              <span className="absolute -right-1 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-warning-500 px-1 text-3xs font-bold text-white ring-2 ring-surface-card">
                                 {c.unreadCount > 9 ? "9+" : c.unreadCount}
                               </span>
                             )}
@@ -397,13 +398,13 @@ export default function MessagesPage() {
                                 {c.participant.fullName}
                               </span>
                               {c.lastMessage && (
-                                <span className="shrink-0 font-mono text-[10px] text-text-faint">
+                                <span className="shrink-0 font-mono text-3xs text-text-faint">
                                   {formatListTime(c.lastMessage.createdAt)}
                                 </span>
                               )}
                             </span>
                             <span className="mt-0.5 flex items-center gap-1.5">
-                              <span className="rounded-full bg-surface-subtle px-1.5 py-0.5 text-[10px] font-medium text-text-faint">
+                              <span className="rounded-full bg-surface-subtle px-1.5 py-0.5 text-3xs font-medium text-text-faint">
                                 {ROLE_LABELS[c.participant.role as Role] ?? c.participant.role}
                               </span>
                             </span>
@@ -437,14 +438,14 @@ export default function MessagesPage() {
                         }`}
                       >
                         <span className="flex items-center gap-1.5">
-                          <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary-100 text-[9px] font-semibold text-primary-700">
+                          <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary-100 text-3xs font-semibold text-primary-700">
                             {initials(c.participantA.fullName)}
                           </span>
                           <span className="text-text-faint">↔</span>
-                          <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-info-100 text-[9px] font-semibold text-info-600">
+                          <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-info-100 text-3xs font-semibold text-info-600">
                             {initials(c.participantB.fullName)}
                           </span>
-                          <span className="ml-auto shrink-0 rounded-full bg-surface-subtle px-1.5 py-0.5 font-mono text-[10px] text-text-faint">
+                          <span className="ml-auto shrink-0 rounded-full bg-surface-subtle px-1.5 py-0.5 font-mono text-3xs text-text-faint">
                             {c.messageCount}
                           </span>
                         </span>
@@ -503,7 +504,7 @@ export default function MessagesPage() {
 
               <div className="flex-1 overflow-y-auto px-6 py-4">
                 {loadingMessages ? (
-                  <p className="py-8 text-center text-sm text-text-faint">Yükleniyor...</p>
+                  <LoadingBlock rows={3} className="py-6" />
                 ) : messages.length === 0 ? (
                   <p className="py-8 text-center text-sm text-text-faint">Henüz mesaj yok. İlk mesajı gönderin.</p>
                 ) : (

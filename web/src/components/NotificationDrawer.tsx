@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { LoadingBlock } from "@/components/LoadingBlock";
+import { SectionTitle } from "@/components/SectionTitle";
 import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
@@ -113,7 +115,7 @@ export function NotificationDrawer({ open, onClose, onChanged }: NotificationDra
             className="fixed right-0 top-0 z-50 flex h-full w-full max-w-sm flex-col border-l border-border bg-surface-base shadow-pop"
           >
             <div className="flex items-center justify-between border-b border-border px-5 py-4">
-              <h2 className="text-lg font-semibold text-text-primary">Bildirimler</h2>
+              <SectionTitle size="lg">Bildirimler</SectionTitle>
               <div className="flex items-center gap-2">
                 <button
                   type="button"
@@ -163,7 +165,7 @@ export function NotificationDrawer({ open, onClose, onChanged }: NotificationDra
 
             <div className="flex-1 overflow-y-auto">
               {loading ? (
-                <p className="py-10 text-center text-sm text-text-faint">Yükleniyor...</p>
+                <LoadingBlock rows={3} className="py-6" />
               ) : filtered.length === 0 ? (
                 <div className="flex flex-col items-center gap-3 py-16 text-center">
                   <span className="flex h-12 w-12 items-center justify-center rounded-full bg-surface-subtle text-text-faint">

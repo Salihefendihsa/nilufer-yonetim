@@ -1,6 +1,8 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { LoadingBlock } from "@/components/LoadingBlock";
+import { SectionTitle } from "@/components/SectionTitle";
 import { CalendarPlus, Copy, Download, RefreshCw } from "lucide-react";
 import { api, ApiError, downloadFile } from "@/lib/api";
 import { useToast } from "@/lib/ToastProvider";
@@ -83,7 +85,7 @@ export function CalendarExportSection() {
           <CalendarPlus size={17} strokeWidth={1.75} />
         </span>
         <div>
-          <h2 className="text-base font-semibold text-text-primary">Takvimimi Dışa Aktar</h2>
+          <SectionTitle>Takvimimi Dışa Aktar</SectionTitle>
           <p className="mt-0.5 text-sm text-text-secondary">
             Önümüzdeki {info?.windowDays ?? 30} gündeki atanmış işlerinizi telefonunuzun takvim uygulamasına aktarın. Abonelik linki otomatik güncellenir; dosya indirme
             tek seferliktir.
@@ -95,7 +97,7 @@ export function CalendarExportSection() {
         {error && <p className="rounded-2xl border border-danger-100 bg-danger-50 px-4 py-3 text-sm text-danger-500">{error}</p>}
 
         {loading ? (
-          <p className="text-sm text-text-secondary">Yükleniyor...</p>
+          <LoadingBlock lines={3} />
         ) : info ? (
           <>
             <div className="flex flex-col gap-1.5">

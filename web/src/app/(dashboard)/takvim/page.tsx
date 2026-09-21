@@ -1,6 +1,8 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { LoadingBlock } from "@/components/LoadingBlock";
+import { SectionTitle } from "@/components/SectionTitle";
 import { CalendarDays, CheckCircle2, ChevronLeft, ChevronRight, Clock, LayoutGrid, Wrench } from "lucide-react";
 import { EmptyState } from "@/components/EmptyState";
 import { PageHeader } from "@/components/PageHeader";
@@ -274,7 +276,7 @@ export default function CalendarPage() {
           data={weekBuckets}
           xKey="label"
           series={[{ key: "count", name: "İş sayısı" }]}
-          emptyLabel={loading ? "Yükleniyor..." : "Bu ayda iş yok"}
+          loading={loading} emptyLabel="Bu ayda iş yok"
         />
       </ChartCard>
 
@@ -313,7 +315,7 @@ export default function CalendarPage() {
                   <span className={`text-sm ${isToday || isSelected ? "font-bold" : "font-medium"}`}>{date.getDate()}</span>
                   {inMonth && dayJobs.length > 0 && (
                     <span
-                      className={`font-mono text-[10px] font-semibold ${
+                      className={`font-mono text-3xs font-semibold ${
                         level >= 3 ? "text-primary-900" : "text-primary-700"
                       }`}
                     >
@@ -321,7 +323,7 @@ export default function CalendarPage() {
                     </span>
                   )}
                   {inMonth && unavailableDays.has(key) && (
-                    <span className="rounded-full bg-warning-50 px-1.5 text-[9px] font-semibold text-warning-600 ring-1 ring-warning-100" title="Müsait değilim">
+                    <span className="rounded-full bg-warning-50 px-1.5 text-3xs font-semibold text-warning-600 ring-1 ring-warning-100" title="Müsait değilim">
                       müsait değil
                     </span>
                   )}
@@ -342,14 +344,14 @@ export default function CalendarPage() {
         </div>
 
         <div className="rounded-2xl border border-border bg-surface-card p-6 shadow-card">
-          <h2 className="text-sm font-semibold text-text-primary">
+          <SectionTitle size="sm">
             {new Date(selectedDate).toLocaleDateString("tr-TR", { day: "numeric", month: "long", year: "numeric" })}
-          </h2>
+          </SectionTitle>
           <p className="mt-1 text-xs text-text-faint">{selectedJobs.length} iş</p>
 
           <div className="mt-4 flex flex-col gap-3">
             {loading ? (
-              <p className="py-6 text-center text-sm text-text-faint">Yükleniyor...</p>
+              <LoadingBlock rows={3} className="py-6" />
             ) : selectedJobs.length === 0 ? (
               <EmptyState icon={Wrench} title="Bu güne ait iş yok" />
             ) : (

@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { SectionTitle } from "@/components/SectionTitle";
 import { Plus, Wallet, TrendingUp, Receipt, AlertCircle, PiggyBank, Check, X, HandCoins, FileSpreadsheet, FileDown } from "lucide-react";
 import { ExpensesTab } from "./ExpensesTab";
 import { RequireRole } from "@/components/RequireRole";
@@ -269,7 +270,7 @@ function PaymentsPageContent() {
             series={[{ key: "total", name: "Tahsilat" }]}
             area
             currency
-            emptyLabel={loading ? "Yükleniyor..." : "Veri yok"}
+            loading={loading} emptyLabel="Veri yok"
           />
         </ChartCard>
 
@@ -278,7 +279,7 @@ function PaymentsPageContent() {
             data={paymentTypeSlices}
             centerValue={loading || !summary ? "—" : currencyFormatter.format(summary.thisMonthTotal)}
             centerLabel="bu ay"
-            emptyLabel={loading ? "Yükleniyor..." : "Veri yok"}
+            loading={loading} emptyLabel="Veri yok"
           />
         </ChartCard>
       </div>
@@ -288,7 +289,7 @@ function PaymentsPageContent() {
           <span className="flex h-9 w-9 items-center justify-center rounded-2xl bg-warning-50 text-warning-500 ring-1 ring-warning-100">
             <HandCoins size={17} strokeWidth={1.75} />
           </span>
-          <h2 className="text-base font-semibold text-text-primary">Bekleyen Avans Talepleri</h2>
+          <SectionTitle>Bekleyen Avans Talepleri</SectionTitle>
           {advances.length > 0 && (
             <span className="rounded-full bg-warning-50 px-2 py-0.5 text-2xs font-semibold text-warning-600">{advances.length}</span>
           )}

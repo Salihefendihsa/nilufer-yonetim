@@ -77,7 +77,7 @@ export function EvaluationTrendCard({ staffId, height = 200 }: EvaluationTrendCa
       {error ? (
         <p className="py-6 text-center text-xs text-danger-500">{error}</p>
       ) : (
-        <TrendChart data={points} xKey="label" series={[{ key: "score", name: "Ortalama (1–20)" }]} area emptyLabel={loading ? "Yükleniyor..." : "Henüz gönderilmiş değerlendirme yok"} />
+        <TrendChart data={points} xKey="label" series={[{ key: "score", name: "Ortalama (1–20)" }]} area loading={loading} emptyLabel="Henüz gönderilmiş değerlendirme yok" />
       )}
     </ChartCard>
   );

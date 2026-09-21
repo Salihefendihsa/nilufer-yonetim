@@ -1,6 +1,8 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { chartPalette } from "@/lib/chartPalette";
+import { LoadingBlock } from "@/components/LoadingBlock";
 import { Inbox, Phone, MapPin, ArrowRightCircle, FileText, CheckCircle2, PhoneCall, CalendarClock, StickyNote, History } from "lucide-react";
 import { RequireRole } from "@/components/RequireRole";
 import { PageHeader } from "@/components/PageHeader";
@@ -209,11 +211,11 @@ function QuotesPageContent() {
         loading={loading}
         totalLabel={`${quotes.length} talep`}
         segments={[
-          { label: "yeni", count: quoteStats.NEW, color: "#B57F13" },
-          { label: "iletişimde", count: quoteStats.CONTACTED, color: "#1F6FA8" },
-          { label: "revize", count: quoteStats.REVISION, color: "#C0392B" },
-          { label: "dönüştü", count: quoteStats.CONVERTED, color: "#15803D" },
-          { label: "reddedildi", count: quoteStats.REJECTED, color: "#9B1C1C" },
+          { label: "yeni", count: quoteStats.NEW, color: chartPalette.warning },
+          { label: "iletişimde", count: quoteStats.CONTACTED, color: chartPalette.info },
+          { label: "revize", count: quoteStats.REVISION, color: chartPalette.danger },
+          { label: "dönüştü", count: quoteStats.CONVERTED, color: chartPalette.success },
+          { label: "reddedildi", count: quoteStats.REJECTED, color: chartPalette.dangerDeep },
         ]}
       />
 
@@ -239,7 +241,7 @@ function QuotesPageContent() {
       {highlightId && <DrillDownChip label="Arama sonucu" onClear={() => setHighlightId(null)} />}
 
       {loading ? (
-        <p className="py-16 text-center text-sm text-text-faint">Yükleniyor...</p>
+        <LoadingBlock rows={4} className="py-6" />
       ) : visibleQuotes.length === 0 ? (
         <div className="rounded-2xl border border-border bg-surface-card shadow-card">
           <EmptyState icon={Inbox} title="Talep yok" description="Bu filtrede henüz bir teklif talebi yok." />

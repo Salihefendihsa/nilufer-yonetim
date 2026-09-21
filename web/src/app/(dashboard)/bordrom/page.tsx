@@ -1,6 +1,8 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { LoadingBlock } from "@/components/LoadingBlock";
+import { SectionTitle } from "@/components/SectionTitle";
 import { ChevronLeft, ChevronRight, Receipt, TrendingUp, TrendingDown, Wallet, Banknote } from "lucide-react";
 import { RequireRole } from "@/components/RequireRole";
 import { PageHeader } from "@/components/PageHeader";
@@ -106,10 +108,10 @@ function PayslipContent() {
         <StatCard label="Net (tahmini)" value={loading ? "—" : money(payslip?.net)} icon={Banknote} accent="green" mono />
       </div>
 
-      <section className="rounded-3xl border border-border bg-surface-base p-5 shadow-card">
-        <h2 className="mb-3 text-sm font-semibold text-text-primary">Hesap özeti — {monthLabel}</h2>
+      <section className="rounded-2xl border border-border bg-surface-card p-5 shadow-card">
+        <SectionTitle size="sm" className="mb-3">Hesap özeti — {monthLabel}</SectionTitle>
         {loading || !payslip ? (
-          <p className="text-sm text-text-secondary">Yükleniyor...</p>
+          <LoadingBlock lines={3} />
         ) : (
           <dl className="flex flex-col divide-y divide-border text-sm">
             <div className="flex justify-between py-2.5">

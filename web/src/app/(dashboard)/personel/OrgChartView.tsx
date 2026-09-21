@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { LoadingBlock } from "@/components/LoadingBlock";
 import { Crown, Users, AlertTriangle } from "lucide-react";
 import { EmptyState } from "@/components/EmptyState";
 import { api, ApiError } from "@/lib/api";
@@ -44,7 +45,7 @@ export function OrgChartView({ onSelectStaff }: OrgChartViewProps) {
       .finally(() => setLoading(false));
   }, []);
 
-  if (loading) return <p className="py-16 text-center text-sm text-text-faint">Yükleniyor...</p>;
+  if (loading) return <LoadingBlock rows={4} className="py-6" />;
   if (error) return <p className="rounded-2xl border border-danger-100 bg-danger-50 px-4 py-3 text-sm text-danger-500">{error}</p>;
   if (!data || data.tree.length === 0) {
     return <EmptyState icon={Crown} title="Organizasyon şeması boş" description="Henüz bir işletme sahibi hesabı tanımlı değil." />;

@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { chartPalette } from "@/lib/chartPalette";
 import { TrendingUp, MapPin, Users2, BarChart3, Wallet, PieChart, Repeat, Download, MessageSquareHeart, Timer } from "lucide-react";
 import { RequireRole } from "@/components/RequireRole";
 import { PageHeader } from "@/components/PageHeader";
@@ -90,8 +91,8 @@ function ReportsPageContent() {
   const retentionSlices = useMemo(() => {
     if (!retention) return [];
     return [
-      { name: "Yeni müşteri", value: retention.newCustomers, color: "#3D8A4E" },
-      { name: "Tekrar eden", value: retention.returningCustomers, color: "#B57F13" },
+      { name: "Yeni müşteri", value: retention.newCustomers, color: chartPalette.primaryMid },
+      { name: "Tekrar eden", value: retention.returningCustomers, color: chartPalette.warning },
     ];
   }, [retention]);
 
@@ -203,10 +204,10 @@ function ReportsPageContent() {
               xKey="label"
               series={[
                 { key: "thisYear", name: `Bu yıl (${yoy[0].thisYearLabel.split(" ")[1]})` },
-                { key: "lastYear", name: `Geçen yıl (${yoy[0].lastYearLabel.split(" ")[1]})`, color: "#A3B0A5" },
+                { key: "lastYear", name: `Geçen yıl (${yoy[0].lastYearLabel.split(" ")[1]})`, color: chartPalette.neutralSoft },
               ]}
               currency
-              emptyLabel={loading ? "Yükleniyor..." : "Veri yok"}
+              loading={loading} emptyLabel="Veri yok"
             />
           ) : (
             <TrendChart
@@ -215,7 +216,7 @@ function ReportsPageContent() {
               series={[{ key: "total", name: "Ciro" }]}
               area
               currency
-              emptyLabel={loading ? "Yükleniyor..." : "Veri yok"}
+              loading={loading} emptyLabel="Veri yok"
             />
           )}
           <div className="mt-2 flex items-center justify-end">
@@ -234,12 +235,12 @@ function ReportsPageContent() {
             data={breakdownSlices}
             centerValue={loading ? "—" : String(summary.jobCount)}
             centerLabel="toplam iş"
-            emptyLabel={loading ? "Yükleniyor..." : "Veri yok"}
+            loading={loading} emptyLabel="Veri yok"
           />
         </ChartCard>
 
         <ChartCard title="En Yoğun Bölgeler" description="İlçe bazında iş sayısı" icon={MapPin} height={280}>
-          <RankBars rows={districtRows} emptyLabel={loading ? "Yükleniyor..." : "Veri yok"} />
+          <RankBars rows={districtRows} loading={loading} emptyLabel="Veri yok" />
         </ChartCard>
 
         {/* Bölüm S (5. tur): 3 kriterin ortalaması (1–5) + tavsiye oranı */}
@@ -263,7 +264,7 @@ function ReportsPageContent() {
                   ]
                 : []
             }
-            emptyLabel={loading ? "Yükleniyor..." : "Henüz detaylı değerlendirme yok"}
+            loading={loading} emptyLabel="Henüz detaylı değerlendirme yok"
           />
         </ChartCard>
 
@@ -272,7 +273,7 @@ function ReportsPageContent() {
             data={retentionSlices}
             centerValue={loading ? "—" : String((retention?.newCustomers ?? 0) + (retention?.returningCustomers ?? 0))}
             centerLabel="müşteri"
-            emptyLabel={loading ? "Yükleniyor..." : "Veri yok"}
+            loading={loading} emptyLabel="Veri yok"
           />
         </ChartCard>
 

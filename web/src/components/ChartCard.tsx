@@ -1,5 +1,6 @@
 "use client";
 
+import { ChartSkeleton } from "@/components/LoadingBlock";
 import type { ReactNode } from "react";
 import type { LucideIcon } from "lucide-react";
 import {
@@ -165,6 +166,8 @@ interface SimpleBarChartProps<T> {
   /** Değerleri para birimi olarak biçimlendirir. */
   currency?: boolean;
   emptyLabel?: string;
+  /** true iken iskelet çizilir ("Yükleniyor..." metni yerine). */
+  loading?: boolean;
 }
 
 export function SimpleBarChart<T extends object>({
@@ -174,7 +177,9 @@ export function SimpleBarChart<T extends object>({
   stacked = false,
   currency,
   emptyLabel,
+  loading,
 }: SimpleBarChartProps<T>) {
+  if (loading) return <ChartSkeleton />;
   if (data.length === 0) return <EmptyChart label={emptyLabel} />;
   const colorOf = (i: number) => series[i].color ?? CHART_COLORS[i % CHART_COLORS.length];
 
@@ -217,9 +222,12 @@ interface TrendChartProps<T> {
   area?: boolean;
   currency?: boolean;
   emptyLabel?: string;
+  /** true iken iskelet çizilir ("Yükleniyor..." metni yerine). */
+  loading?: boolean;
 }
 
-export function TrendChart<T extends object>({ data, xKey, series, area = false, currency, emptyLabel }: TrendChartProps<T>) {
+export function TrendChart<T extends object>({ data, xKey, series, area = false, currency, emptyLabel, loading }: TrendChartProps<T>) {
+  if (loading) return <ChartSkeleton />;
   if (data.length === 0) return <EmptyChart label={emptyLabel} />;
   const colorOf = (i: number) => series[i].color ?? CHART_COLORS[i % CHART_COLORS.length];
   const Chart = area ? AreaChart : LineChart;
@@ -289,10 +297,13 @@ interface DonutChartProps {
   centerValue?: string;
   centerLabel?: string;
   emptyLabel?: string;
+  /** true iken iskelet çizilir ("Yükleniyor..." metni yerine). */
+  loading?: boolean;
 }
 
-export function DonutChart({ data, centerValue, centerLabel, emptyLabel }: DonutChartProps) {
+export function DonutChart({ data, centerValue, centerLabel, emptyLabel, loading }: DonutChartProps) {
   const total = data.reduce((sum, d) => sum + d.value, 0);
+  if (loading) return <ChartSkeleton />;
   if (total === 0) return <EmptyChart label={emptyLabel} />;
   const slices = data.filter((d) => d.value > 0);
 
@@ -379,7 +390,8 @@ export interface RankRow {
  * geçmedi (bilinçli): bu bir eksen/tooltip gerektiren "grafik" değil, düz bir
  * liste + doluluk çubuğu — mevcut CSS animasyonu (animate-grow-bar) yeterli.
  */
-export function RankBars({ rows, emptyLabel = "Veri yok" }: { rows: RankRow[]; emptyLabel?: string }) {
+export function RankBars({ rows, emptyLabel = "Veri yok", loading }: { rows: RankRow[]; emptyLabel?: string; loading?: boolean }) {
+  if (loading) return <ChartSkeleton />;
   if (rows.length === 0) return <EmptyChart label={emptyLabel} />;
   const max = Math.max(1, ...rows.map((r) => r.value));
 

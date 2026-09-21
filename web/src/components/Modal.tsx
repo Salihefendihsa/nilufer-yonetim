@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, type ReactNode } from "react";
+import { SectionTitle } from "@/components/SectionTitle";
 import { createPortal } from "react-dom";
 import { AnimatePresence, motion } from "framer-motion";
 import { X } from "lucide-react";
@@ -89,7 +90,7 @@ export function Modal({ open, onClose, title, children }: ModalProps) {
             onClick={(e) => e.stopPropagation()}
           >
             <div className="mb-5 flex items-center justify-between">
-              <h2 className="text-lg font-semibold text-text-primary">{title}</h2>
+              <SectionTitle size="lg">{title}</SectionTitle>
               <button
                 type="button"
                 onClick={onClose}

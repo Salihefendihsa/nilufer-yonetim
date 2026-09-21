@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { LoadingBlock } from "@/components/LoadingBlock";
 import { Modal } from "@/components/Modal";
 import { api, ApiError } from "@/lib/api";
 import { formatDateTime } from "@/lib/format";
@@ -55,7 +56,7 @@ export function QuoteHistoryModal({ open, onClose, quote }: QuoteHistoryModalPro
         <p className="rounded-2xl border border-danger-100 bg-danger-50 px-4 py-3 text-sm text-danger-500">{error}</p>
       )}
       {loading ? (
-        <p className="text-sm text-text-secondary">Yükleniyor...</p>
+        <LoadingBlock lines={3} />
       ) : entries.length === 0 ? (
         <p className="text-sm text-text-secondary">Bu teklif için kayıtlı bir değişiklik yok.</p>
       ) : (
@@ -69,7 +70,7 @@ export function QuoteHistoryModal({ open, onClose, quote }: QuoteHistoryModalPro
                 {entry.actor.fullName} · {formatDateTime(entry.createdAt)}
               </p>
               {entry.detail && (
-                <p className="mt-1 break-all font-mono text-[11px] text-text-faint">{entry.detail}</p>
+                <p className="mt-1 break-all font-mono text-2xs text-text-faint">{entry.detail}</p>
               )}
             </li>
           ))}

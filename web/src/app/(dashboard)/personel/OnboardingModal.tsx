@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { LoadingBlock } from "@/components/LoadingBlock";
 import { CheckSquare, Square, ClipboardCheck } from "lucide-react";
 import { Modal } from "@/components/Modal";
 import { api, ApiError } from "@/lib/api";
@@ -87,7 +88,7 @@ export function OnboardingModal({ open, onClose, staff, editable }: OnboardingMo
         {error && <p className="rounded-2xl border border-danger-100 bg-danger-50 px-4 py-3 text-sm text-danger-500">{error}</p>}
 
         {loading ? (
-          <p className="py-6 text-center text-sm text-text-faint">Yükleniyor...</p>
+          <LoadingBlock rows={3} className="py-6" />
         ) : data && data.items.length === 0 ? (
           <p className="py-6 text-center text-sm text-text-faint">Bu personel için işe alım listesi yok (kayıt bu özellikten önce açılmış).</p>
         ) : (

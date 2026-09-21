@@ -1,6 +1,8 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { chartPalette } from "@/lib/chartPalette";
+import { LoadingBlock } from "@/components/LoadingBlock";
 import {
   ClipboardCheck,
   Inbox,
@@ -36,12 +38,12 @@ interface JobWithPendingReport extends Job {
 
 /** Onay kuyruğundaki üç kalem türünün ortak renk/etiket eşlemesi. */
 const QUEUE_COLORS = {
-  contract: "#B57F13",
-  advance: "#3D8A4E",
-  quote: "#1F6FA8",
-  report: "#5A6B5E",
-  leave: "#9B1C1C",
-  appointment: "#6B4FBB",
+  contract: chartPalette.warning,
+  advance: chartPalette.primaryMid,
+  quote: chartPalette.info,
+  report: chartPalette.neutral,
+  leave: chartPalette.dangerDeep,
+  appointment: chartPalette.purple,
 } as const;
 
 /** Bitişine 7 günden az kalan sözleşme "acil" sayılır ve kırmızı kodlanır. */
@@ -325,7 +327,7 @@ function ApprovalQueueContent() {
 
       {/* [Kuyruk listesi] */}
       {loading ? (
-        <p className="py-16 text-center text-sm text-text-faint">Yükleniyor...</p>
+        <LoadingBlock rows={4} className="py-6" />
       ) : total === 0 ? (
         <div className="rounded-2xl border border-border bg-surface-card shadow-card">
           <EmptyState icon={Inbox} title="Kuyruk boş" description="Yeni bir teklif, avans talebi veya bitmek üzere olan sözleşme geldiğinde burada görünecek." />
@@ -477,7 +479,7 @@ function ApprovalQueueContent() {
               <div
                 key={contract.id}
                 className="flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-border border-l-4 bg-surface-card p-5 shadow-card transition hover:shadow-cardHover"
-                style={{ borderLeftColor: urgent ? "#C0392B" : QUEUE_COLORS.contract }}
+                style={{ borderLeftColor: urgent ? chartPalette.danger : QUEUE_COLORS.contract }}
               >
                 <div className="flex items-start gap-3">
                   <span

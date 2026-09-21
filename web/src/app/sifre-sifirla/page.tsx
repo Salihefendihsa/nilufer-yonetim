@@ -1,6 +1,7 @@
 "use client";
 
 import { Suspense, useState, type FormEvent } from "react";
+import { LoadingBlock } from "@/components/LoadingBlock";
 import { useSearchParams } from "next/navigation";
 import { motion } from "framer-motion";
 import { Bug, CheckCircle2 } from "lucide-react";
@@ -130,7 +131,7 @@ export default function ResetPasswordPage() {
           <span className="text-sm font-semibold text-text-primary">Nilüfer İlaçlama</span>
         </div>
 
-        <Suspense fallback={<p className="text-sm text-text-faint">Yükleniyor...</p>}>
+        <Suspense fallback={<LoadingBlock lines={2} />}>
           <ResetPasswordForm />
         </Suspense>
       </motion.div>

@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState, type FormEvent } from "react";
+import { LoadingBlock } from "@/components/LoadingBlock";
 import { CalendarOff, Plus } from "lucide-react";
 import { RequireRole } from "@/components/RequireRole";
 import { PageHeader } from "@/components/PageHeader";
@@ -76,7 +77,7 @@ function LeaveRequestsContent() {
       {error && <p className="rounded-2xl border border-danger-100 bg-danger-50 px-4 py-3 text-sm text-danger-500">{error}</p>}
 
       {loading ? (
-        <p className="py-16 text-center text-sm text-text-faint">Yükleniyor...</p>
+        <LoadingBlock rows={4} className="py-6" />
       ) : rows.length === 0 ? (
         <div className="rounded-2xl border border-border bg-surface-card shadow-card">
           <EmptyState icon={CalendarOff} title="Henüz izin talebiniz yok" description="Yeni bir talep oluşturarak başlayın." />

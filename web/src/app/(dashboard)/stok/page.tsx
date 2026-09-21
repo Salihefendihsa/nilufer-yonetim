@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { chartPalette } from "@/lib/chartPalette";
 import { Plus, PackagePlus, Boxes, Trash2, AlertTriangle,
   Timer, PackageCheck, Layers, ShoppingCart, History, ClipboardList, Tag } from "lucide-react";
 import { RequireRole } from "@/components/RequireRole";
@@ -179,7 +180,7 @@ function StockPageContent() {
               {row.currentStock} {row.unit}
             </span>
             {critical && (
-              <span className="inline-flex items-center gap-1 rounded-full border border-danger-100 bg-danger-50 px-2 py-0.5 text-[10px] font-semibold text-danger-500">
+              <span className="inline-flex items-center gap-1 rounded-full border border-danger-100 bg-danger-50 px-2 py-0.5 text-3xs font-semibold text-danger-500">
                 <AlertTriangle size={10} strokeWidth={2} />
                 Kritik
               </span>
@@ -188,7 +189,7 @@ function StockPageContent() {
             {row.forecast?.estimatedDaysRemaining !== null && row.forecast?.estimatedDaysRemaining !== undefined && (
               <span
                 title={`Son ${row.forecast.windowDays} günde ${row.forecast.usedInWindow} ${row.unit} kullanıldı · günde ~${row.forecast.dailyAverageUsage} ${row.unit}`}
-                className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-semibold ${
+                className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-3xs font-semibold ${
                   row.forecast.estimatedDaysRemaining <= 7 ? "bg-danger-50 text-danger-500" : row.forecast.estimatedDaysRemaining <= 30 ? "bg-warning-50 text-warning-600" : "bg-surface-subtle text-text-secondary"
                 }`}
               >
@@ -228,7 +229,7 @@ function StockPageContent() {
       header: "Sipariş Bekleyen",
       accessor: (row) =>
         row.pendingPurchaseQuantity ? (
-          <span className="inline-flex items-center gap-1 rounded-full border border-info-100 bg-info-50 px-2 py-0.5 text-[11px] font-semibold text-info-500">
+          <span className="inline-flex items-center gap-1 rounded-full border border-info-100 bg-info-50 px-2 py-0.5 text-2xs font-semibold text-info-500">
             <ShoppingCart size={11} strokeWidth={2} />
             {row.pendingPurchaseQuantity} {row.unit}
           </span>
@@ -352,14 +353,14 @@ function StockPageContent() {
         loading={loading}
         totalLabel={`${products.length} ürün`}
         segments={[
-          { label: "yeterli", count: stock.healthy, color: "#15803D" },
-          { label: "kritik", count: stock.critical, color: "#C0392B" },
+          { label: "yeterli", count: stock.healthy, color: chartPalette.success },
+          { label: "kritik", count: stock.critical, color: chartPalette.danger },
         ]}
       />
 
       {/* [Grafik] */}
       <ChartCard title="Stok Seviyeleri" description="Kritik eşiğe göre mevcut miktar" icon={Boxes} height={220}>
-        <RankBars rows={stockRows} emptyLabel={loading ? "Yükleniyor..." : "Ürün yok"} />
+        <RankBars rows={stockRows} loading={loading} emptyLabel="Ürün yok" />
       </ChartCard>
 
       {error && <p className="rounded-2xl border border-danger-100 bg-danger-50 px-4 py-3 text-sm text-danger-500">{error}</p>}

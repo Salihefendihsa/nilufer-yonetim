@@ -1,6 +1,8 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { LoadingBlock } from "@/components/LoadingBlock";
+import { SectionTitle } from "@/components/SectionTitle";
 import { ShieldAlert, Trash2, Check, X, UserX } from "lucide-react";
 import { api, ApiError } from "@/lib/api";
 import { useToast } from "@/lib/ToastProvider";
@@ -83,7 +85,7 @@ export function DataDeletionRequestsSection() {
             <ShieldAlert size={17} strokeWidth={1.75} />
           </span>
           <div>
-            <h2 className="text-base font-semibold text-text-primary">Veri Silme Talepleri (KVKK)</h2>
+            <SectionTitle>Veri Silme Talepleri (KVKK)</SectionTitle>
             <p className="mt-0.5 text-sm text-text-secondary">Onay geri alınamaz: müşterinin kişisel bilgileri anonimleştirilir ve hesabı kapanır; iş, ödeme ve sözleşme kayıtları korunur.</p>
           </div>
         </div>
@@ -99,7 +101,7 @@ export function DataDeletionRequestsSection() {
       <div className="mt-5 flex flex-col gap-3">
         {error && <p className="rounded-2xl border border-danger-100 bg-danger-50 px-4 py-3 text-sm text-danger-500">{error}</p>}
         {loading ? (
-          <p className="text-sm text-text-secondary">Yükleniyor...</p>
+          <LoadingBlock lines={3} />
         ) : items.length === 0 ? (
           <p className="py-4 text-center text-sm text-text-faint">{status === "PENDING" ? "Bekleyen talep yok." : "Henüz talep yok."}</p>
         ) : (
@@ -210,7 +212,7 @@ export function CustomerDataDeletionSection() {
           <UserX size={17} strokeWidth={1.75} />
         </span>
         <div>
-          <h2 className="text-base font-semibold text-text-primary">Hesabımı ve Verilerimi Sil</h2>
+          <SectionTitle>Hesabımı ve Verilerimi Sil</SectionTitle>
           <p className="mt-0.5 text-sm text-text-secondary">
             KVKK kapsamında kişisel verilerinizin silinmesini talep edebilirsiniz. Onaylandığında adınız, telefonunuz, e-postanız ve adresiniz kaldırılır ve hesabınız kapanır; geçmiş işleriniz yalnızca istatistiksel (kimliksiz) kayıt olarak kalır.
           </p>
@@ -220,7 +222,7 @@ export function CustomerDataDeletionSection() {
       <div className="mt-5 flex flex-col gap-3">
         {error && <p className="rounded-2xl border border-danger-100 bg-danger-50 px-4 py-3 text-sm text-danger-500">{error}</p>}
         {loading ? (
-          <p className="text-sm text-text-secondary">Yükleniyor...</p>
+          <LoadingBlock lines={3} />
         ) : pending ? (
           <p className="rounded-2xl border border-warning-100 bg-warning-50 px-4 py-3 text-sm text-warning-600">Talebiniz inceleniyor ({formatDateTime(latest!.requestedAt)}). Sonuç size bildirilecek.</p>
         ) : (

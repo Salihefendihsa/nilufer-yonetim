@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { LoadingBlock } from "@/components/LoadingBlock";
 import { FileText, Image as ImageIcon, Upload, Trash2, Download, FolderOpen } from "lucide-react";
 import { api, ApiError, uploadFile, downloadFile, fileUrl } from "@/lib/api";
 import { useToast } from "@/lib/ToastProvider";
@@ -116,7 +117,7 @@ export function CustomerDocuments({ customerId }: { customerId: string }) {
       {error && <p className="rounded-2xl border border-danger-100 bg-danger-50 px-4 py-3 text-sm text-danger-500">{error}</p>}
 
       {loading ? (
-        <p className="py-3 text-center text-xs text-text-faint">Yükleniyor...</p>
+        <LoadingBlock lines={2} className="py-3" />
       ) : docs.length === 0 ? (
         <p className="py-3 text-center text-xs text-text-faint">Henüz belge yok.</p>
       ) : (

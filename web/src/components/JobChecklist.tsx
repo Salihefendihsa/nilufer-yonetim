@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { LoadingBlock } from "@/components/LoadingBlock";
 import { CheckSquare, Square, ClipboardCheck } from "lucide-react";
 import { api, ApiError } from "@/lib/api";
 import type { JobChecklistEntry } from "@/lib/types";
@@ -90,7 +91,7 @@ export function JobChecklist({ jobId, editable = true, onChange }: JobChecklistP
         )}
       </div>
       {loading ? (
-        <p className="py-2 text-xs text-text-faint">Yükleniyor...</p>
+        <LoadingBlock lines={2} className="py-2" />
       ) : (
         <ul className="flex flex-col gap-1">
           {entries.map((entry) => {

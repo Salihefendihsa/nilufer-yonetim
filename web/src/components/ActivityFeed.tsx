@@ -1,4 +1,5 @@
 import type { ActivityEvent } from "@/lib/types";
+import { LoadingBlock } from "@/components/LoadingBlock";
 
 function formatTime(value: string): string {
   return new Date(value).toLocaleTimeString("tr-TR", { hour: "2-digit", minute: "2-digit" });
@@ -6,7 +7,7 @@ function formatTime(value: string): string {
 
 export function ActivityFeed({ events, loading }: { events: ActivityEvent[]; loading?: boolean }) {
   if (loading) {
-    return <p className="py-8 text-center text-sm text-text-faint">Yükleniyor...</p>;
+    return <LoadingBlock rows={3} className="py-6" />;
   }
 
   if (events.length === 0) {

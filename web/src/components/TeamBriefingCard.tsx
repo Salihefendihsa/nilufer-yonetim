@@ -1,16 +1,18 @@
 "use client";
 
 import { CalendarOff, Users2 } from "lucide-react";
+import { chartPalette } from "@/lib/chartPalette";
+import { LoadingBlock } from "@/components/LoadingBlock";
 import { EmptyState } from "@/components/EmptyState";
 import type { StaffStatus, TeamDailyBriefing } from "@/lib/types";
 
 /** Anlık durum noktası rengi ve etiketi (Staff.status). */
 export const STAFF_STATUS_META: Record<StaffStatus, { label: string; color: string }> = {
-  AVAILABLE: { label: "Müsait", color: "#15803D" },
-  ON_JOB: { label: "İşte", color: "#1F6FA8" },
-  ON_BREAK: { label: "Molada", color: "#B57F13" },
-  ON_LEAVE: { label: "İzinli", color: "#C0392B" },
-  OFFLINE: { label: "Çevrimdışı", color: "#7C8A7F" },
+  AVAILABLE: { label: "Müsait", color: chartPalette.success },
+  ON_JOB: { label: "İşte", color: chartPalette.info },
+  ON_BREAK: { label: "Molada", color: chartPalette.warning },
+  ON_LEAVE: { label: "İzinli", color: chartPalette.danger },
+  OFFLINE: { label: "Çevrimdışı", color: chartPalette.neutral },
 };
 
 interface TeamBriefingCardProps {
@@ -48,7 +50,7 @@ export function TeamBriefingCard({ briefing, loading }: TeamBriefingCardProps) {
       </div>
 
       {loading ? (
-        <p className="py-6 text-center text-sm text-text-faint">Yükleniyor...</p>
+        <LoadingBlock rows={3} className="py-6" />
       ) : members.length === 0 ? (
         <EmptyState icon={Users2} title="Ekibinizde personel yok" description="Size bağlı personel eklendiğinde burada görünür." />
       ) : (

@@ -1,6 +1,8 @@
 "use client";
 
 import { useCallback, useEffect, useState, type FormEvent } from "react";
+import { LoadingBlock } from "@/components/LoadingBlock";
+import { SectionTitle } from "@/components/SectionTitle";
 import { LayoutTemplate, Pencil, Plus, Trash2, RotateCcw, X, Check } from "lucide-react";
 import { api, ApiError } from "@/lib/api";
 import { currencyFormatter } from "@/lib/format";
@@ -131,7 +133,7 @@ export function JobTemplatesSection() {
             <LayoutTemplate size={17} strokeWidth={1.75} />
           </span>
           <div>
-            <h2 className="text-base font-semibold text-text-primary">İş Şablonları</h2>
+            <SectionTitle>İş Şablonları</SectionTitle>
             <p className="mt-0.5 text-sm text-text-secondary">Sık kullanılan iş türleri — yeni iş formunda &quot;Şablondan Doldur&quot; ile tek tıkla.</p>
           </div>
         </div>
@@ -160,7 +162,7 @@ export function JobTemplatesSection() {
         )}
 
         {loading ? (
-          <p className="text-sm text-text-secondary">Yükleniyor...</p>
+          <LoadingBlock lines={3} />
         ) : items.length === 0 ? (
           <p className="py-4 text-center text-sm text-text-faint">Henüz şablon yok — &quot;Yeni şablon&quot; ile ilkini ekleyin.</p>
         ) : (

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { LoadingBlock } from "@/components/LoadingBlock";
 import { Modal } from "@/components/Modal";
 import { api, ApiError } from "@/lib/api";
 import { formatDateTime, decimalValue } from "@/lib/format";
@@ -52,7 +53,7 @@ export function MovementsModal({ open, onClose, product }: MovementsModalProps) 
         <p className="rounded-2xl border border-danger-100 bg-danger-50 px-4 py-3 text-sm text-danger-500">{error}</p>
       )}
       {loading ? (
-        <p className="text-sm text-text-secondary">Yükleniyor...</p>
+        <LoadingBlock lines={3} />
       ) : movements.length === 0 ? (
         <p className="text-sm text-text-secondary">Bu ürün için stok hareketi bulunmuyor.</p>
       ) : (

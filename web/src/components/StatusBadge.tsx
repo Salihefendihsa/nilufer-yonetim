@@ -1,4 +1,5 @@
 import type { JobStatus } from "@/lib/types";
+import { chartPalette } from "@/lib/chartPalette";
 
 const STATUS_LABELS: Record<JobStatus, string> = {
   PENDING: "Bekliyor",
@@ -23,11 +24,11 @@ const STATUS_STYLES: Record<JobStatus, { badge: string; mark: string }> = {
 
 /** Grafik/şerit gibi Tailwind sınıfı alamayan yerler için ham renk değerleri. */
 export const STATUS_COLORS: Record<JobStatus, string> = {
-  PENDING: "#B57F13",
-  SCHEDULED: "#61A870",
-  IN_PROGRESS: "#1F6FA8",
-  COMPLETED: "#15803D",
-  CANCELLED: "#C0392B",
+  PENDING: chartPalette.warning,
+  SCHEDULED: chartPalette.primaryLight,
+  IN_PROGRESS: chartPalette.info,
+  COMPLETED: chartPalette.success,
+  CANCELLED: chartPalette.danger,
 };
 
 export const STATUS_TEXT: Record<JobStatus, string> = STATUS_LABELS;

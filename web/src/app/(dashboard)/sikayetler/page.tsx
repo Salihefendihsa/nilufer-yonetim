@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState, type FormEvent } from "react";
+import { LoadingBlock } from "@/components/LoadingBlock";
 import { MessageSquareWarning, Plus, UserCheck } from "lucide-react";
 import { RequireRole } from "@/components/RequireRole";
 import { PageHeader } from "@/components/PageHeader";
@@ -139,7 +140,7 @@ function ComplaintsContent() {
       </div>
 
       {loading ? (
-        <p className="text-sm text-text-secondary">Yükleniyor...</p>
+        <LoadingBlock lines={3} />
       ) : rows.length === 0 ? (
         <EmptyState
           icon={MessageSquareWarning}
@@ -151,13 +152,13 @@ function ComplaintsContent() {
       ) : (
         <ul className="flex flex-col gap-3">
           {rows.map((c) => (
-            <li key={c.id} className="rounded-3xl border border-border bg-surface-base p-5 shadow-card">
+            <li key={c.id} className="rounded-2xl border border-border bg-surface-card p-5 shadow-card">
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <div className="min-w-0">
                   <div className="flex flex-wrap items-center gap-2">
                     <h3 className="text-sm font-semibold text-text-primary">{c.subject}</h3>
-                    <span className={`rounded-full border px-2.5 py-0.5 text-[11px] font-semibold ${STATUS_TONES[c.status]}`}>{STATUS_LABELS[c.status]}</span>
-                    <span className={`rounded-full px-2 py-0.5 text-[11px] font-semibold ${PRIORITY_TONES[c.priority]}`}>{PRIORITY_LABELS[c.priority]} öncelik</span>
+                    <span className={`rounded-full border px-2.5 py-0.5 text-2xs font-semibold ${STATUS_TONES[c.status]}`}>{STATUS_LABELS[c.status]}</span>
+                    <span className={`rounded-full px-2 py-0.5 text-2xs font-semibold ${PRIORITY_TONES[c.priority]}`}>{PRIORITY_LABELS[c.priority]} öncelik</span>
                   </div>
                   <p className="mt-1 text-xs text-text-secondary">
                     {!isCustomer && c.customer ? `${c.customer.fullName} · ` : ""}

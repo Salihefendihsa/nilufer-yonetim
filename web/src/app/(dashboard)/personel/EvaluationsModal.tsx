@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { LoadingBlock } from "@/components/LoadingBlock";
 import { Star } from "lucide-react";
 import { Modal } from "@/components/Modal";
 import { EmptyState } from "@/components/EmptyState";
@@ -58,7 +59,7 @@ export function EvaluationsModal({ open, onClose, staff }: EvaluationsModalProps
       </div>
 
       {loading ? (
-        <p className="py-8 text-center text-sm text-text-faint">Yükleniyor...</p>
+        <LoadingBlock rows={3} className="py-6" />
       ) : evaluations.length === 0 ? (
         <EmptyState icon={Star} title="Henüz değerlendirme yok" description="Bu personel için henüz bir değerlendirme oluşturulmamış." />
       ) : (

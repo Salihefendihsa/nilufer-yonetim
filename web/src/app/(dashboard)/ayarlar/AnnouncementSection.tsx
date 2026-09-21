@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState, type FormEvent } from "react";
+import { SectionTitle } from "@/components/SectionTitle";
 import { Megaphone, Trash2 } from "lucide-react";
 import { api, ApiError } from "@/lib/api";
 import { useToast } from "@/lib/ToastProvider";
@@ -73,7 +74,7 @@ export function AnnouncementSection() {
           <Megaphone size={17} strokeWidth={1.75} />
         </span>
         <div>
-          <h2 className="text-base font-semibold text-text-primary">Duyuru Şeridi</h2>
+          <SectionTitle>Duyuru Şeridi</SectionTitle>
           <p className="mt-0.5 text-sm text-text-secondary">Tüm kullanıcıların ekranının üstünde görünen tek satırlık duyuru. Yeni duyuru öncekini otomatik kaldırır.</p>
         </div>
       </div>

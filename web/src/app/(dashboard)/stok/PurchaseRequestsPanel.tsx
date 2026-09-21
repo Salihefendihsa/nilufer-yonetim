@@ -1,6 +1,8 @@
 "use client";
 
 import { useCallback, useEffect, useState, type FormEvent } from "react";
+import { LoadingBlock } from "@/components/LoadingBlock";
+import { SectionTitle } from "@/components/SectionTitle";
 import { ShoppingCart, Check, X } from "lucide-react";
 import { Modal } from "@/components/Modal";
 import { api, ApiError } from "@/lib/api";
@@ -85,12 +87,12 @@ export function PurchaseRequestsPanel({ onChanged }: { onChanged: () => void }) 
   }
 
   return (
-    <section className="rounded-3xl border border-border bg-surface-base p-5 shadow-card">
+    <section className="rounded-2xl border border-border bg-surface-card p-5 shadow-card">
       <header className="mb-4 flex items-center gap-2">
         <ShoppingCart size={16} strokeWidth={1.75} className="text-text-secondary" />
-        <h2 className="text-sm font-semibold text-text-primary">Bekleyen Satın Alma Talepleri</h2>
+        <SectionTitle size="sm">Bekleyen Satın Alma Talepleri</SectionTitle>
         {!loading && (
-          <span className="rounded-full bg-surface-subtle px-2 py-0.5 text-[11px] font-semibold text-text-secondary">
+          <span className="rounded-full bg-surface-subtle px-2 py-0.5 text-2xs font-semibold text-text-secondary">
             {requests.length}
           </span>
         )}
@@ -101,7 +103,7 @@ export function PurchaseRequestsPanel({ onChanged }: { onChanged: () => void }) 
       )}
 
       {loading ? (
-        <p className="text-sm text-text-secondary">Yükleniyor...</p>
+        <LoadingBlock lines={3} />
       ) : requests.length === 0 ? (
         <p className="text-sm text-text-secondary">Bekleyen satın alma talebi yok.</p>
       ) : (
@@ -133,7 +135,7 @@ export function PurchaseRequestsPanel({ onChanged }: { onChanged: () => void }) 
               </div>
               <div className="flex items-center gap-2">
                 <span
-                  className={`rounded-full border px-2.5 py-1 text-[11px] font-semibold ${STATUS_LABELS[request.status].className}`}
+                  className={`rounded-full border px-2.5 py-1 text-2xs font-semibold ${STATUS_LABELS[request.status].className}`}
                 >
                   {STATUS_LABELS[request.status].label}
                 </span>
