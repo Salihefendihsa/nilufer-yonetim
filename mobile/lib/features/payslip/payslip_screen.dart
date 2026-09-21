@@ -4,6 +4,8 @@ import 'package:intl/intl.dart';
 import '../../core/api_client.dart';
 import '../../models/payslip.dart';
 import '../../theme/app_colors.dart';
+import '../../theme/app_palette.dart';
+import '../../theme/app_text_styles.dart';
 import '../../widgets/state_views.dart';
 
 final _currency = NumberFormat.currency(
@@ -72,6 +74,8 @@ class _PayslipScreenState extends State<PayslipScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final cs = context.colors;
+    final tx = context.text;
     final p = _payslip;
     return Scaffold(
       appBar: AppBar(title: const Text('Bordrom')),
@@ -92,10 +96,7 @@ class _PayslipScreenState extends State<PayslipScreen> {
                   child: Text(
                     _monthFormat.format(_cursor),
                     textAlign: TextAlign.center,
-                    style: const TextStyle(
-                      fontWeight: FontWeight.w700,
-                      fontSize: 15,
-                    ),
+                    style: tx.subtitle.copyWith(fontWeight: FontWeight.w700),
                   ),
                 ),
                 IconButton(
@@ -116,7 +117,7 @@ class _PayslipScreenState extends State<PayslipScreen> {
                   )
                 : RefreshIndicator(
                     onRefresh: _load,
-                    color: AppColors.primary600,
+                    color: cs.accentSoft,
                     child: ListView(
                       padding: const EdgeInsets.all(16),
                       children: [
@@ -124,14 +125,11 @@ class _PayslipScreenState extends State<PayslipScreen> {
                         const SizedBox(height: 12),
                         _LinesCard(payslip: p),
                         const SizedBox(height: 12),
-                        const Text(
+                        Text(
                           'Prim onaylandığı aya, avans talep edildiği aya yazılır. '
                           'Vergi/SGK kesintileri dahil değildir; bilgilendirme amaçlıdır, '
                           'ödeme işlemi başlatmaz.',
-                          style: TextStyle(
-                            fontSize: 11.5,
-                            color: AppColors.textSecondary,
-                          ),
+                          style: tx.caption,
                         ),
                       ],
                     ),
@@ -149,27 +147,25 @@ class _SummaryCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final cs = context.colors;
+    final tx = context.text;
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: AppColors.primary700,
+        color: cs.primary700,
         borderRadius: BorderRadius.circular(AppRadius.card),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
+          Text(
             'Net (tahmini)',
-            style: TextStyle(color: Colors.white70, fontSize: 12),
+            style: tx.caption.copyWith(color: Colors.white70),
           ),
           const SizedBox(height: 4),
           Text(
             _currency.format(payslip.net),
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 28,
-              fontWeight: FontWeight.w800,
-            ),
+            style: tx.stat.copyWith(color: Colors.white),
           ),
           const SizedBox(height: 12),
           Row(
@@ -198,19 +194,16 @@ class _Mini extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final tx = context.text;
     return Expanded(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            label,
-            style: const TextStyle(color: Colors.white60, fontSize: 11),
-          ),
+          Text(label, style: tx.label.copyWith(color: Colors.white60)),
           Text(
             value,
-            style: const TextStyle(
+            style: tx.body.copyWith(
               color: Colors.white,
-              fontSize: 13.5,
               fontWeight: FontWeight.w700,
             ),
           ),
@@ -226,53 +219,54 @@ class _LinesCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final cs = context.colors;
+    final tx = context.text;
     final rows = <Widget>[
-      _line('Taban maaş', _currency.format(payslip.salaryBase), null),
+      _line(context, 'Taban maaş', _currency.format(payslip.salaryBase), null),
       for (final b in payslip.bonuses)
         _line(
+          context,
           b.label,
           '+${_currency.format(b.amount)}',
           b.date,
-          color: AppColors.success600,
+          color: cs.success600,
         ),
       for (final a in payslip.advances)
         _line(
+          context,
           a.label,
           '−${_currency.format(a.amount)}',
           a.date,
-          color: AppColors.danger600,
+          color: cs.danger600,
         ),
     ];
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       decoration: BoxDecoration(
-        color: AppColors.surfaceCard,
+        color: cs.surfaceCard,
         borderRadius: BorderRadius.circular(AppRadius.card),
-        border: Border.all(color: AppColors.borderDefault),
+        border: Border.all(color: cs.borderDefault),
       ),
       child: Column(
         children: [
           for (var i = 0; i < rows.length; i++) ...[
             rows[i],
             if (i < rows.length - 1)
-              const Divider(height: 1, color: AppColors.borderDefault),
+              Divider(height: 1, color: cs.borderDefault),
           ],
-          const Divider(height: 1, color: AppColors.borderDefault),
+          Divider(height: 1, color: cs.borderDefault),
           Padding(
             padding: const EdgeInsets.symmetric(vertical: 12),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const Text(
+                Text(
                   'Net',
-                  style: TextStyle(fontWeight: FontWeight.w700, fontSize: 14),
+                  style: tx.subtitle.copyWith(fontWeight: FontWeight.w700),
                 ),
                 Text(
                   _currency.format(payslip.net),
-                  style: const TextStyle(
-                    fontWeight: FontWeight.w800,
-                    fontSize: 15,
-                  ),
+                  style: tx.subtitle.copyWith(fontWeight: FontWeight.w800),
                 ),
               ],
             ),
@@ -282,7 +276,15 @@ class _LinesCard extends StatelessWidget {
     );
   }
 
-  Widget _line(String label, String value, String? date, {Color? color}) {
+  Widget _line(
+    BuildContext context,
+    String label,
+    String value,
+    String? date, {
+    Color? color,
+  }) {
+    final cs = context.colors;
+    final tx = context.text;
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 10),
       child: Row(
@@ -292,18 +294,14 @@ class _LinesCard extends StatelessWidget {
               date != null
                   ? '$label · ${_dateFormat.format(DateTime.parse(date))}'
                   : label,
-              style: const TextStyle(
-                fontSize: 12.5,
-                color: AppColors.textSecondary,
-              ),
+              style: tx.bodySmall,
             ),
           ),
           Text(
             value,
-            style: TextStyle(
-              fontSize: 13,
+            style: tx.bodySmall.copyWith(
               fontWeight: FontWeight.w700,
-              color: color ?? AppColors.textPrimary,
+              color: color ?? cs.textPrimary,
             ),
           ),
         ],

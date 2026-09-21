@@ -9,6 +9,8 @@ import '../../models/job.dart';
 import '../../models/staff.dart';
 import '../../models/user.dart';
 import '../../theme/app_colors.dart';
+import '../../theme/app_palette.dart';
+import '../../theme/app_text_styles.dart';
 import '../../widgets/state_views.dart';
 import '../jobs/jobs_api.dart';
 import '../staff/staff_api.dart';
@@ -16,27 +18,27 @@ import 'complaints_api.dart';
 
 final _dateTimeFormat = DateFormat('d MMM yyyy HH:mm', 'tr_TR');
 
-Color _statusColor(String status) {
+Color _statusColor(AppPalette cs, String status) {
   switch (status) {
     case 'OPEN':
-      return AppColors.danger600;
+      return cs.danger600;
     case 'IN_PROGRESS':
-      return AppColors.warning600;
+      return cs.warning600;
     case 'RESOLVED':
-      return AppColors.success600;
+      return cs.success600;
     default:
-      return AppColors.textSecondary;
+      return cs.textSecondary;
   }
 }
 
-Color _priorityColor(String priority) {
+Color _priorityColor(AppPalette cs, String priority) {
   switch (priority) {
     case 'HIGH':
-      return AppColors.danger600;
+      return cs.danger600;
     case 'MEDIUM':
-      return AppColors.info600;
+      return cs.info600;
     default:
-      return AppColors.textSecondary;
+      return cs.textSecondary;
   }
 }
 
@@ -78,9 +80,8 @@ class _ComplaintsScreenState extends State<ComplaintsScreen> {
     } catch (e) {
       if (mounted) {
         setState(
-          () => _error = e is ApiException
-              ? e.message
-              : 'Şikayetler yüklenemedi',
+          () =>
+              _error = e is ApiException ? e.message : 'Şikayetler yüklenemedi',
         );
       }
     } finally {
@@ -95,9 +96,9 @@ class _ComplaintsScreenState extends State<ComplaintsScreen> {
     if (created == true) {
       _load();
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Şikayetiniz iletildi.')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('Şikayetiniz iletildi.')));
       }
     }
   }
@@ -111,6 +112,7 @@ class _ComplaintsScreenState extends State<ComplaintsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final cs = context.colors;
     final isCustomer = _isCustomer;
     return Scaffold(
       appBar: AppBar(title: Text(isCustomer ? 'Şikayetlerim' : 'Şikayetler')),
@@ -129,7 +131,13 @@ class _ComplaintsScreenState extends State<ComplaintsScreen> {
               scrollDirection: Axis.horizontal,
               padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
               children: [
-                for (final s in [null, 'OPEN', 'IN_PROGRESS', 'RESOLVED', 'CLOSED']) ...[
+                for (final s in [
+                  null,
+                  'OPEN',
+                  'IN_PROGRESS',
+                  'RESOLVED',
+                  'CLOSED',
+                ]) ...[
                   ChoiceChip(
                     label: Text(s == null ? 'Tümü' : complaintStatusLabels[s]!),
                     selected: _status == s,
@@ -172,7 +180,7 @@ class _ComplaintsScreenState extends State<ComplaintsScreen> {
                   )
                 : RefreshIndicator(
                     onRefresh: _load,
-                    color: AppColors.primary600,
+                    color: cs.accentSoft,
                     child: ListView.separated(
                       padding: const EdgeInsets.fromLTRB(16, 8, 16, 88),
                       itemCount: _items.length,
@@ -204,9 +212,11 @@ class ComplaintTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final cs = context.colors;
+    final tx = context.text;
     final c = complaint;
     return Material(
-      color: AppColors.surfaceCard,
+      color: cs.surfaceCard,
       borderRadius: BorderRadius.circular(AppRadius.card),
       child: InkWell(
         onTap: onTap,
@@ -215,7 +225,7 @@ class ComplaintTile extends StatelessWidget {
           padding: const EdgeInsets.all(14),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(AppRadius.card),
-            border: Border.all(color: AppColors.borderDefault),
+            border: Border.all(color: cs.borderDefault),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -225,15 +235,12 @@ class ComplaintTile extends StatelessWidget {
                   Expanded(
                     child: Text(
                       c.subject,
-                      style: const TextStyle(
-                        fontWeight: FontWeight.w700,
-                        fontSize: 14,
-                      ),
+                      style: tx.subtitle.copyWith(fontWeight: FontWeight.w700),
                     ),
                   ),
                   _Pill(
                     complaintStatusLabels[c.status] ?? c.status,
-                    _statusColor(c.status),
+                    _statusColor(context.colors, c.status),
                   ),
                 ],
               ),
@@ -249,19 +256,16 @@ class ComplaintTile extends StatelessWidget {
                   else if (showCustomer)
                     'Atanmamış',
                 ].join(' · '),
-                style: const TextStyle(
-                  fontSize: 11.5,
-                  color: AppColors.textSecondary,
-                ),
+                style: tx.caption,
               ),
               const SizedBox(height: 8),
-              Text(c.description, style: const TextStyle(fontSize: 13)),
+              Text(c.description, style: tx.bodySmall),
               const SizedBox(height: 8),
               Row(
                 children: [
                   _Pill(
                     '${complaintPriorityLabels[c.priority] ?? c.priority} öncelik',
-                    _priorityColor(c.priority),
+                    _priorityColor(context.colors, c.priority),
                   ),
                 ],
               ),
@@ -271,16 +275,13 @@ class ComplaintTile extends StatelessWidget {
                   width: double.infinity,
                   padding: const EdgeInsets.all(10),
                   decoration: BoxDecoration(
-                    color: AppColors.success50,
+                    color: cs.success50,
                     borderRadius: BorderRadius.circular(10),
                   ),
                   child: Text(
                     'Çözüm: ${c.resolutionNote}'
                     '${c.resolvedAt != null ? ' · ${_dateTimeFormat.format(DateTime.parse(c.resolvedAt!))}' : ''}',
-                    style: const TextStyle(
-                      fontSize: 12,
-                      color: AppColors.success600,
-                    ),
+                    style: tx.caption.copyWith(color: cs.success600),
                   ),
                 ),
               ],
@@ -299,20 +300,14 @@ class _Pill extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final tx = context.text;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
       decoration: BoxDecoration(
         color: color.withValues(alpha: 0.12),
         borderRadius: BorderRadius.circular(999),
       ),
-      child: Text(
-        text,
-        style: TextStyle(
-          fontSize: 10.5,
-          fontWeight: FontWeight.w700,
-          color: color,
-        ),
-      ),
+      child: Text(text, style: tx.label.copyWith(color: color)),
     );
   }
 }
@@ -339,9 +334,12 @@ class _NewComplaintScreenState extends State<_NewComplaintScreen> {
   void initState() {
     super.initState();
     // Müşteri kendi işlerini görür — GET /jobs kayıt bazlı filtreler.
-    JobsApi().list(limit: 50).then((r) {
-      if (mounted) setState(() => _jobs = r.data);
-    }).catchError((_) {});
+    JobsApi()
+        .list(limit: 50)
+        .then((r) {
+          if (mounted) setState(() => _jobs = r.data);
+        })
+        .catchError((_) {});
   }
 
   @override
@@ -365,9 +363,7 @@ class _NewComplaintScreenState extends State<_NewComplaintScreen> {
       );
       if (mounted) Navigator.of(context).pop(true);
     } catch (e) {
-      setState(
-        () => _error = e is ApiException ? e.message : 'Gönderilemedi',
-      );
+      setState(() => _error = e is ApiException ? e.message : 'Gönderilemedi');
     } finally {
       if (mounted) setState(() => _saving = false);
     }
@@ -375,6 +371,7 @@ class _NewComplaintScreenState extends State<_NewComplaintScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final cs = context.colors;
     return Scaffold(
       appBar: AppBar(title: const Text('Yeni Şikayet')),
       body: ListView(
@@ -402,9 +399,14 @@ class _NewComplaintScreenState extends State<_NewComplaintScreen> {
           const SizedBox(height: 12),
           DropdownButtonFormField<String?>(
             initialValue: _jobId,
-            decoration: const InputDecoration(labelText: 'İlgili iş (opsiyonel)'),
+            decoration: const InputDecoration(
+              labelText: 'İlgili iş (opsiyonel)',
+            ),
             items: [
-              const DropdownMenuItem<String?>(value: null, child: Text('— Seçilmedi —')),
+              const DropdownMenuItem<String?>(
+                value: null,
+                child: Text('— Seçilmedi —'),
+              ),
               for (final j in _jobs)
                 DropdownMenuItem<String?>(
                   value: j.id,
@@ -425,7 +427,7 @@ class _NewComplaintScreenState extends State<_NewComplaintScreen> {
           ),
           if (_error != null) ...[
             const SizedBox(height: 12),
-            Text(_error!, style: const TextStyle(color: AppColors.danger600)),
+            Text(_error!, style: TextStyle(color: cs.danger600)),
           ],
           const SizedBox(height: 20),
           ElevatedButton(
@@ -462,9 +464,12 @@ class _ManageComplaintScreenState extends State<_ManageComplaintScreen> {
   @override
   void initState() {
     super.initState();
-    StaffApi().list().then((r) {
-      if (mounted) setState(() => _staff = r.data);
-    }).catchError((_) {});
+    StaffApi()
+        .list()
+        .then((r) {
+          if (mounted) setState(() => _staff = r.data);
+        })
+        .catchError((_) {});
   }
 
   @override
@@ -489,9 +494,7 @@ class _ManageComplaintScreenState extends State<_ManageComplaintScreen> {
       );
       if (mounted) Navigator.of(context).pop(true);
     } catch (e) {
-      setState(
-        () => _error = e is ApiException ? e.message : 'Kaydedilemedi',
-      );
+      setState(() => _error = e is ApiException ? e.message : 'Kaydedilemedi');
     } finally {
       if (mounted) setState(() => _saving = false);
     }
@@ -499,12 +502,10 @@ class _ManageComplaintScreenState extends State<_ManageComplaintScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final cs = context.colors;
     final me = context.read<AuthProvider>().user;
     final c = widget.complaint;
-    final knownIds = {
-      if (me != null) me.id,
-      ..._staff.map((s) => s.userId),
-    };
+    final knownIds = {if (me != null) me.id, ..._staff.map((s) => s.userId)};
     return Scaffold(
       appBar: AppBar(title: const Text('Şikayeti Yönet')),
       body: ListView(
@@ -536,9 +537,15 @@ class _ManageComplaintScreenState extends State<_ManageComplaintScreen> {
             initialValue: _assignee,
             decoration: const InputDecoration(labelText: 'Sorumlu'),
             items: [
-              const DropdownMenuItem<String?>(value: null, child: Text('— Atanmamış —')),
+              const DropdownMenuItem<String?>(
+                value: null,
+                child: Text('— Atanmamış —'),
+              ),
               if (me != null)
-                DropdownMenuItem<String?>(value: me.id, child: Text('Bana ata (${me.fullName})')),
+                DropdownMenuItem<String?>(
+                  value: me.id,
+                  child: Text('Bana ata (${me.fullName})'),
+                ),
               for (final s in _staff)
                 DropdownMenuItem<String?>(
                   value: s.userId,
@@ -567,7 +574,7 @@ class _ManageComplaintScreenState extends State<_ManageComplaintScreen> {
           ),
           if (_error != null) ...[
             const SizedBox(height: 12),
-            Text(_error!, style: const TextStyle(color: AppColors.danger600)),
+            Text(_error!, style: TextStyle(color: cs.danger600)),
           ],
           const SizedBox(height: 20),
           ElevatedButton(

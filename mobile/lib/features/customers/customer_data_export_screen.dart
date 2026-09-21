@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import '../../core/api_client.dart';
 import '../../core/file_download.dart';
 import '../../theme/app_colors.dart';
+import '../../theme/app_palette.dart';
+import '../../theme/app_text_styles.dart';
 
 /// Bölüm AJ (8. tur): CUSTOMER → Diğer → "Verilerimi İndir".
 /// GET /customers/me/data-export JSON'u `downloadAndShare` deseniyle
@@ -11,7 +13,8 @@ class CustomerDataExportScreen extends StatefulWidget {
   const CustomerDataExportScreen({super.key});
 
   @override
-  State<CustomerDataExportScreen> createState() => _CustomerDataExportScreenState();
+  State<CustomerDataExportScreen> createState() =>
+      _CustomerDataExportScreenState();
 }
 
 class _CustomerDataExportScreenState extends State<CustomerDataExportScreen> {
@@ -21,16 +24,20 @@ class _CustomerDataExportScreenState extends State<CustomerDataExportScreen> {
     setState(() => _busy = true);
     try {
       final stamp = DateTime.now().toIso8601String().substring(0, 10);
-      await downloadAndShare('/customers/me/data-export', 'verilerim-$stamp.json');
+      await downloadAndShare(
+        '/customers/me/data-export',
+        'verilerim-$stamp.json',
+      );
     } on ApiException catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.message)));
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text(e.message)));
       }
     } catch (_) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Veriler indirilemedi')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('Veriler indirilemedi')));
       }
     } finally {
       if (mounted) setState(() => _busy = false);
@@ -39,6 +46,8 @@ class _CustomerDataExportScreenState extends State<CustomerDataExportScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final cs = context.colors;
+    final tx = context.text;
     return Scaffold(
       appBar: AppBar(title: const Text('Verilerimi İndir')),
       body: ListView(
@@ -47,31 +56,33 @@ class _CustomerDataExportScreenState extends State<CustomerDataExportScreen> {
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: AppColors.surfaceCard,
+              color: cs.surfaceCard,
               borderRadius: BorderRadius.circular(AppRadius.card),
-              border: Border.all(color: AppColors.borderDefault),
+              border: Border.all(color: cs.borderDefault),
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Row(
+                Row(
                   children: [
-                    Icon(Icons.download_outlined, color: AppColors.primary700),
+                    Icon(Icons.download_outlined, color: cs.accent),
                     SizedBox(width: 8),
                     Expanded(
                       child: Text(
                         'Verilerinizin bir kopyası',
-                        style: TextStyle(fontWeight: FontWeight.w700, fontSize: 15),
+                        style: tx.subtitle.copyWith(
+                          fontWeight: FontWeight.w700,
+                        ),
                       ),
                     ),
                   ],
                 ),
                 const SizedBox(height: 8),
-                const Text(
+                Text(
                   'Sistemde size ait kayıtların (profil, işler, sözleşmeler, ödemeler, '
                   'randevu talepleri ve belge listesi) bir kopyasını JSON dosyası olarak '
                   'indirip paylaşım sayfasından kaydedebilirsiniz.',
-                  style: TextStyle(fontSize: 13, color: AppColors.textSecondary, height: 1.4),
+                  style: tx.bodySmall,
                 ),
                 const SizedBox(height: 14),
                 SizedBox(
@@ -85,7 +96,9 @@ class _CustomerDataExportScreenState extends State<CustomerDataExportScreen> {
                             child: CircularProgressIndicator(strokeWidth: 2),
                           )
                         : const Icon(Icons.download_outlined, size: 18),
-                    label: Text(_busy ? 'Hazırlanıyor...' : 'Verilerimi İndir (JSON)'),
+                    label: Text(
+                      _busy ? 'Hazırlanıyor...' : 'Verilerimi İndir (JSON)',
+                    ),
                   ),
                 ),
               ],

@@ -13,6 +13,8 @@ import '../../models/job.dart';
 import '../../models/staff.dart';
 import '../../models/user.dart';
 import '../../theme/app_colors.dart';
+import '../../theme/app_palette.dart';
+import '../../theme/app_text_styles.dart';
 import '../../widgets/auth_image.dart';
 import '../../widgets/state_views.dart';
 import '../staff/staff_api.dart';
@@ -148,6 +150,8 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
   }
 
   Widget _buildBody() {
+    final cs = context.colors;
+    final tx = context.text;
     if (_loading) return const LoadingView();
     if (_error != null) return ErrorRetryView(message: _error!, onRetry: _load);
     final job = _job!;
@@ -158,34 +162,25 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
 
     return RefreshIndicator(
       onRefresh: _load,
-      color: AppColors.primary600,
+      color: cs.accentSoft,
       child: ListView(
         padding: const EdgeInsets.all(16),
         children: [
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: AppColors.surfaceCard,
+              color: cs.surfaceCard,
               borderRadius: BorderRadius.circular(AppRadius.sheet),
-              border: Border.all(color: AppColors.borderDefault),
+              border: Border.all(color: cs.borderDefault),
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  job.customerName ?? 'Müşteri',
-                  style: const TextStyle(
-                    fontSize: 17,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
+                Text(job.customerName ?? 'Müşteri', style: tx.title),
                 const SizedBox(height: 4),
                 Text(
                   job.serviceType,
-                  style: const TextStyle(
-                    fontSize: 13.5,
-                    color: AppColors.textSecondary,
-                  ),
+                  style: tx.body.copyWith(color: cs.textSecondary),
                 ),
                 const SizedBox(height: 10),
                 Wrap(
@@ -237,9 +232,8 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
                   const SizedBox(height: 6),
                   Text(
                     'İptal gerekçesi: ${job.cancellationReason}',
-                    style: const TextStyle(
-                      fontSize: 12.5,
-                      color: AppColors.danger600,
+                    style: tx.bodySmall.copyWith(
+                      color: cs.danger600,
                       fontWeight: FontWeight.w600,
                     ),
                   ),
@@ -249,48 +243,35 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
                   Text(
                     'Planlanan: ${_dateTimeFormat.format(job.scheduledAt!)}'
                     '${job.scheduledEndAt != null ? ' – ${_dateTimeFormat.format(job.scheduledEndAt!)}' : ''}',
-                    style: const TextStyle(
-                      fontSize: 12,
-                      color: AppColors.textFaint,
-                    ),
+                    style: tx.caption.copyWith(color: cs.textFaint),
                   ),
                 ],
                 if (job.startedAt != null)
                   Text(
                     'Başlama: ${_dateTimeFormat.format(job.startedAt!)}',
-                    style: const TextStyle(
-                      fontSize: 12,
-                      color: AppColors.textFaint,
-                    ),
+                    style: tx.caption.copyWith(color: cs.textFaint),
                   ),
                 if (job.completedAt != null)
                   Text(
                     'Tamamlanma: ${_dateTimeFormat.format(job.completedAt!)}',
-                    style: const TextStyle(
-                      fontSize: 12,
-                      color: AppColors.textFaint,
-                    ),
+                    style: tx.caption.copyWith(color: cs.textFaint),
                   ),
                 if (job.actualDuration != null)
                   Text(
                     'Süre: ${job.actualDuration!.inMinutes} dk',
-                    style: const TextStyle(
-                      fontSize: 12,
-                      color: AppColors.textFaint,
-                    ),
+                    style: tx.caption.copyWith(color: cs.textFaint),
                   )
                 else if (job.status == JobStatus.completed)
-                  const Text(
+                  Text(
                     'Süre: bilinmiyor (başlangıç kaydı yok)',
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: AppColors.textFaint,
+                    style: tx.caption.copyWith(
+                      color: cs.textFaint,
                       fontStyle: FontStyle.italic,
                     ),
                   ),
                 if (job.notes != null && job.notes!.isNotEmpty) ...[
                   const SizedBox(height: 8),
-                  Text(job.notes!, style: const TextStyle(fontSize: 13)),
+                  Text(job.notes!, style: tx.bodySmall),
                 ],
               ],
             ),
@@ -326,9 +307,9 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
           ],
 
           const SizedBox(height: 18),
-          const Text(
+          Text(
             'Fotoğraflar',
-            style: TextStyle(fontWeight: FontWeight.w700, fontSize: 14.5),
+            style: tx.subtitle.copyWith(fontWeight: FontWeight.w700),
           ),
           const SizedBox(height: 8),
           _PhotosSection(
@@ -341,9 +322,9 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
 
           if (_report != null) ...[
             const SizedBox(height: 18),
-            const Text(
+            Text(
               'İş Raporu',
-              style: TextStyle(fontWeight: FontWeight.w700, fontSize: 14.5),
+              style: tx.subtitle.copyWith(fontWeight: FontWeight.w700),
             ),
             const SizedBox(height: 8),
             _ReportCard(report: _report!),
@@ -353,15 +334,11 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
             const SizedBox(height: 18),
             // Bölüm N (4. tur): rapor öncesi kontrol listesi — eksikler
             // görünür kalır, "Raporu Tamamla" engellenmez.
-            _ChecklistCard(
-              jobId: job.id,
-              api: _api,
-              initial: job.checklist,
-            ),
+            _ChecklistCard(jobId: job.id, api: _api, initial: job.checklist),
             const SizedBox(height: 18),
-            const Text(
+            Text(
               'İş Raporu Oluştur',
-              style: TextStyle(fontWeight: FontWeight.w700, fontSize: 14.5),
+              style: tx.subtitle.copyWith(fontWeight: FontWeight.w700),
             ),
             const SizedBox(height: 8),
             _ReportForm(jobId: job.id, api: _api, onCreated: _load),
@@ -372,6 +349,7 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
   }
 
   Widget _buildStaffActions(Job job) {
+    final cs = context.colors;
     final next = validJobStatusTransitions[job.status]!
         .where((s) => s != job.status)
         .toList();
@@ -397,9 +375,7 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
                   : () => _changeStatus(JobStatus.completed),
               icon: const Icon(Icons.check_circle_outline_rounded, size: 18),
               label: const Text('Tamamla'),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.success600,
-              ),
+              style: ElevatedButton.styleFrom(backgroundColor: cs.success600),
             ),
           ),
         ],
@@ -434,27 +410,22 @@ class _Pill extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final cs = context.colors;
+    final tx = context.text;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
       decoration: BoxDecoration(
-        color: AppColors.surfaceSubtle,
+        color: cs.surfaceSubtle,
         borderRadius: BorderRadius.circular(AppRadius.pill),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
           if (icon != null) ...[
-            Icon(icon, size: 13, color: AppColors.textSecondary),
+            Icon(icon, size: 13, color: cs.textSecondary),
             const SizedBox(width: 4),
           ],
-          Text(
-            text,
-            style: const TextStyle(
-              fontSize: 11.5,
-              fontWeight: FontWeight.w600,
-              color: AppColors.textSecondary,
-            ),
-          ),
+          Text(text, style: tx.caption.copyWith(fontWeight: FontWeight.w600)),
         ],
       ),
     );
@@ -477,12 +448,22 @@ class _FeedbackCard extends StatelessWidget {
   });
 
   static const _criteria = <({String key, String label, String hint})>[
-    (key: 'quality', label: 'Hizmet Kalitesi', hint: 'Uygulamanın etkinliği ve özeni'),
+    (
+      key: 'quality',
+      label: 'Hizmet Kalitesi',
+      hint: 'Uygulamanın etkinliği ve özeni',
+    ),
     (key: 'punctuality', label: 'Dakiklik', hint: 'Randevu saatine uyum'),
-    (key: 'staff', label: 'Personel Profesyonelliği', hint: 'İletişim, nezaket, bilgilendirme'),
+    (
+      key: 'staff',
+      label: 'Personel Profesyonelliği',
+      hint: 'İletişim, nezaket, bilgilendirme',
+    ),
   ];
 
   Future<void> _openForm(BuildContext context) async {
+    final cs = context.colors;
+    final tx = context.text;
     final scores = <String, int>{};
     bool? recommend;
     final commentController = TextEditingController();
@@ -504,44 +485,67 @@ class _FeedbackCard extends StatelessWidget {
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
+                Text(
                   'Detaylı Değerlendirme',
-                  style: TextStyle(fontWeight: FontWeight.w700, fontSize: 15),
+                  style: tx.subtitle.copyWith(fontWeight: FontWeight.w700),
                 ),
                 const SizedBox(height: 12),
                 for (final c in _criteria) ...[
-                  Text(c.label, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
-                  Text(c.hint, style: const TextStyle(fontSize: 11.5, color: AppColors.textFaint)),
+                  Text(
+                    c.label,
+                    style: tx.bodySmall.copyWith(fontWeight: FontWeight.w600),
+                  ),
+                  Text(c.hint, style: tx.caption.copyWith(color: cs.textFaint)),
                   Row(
                     children: [
                       for (var n = 1; n <= 5; n++)
                         IconButton(
                           visualDensity: VisualDensity.compact,
-                          onPressed: () => setSheetState(() => scores[c.key] = n),
+                          onPressed: () =>
+                              setSheetState(() => scores[c.key] = n),
                           icon: Icon(
-                            n <= (scores[c.key] ?? 0) ? Icons.star_rounded : Icons.star_outline_rounded,
-                            color: n <= (scores[c.key] ?? 0) ? AppColors.warning500 : AppColors.textFaint,
+                            n <= (scores[c.key] ?? 0)
+                                ? Icons.star_rounded
+                                : Icons.star_outline_rounded,
+                            color: n <= (scores[c.key] ?? 0)
+                                ? cs.warning500
+                                : cs.textFaint,
                           ),
                         ),
                     ],
                   ),
                   const SizedBox(height: 6),
                 ],
-                const Text('Bizi tavsiye eder misiniz?', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
+                Text(
+                  'Bizi tavsiye eder misiniz?',
+                  style: tx.bodySmall.copyWith(fontWeight: FontWeight.w600),
+                ),
                 const SizedBox(height: 6),
                 SegmentedButton<bool>(
                   emptySelectionAllowed: true,
                   segments: const [
-                    ButtonSegment(value: true, label: Text('Evet'), icon: Icon(Icons.thumb_up_outlined, size: 16)),
-                    ButtonSegment(value: false, label: Text('Hayır'), icon: Icon(Icons.thumb_down_outlined, size: 16)),
+                    ButtonSegment(
+                      value: true,
+                      label: Text('Evet'),
+                      icon: Icon(Icons.thumb_up_outlined, size: 16),
+                    ),
+                    ButtonSegment(
+                      value: false,
+                      label: Text('Hayır'),
+                      icon: Icon(Icons.thumb_down_outlined, size: 16),
+                    ),
                   ],
                   selected: recommend == null ? const {} : {recommend!},
-                  onSelectionChanged: (s) => setSheetState(() => recommend = s.isEmpty ? null : s.first),
+                  onSelectionChanged: (s) => setSheetState(
+                    () => recommend = s.isEmpty ? null : s.first,
+                  ),
                 ),
                 const SizedBox(height: 12),
                 TextField(
                   controller: commentController,
-                  decoration: const InputDecoration(labelText: 'Yorumunuz (opsiyonel)'),
+                  decoration: const InputDecoration(
+                    labelText: 'Yorumunuz (opsiyonel)',
+                  ),
                   minLines: 2,
                   maxLines: 4,
                   maxLength: 2000,
@@ -566,7 +570,13 @@ class _FeedbackCard extends StatelessWidget {
                             if (ctx.mounted) {
                               setSheetState(() => submitting = false);
                               ScaffoldMessenger.of(ctx).showSnackBar(
-                                SnackBar(content: Text(e is ApiException ? e.message : 'Gönderilemedi')),
+                                SnackBar(
+                                  content: Text(
+                                    e is ApiException
+                                        ? e.message
+                                        : 'Gönderilemedi',
+                                  ),
+                                ),
                               );
                             }
                           }
@@ -585,23 +595,23 @@ class _FeedbackCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final cs = context.colors;
+    final tx = context.text;
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: AppColors.surfaceCard,
+        color: cs.surfaceCard,
         borderRadius: BorderRadius.circular(AppRadius.card),
-        border: Border.all(color: AppColors.borderDefault),
+        border: Border.all(color: cs.borderDefault),
       ),
       child: Row(
         children: [
-          const Icon(Icons.rate_review_outlined, color: AppColors.primary600, size: 20),
+          Icon(Icons.rate_review_outlined, color: cs.accentSoft, size: 20),
           const SizedBox(width: 10),
           Expanded(
             child: Text(
-              submitted
-                  ? 'Detaylı değerlendirmeniz alındı — teşekkürler.'
-                  : 'Hizmeti birkaç açıdan değerlendirin (kalite, dakiklik, personel).',
-              style: const TextStyle(fontSize: 12.5, color: AppColors.textSecondary),
+              submitted ? 'Detaylı değerlendirmeniz alındı — teşekkürler.' : 'Hizmeti birkaç açıdan değerlendirin (kalite, dakiklik, personel).',
+              style: tx.bodySmall,
             ),
           ),
           if (!submitted)
@@ -661,13 +671,14 @@ class _RatingCardState extends State<_RatingCard> {
 
   @override
   Widget build(BuildContext context) {
+    final cs = context.colors;
     final alreadyRated = widget.currentRating != null;
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: AppColors.surfaceCard,
+        color: cs.surfaceCard,
         borderRadius: BorderRadius.circular(AppRadius.card),
-        border: Border.all(color: AppColors.borderDefault),
+        border: Border.all(color: cs.borderDefault),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -686,7 +697,7 @@ class _RatingCardState extends State<_RatingCard> {
                     : () => setState(() => _rating = i + 1),
                 icon: Icon(
                   filled ? Icons.star_rounded : Icons.star_outline_rounded,
-                  color: AppColors.warning500,
+                  color: cs.warning500,
                   size: 28,
                 ),
               );
@@ -761,13 +772,15 @@ class _PhotosSectionState extends State<_PhotosSection> {
 
   @override
   Widget build(BuildContext context) {
+    final cs = context.colors;
+    final tx = context.text;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         if (widget.photos.isEmpty)
-          const Text(
+          Text(
             'Henüz fotoğraf yok',
-            style: TextStyle(fontSize: 12.5, color: AppColors.textFaint),
+            style: tx.bodySmall.copyWith(color: cs.textFaint),
           )
         else
           SizedBox(
@@ -823,12 +836,14 @@ class _ReportCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final cs = context.colors;
+    final tx = context.text;
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: AppColors.surfaceCard,
+        color: cs.surfaceCard,
         borderRadius: BorderRadius.circular(AppRadius.card),
-        border: Border.all(color: AppColors.borderDefault),
+        border: Border.all(color: cs.borderDefault),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -840,20 +855,16 @@ class _ReportCard extends StatelessWidget {
           if (report['productsUsed'] != null)
             Text(
               'Kullanılan ürünler: ${report['productsUsed']}',
-              style: const TextStyle(fontSize: 13),
+              style: tx.bodySmall,
             ),
           if (report['notes'] != null)
-            Text(
-              report['notes'] as String,
-              style: const TextStyle(fontSize: 13),
-            ),
+            Text(report['notes'] as String, style: tx.bodySmall),
           if (report['signatureUrl'] != null) ...[
             const SizedBox(height: 8),
-            const Text(
+            Text(
               'Müşteri imzası alındı',
-              style: TextStyle(
-                fontSize: 12,
-                color: AppColors.success600,
+              style: tx.caption.copyWith(
+                color: cs.success600,
                 fontWeight: FontWeight.w600,
               ),
             ),
@@ -910,46 +921,40 @@ class _ChecklistCardState extends State<_ChecklistCard> {
 
   @override
   Widget build(BuildContext context) {
+    final cs = context.colors;
+    final tx = context.text;
     final done = _entries.where((e) => e.isChecked).length;
     final complete = _entries.isNotEmpty && done == _entries.length;
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: AppColors.surfaceCard,
+        color: cs.surfaceCard,
         borderRadius: BorderRadius.circular(AppRadius.card),
-        border: Border.all(color: AppColors.borderDefault),
+        border: Border.all(color: cs.borderDefault),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              const Icon(
-                Icons.checklist_rounded,
-                size: 18,
-                color: AppColors.primary600,
-              ),
+              Icon(Icons.checklist_rounded, size: 18, color: cs.accentSoft),
               const SizedBox(width: 6),
-              const Expanded(
+              Expanded(
                 child: Text(
                   'Günlük Kontrol Listesi',
-                  style: TextStyle(fontWeight: FontWeight.w700, fontSize: 14.5),
+                  style: tx.subtitle.copyWith(fontWeight: FontWeight.w700),
                 ),
               ),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                 decoration: BoxDecoration(
-                  color: complete ? AppColors.primary50 : AppColors.warning50,
+                  color: complete ? cs.primary50 : cs.warning50,
                   borderRadius: BorderRadius.circular(AppRadius.pill),
                 ),
                 child: Text(
                   '$done/${_entries.length}',
-                  style: TextStyle(
-                    fontSize: 11,
-                    fontWeight: FontWeight.w700,
-                    color: complete
-                        ? AppColors.primary700
-                        : AppColors.warning600,
+                  style: tx.label.copyWith(
+                    color: complete ? cs.primary700 : cs.warning600,
                   ),
                 ),
               ),
@@ -961,31 +966,28 @@ class _ChecklistCardState extends State<_ChecklistCard> {
               dense: true,
               contentPadding: EdgeInsets.zero,
               controlAffinity: ListTileControlAffinity.leading,
-              activeColor: AppColors.primary600,
+              activeColor: cs.primary600,
               value: e.isChecked,
               onChanged: _busyItem == null ? (_) => _toggle(e) : null,
               title: Text(
                 e.item,
-                style: TextStyle(
-                  fontSize: 13.5,
+                style: tx.body.copyWith(
                   decoration: e.isChecked ? TextDecoration.lineThrough : null,
-                  color: e.isChecked
-                      ? AppColors.textSecondary
-                      : AppColors.textPrimary,
+                  color: e.isChecked ? cs.textSecondary : cs.textPrimary,
                 ),
               ),
             ),
           if (!complete && _entries.isNotEmpty)
             Text(
               '${_entries.length - done} öğe eksik — rapor yine gönderilebilir.',
-              style: const TextStyle(fontSize: 11.5, color: AppColors.warning600),
+              style: tx.caption.copyWith(color: cs.warning600),
             ),
           if (_error != null)
             Padding(
               padding: const EdgeInsets.only(top: 4),
               child: Text(
                 _error!,
-                style: const TextStyle(fontSize: 11.5, color: AppColors.danger500),
+                style: tx.caption.copyWith(color: cs.danger500),
               ),
             ),
         ],
@@ -1018,7 +1020,8 @@ class _ReportFormState extends State<_ReportForm> {
   final _notesController = TextEditingController();
   final _signatureController = SignatureController(
     penStrokeWidth: 2.5,
-    penColor: AppColors.textPrimary,
+    // İmza tuvali her temada beyaz → mürekkep sabit koyu.
+    penColor: AppColors.ink,
   );
   final _stockApi = StockApi();
   bool _saving = false;
@@ -1070,7 +1073,9 @@ class _ReportFormState extends State<_ReportForm> {
       return;
     }
     if (rows.any((r) => r.quantity <= 0)) {
-      setState(() => _error = 'Seçilen her ürün için miktar 0\'dan büyük olmalı');
+      setState(
+        () => _error = 'Seçilen her ürün için miktar 0\'dan büyük olmalı',
+      );
       return;
     }
     setState(() {
@@ -1104,12 +1109,14 @@ class _ReportFormState extends State<_ReportForm> {
 
   @override
   Widget build(BuildContext context) {
+    final cs = context.colors;
+    final tx = context.text;
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: AppColors.surfaceCard,
+        color: cs.surfaceCard,
         borderRadius: BorderRadius.circular(AppRadius.card),
-        border: Border.all(color: AppColors.borderDefault),
+        border: Border.all(color: cs.borderDefault),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1122,13 +1129,9 @@ class _ReportFormState extends State<_ReportForm> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text(
+              Text(
                 'Kullanılan Ürünler (Stoktan Düşüm)',
-                style: TextStyle(
-                  fontSize: 12.5,
-                  fontWeight: FontWeight.w600,
-                  color: AppColors.textSecondary,
-                ),
+                style: tx.bodySmall.copyWith(fontWeight: FontWeight.w600),
               ),
               if (!_loadingProducts && _availableProducts.isNotEmpty)
                 TextButton(
@@ -1148,11 +1151,11 @@ class _ReportFormState extends State<_ReportForm> {
               ),
             )
           else if (_availableProducts.isEmpty)
-            const Padding(
+            Padding(
               padding: EdgeInsets.symmetric(vertical: 4),
               child: Text(
                 'Stokta ürün bulunamadı',
-                style: TextStyle(fontSize: 12.5, color: AppColors.textFaint),
+                style: tx.bodySmall.copyWith(color: cs.textFaint),
               ),
             )
           else
@@ -1176,19 +1179,15 @@ class _ReportFormState extends State<_ReportForm> {
             decoration: const InputDecoration(labelText: 'Notlar (opsiyonel)'),
           ),
           const SizedBox(height: 10),
-          const Text(
+          Text(
             'Müşteri İmzası',
-            style: TextStyle(
-              fontSize: 12.5,
-              fontWeight: FontWeight.w600,
-              color: AppColors.textSecondary,
-            ),
+            style: tx.bodySmall.copyWith(fontWeight: FontWeight.w600),
           ),
           const SizedBox(height: 6),
           Container(
             height: 150,
             decoration: BoxDecoration(
-              border: Border.all(color: AppColors.borderDefault),
+              border: Border.all(color: cs.borderDefault),
               borderRadius: BorderRadius.circular(12),
             ),
             child: Signature(
@@ -1204,10 +1203,7 @@ class _ReportFormState extends State<_ReportForm> {
             ),
           ),
           if (_error != null)
-            Text(
-              _error!,
-              style: const TextStyle(color: Colors.red, fontSize: 12.5),
-            ),
+            Text(_error!, style: tx.bodySmall.copyWith(color: Colors.red)),
           const SizedBox(height: 6),
           ElevatedButton(
             onPressed: _saving ? null : _submit,
@@ -1248,6 +1244,8 @@ class _UsedProductRowWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final cs = context.colors;
+    final tx = context.text;
     Product? selected;
     for (final p in products) {
       if (p.id == row.productId) {
@@ -1260,7 +1258,7 @@ class _UsedProductRowWidget extends StatelessWidget {
       margin: const EdgeInsets.only(bottom: 8),
       padding: const EdgeInsets.all(10),
       decoration: BoxDecoration(
-        color: AppColors.surfaceMuted,
+        color: cs.surfaceMuted,
         borderRadius: BorderRadius.circular(12),
       ),
       child: Row(
@@ -1273,7 +1271,9 @@ class _UsedProductRowWidget extends StatelessWidget {
                 value: row.productId,
                 items: products
                     .where(
-                      (p) => p.id == row.productId || !usedElsewhere.contains(p.id),
+                      (p) =>
+                          p.id == row.productId ||
+                          !usedElsewhere.contains(p.id),
                     )
                     .map(
                       (p) => DropdownMenuItem(
@@ -1281,7 +1281,7 @@ class _UsedProductRowWidget extends StatelessWidget {
                         child: Text(
                           p.name,
                           overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(fontSize: 13),
+                          style: tx.bodySmall,
                         ),
                       ),
                     )
@@ -1307,7 +1307,9 @@ class _UsedProductRowWidget extends StatelessWidget {
           SizedBox(
             width: 32,
             child: Text(
-              row.quantity.toStringAsFixed(row.quantity.truncateToDouble() == row.quantity ? 0 : 2),
+              row.quantity.toStringAsFixed(
+                row.quantity.truncateToDouble() == row.quantity ? 0 : 2,
+              ),
               textAlign: TextAlign.center,
               style: const TextStyle(fontWeight: FontWeight.w700),
             ),
@@ -1325,19 +1327,12 @@ class _UsedProductRowWidget extends StatelessWidget {
               padding: const EdgeInsets.only(left: 4),
               child: Text(
                 selected.unit,
-                style: const TextStyle(
-                  fontSize: 11.5,
-                  color: AppColors.textFaint,
-                ),
+                style: tx.caption.copyWith(color: cs.textFaint),
               ),
             ),
           IconButton(
             visualDensity: VisualDensity.compact,
-            icon: const Icon(
-              Icons.close_rounded,
-              size: 18,
-              color: AppColors.danger500,
-            ),
+            icon: Icon(Icons.close_rounded, size: 18, color: cs.danger500),
             onPressed: onRemove,
           ),
         ],
@@ -1409,6 +1404,8 @@ class _ReassignStaffCardState extends State<_ReassignStaffCard> {
 
   @override
   Widget build(BuildContext context) {
+    final cs = context.colors;
+    final tx = context.text;
     if (_loading) {
       return const SizedBox(
         height: 48,
@@ -1418,16 +1415,16 @@ class _ReassignStaffCardState extends State<_ReassignStaffCard> {
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: AppColors.surfaceCard,
+        color: cs.surfaceCard,
         borderRadius: BorderRadius.circular(AppRadius.card),
-        border: Border.all(color: AppColors.borderDefault),
+        border: Border.all(color: cs.borderDefault),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
+          Text(
             'Ekipten Personel Ata',
-            style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13.5),
+            style: tx.body.copyWith(fontWeight: FontWeight.w700),
           ),
           const SizedBox(height: 8),
           DropdownButtonFormField<String>(
@@ -1443,10 +1440,7 @@ class _ReassignStaffCardState extends State<_ReassignStaffCard> {
           ),
           if (_error != null) ...[
             const SizedBox(height: 6),
-            Text(
-              _error!,
-              style: const TextStyle(color: Colors.red, fontSize: 12.5),
-            ),
+            Text(_error!, style: tx.bodySmall.copyWith(color: Colors.red)),
           ],
           const SizedBox(height: 8),
           ElevatedButton(

@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 
 import '../../core/api_client.dart';
 import '../../theme/app_colors.dart';
+import '../../theme/app_palette.dart';
+import '../../theme/app_text_styles.dart';
 
 /// Bölüm AH (8. tur): GET /staff/:id/leave-balance yanıtı (takvim yılı).
 class LeaveBalance {
@@ -72,48 +74,42 @@ class _LeaveBalanceCardState extends State<LeaveBalanceCard> {
 
   @override
   Widget build(BuildContext context) {
+    final cs = context.colors;
+    final tx = context.text;
     if (_loading || _balance == null) return const SizedBox.shrink();
     final b = _balance!;
     final barColor = b.isOver
-        ? AppColors.danger500
+        ? cs.danger500
         : b.usedPercent >= 80
-        ? AppColors.warning500
-        : AppColors.primary600;
+        ? cs.warning500
+        : cs.primary600;
 
     return Container(
       margin: const EdgeInsets.only(top: 12),
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: AppColors.surfaceCard,
+        color: cs.surfaceCard,
         borderRadius: BorderRadius.circular(AppRadius.card),
-        border: Border.all(color: AppColors.borderDefault),
+        border: Border.all(color: cs.borderDefault),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              const Icon(
-                Icons.event_busy_rounded,
-                size: 18,
-                color: AppColors.primary600,
-              ),
+              Icon(Icons.event_busy_rounded, size: 18, color: cs.accentSoft),
               const SizedBox(width: 6),
               Expanded(
                 child: Text(
                   'İzin Bakiyesi ${b.year}',
-                  style: const TextStyle(
-                    fontWeight: FontWeight.w700,
-                    fontSize: 14.5,
-                  ),
+                  style: tx.subtitle.copyWith(fontWeight: FontWeight.w700),
                 ),
               ),
               Text(
                 '${b.remainingDays} / ${b.quotaDays} gün',
-                style: TextStyle(
+                style: tx.bodySmall.copyWith(
                   fontWeight: FontWeight.w700,
-                  fontSize: 13,
-                  color: b.isOver ? AppColors.danger500 : AppColors.textPrimary,
+                  color: b.isOver ? cs.danger500 : cs.textPrimary,
                 ),
               ),
             ],
@@ -124,7 +120,7 @@ class _LeaveBalanceCardState extends State<LeaveBalanceCard> {
             child: LinearProgressIndicator(
               value: b.usedPercent / 100,
               minHeight: 6,
-              backgroundColor: AppColors.surfaceMuted,
+              backgroundColor: cs.surfaceMuted,
               color: barColor,
             ),
           ),
@@ -132,10 +128,7 @@ class _LeaveBalanceCardState extends State<LeaveBalanceCard> {
           Text(
             '${b.usedDays} gün kullanıldı (${b.approvedRequestCount} onaylı talep)'
             '${b.isOver ? ' · bakiye aşıldı' : ''}',
-            style: const TextStyle(
-              fontSize: 12,
-              color: AppColors.textSecondary,
-            ),
+            style: tx.caption,
           ),
         ],
       ),
@@ -150,29 +143,23 @@ class LeaveBalanceExceedBadge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final cs = context.colors;
+    final tx = context.text;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
       decoration: BoxDecoration(
-        color: AppColors.warning50,
+        color: cs.warning50,
         borderRadius: BorderRadius.circular(999),
-        border: Border.all(color: AppColors.warning500.withValues(alpha: 0.35)),
+        border: Border.all(color: cs.warning500.withValues(alpha: 0.35)),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          const Icon(
-            Icons.warning_amber_rounded,
-            size: 13,
-            color: AppColors.warning600,
-          ),
+          Icon(Icons.warning_amber_rounded, size: 13, color: cs.warning600),
           const SizedBox(width: 4),
           Text(
             'Bakiyeyi aşıyor (kalan ${remainingDays ?? 0} gün)',
-            style: const TextStyle(
-              fontSize: 11,
-              fontWeight: FontWeight.w700,
-              color: AppColors.warning600,
-            ),
+            style: tx.label.copyWith(color: cs.warning600),
           ),
         ],
       ),

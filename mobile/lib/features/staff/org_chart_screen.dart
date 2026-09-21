@@ -4,13 +4,15 @@ import '../../core/api_client.dart';
 import '../../models/org_chart.dart';
 import '../../models/user.dart';
 import '../../theme/app_colors.dart';
+import '../../theme/app_palette.dart';
+import '../../theme/app_text_styles.dart';
 import '../../widgets/state_views.dart';
 
-const _roleTones = {
-  'OWNER': AppColors.warning600,
-  'MANAGER': AppColors.primary700,
-  'TEAM_LEAD': AppColors.info600,
-  'STAFF': AppColors.textSecondary,
+Map<String, Color> _roleTones(AppPalette cs) => {
+  'OWNER': cs.warning600,
+  'MANAGER': cs.primary700,
+  'TEAM_LEAD': cs.info600,
+  'STAFF': cs.textSecondary,
 };
 
 /// web/src/app/(dashboard)/personel/OrgChartView.tsx'in mobildeki
@@ -40,11 +42,15 @@ class _OrgChartScreenState extends State<OrgChartScreen> {
       _error = null;
     });
     try {
-      final json = await ApiClient.instance.get<Map<String, dynamic>>('/staff/org-chart');
+      final json = await ApiClient.instance.get<Map<String, dynamic>>(
+        '/staff/org-chart',
+      );
       setState(() => _data = OrgChartResponse.fromJson(json));
     } catch (e) {
       setState(
-        () => _error = e is ApiException ? e.message : 'Organizasyon şeması yüklenemedi',
+        () => _error = e is ApiException
+            ? e.message
+            : 'Organizasyon şeması yüklenemedi',
       );
     } finally {
       if (mounted) setState(() => _loading = false);
@@ -53,6 +59,8 @@ class _OrgChartScreenState extends State<OrgChartScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final cs = context.colors;
+    final tx = context.text;
     return Scaffold(
       appBar: AppBar(title: const Text('Organizasyon Şeması')),
       body: _loading
@@ -67,7 +75,7 @@ class _OrgChartScreenState extends State<OrgChartScreen> {
             )
           : RefreshIndicator(
               onRefresh: _load,
-              color: AppColors.primary600,
+              color: cs.accentSoft,
               child: ListView(
                 padding: const EdgeInsets.all(16),
                 children: [
@@ -75,12 +83,18 @@ class _OrgChartScreenState extends State<OrgChartScreen> {
                   if (_data!.unassigned.isNotEmpty) ...[
                     const SizedBox(height: 20),
                     Row(
-                      children: const [
-                        Icon(Icons.warning_amber_rounded, size: 16, color: AppColors.warning600),
+                      children: [
+                        Icon(
+                          Icons.warning_amber_rounded,
+                          size: 16,
+                          color: cs.warning600,
+                        ),
                         SizedBox(width: 6),
                         Text(
                           'Şefi Tanımlı Olmayan / Bağlantısız',
-                          style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13),
+                          style: tx.bodySmall.copyWith(
+                            fontWeight: FontWeight.w700,
+                          ),
                         ),
                       ],
                     ),
@@ -101,27 +115,39 @@ class _OrgChartScreenState extends State<OrgChartScreen> {
   }
 
   Widget _buildRow(OrgChartNode node, int depth) {
-    final tone = _roleTones[node.role] ?? AppColors.textSecondary;
+    final cs = context.colors;
+    final tx = context.text;
+    final tone = _roleTones(cs)[node.role] ?? cs.textSecondary;
     return Padding(
       padding: EdgeInsets.only(left: depth * 20.0, bottom: 8),
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
         decoration: BoxDecoration(
-          color: AppColors.surfaceCard,
+          color: cs.surfaceCard,
           borderRadius: BorderRadius.circular(AppRadius.card),
-          border: Border.all(color: AppColors.borderDefault),
+          border: Border.all(color: cs.borderDefault),
         ),
         child: Row(
           children: [
-            Container(width: 3, height: 32, color: tone, margin: const EdgeInsets.only(right: 10)),
+            Container(
+              width: 3,
+              height: 32,
+              color: tone,
+              margin: const EdgeInsets.only(right: 10),
+            ),
             CircleAvatar(
               radius: 16,
               backgroundColor: tone.withValues(alpha: 0.15),
               child: node.role == 'OWNER'
                   ? Icon(Icons.workspace_premium_rounded, size: 16, color: tone)
                   : Text(
-                      node.fullName.isNotEmpty ? node.fullName[0].toUpperCase() : '?',
-                      style: TextStyle(fontWeight: FontWeight.w700, color: tone, fontSize: 12),
+                      node.fullName.isNotEmpty
+                          ? node.fullName[0].toUpperCase()
+                          : '?',
+                      style: tx.caption.copyWith(
+                        fontWeight: FontWeight.w700,
+                        color: tone,
+                      ),
                     ),
             ),
             const SizedBox(width: 10),
@@ -131,7 +157,7 @@ class _OrgChartScreenState extends State<OrgChartScreen> {
                 children: [
                   Text(
                     node.fullName,
-                    style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13),
+                    style: tx.bodySmall.copyWith(fontWeight: FontWeight.w700),
                     overflow: TextOverflow.ellipsis,
                   ),
                   Text(
@@ -139,7 +165,7 @@ class _OrgChartScreenState extends State<OrgChartScreen> {
                       roleLabelTr(roleFromString(node.role)),
                       if (node.position != null) node.position!,
                     ].join(' · '),
-                    style: const TextStyle(fontSize: 11, color: AppColors.textFaint),
+                    style: tx.label,
                     overflow: TextOverflow.ellipsis,
                   ),
                 ],
@@ -149,12 +175,12 @@ class _OrgChartScreenState extends State<OrgChartScreen> {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                 decoration: BoxDecoration(
-                  color: AppColors.surfaceMuted,
+                  color: cs.surfaceMuted,
                   borderRadius: BorderRadius.circular(AppRadius.pill),
                 ),
                 child: Text(
                   '${node.assignedCustomers.length} müşteri',
-                  style: const TextStyle(fontSize: 10.5, fontWeight: FontWeight.w600),
+                  style: tx.label.copyWith(fontWeight: FontWeight.w600),
                 ),
               ),
           ],

@@ -4,6 +4,8 @@ import 'package:intl/intl.dart';
 import '../../core/api_client.dart';
 import '../../models/vehicle_maintenance.dart';
 import '../../theme/app_colors.dart';
+import '../../theme/app_palette.dart';
+import '../../theme/app_text_styles.dart';
 
 final _dateFormat = DateFormat('d MMM yyyy', 'tr_TR');
 
@@ -76,7 +78,10 @@ class _VehicleMaintenanceCardState extends State<VehicleMaintenanceCard> {
         title: const Text('Bakım kaydını sil'),
         content: const Text('Bu bakım kaydı kalıcı olarak silinecek.'),
         actions: [
-          TextButton(onPressed: () => Navigator.of(ctx).pop(false), child: const Text('Vazgeç')),
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: const Text('Vazgeç'),
+          ),
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(true),
             child: const Text('Sil', style: TextStyle(color: Colors.red)),
@@ -86,7 +91,9 @@ class _VehicleMaintenanceCardState extends State<VehicleMaintenanceCard> {
     );
     if (ok != true) return;
     try {
-      await _api.delete('/staff/${widget.staffId}/vehicle-maintenance/${row.id}');
+      await _api.delete(
+        '/staff/${widget.staffId}/vehicle-maintenance/${row.id}',
+      );
       _load();
     } catch (e) {
       if (mounted) {
@@ -99,36 +106,34 @@ class _VehicleMaintenanceCardState extends State<VehicleMaintenanceCard> {
 
   @override
   Widget build(BuildContext context) {
+    final cs = context.colors;
+    final tx = context.text;
     if (_hidden) return const SizedBox.shrink();
     return Padding(
       padding: const EdgeInsets.only(top: 14),
       child: Container(
         padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
-          color: AppColors.surfaceCard,
+          color: cs.surfaceCard,
           borderRadius: BorderRadius.circular(AppRadius.card),
-          border: Border.all(color: AppColors.borderDefault),
+          border: Border.all(color: cs.borderDefault),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(
               children: [
-                const Icon(Icons.local_shipping_outlined, size: 18, color: AppColors.primary700),
+                Icon(Icons.local_shipping_outlined, size: 18, color: cs.accent),
                 const SizedBox(width: 8),
-                const Expanded(
+                Expanded(
                   child: Text(
                     'Araç Bakımı',
-                    style: TextStyle(fontWeight: FontWeight.w700, fontSize: 14.5),
+                    style: tx.subtitle.copyWith(fontWeight: FontWeight.w700),
                   ),
                 ),
                 Text(
                   widget.vehiclePlate,
-                  style: const TextStyle(
-                    fontFamily: 'monospace',
-                    fontSize: 12,
-                    color: AppColors.textSecondary,
-                  ),
+                  style: tx.caption.copyWith(fontFamily: 'monospace'),
                 ),
                 if (widget.editable)
                   IconButton(
@@ -141,14 +146,20 @@ class _VehicleMaintenanceCardState extends State<VehicleMaintenanceCard> {
             ),
             const SizedBox(height: 8),
             if (_loading)
-              const Center(child: Padding(padding: EdgeInsets.all(8), child: CircularProgressIndicator(strokeWidth: 2)))
-            else if (_rows.isEmpty)
-              const Text(
-                'Henüz bakım kaydı yok.',
-                style: TextStyle(fontSize: 12.5, color: AppColors.textSecondary),
+              const Center(
+                child: Padding(
+                  padding: EdgeInsets.all(8),
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                ),
               )
+            else if (_rows.isEmpty)
+              Text('Henüz bakım kaydı yok.', style: tx.bodySmall)
             else
-              for (final row in _rows) _RowTile(row: row, onDelete: widget.editable ? () => _delete(row) : null),
+              for (final row in _rows)
+                _RowTile(
+                  row: row,
+                  onDelete: widget.editable ? () => _delete(row) : null,
+                ),
           ],
         ),
       ),
@@ -163,11 +174,13 @@ class _RowTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final cs = context.colors;
+    final tx = context.text;
     final color = row.isOverdue || row.daysLeft <= 7
-        ? AppColors.danger600
+        ? cs.danger600
         : row.daysLeft <= 14
-        ? AppColors.warning600
-        : AppColors.success600;
+        ? cs.warning600
+        : cs.success600;
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 6),
       child: Row(
@@ -178,12 +191,12 @@ class _RowTile extends StatelessWidget {
               children: [
                 Text(
                   vehicleMaintenanceTypeLabel(row.maintenanceType),
-                  style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
+                  style: tx.bodySmall.copyWith(fontWeight: FontWeight.w600),
                 ),
                 Text(
                   'Son: ${_dateFormat.format(DateTime.parse(row.lastServiceDate))} · Sonraki: ${_dateFormat.format(DateTime.parse(row.nextDueDate))}'
                   '${row.note != null && row.note!.isNotEmpty ? ' · ${row.note}' : ''}',
-                  style: const TextStyle(fontSize: 11.5, color: AppColors.textSecondary),
+                  style: tx.caption,
                 ),
               ],
             ),
@@ -194,15 +207,16 @@ class _RowTile extends StatelessWidget {
               color: color.withValues(alpha: 0.12),
               borderRadius: BorderRadius.circular(999),
             ),
-            child: Text(
-              row.dueLabel,
-              style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.w700, color: color),
-            ),
+            child: Text(row.dueLabel, style: tx.label.copyWith(color: color)),
           ),
           if (onDelete != null)
             IconButton(
               onPressed: onDelete,
-              icon: const Icon(Icons.delete_outline_rounded, size: 18, color: AppColors.danger600),
+              icon: Icon(
+                Icons.delete_outline_rounded,
+                size: 18,
+                color: cs.danger600,
+              ),
               visualDensity: VisualDensity.compact,
             ),
         ],
@@ -237,12 +251,15 @@ class _AddSheetState extends State<_AddSheet> {
       firstDate: DateTime.now().subtract(const Duration(days: 3650)),
       lastDate: DateTime.now().add(const Duration(days: 3650)),
     );
-    if (picked != null) setState(() => isLast ? _last = picked : _next = picked);
+    if (picked != null)
+      setState(() => isLast ? _last = picked : _next = picked);
   }
 
   Future<void> _save() async {
     if (_next.isBefore(_last)) {
-      setState(() => _error = 'Sonraki bakım tarihi son bakım tarihinden önce olamaz');
+      setState(
+        () => _error = 'Sonraki bakım tarihi son bakım tarihinden önce olamaz',
+      );
       return;
     }
     setState(() {
@@ -250,12 +267,15 @@ class _AddSheetState extends State<_AddSheet> {
       _error = null;
     });
     try {
-      await ApiClient.instance.post('/staff/${widget.staffId}/vehicle-maintenance', body: {
-        'maintenanceType': _type,
-        'lastServiceDate': _iso(_last),
-        'nextDueDate': _iso(_next),
-        if (_note.text.trim().isNotEmpty) 'note': _note.text.trim(),
-      });
+      await ApiClient.instance.post(
+        '/staff/${widget.staffId}/vehicle-maintenance',
+        body: {
+          'maintenanceType': _type,
+          'lastServiceDate': _iso(_last),
+          'nextDueDate': _iso(_next),
+          if (_note.text.trim().isNotEmpty) 'note': _note.text.trim(),
+        },
+      );
       if (mounted) Navigator.of(context).pop(true);
     } catch (e) {
       setState(() => _error = e is ApiException ? e.message : 'Kaydedilemedi');
@@ -266,6 +286,8 @@ class _AddSheetState extends State<_AddSheet> {
 
   @override
   Widget build(BuildContext context) {
+    final cs = context.colors;
+    final tx = context.text;
     return Padding(
       padding: EdgeInsets.only(
         bottom: MediaQuery.of(context).viewInsets.bottom,
@@ -277,14 +299,20 @@ class _AddSheetState extends State<_AddSheet> {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text('Yeni bakım kaydı', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 15)),
+          Text(
+            'Yeni bakım kaydı',
+            style: tx.subtitle.copyWith(fontWeight: FontWeight.w700),
+          ),
           const SizedBox(height: 12),
           DropdownButtonFormField<String>(
             initialValue: _type,
             decoration: const InputDecoration(labelText: 'Tür'),
             items: [
               for (final t in vehicleMaintenanceTypes)
-                DropdownMenuItem(value: t, child: Text(vehicleMaintenanceTypeLabel(t))),
+                DropdownMenuItem(
+                  value: t,
+                  child: Text(vehicleMaintenanceTypeLabel(t)),
+                ),
             ],
             onChanged: (v) => setState(() => _type = v ?? _type),
           ),
@@ -314,7 +342,8 @@ class _AddSheetState extends State<_AddSheet> {
             maxLength: 500,
             decoration: const InputDecoration(labelText: 'Not (opsiyonel)'),
           ),
-          if (_error != null) Text(_error!, style: const TextStyle(color: AppColors.danger600, fontSize: 12.5)),
+          if (_error != null)
+            Text(_error!, style: tx.bodySmall.copyWith(color: cs.danger600)),
           const SizedBox(height: 12),
           ElevatedButton(
             onPressed: _saving ? null : _save,

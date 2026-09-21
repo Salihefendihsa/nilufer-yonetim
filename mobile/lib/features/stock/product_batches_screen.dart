@@ -5,30 +5,32 @@ import '../../core/api_client.dart';
 import '../../models/product.dart';
 import '../../models/product_batch.dart';
 import '../../theme/app_colors.dart';
+import '../../theme/app_palette.dart';
+import '../../theme/app_text_styles.dart';
 import '../../widgets/state_views.dart';
 import 'stock_api.dart';
 
 final _dateFormat = DateFormat('d MMM yyyy', 'tr_TR');
 
-Color batchToneColor(BatchTone tone) {
+Color batchToneColor(AppPalette cs, BatchTone tone) {
   switch (tone) {
     case BatchTone.red:
-      return AppColors.danger600;
+      return cs.danger600;
     case BatchTone.yellow:
-      return AppColors.warning600;
+      return cs.warning600;
     case BatchTone.green:
-      return AppColors.success600;
+      return cs.success600;
   }
 }
 
-Color batchToneBackground(BatchTone tone) {
+Color batchToneBackground(AppPalette cs, BatchTone tone) {
   switch (tone) {
     case BatchTone.red:
-      return AppColors.danger50;
+      return cs.danger50;
     case BatchTone.yellow:
-      return AppColors.warning50;
+      return cs.warning50;
     case BatchTone.green:
-      return AppColors.success50;
+      return cs.success50;
   }
 }
 
@@ -73,6 +75,7 @@ class _ProductBatchesScreenState extends State<ProductBatchesScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final cs = context.colors;
     return Scaffold(
       appBar: AppBar(title: Text('${widget.product.name} — Partiler')),
       body: _loading
@@ -82,21 +85,18 @@ class _ProductBatchesScreenState extends State<ProductBatchesScreen> {
           : _batches.isEmpty
           ? const EmptyStateView(
               title: 'Parti kaydı yok',
-              subtitle:
-                  'Stok girişinde parti no + SKT girerek takibe başlayabilirsiniz.',
+              subtitle: 'Stok girişinde parti no + SKT girerek takibe başlayabilirsiniz.',
               icon: Icons.sell_outlined,
             )
           : RefreshIndicator(
               onRefresh: _load,
-              color: AppColors.primary600,
+              color: cs.accentSoft,
               child: ListView.separated(
                 padding: const EdgeInsets.all(16),
                 itemCount: _batches.length,
                 separatorBuilder: (_, __) => const SizedBox(height: 8),
-                itemBuilder: (context, i) => BatchTile(
-                  batch: _batches[i],
-                  unit: widget.product.unit,
-                ),
+                itemBuilder: (context, i) =>
+                    BatchTile(batch: _batches[i], unit: widget.product.unit),
               ),
             ),
     );
@@ -117,6 +117,8 @@ class BatchTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final cs = context.colors;
+    final tx = context.text;
     final depleted = batch.isDepleted;
     final tone = batch.tone;
     final u = unit ?? batch.productUnit ?? '';
@@ -125,9 +127,9 @@ class BatchTile extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
-          color: AppColors.surfaceCard,
+          color: cs.surfaceCard,
           borderRadius: BorderRadius.circular(AppRadius.card),
-          border: Border.all(color: AppColors.borderDefault),
+          border: Border.all(color: cs.borderDefault),
         ),
         child: Row(
           children: [
@@ -135,7 +137,7 @@ class BatchTile extends StatelessWidget {
               width: 6,
               height: 40,
               decoration: BoxDecoration(
-                color: depleted ? AppColors.neutral300 : batchToneColor(tone),
+                color: depleted ? cs.neutral300 : batchToneColor(cs, tone),
                 borderRadius: BorderRadius.circular(3),
               ),
             ),
@@ -148,19 +150,13 @@ class BatchTile extends StatelessWidget {
                     showProductName && batch.productName != null
                         ? '${batch.productName} · ${batch.batchNumber}'
                         : batch.batchNumber,
-                    style: const TextStyle(
-                      fontWeight: FontWeight.w700,
-                      fontSize: 13.5,
-                    ),
+                    style: tx.body.copyWith(fontWeight: FontWeight.w700),
                   ),
                   Text(
                     'SKT ${_dateFormat.format(DateTime.parse(batch.expiryDate))}'
                     ' · ${batch.quantityRemaining.toStringAsFixed(1)} / ${batch.quantityReceived.toStringAsFixed(1)} $u'
                     '${batch.supplierName != null ? ' · ${batch.supplierName}' : ''}',
-                    style: const TextStyle(
-                      fontSize: 11.5,
-                      color: AppColors.textSecondary,
-                    ),
+                    style: tx.caption,
                   ),
                 ],
               ),
@@ -170,18 +166,14 @@ class BatchTile extends StatelessWidget {
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
               decoration: BoxDecoration(
                 color: depleted
-                    ? AppColors.surfaceSubtle
-                    : batchToneBackground(tone),
+                    ? cs.surfaceSubtle
+                    : batchToneBackground(cs, tone),
                 borderRadius: BorderRadius.circular(999),
               ),
               child: Text(
                 depleted ? 'Tükendi' : batch.expiryLabel,
-                style: TextStyle(
-                  fontSize: 10.5,
-                  fontWeight: FontWeight.w700,
-                  color: depleted
-                      ? AppColors.textSecondary
-                      : batchToneColor(tone),
+                style: tx.label.copyWith(
+                  color: depleted ? cs.textSecondary : batchToneColor(cs, tone),
                 ),
               ),
             ),
@@ -233,6 +225,8 @@ class _ExpiringBatchesScreenState extends State<ExpiringBatchesScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final cs = context.colors;
+    final tx = context.text;
     final expired = _batches.where((b) => b.isExpired).length;
     return Scaffold(
       appBar: AppBar(title: const Text('Süresi Yaklaşan Partiler')),
@@ -257,10 +251,9 @@ class _ExpiringBatchesScreenState extends State<ExpiringBatchesScreen> {
                 if (!_loading && expired > 0)
                   Text(
                     '$expired süresi dolmuş',
-                    style: const TextStyle(
-                      fontSize: 11.5,
+                    style: tx.caption.copyWith(
                       fontWeight: FontWeight.w700,
-                      color: AppColors.danger600,
+                      color: cs.danger600,
                     ),
                   ),
               ],
@@ -280,15 +273,13 @@ class _ExpiringBatchesScreenState extends State<ExpiringBatchesScreen> {
                   )
                 : RefreshIndicator(
                     onRefresh: _load,
-                    color: AppColors.primary600,
+                    color: cs.accentSoft,
                     child: ListView.separated(
                       padding: const EdgeInsets.all(16),
                       itemCount: _batches.length,
                       separatorBuilder: (_, __) => const SizedBox(height: 8),
-                      itemBuilder: (context, i) => BatchTile(
-                        batch: _batches[i],
-                        showProductName: true,
-                      ),
+                      itemBuilder: (context, i) =>
+                          BatchTile(batch: _batches[i], showProductName: true),
                     ),
                   ),
           ),

@@ -5,6 +5,8 @@ import 'package:share_plus/share_plus.dart';
 
 import '../../core/api_client.dart';
 import '../../theme/app_colors.dart';
+import '../../theme/app_palette.dart';
+import '../../theme/app_text_styles.dart';
 import '../../widgets/state_views.dart';
 
 /// Bölüm P (4. tur): GET /customers/me/referral yanıtı.
@@ -88,22 +90,21 @@ class _ReferralScreenState extends State<ReferralScreen> {
     if (d == null) return;
     await Clipboard.setData(ClipboardData(text: d.inviteLink));
     if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Davet linki kopyalandı')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Davet linki kopyalandı')));
     }
   }
 
   Future<void> _share() async {
     final d = _data;
     if (d == null) return;
-    await Share.share(
-      'Nilüfer İlaçlama teklif davet linkim: ${d.inviteLink}',
-    );
+    await Share.share('Nilüfer İlaçlama teklif davet linkim: ${d.inviteLink}');
   }
 
   @override
   Widget build(BuildContext context) {
+    final cs = context.colors;
     return Scaffold(
       appBar: AppBar(title: const Text('Arkadaşını Davet Et')),
       body: _loading
@@ -112,7 +113,7 @@ class _ReferralScreenState extends State<ReferralScreen> {
           ? ErrorRetryView(message: _error!, onRetry: _load)
           : RefreshIndicator(
               onRefresh: _load,
-              color: AppColors.primary600,
+              color: cs.accentSoft,
               child: ListView(
                 padding: const EdgeInsets.all(16),
                 children: [_buildCard(_data!)],
@@ -122,52 +123,37 @@ class _ReferralScreenState extends State<ReferralScreen> {
   }
 
   Widget _buildCard(CustomerReferral d) {
+    final cs = context.colors;
+    final tx = context.text;
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: AppColors.surfaceCard,
+        color: cs.surfaceCard,
         borderRadius: BorderRadius.circular(AppRadius.card),
-        border: Border.all(color: AppColors.borderDefault),
+        border: Border.all(color: cs.borderDefault),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Row(
+          Row(
             children: [
-              Icon(
-                Icons.card_giftcard_rounded,
-                color: AppColors.primary600,
-                size: 20,
-              ),
+              Icon(Icons.card_giftcard_rounded, color: cs.accentSoft, size: 20),
               SizedBox(width: 8),
               Expanded(
                 child: Text(
                   'Linki paylaşın; arkadaşınız teklif isteyip müşterimiz olduğunda burada görünür.',
-                  style: TextStyle(
-                    fontSize: 12.5,
-                    color: AppColors.textSecondary,
-                  ),
+                  style: tx.bodySmall,
                 ),
               ),
             ],
           ),
           const SizedBox(height: 16),
-          const Text(
-            'DAVET KODUNUZ',
-            style: TextStyle(
-              fontSize: 10.5,
-              fontWeight: FontWeight.w700,
-              color: AppColors.textFaint,
-              letterSpacing: 1,
-            ),
-          ),
+          Text('DAVET KODUNUZ', style: tx.label.copyWith(letterSpacing: 1)),
           Text(
             d.referralCode,
-            style: const TextStyle(
-              fontSize: 28,
-              fontWeight: FontWeight.w800,
+            style: tx.stat.copyWith(
               letterSpacing: 4,
-              color: AppColors.primary700,
+              color: cs.accent,
               fontFamily: 'monospace',
             ),
           ),
@@ -175,17 +161,13 @@ class _ReferralScreenState extends State<ReferralScreen> {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
             decoration: BoxDecoration(
-              color: AppColors.surfaceSubtle,
+              color: cs.surfaceSubtle,
               borderRadius: BorderRadius.circular(10),
-              border: Border.all(color: AppColors.borderDefault),
+              border: Border.all(color: cs.borderDefault),
             ),
             child: SelectableText(
               d.inviteLink,
-              style: const TextStyle(
-                fontSize: 11.5,
-                color: AppColors.textSecondary,
-                fontFamily: 'monospace',
-              ),
+              style: tx.caption.copyWith(fontFamily: 'monospace'),
             ),
           ),
           const SizedBox(height: 10),
@@ -211,18 +193,15 @@ class _ReferralScreenState extends State<ReferralScreen> {
           const SizedBox(height: 16),
           Row(
             children: [
-              const Icon(
+              Icon(
                 Icons.people_outline_rounded,
                 size: 16,
-                color: AppColors.textSecondary,
+                color: cs.textSecondary,
               ),
               const SizedBox(width: 6),
               Text(
                 '${d.referredCount} kişi davetinizle geldi',
-                style: const TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w600,
-                ),
+                style: tx.bodySmall.copyWith(fontWeight: FontWeight.w600),
               ),
             ],
           ),
@@ -233,22 +212,14 @@ class _ReferralScreenState extends State<ReferralScreen> {
                 padding: const EdgeInsets.symmetric(vertical: 4),
                 child: Row(
                   children: [
-                    Expanded(
-                      child: Text(
-                        r.fullName,
-                        style: const TextStyle(fontSize: 13),
-                      ),
-                    ),
+                    Expanded(child: Text(r.fullName, style: tx.bodySmall)),
                     if (r.createdAt.isNotEmpty)
                       Text(
                         DateFormat(
                           'd MMM yyyy',
                           'tr_TR',
                         ).format(DateTime.parse(r.createdAt).toLocal()),
-                        style: const TextStyle(
-                          fontSize: 11.5,
-                          color: AppColors.textFaint,
-                        ),
+                        style: tx.caption.copyWith(color: cs.textFaint),
                       ),
                   ],
                 ),

@@ -4,7 +4,8 @@ import 'package:flutter/material.dart';
 
 import '../../core/api_client.dart';
 import '../../models/search_result.dart';
-import '../../theme/app_colors.dart';
+import '../../theme/app_palette.dart';
+import '../../theme/app_text_styles.dart';
 import '../../widgets/state_views.dart';
 import '../contracts/contracts_list_screen.dart';
 import '../customers/customer_detail_screen.dart';
@@ -149,6 +150,8 @@ class _SearchScreenState extends State<SearchScreen> {
   }
 
   Widget _buildBody() {
+    final cs = context.colors;
+    final tx = context.text;
     // Bölüm R (4. tur): durum görünümleri ortak widget'larla (LoadingView /
     // ErrorRetryView / EmptyStateView) — diğer ekranlarla aynı dil.
     if (_query.length < _minLength) {
@@ -186,14 +189,13 @@ class _SearchScreenState extends State<SearchScreen> {
               padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
               child: Row(
                 children: [
-                  Icon(_iconFor(type), size: 14, color: AppColors.textFaint),
+                  Icon(_iconFor(type), size: 14, color: cs.textFaint),
                   const SizedBox(width: 6),
                   Text(
                     searchResultTypeLabelTr(type),
-                    style: const TextStyle(
-                      fontSize: 12,
+                    style: tx.caption.copyWith(
                       fontWeight: FontWeight.w700,
-                      color: AppColors.textFaint,
+                      color: cs.textFaint,
                     ),
                   ),
                 ],
@@ -202,8 +204,8 @@ class _SearchScreenState extends State<SearchScreen> {
             for (final r in items)
               ListTile(
                 leading: CircleAvatar(
-                  backgroundColor: AppColors.surfaceSubtle,
-                  foregroundColor: AppColors.textSecondary,
+                  backgroundColor: cs.surfaceSubtle,
+                  foregroundColor: cs.textSecondary,
                   child: Icon(_iconFor(type), size: 20),
                 ),
                 title: Text(
@@ -223,16 +225,10 @@ class _SearchScreenState extends State<SearchScreen> {
                     vertical: 3,
                   ),
                   decoration: BoxDecoration(
-                    color: AppColors.surfaceSubtle,
+                    color: cs.surfaceSubtle,
                     borderRadius: BorderRadius.circular(999),
                   ),
-                  child: Text(
-                    searchResultTypeLabelTr(type),
-                    style: const TextStyle(
-                      fontSize: 10,
-                      color: AppColors.textFaint,
-                    ),
-                  ),
+                  child: Text(searchResultTypeLabelTr(type), style: tx.label),
                 ),
                 onTap: () => _open(r),
               ),

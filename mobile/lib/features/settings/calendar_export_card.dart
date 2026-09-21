@@ -6,6 +6,8 @@ import 'package:url_launcher/url_launcher.dart';
 import '../../core/api_client.dart';
 import '../../core/file_download.dart';
 import '../../theme/app_colors.dart';
+import '../../theme/app_palette.dart';
+import '../../theme/app_text_styles.dart';
 
 /// Bölüm AP (9. tur): STAFF/TEAM_LEAD → Ayarlar → "Takvimimi Dışa Aktar".
 /// GET /staff/me/calendar-token abonelik linkini verir (token'lı
@@ -78,8 +80,12 @@ class _CalendarExportCardState extends State<CalendarExportCard> {
   Future<void> _openWebcal() async {
     final url = _webcalUrl;
     if (url == null) return;
-    final ok = await launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication);
-    if (!ok) _snack('Takvim uygulaması açılamadı — linki kopyalayıp elle ekleyin.');
+    final ok = await launchUrl(
+      Uri.parse(url),
+      mode: LaunchMode.externalApplication,
+    );
+    if (!ok)
+      _snack('Takvim uygulaması açılamadı — linki kopyalayıp elle ekleyin.');
   }
 
   Future<void> _openGoogle() async {
@@ -112,7 +118,10 @@ class _CalendarExportCardState extends State<CalendarExportCard> {
           'Eski abonelik linki anında çalışmayı durdurur; takvim uygulamanızda yeni linkle tekrar abone olmanız gerekir.',
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.of(ctx).pop(false), child: const Text('Vazgeç')),
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: const Text('Vazgeç'),
+          ),
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(true),
             child: const Text('Yenile', style: TextStyle(color: Colors.red)),
@@ -140,38 +149,50 @@ class _CalendarExportCardState extends State<CalendarExportCard> {
 
   @override
   Widget build(BuildContext context) {
+    final cs = context.colors;
+    final tx = context.text;
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: AppColors.surfaceCard,
+        color: cs.surfaceCard,
         borderRadius: BorderRadius.circular(AppRadius.card),
-        border: Border.all(color: AppColors.borderDefault),
+        border: Border.all(color: cs.borderDefault),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Row(
+          Row(
             children: [
-              Icon(Icons.event_repeat_outlined, size: 18, color: AppColors.primary700),
+              Icon(Icons.event_repeat_outlined, size: 18, color: cs.accent),
               SizedBox(width: 8),
               Text(
                 'Takvimimi Dışa Aktar',
-                style: TextStyle(fontWeight: FontWeight.w700, fontSize: 14.5),
+                style: tx.subtitle.copyWith(fontWeight: FontWeight.w700),
               ),
             ],
           ),
           const SizedBox(height: 6),
           Text(
             'Önümüzdeki $_windowDays gündeki atanmış işlerinizi telefonunuzun takvimine aktarın. Abonelik linki otomatik güncellenir.',
-            style: const TextStyle(fontSize: 12.5, color: AppColors.textSecondary),
+            style: tx.bodySmall,
           ),
           const SizedBox(height: 12),
           if (_loading)
-            const Center(child: Padding(padding: EdgeInsets.all(8), child: CircularProgressIndicator(strokeWidth: 2)))
+            const Center(
+              child: Padding(
+                padding: EdgeInsets.all(8),
+                child: CircularProgressIndicator(strokeWidth: 2),
+              ),
+            )
           else if (_error != null)
             Row(
               children: [
-                Expanded(child: Text(_error!, style: const TextStyle(color: AppColors.danger600, fontSize: 12.5))),
+                Expanded(
+                  child: Text(
+                    _error!,
+                    style: tx.bodySmall.copyWith(color: cs.danger600),
+                  ),
+                ),
                 TextButton(onPressed: _load, child: const Text('Tekrar dene')),
               ],
             )
@@ -179,7 +200,7 @@ class _CalendarExportCardState extends State<CalendarExportCard> {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
               decoration: BoxDecoration(
-                color: AppColors.surfaceSubtle,
+                color: cs.surfaceSubtle,
                 borderRadius: BorderRadius.circular(10),
               ),
               child: Row(
@@ -187,7 +208,7 @@ class _CalendarExportCardState extends State<CalendarExportCard> {
                   Expanded(
                     child: Text(
                       _url ?? '',
-                      style: const TextStyle(fontSize: 11, fontFamily: 'monospace'),
+                      style: tx.label.copyWith(fontFamily: 'monospace'),
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                     ),
@@ -229,16 +250,18 @@ class _CalendarExportCardState extends State<CalendarExportCard> {
                 ),
                 OutlinedButton.icon(
                   onPressed: _busy ? null : _rotate,
-                  style: OutlinedButton.styleFrom(foregroundColor: AppColors.danger600),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: cs.danger600,
+                  ),
                   icon: const Icon(Icons.refresh_rounded, size: 16),
                   label: const Text("Token'ı Yenile"),
                 ),
               ],
             ),
             const SizedBox(height: 8),
-            const Text(
+            Text(
               'Bu linki bilen herkes iş programınızı görebilir. Yanlışlıkla paylaştıysanız "Token\'ı Yenile" ile eski linki geçersiz kılın.',
-              style: TextStyle(fontSize: 11, color: AppColors.textFaint),
+              style: tx.label,
             ),
           ],
         ],

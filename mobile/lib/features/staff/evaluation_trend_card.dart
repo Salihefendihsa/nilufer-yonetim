@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 
 import '../../core/api_client.dart';
 import '../../theme/app_colors.dart';
+import '../../theme/app_palette.dart';
+import '../../theme/app_text_styles.dart';
 import '../../widgets/badges.dart';
 import '../../widgets/charts.dart';
 
@@ -82,6 +84,8 @@ class _EvaluationTrendCardState extends State<EvaluationTrendCard> {
 
   @override
   Widget build(BuildContext context) {
+    final cs = context.colors;
+    final tx = context.text;
     if (_loading || _history == null || _history!.data.isEmpty) {
       return const SizedBox.shrink();
     }
@@ -89,30 +93,30 @@ class _EvaluationTrendCardState extends State<EvaluationTrendCard> {
     final last = h.data.last;
     final delta = h.lastDelta;
     final deltaColor = delta == null || delta == 0
-        ? AppColors.textFaint
+        ? cs.textFaint
         : delta > 0
-            ? AppColors.primary700
-            : AppColors.danger500;
+        ? cs.primary700
+        : cs.danger500;
 
     return Container(
       margin: const EdgeInsets.only(top: 12),
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: AppColors.surfaceCard,
+        color: cs.surfaceCard,
         borderRadius: BorderRadius.circular(AppRadius.card),
-        border: Border.all(color: AppColors.borderDefault),
+        border: Border.all(color: cs.borderDefault),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              const Icon(Icons.show_chart_rounded, size: 18, color: AppColors.primary600),
+              Icon(Icons.show_chart_rounded, size: 18, color: cs.accentSoft),
               const SizedBox(width: 6),
-              const Expanded(
+              Expanded(
                 child: Text(
                   'Performans Trendi',
-                  style: TextStyle(fontWeight: FontWeight.w700, fontSize: 14.5),
+                  style: tx.subtitle.copyWith(fontWeight: FontWeight.w700),
                 ),
               ),
               AchievementBadge(tier: last.achievementTier),
@@ -122,14 +126,17 @@ class _EvaluationTrendCardState extends State<EvaluationTrendCard> {
                   delta > 0
                       ? Icons.trending_up_rounded
                       : delta < 0
-                          ? Icons.trending_down_rounded
-                          : Icons.trending_flat_rounded,
+                      ? Icons.trending_down_rounded
+                      : Icons.trending_flat_rounded,
                   size: 16,
                   color: deltaColor,
                 ),
                 Text(
                   '${delta > 0 ? '+' : ''}${delta.toStringAsFixed(1)}',
-                  style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: deltaColor),
+                  style: tx.caption.copyWith(
+                    fontWeight: FontWeight.w700,
+                    color: deltaColor,
+                  ),
                 ),
               ],
             ],
@@ -137,12 +144,13 @@ class _EvaluationTrendCardState extends State<EvaluationTrendCard> {
           Text(
             '${h.data.length} dönem · genel ortalama '
             '${h.overallAverage?.toStringAsFixed(1) ?? '—'}/20',
-            style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
+            style: tx.caption,
           ),
           const SizedBox(height: 8),
           RevenueTrendChart(
             points: [
-              for (final p in h.data) ChartPoint(p.periodLabel, p.averageScore ?? 0),
+              for (final p in h.data)
+                ChartPoint(p.periodLabel, p.averageScore ?? 0),
             ],
             fixedMaxY: 20,
             valueFormatter: (v) => '${v.toStringAsFixed(1)} / 20',

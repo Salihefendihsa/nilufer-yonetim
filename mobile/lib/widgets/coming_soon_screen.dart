@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
-import '../theme/app_colors.dart';
+import '../theme/app_palette.dart';
+import '../theme/app_text_styles.dart';
 
 /// Henüz bu oturumda gerçek veriye bağlanmamış ekranlar için dürüst bir
 /// yer tutucu — YANLIŞLIKLA "çalışıyor" izlenimi vermemesi için sahte veri
@@ -20,6 +21,8 @@ class ComingSoonScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final cs = context.colors;
+    final tx = context.text;
     return Scaffold(
       appBar: AppBar(title: Text(title)),
       body: Center(
@@ -28,26 +31,15 @@ class ComingSoonScreen extends StatelessWidget {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(icon, size: 44, color: AppColors.textFaint),
+              Icon(icon, size: 44, color: cs.textFaint),
               const SizedBox(height: 16),
               Text(
                 '$title ekranı henüz bağlanmadı',
                 textAlign: TextAlign.center,
-                style: const TextStyle(
-                  fontSize: 15,
-                  fontWeight: FontWeight.w700,
-                  color: AppColors.textPrimary,
-                ),
+                style: tx.subtitle.copyWith(fontWeight: FontWeight.w700),
               ),
               const SizedBox(height: 6),
-              Text(
-                phaseNote,
-                textAlign: TextAlign.center,
-                style: const TextStyle(
-                  fontSize: 13,
-                  color: AppColors.textSecondary,
-                ),
-              ),
+              Text(phaseNote, textAlign: TextAlign.center, style: tx.bodySmall),
             ],
           ),
         ),

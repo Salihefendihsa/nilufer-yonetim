@@ -7,6 +7,8 @@ import 'package:intl/intl.dart';
 import '../../core/api_client.dart';
 import '../../core/file_download.dart';
 import '../../theme/app_colors.dart';
+import '../../theme/app_palette.dart';
+import '../../theme/app_text_styles.dart';
 import '../../widgets/state_views.dart';
 
 /// Bölüm AB (6. tur): GET /customers/:id/documents satırı.
@@ -29,21 +31,25 @@ class CustomerDocument {
     this.uploadedByName,
   });
 
-  factory CustomerDocument.fromJson(Map<String, dynamic> json) => CustomerDocument(
+  factory CustomerDocument.fromJson(Map<String, dynamic> json) =>
+      CustomerDocument(
         id: json['id'] as String,
         fileName: json['fileName'] as String? ?? 'belge',
         fileUrl: json['fileUrl'] as String? ?? '',
         fileType: json['fileType'] as String? ?? '',
         fileSize: (json['fileSize'] as num?)?.toInt() ?? 0,
         uploadedAt: json['uploadedAt'] as String? ?? '',
-        uploadedByName: (json['uploadedBy'] as Map<String, dynamic>?)?['fullName'] as String?,
+        uploadedByName:
+            (json['uploadedBy'] as Map<String, dynamic>?)?['fullName']
+                as String?,
       );
 
   bool get isImage => fileType.startsWith('image/');
 
   String get sizeLabel {
     if (fileSize < 1024) return '$fileSize B';
-    if (fileSize < 1024 * 1024) return '${(fileSize / 1024).toStringAsFixed(0)} KB';
+    if (fileSize < 1024 * 1024)
+      return '${(fileSize / 1024).toStringAsFixed(0)} KB';
     return '${(fileSize / (1024 * 1024)).toStringAsFixed(1)} MB';
   }
 }
@@ -52,7 +58,9 @@ class CustomerDocumentsApi {
   final _api = ApiClient.instance;
 
   Future<List<CustomerDocument>> list(String customerId) async {
-    final json = await _api.get<Map<String, dynamic>>('/customers/$customerId/documents');
+    final json = await _api.get<Map<String, dynamic>>(
+      '/customers/$customerId/documents',
+    );
     return ((json['data'] as List?) ?? const [])
         .cast<Map<String, dynamic>>()
         .map(CustomerDocument.fromJson)
@@ -103,7 +111,10 @@ class _CustomerDocumentsTabState extends State<CustomerDocumentsTab> {
       final docs = await _api.list(widget.customerId);
       if (mounted) setState(() => _docs = docs);
     } catch (e) {
-      if (mounted) setState(() => _error = e is ApiException ? e.message : 'Belgeler yüklenemedi');
+      if (mounted)
+        setState(
+          () => _error = e is ApiException ? e.message : 'Belgeler yüklenemedi',
+        );
     } finally {
       if (mounted) setState(() => _loading = false);
     }
@@ -112,7 +123,18 @@ class _CustomerDocumentsTabState extends State<CustomerDocumentsTab> {
   Future<void> _pickAndUpload() async {
     final result = await FilePicker.pickFiles(
       type: FileType.custom,
-      allowedExtensions: ['pdf', 'jpg', 'jpeg', 'png', 'webp', 'doc', 'docx', 'xls', 'xlsx', 'txt'],
+      allowedExtensions: [
+        'pdf',
+        'jpg',
+        'jpeg',
+        'png',
+        'webp',
+        'doc',
+        'docx',
+        'xls',
+        'xlsx',
+        'txt',
+      ],
       withData: false,
     );
     final path = result?.files.single.path;
@@ -121,13 +143,16 @@ class _CustomerDocumentsTabState extends State<CustomerDocumentsTab> {
     try {
       await _api.upload(widget.customerId, File(path));
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Belge yüklendi')));
+        ScaffoldMessenger.of(context)
+            .showSnackBar(const SnackBar(content: Text('Belge yüklendi')));
       }
       await _load();
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(e is ApiException ? e.message : 'Yüklenemedi')),
+          SnackBar(
+            content: Text(e is ApiException ? e.message : 'Yüklenemedi'),
+          ),
         );
       }
     } finally {
@@ -136,15 +161,21 @@ class _CustomerDocumentsTabState extends State<CustomerDocumentsTab> {
   }
 
   Future<void> _delete(CustomerDocument d) async {
+    final cs = context.colors;
     final ok = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
         title: const Text('Belgeyi sil'),
-        content: Text('"${d.fileName}" kalıcı olarak silinecek (dosya diskten de kaldırılır).'),
+        content: Text(
+          '"${d.fileName}" kalıcı olarak silinecek (dosya diskten de kaldırılır).',
+        ),
         actions: [
-          TextButton(onPressed: () => Navigator.of(ctx).pop(false), child: const Text('Vazgeç')),
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: const Text('Vazgeç'),
+          ),
           ElevatedButton(
-            style: ElevatedButton.styleFrom(backgroundColor: AppColors.danger500),
+            style: ElevatedButton.styleFrom(backgroundColor: cs.danger500),
             onPressed: () => Navigator.of(ctx).pop(true),
             child: const Text('Sil'),
           ),
@@ -157,7 +188,9 @@ class _CustomerDocumentsTabState extends State<CustomerDocumentsTab> {
       await _api.delete(widget.customerId, d.id);
       await _load();
     } on ApiException catch (e) {
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.message)));
+      if (mounted)
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text(e.message)));
     } finally {
       if (mounted) setState(() => _busy = false);
     }
@@ -165,6 +198,8 @@ class _CustomerDocumentsTabState extends State<CustomerDocumentsTab> {
 
   @override
   Widget build(BuildContext context) {
+    final cs = context.colors;
+    final tx = context.text;
     return Column(
       children: [
         Padding(
@@ -174,7 +209,9 @@ class _CustomerDocumentsTabState extends State<CustomerDocumentsTab> {
             child: OutlinedButton.icon(
               onPressed: _busy ? null : _pickAndUpload,
               icon: const Icon(Icons.upload_file_outlined, size: 18),
-              label: Text(_busy ? 'Yükleniyor...' : 'Belge Yükle (PDF, resim, ofis)'),
+              label: Text(
+                _busy ? 'Yükleniyor...' : 'Belge Yükle (PDF, resim, ofis)',
+              ),
             ),
           ),
         ),
@@ -191,7 +228,7 @@ class _CustomerDocumentsTabState extends State<CustomerDocumentsTab> {
                 )
               : RefreshIndicator(
                   onRefresh: _load,
-                  color: AppColors.primary600,
+                  color: cs.accentSoft,
                   child: ListView.separated(
                     padding: const EdgeInsets.all(16),
                     itemCount: _docs.length,
@@ -201,39 +238,64 @@ class _CustomerDocumentsTabState extends State<CustomerDocumentsTab> {
                       return Container(
                         padding: const EdgeInsets.fromLTRB(12, 8, 4, 8),
                         decoration: BoxDecoration(
-                          color: AppColors.surfaceCard,
+                          color: cs.surfaceCard,
                           borderRadius: BorderRadius.circular(AppRadius.card),
-                          border: Border.all(color: AppColors.borderDefault),
+                          border: Border.all(color: cs.borderDefault),
                         ),
                         child: Row(
                           children: [
                             Icon(
-                              d.isImage ? Icons.image_outlined : Icons.description_outlined,
-                              color: AppColors.textSecondary,
+                              d.isImage
+                                  ? Icons.image_outlined
+                                  : Icons.description_outlined,
+                              color: cs.textSecondary,
                             ),
                             const SizedBox(width: 10),
                             Expanded(
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  Text(d.fileName, overflow: TextOverflow.ellipsis, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13.5)),
+                                  Text(
+                                    d.fileName,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: tx.body.copyWith(
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
                                   Text(
                                     '${d.sizeLabel}'
                                     '${d.uploadedAt.isNotEmpty ? ' · ${DateFormat('d MMM yyyy', 'tr_TR').format(DateTime.parse(d.uploadedAt).toLocal())}' : ''}'
                                     '${d.uploadedByName != null ? ' · ${d.uploadedByName}' : ''}',
-                                    style: const TextStyle(fontSize: 11.5, color: AppColors.textFaint),
+                                    style: tx.caption.copyWith(
+                                      color: cs.textFaint,
+                                    ),
                                   ),
                                 ],
                               ),
                             ),
                             IconButton(
-                              icon: const Icon(Icons.ios_share_rounded, size: 20),
+                              icon: const Icon(
+                                Icons.ios_share_rounded,
+                                size: 20,
+                              ),
                               tooltip: 'İndir / Paylaş',
                               // Bölüm AC: kimlik doğrulamalı indirme (getBytes token gönderir).
-                              onPressed: _busy ? null : () => downloadAndShare(ApiClient.instance.fileUrl('customer-document', d.id), d.fileName),
+                              onPressed: _busy
+                                  ? null
+                                  : () => downloadAndShare(
+                                      ApiClient.instance.fileUrl(
+                                        'customer-document',
+                                        d.id,
+                                      ),
+                                      d.fileName,
+                                    ),
                             ),
                             IconButton(
-                              icon: const Icon(Icons.delete_outline_rounded, size: 20, color: AppColors.danger500),
+                              icon: Icon(
+                                Icons.delete_outline_rounded,
+                                size: 20,
+                                color: cs.danger500,
+                              ),
                               tooltip: 'Sil',
                               onPressed: _busy ? null : () => _delete(d),
                             ),

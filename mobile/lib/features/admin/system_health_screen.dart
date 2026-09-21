@@ -4,6 +4,8 @@ import 'package:flutter/material.dart';
 
 import '../../core/api_client.dart';
 import '../../theme/app_colors.dart';
+import '../../theme/app_palette.dart';
+import '../../theme/app_text_styles.dart';
 import '../../widgets/state_views.dart';
 
 const _pollInterval = Duration(seconds: 10);
@@ -78,7 +80,9 @@ class _SystemHealthScreenState extends State<SystemHealthScreen> {
     } catch (e) {
       if (!mounted) return;
       setState(
-        () => _error = e is ApiException ? e.message : 'Sistem durumu yüklenemedi',
+        () => _error = e is ApiException
+            ? e.message
+            : 'Sistem durumu yüklenemedi',
       );
     }
   }
@@ -94,6 +98,8 @@ class _SystemHealthScreenState extends State<SystemHealthScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final cs = context.colors;
+    final tx = context.text;
     final health = _health;
 
     return Scaffold(
@@ -109,16 +115,13 @@ class _SystemHealthScreenState extends State<SystemHealthScreen> {
                   Container(
                     width: 7,
                     height: 7,
-                    decoration: const BoxDecoration(
-                      color: AppColors.primary500,
+                    decoration: BoxDecoration(
+                      color: cs.primary500,
                       shape: BoxShape.circle,
                     ),
                   ),
                   const SizedBox(width: 5),
-                  const Text(
-                    'Canlı · 10 sn',
-                    style: TextStyle(fontSize: 11.5, color: AppColors.textSecondary),
-                  ),
+                  Text('Canlı · 10 sn', style: tx.caption),
                 ],
               ),
             ),
@@ -135,12 +138,12 @@ class _SystemHealthScreenState extends State<SystemHealthScreen> {
                     margin: const EdgeInsets.only(bottom: 12),
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
-                      color: AppColors.danger50,
+                      color: cs.danger50,
                       borderRadius: BorderRadius.circular(AppRadius.card),
                     ),
                     child: Text(
                       _error!,
-                      style: const TextStyle(fontSize: 12.5, color: AppColors.danger500),
+                      style: tx.bodySmall.copyWith(color: cs.danger500),
                     ),
                   ),
                 if (health != null) ...[
@@ -208,14 +211,14 @@ class _SystemHealthScreenState extends State<SystemHealthScreen> {
                     ],
                   ),
                   const SizedBox(height: 20),
-                  const Text(
+                  Text(
                     'Canlı Trafik',
-                    style: TextStyle(fontWeight: FontWeight.w700, fontSize: 14.5),
+                    style: tx.subtitle.copyWith(fontWeight: FontWeight.w700),
                   ),
                   const SizedBox(height: 4),
                   Text(
                     'Her 10 saniyede bir alınan örneklerdeki artış',
-                    style: const TextStyle(fontSize: 11.5, color: AppColors.textFaint),
+                    style: tx.caption.copyWith(color: cs.textFaint),
                   ),
                   const SizedBox(height: 10),
                   if (_samples.isEmpty)
@@ -224,9 +227,14 @@ class _SystemHealthScreenState extends State<SystemHealthScreen> {
                       icon: Icons.show_chart_rounded,
                     )
                   else
-                    ..._samples.reversed.take(8).map(
-                      (s) => _TrafficRow(sample: s, maxRequests: _maxOf(_samples)),
-                    ),
+                    ..._samples.reversed
+                        .take(8)
+                        .map(
+                          (s) => _TrafficRow(
+                            sample: s,
+                            maxRequests: _maxOf(_samples),
+                          ),
+                        ),
                 ],
               ],
             ),
@@ -259,15 +267,17 @@ class _HealthPill extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final cs = context.colors;
+    final tx = context.text;
     final color = healthy
-        ? AppColors.success500
-        : (warnInsteadOfDown ? AppColors.warning500 : AppColors.danger500);
+        ? cs.success500
+        : (warnInsteadOfDown ? cs.warning500 : cs.danger500);
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: AppColors.surfaceCard,
+        color: cs.surfaceCard,
         borderRadius: BorderRadius.circular(AppRadius.card),
-        border: Border.all(color: AppColors.borderDefault),
+        border: Border.all(color: cs.borderDefault),
       ),
       child: Row(
         children: [
@@ -288,19 +298,27 @@ class _HealthPill extends StatelessWidget {
               children: [
                 Text(
                   label,
-                  style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w700),
+                  style: tx.bodySmall.copyWith(fontWeight: FontWeight.w700),
                 ),
                 Row(
                   children: [
                     Container(
                       width: 6,
                       height: 6,
-                      decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+                      decoration: BoxDecoration(
+                        color: color,
+                        shape: BoxShape.circle,
+                      ),
                     ),
                     const SizedBox(width: 4),
                     Text(
-                      healthy ? 'Çalışıyor' : (warnInsteadOfDown ? 'Kısıtlı' : 'Sorunlu'),
-                      style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.w600, color: color),
+                      healthy
+                          ? 'Çalışıyor'
+                          : (warnInsteadOfDown ? 'Kısıtlı' : 'Sorunlu'),
+                      style: tx.label.copyWith(
+                        fontWeight: FontWeight.w600,
+                        color: color,
+                      ),
                     ),
                   ],
                 ),
@@ -317,16 +335,22 @@ class _StatTile extends StatelessWidget {
   final String label;
   final String value;
   final bool danger;
-  const _StatTile({required this.label, required this.value, this.danger = false});
+  const _StatTile({
+    required this.label,
+    required this.value,
+    this.danger = false,
+  });
 
   @override
   Widget build(BuildContext context) {
+    final cs = context.colors;
+    final tx = context.text;
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: AppColors.surfaceCard,
+        color: cs.surfaceCard,
         borderRadius: BorderRadius.circular(AppRadius.card),
-        border: Border.all(color: AppColors.borderDefault),
+        border: Border.all(color: cs.borderDefault),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -334,10 +358,9 @@ class _StatTile extends StatelessWidget {
         children: [
           Text(
             value,
-            style: TextStyle(
-              fontSize: 17,
+            style: tx.title.copyWith(
               fontWeight: FontWeight.w800,
-              color: danger ? AppColors.danger500 : AppColors.textPrimary,
+              color: danger ? cs.danger500 : cs.textPrimary,
             ),
           ),
           const SizedBox(height: 2),
@@ -345,7 +368,7 @@ class _StatTile extends StatelessWidget {
             label,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
-            style: const TextStyle(fontSize: 10.5, color: AppColors.textSecondary),
+            style: tx.label.copyWith(color: cs.textSecondary),
           ),
         ],
       ),
@@ -360,25 +383,21 @@ class _TrafficRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final cs = context.colors;
+    final tx = context.text;
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
       child: Row(
         children: [
-          SizedBox(
-            width: 44,
-            child: Text(
-              sample.label,
-              style: const TextStyle(fontSize: 11, color: AppColors.textFaint),
-            ),
-          ),
+          SizedBox(width: 44, child: Text(sample.label, style: tx.label)),
           Expanded(
             child: ClipRRect(
               borderRadius: BorderRadius.circular(AppRadius.pill),
               child: LinearProgressIndicator(
                 value: sample.requests / maxRequests,
                 minHeight: 8,
-                backgroundColor: AppColors.surfaceMuted,
-                color: sample.errors > 0 ? AppColors.danger500 : AppColors.primary500,
+                backgroundColor: cs.surfaceMuted,
+                color: sample.errors > 0 ? cs.danger500 : cs.primary500,
               ),
             ),
           ),
@@ -388,7 +407,7 @@ class _TrafficRow extends StatelessWidget {
             child: Text(
               '${sample.requests} ist. / ${sample.errors} hata',
               textAlign: TextAlign.right,
-              style: const TextStyle(fontSize: 10, color: AppColors.textFaint),
+              style: tx.label,
             ),
           ),
         ],
