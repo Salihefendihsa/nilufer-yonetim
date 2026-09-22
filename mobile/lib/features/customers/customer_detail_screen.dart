@@ -8,6 +8,7 @@ import '../../core/api_client.dart';
 import '../../core/file_download.dart';
 import '../../models/contract.dart';
 import '../../models/customer.dart';
+import '../../models/decimal.dart';
 import '../../models/user.dart';
 import '../../theme/app_colors.dart';
 import '../../theme/app_palette.dart';
@@ -455,7 +456,7 @@ class _ContractsTab extends StatelessWidget {
         separatorBuilder: (_, __) => const SizedBox(height: 8),
         itemBuilder: (context, i) {
           final c = contracts[i] as Map<String, dynamic>;
-          final amount = (c['amount'] as num?)?.toDouble();
+          final amount = decimalOrNull(c['amount']);
           return Material(
             color: cs.surfaceCard,
             borderRadius: BorderRadius.circular(AppRadius.card),
@@ -496,7 +497,7 @@ class _ContractsTab extends StatelessWidget {
 /// sayfada (bottom sheet) gösteriyoruz — kart artık boşta durmuyor.
 void _showContractDetail(BuildContext context, Map<String, dynamic> c) {
   final tx = context.text;
-  final amount = (c['amount'] as num?)?.toDouble();
+  final amount = decimalOrNull(c['amount']);
   final status = c['status'] as String? ?? '';
   final startDate = c['startDate'] as String?;
   final endDate = c['endDate'] as String?;
@@ -614,7 +615,7 @@ class _PaymentsTab extends StatelessWidget {
               side: BorderSide(color: cs.borderDefault),
             ),
             title: Text(
-              _currency.format((p['amount'] as num).toDouble()),
+              _currency.format(decimalOr(p['amount'])),
               style: tx.body.copyWith(fontWeight: FontWeight.w700),
             ),
             subtitle: Text(

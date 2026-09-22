@@ -1,6 +1,10 @@
+import 'decimal.dart';
+
 /// Bölüm AN (9. tur): GET /staff/me/payslip?month=YYYY-MM — salt görüntüleme
-/// aylık maaş+prim özeti (backend/src/lib/payslip.ts). Sayısal alanlar
-/// sunucuda Number'a çevrilmiş gelir (Decimal string DEĞİL).
+/// aylık maaş+prim özeti (backend/src/lib/payslip.ts). Sunucu bu alanları
+/// zaten Number()'a çevirip döndürüyor, ama diğer Decimal alanlarıyla aynı
+/// güvenli yardımcı (decimalOr) kullanılır — tutarlılık için ve ileride
+/// sunucu tarafı değişirse (ör. ham Decimal include) sessizce bozulmasın diye.
 class PayslipLine {
   final String id;
   final double amount;
@@ -38,22 +42,20 @@ class Payslip {
     required this.advances,
   });
 
-  static double _num(dynamic v) => (v as num?)?.toDouble() ?? 0;
-
   factory Payslip.fromJson(Map<String, dynamic> json) => Payslip(
     month: json['month'] as String,
-    salaryBase: _num(json['salaryBase']),
-    bonusTotal: _num(json['bonusTotal']),
+    salaryBase: decimalOr(json['salaryBase']),
+    bonusTotal: decimalOr(json['bonusTotal']),
     bonusCount: (json['bonusCount'] as num?)?.toInt() ?? 0,
-    advanceTotal: _num(json['advanceTotal']),
+    advanceTotal: decimalOr(json['advanceTotal']),
     advanceCount: (json['advanceCount'] as num?)?.toInt() ?? 0,
-    net: _num(json['net']),
+    net: decimalOr(json['net']),
     bonuses: ((json['bonuses'] as List?) ?? const [])
         .cast<Map<String, dynamic>>()
         .map(
           (b) => PayslipLine(
             id: b['id'] as String,
-            amount: _num(b['amount']),
+            amount: decimalOr(b['amount']),
             label: 'Prim · ${b['periodName'] ?? ''}',
             date: b['approvedAt'] as String?,
           ),
@@ -64,7 +66,7 @@ class Payslip {
         .map(
           (a) => PayslipLine(
             id: a['id'] as String,
-            amount: _num(a['amount']),
+            amount: decimalOr(a['amount']),
             label: 'Avans · ${a['reason'] ?? ''}',
             date: a['createdAt'] as String?,
           ),
