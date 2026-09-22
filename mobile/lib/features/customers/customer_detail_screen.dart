@@ -6,6 +6,7 @@ import 'package:url_launcher/url_launcher.dart';
 import '../../auth/auth_provider.dart';
 import '../../core/api_client.dart';
 import '../../core/file_download.dart';
+import '../../models/contract.dart';
 import '../../models/customer.dart';
 import '../../models/user.dart';
 import '../../theme/app_colors.dart';
@@ -455,27 +456,132 @@ class _ContractsTab extends StatelessWidget {
         itemBuilder: (context, i) {
           final c = contracts[i] as Map<String, dynamic>;
           final amount = (c['amount'] as num?)?.toDouble();
-          return ListTile(
-            tileColor: cs.surfaceCard,
-            shape: RoundedRectangleBorder(
+          return Material(
+            color: cs.surfaceCard,
+            borderRadius: BorderRadius.circular(AppRadius.card),
+            child: InkWell(
               borderRadius: BorderRadius.circular(AppRadius.card),
-              side: BorderSide(color: cs.borderDefault),
-            ),
-            title: Text(
-              c['serviceType'] as String? ?? c['status'] as String? ?? '',
-              style: tx.body.copyWith(fontWeight: FontWeight.w600),
-            ),
-            subtitle: Text(
-              amount != null
-                  ? '${_currency.format(amount)} · ${c['status']}'
-                  : c['status'] as String? ?? '',
-              style: tx.caption,
+              onTap: () => _showContractDetail(context, c),
+              child: ListTile(
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(AppRadius.card),
+                  side: BorderSide(color: cs.borderDefault),
+                ),
+                title: Text(
+                  c['serviceType'] as String? ?? c['status'] as String? ?? '',
+                  style: tx.body.copyWith(fontWeight: FontWeight.w600),
+                ),
+                subtitle: Text(
+                  amount != null
+                      ? '${_currency.format(amount)} · ${contractStatusLabelTr(c['status'] as String? ?? '')}'
+                      : contractStatusLabelTr(c['status'] as String? ?? ''),
+                  style: tx.caption,
+                ),
+                trailing: Icon(
+                  Icons.chevron_right_rounded,
+                  color: cs.textFaint,
+                ),
+              ),
             ),
           );
         },
       ),
     );
   }
+}
+
+/// Ayrı bir sözleşme detay ekranı yok (bkz. `contracts_list_screen.dart` —
+/// orada da kartlar zaten tüm bilgiyi satır içinde gösterir, push edilen bir
+/// detay yok); bu yüzden burada da aynı desen: eksik bilgiyi tek bir alt
+/// sayfada (bottom sheet) gösteriyoruz — kart artık boşta durmuyor.
+void _showContractDetail(BuildContext context, Map<String, dynamic> c) {
+  final tx = context.text;
+  final amount = (c['amount'] as num?)?.toDouble();
+  final status = c['status'] as String? ?? '';
+  final startDate = c['startDate'] as String?;
+  final endDate = c['endDate'] as String?;
+  final id = c['id'] as String?;
+
+  Widget row(String label, String value) => Padding(
+    padding: const EdgeInsets.symmetric(vertical: 6),
+    child: Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        SizedBox(width: 120, child: Text(label, style: tx.caption)),
+        Expanded(
+          child: Text(
+            value,
+            style: tx.body.copyWith(fontWeight: FontWeight.w600),
+          ),
+        ),
+      ],
+    ),
+  );
+
+  showModalBottomSheet<void>(
+    context: context,
+    isScrollControlled: true,
+    builder: (ctx) => Padding(
+      padding: EdgeInsets.only(
+        bottom: MediaQuery.of(ctx).viewInsets.bottom,
+        left: 20,
+        right: 20,
+        top: 20,
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(c['serviceType'] as String? ?? 'Sözleşme', style: tx.title),
+          const SizedBox(height: 8),
+          row('Durum', contractStatusLabelTr(status)),
+          if (startDate != null && endDate != null)
+            row(
+              'Dönem',
+              '${_dateFormat.format(DateTime.parse(startDate))} → ${_dateFormat.format(DateTime.parse(endDate))}',
+            ),
+          if (c['durationMonths'] != null)
+            row('Süre', '${c['durationMonths']} ay'),
+          if (amount != null)
+            row(
+              'Tutar',
+              '${_currency.format(amount)}${c['recurrenceType'] != null ? ' · ${recurrenceTypeLabelTr(c['recurrenceType'] as String?)}' : ''}',
+            ),
+          if (c['isPaused'] == true)
+            row('Not', 'Müşteri tarafından duraklatıldı'),
+          const SizedBox(height: 16),
+          if (id != null)
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton.icon(
+                onPressed: () async {
+                  Navigator.of(ctx).pop();
+                  try {
+                    await downloadAndShare(
+                      '/contracts/$id/pdf',
+                      'sozlesme-$id.pdf',
+                    );
+                  } catch (e) {
+                    if (context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text(
+                            e is ApiException ? e.message : 'PDF indirilemedi',
+                          ),
+                        ),
+                      );
+                    }
+                  }
+                },
+                icon: const Icon(Icons.picture_as_pdf_outlined, size: 16),
+                label: const Text('PDF İndir'),
+              ),
+            ),
+          const SizedBox(height: 12),
+        ],
+      ),
+    ),
+  );
 }
 
 class _PaymentsTab extends StatelessWidget {

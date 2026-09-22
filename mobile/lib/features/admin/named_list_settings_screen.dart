@@ -265,6 +265,15 @@ class _NamedListSettingsScreenState extends State<NamedListSettingsScreen> {
                     ),
                     const SizedBox(width: 8),
                     ElevatedButton(
+                      // Tema varsayılanı `minimumSize: Size.fromHeight(48)`
+                      // (genişlik sonsuz) — Row içindeki esnek olmayan bir
+                      // çocuk olarak bu, "BoxConstraints forces an infinite
+                      // width" layout hatasına yol açar (buton hiç çizilmez,
+                      // ListView'in tamamı boş kalır). Sonlu bir minimumSize
+                      // ile geçersiz kılınır.
+                      style: ElevatedButton.styleFrom(
+                        minimumSize: const Size(64, 48),
+                      ),
                       onPressed: _busy ? null : _add,
                       child: _busy
                           ? const SizedBox(
