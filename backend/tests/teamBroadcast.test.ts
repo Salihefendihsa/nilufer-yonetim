@@ -37,7 +37,7 @@ describe("Ekip duyurusu (/team/broadcast)", () => {
   const as = (k: string) => `Bearer ${tokens[k]}`;
 
   it("TEAM_LEAD duyuru gönderir: ekipteki her üye bildirim + mesaj alır, ekip dışı ve şef almaz", async () => {
-    const text = `Yarın 08:00 depo önünde toplanıyoruz ${lead.staffId.slice(0, 6)}`;
+    const text = `Yarın 08:00 depo önünde toplanıyoruz ${lead.staffId!.slice(0, 6)}`;
     const res = await api().post("/team/broadcast").set("Authorization", as("lead")).send({ message: text });
     expect(res.status).toBe(201);
     expect(res.body.recipientCount).toBe(2);
