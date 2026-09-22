@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import '../../auth/auth_provider.dart';
 import '../../core/api_client.dart';
 import '../../models/user.dart';
+import '../../navigation/sub_page_scaffold.dart';
 import '../../theme/app_colors.dart';
 import '../../theme/app_palette.dart';
 import '../../theme/app_text_styles.dart';
@@ -152,8 +153,8 @@ class _CustomerDataDeletionScreenState
     final cs = context.colors;
     final tx = context.text;
     final pending = _latest?.isPending ?? false;
-    return Scaffold(
-      appBar: AppBar(title: const Text('Hesabımı ve Verilerimi Sil')),
+    return SubPageScaffold(
+      title: 'Hesabımı ve Verilerimi Sil',
       body: _loading
           ? const LoadingView()
           : ListView(
@@ -381,19 +382,17 @@ class _DataDeletionRequestsScreenState
     final cs = context.colors;
     final tx = context.text;
     final isOwner = context.read<AuthProvider>().user?.role == AppRole.owner;
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Veri Silme Talepleri'),
-        actions: [
-          TextButton(
-            onPressed: () {
-              setState(() => _all = !_all);
-              _load();
-            },
-            child: Text(_all ? 'Bekleyenler' : 'Tümü'),
-          ),
-        ],
-      ),
+    return SubPageScaffold(
+      title: 'Veri Silme Talepleri',
+      actions: [
+        TextButton(
+          onPressed: () {
+            setState(() => _all = !_all);
+            _load();
+          },
+          child: Text(_all ? 'Bekleyenler' : 'Tümü'),
+        ),
+      ],
       body: _loading
           ? const LoadingView()
           : _error != null

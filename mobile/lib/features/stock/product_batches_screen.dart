@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 import '../../core/api_client.dart';
 import '../../models/product.dart';
 import '../../models/product_batch.dart';
+import '../../navigation/sub_page_scaffold.dart';
 import '../../theme/app_colors.dart';
 import '../../theme/app_palette.dart';
 import '../../theme/app_text_styles.dart';
@@ -77,8 +78,8 @@ class _ProductBatchesScreenState extends State<ProductBatchesScreen> {
   @override
   Widget build(BuildContext context) {
     final cs = context.colors;
-    return Scaffold(
-      appBar: AppBar(title: Text('${widget.product.name} — Partiler')),
+    return SubPageScaffold(
+      title: '${widget.product.name} — Partiler',
       body: _loading
           ? const LoadingView()
           : _error != null
@@ -234,8 +235,8 @@ class _ExpiringBatchesScreenState extends State<ExpiringBatchesScreen> {
     final cs = context.colors;
     final tx = context.text;
     final expired = _batches.where((b) => b.isExpired).length;
-    return Scaffold(
-      appBar: AppBar(title: const Text('Süresi Yaklaşan Partiler')),
+    return SubPageScaffold(
+      title: 'Süresi Yaklaşan Partiler',
       body: Column(
         children: [
           Padding(

@@ -238,10 +238,23 @@ class _CustomerDocumentsTabState extends State<CustomerDocumentsTab> {
                     separatorBuilder: (_, _) => const SizedBox(height: 8),
                     itemBuilder: (context, i) {
                       final d = _docs[i];
-                      return Container(
+                      return Material(
+                        color: cs.surfaceCard,
+                        borderRadius: BorderRadius.circular(AppRadius.card),
+                        child: InkWell(
+                          borderRadius: BorderRadius.circular(AppRadius.card),
+                          onTap: _busy
+                              ? null
+                              : () => downloadAndShare(
+                                  ApiClient.instance.fileUrl(
+                                    'customer-document',
+                                    d.id,
+                                  ),
+                                  d.fileName,
+                                ),
+                          child: Container(
                         padding: const EdgeInsets.fromLTRB(12, 8, 4, 8),
                         decoration: BoxDecoration(
-                          color: cs.surfaceCard,
                           borderRadius: BorderRadius.circular(AppRadius.card),
                           border: Border.all(color: cs.borderDefault),
                         ),
@@ -303,6 +316,8 @@ class _CustomerDocumentsTabState extends State<CustomerDocumentsTab> {
                               onPressed: _busy ? null : () => _delete(d),
                             ),
                           ],
+                        ),
+                          ),
                         ),
                       );
                     },

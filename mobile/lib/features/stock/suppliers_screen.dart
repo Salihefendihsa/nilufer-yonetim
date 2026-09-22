@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../core/api_client.dart';
 import '../../models/product.dart';
+import '../../navigation/sub_page_scaffold.dart';
 import '../../theme/app_colors.dart';
 import '../../theme/app_palette.dart';
 import '../../theme/app_text_styles.dart';
@@ -183,16 +184,14 @@ class _SuppliersScreenState extends State<SuppliersScreen> {
   Widget build(BuildContext context) {
     final cs = context.colors;
     final tx = context.text;
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Tedarikçiler'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.add_rounded),
-            onPressed: () => _openForm(),
-          ),
-        ],
-      ),
+    return SubPageScaffold(
+      title: 'Tedarikçiler',
+      actions: [
+        IconButton(
+          icon: const Icon(Icons.add_rounded),
+          onPressed: () => _openForm(),
+        ),
+      ],
       body: _loading
           ? const LoadingView()
           : _error != null
@@ -211,55 +210,64 @@ class _SuppliersScreenState extends State<SuppliersScreen> {
                 separatorBuilder: (_, _) => const SizedBox(height: 8),
                 itemBuilder: (context, i) {
                   final s = _suppliers[i];
-                  return Container(
-                    padding: const EdgeInsets.all(14),
-                    decoration: BoxDecoration(
-                      color: cs.surfaceCard,
+                  return Material(
+                    color: cs.surfaceCard,
+                    borderRadius: BorderRadius.circular(AppRadius.card),
+                    child: InkWell(
                       borderRadius: BorderRadius.circular(AppRadius.card),
-                      border: Border.all(color: cs.borderDefault),
-                    ),
-                    child: Row(
-                      children: [
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                s.name,
-                                style: tx.subtitle.copyWith(
-                                  fontWeight: FontWeight.w700,
-                                  decoration: s.isActive
-                                      ? null
-                                      : TextDecoration.lineThrough,
-                                  color: s.isActive
-                                      ? cs.textPrimary
-                                      : cs.textFaint,
-                                ),
+                      onTap: () => _openForm(existing: s),
+                      child: Container(
+                        padding: const EdgeInsets.all(14),
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(AppRadius.card),
+                          border: Border.all(color: cs.borderDefault),
+                        ),
+                        child: Row(
+                          children: [
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    s.name,
+                                    style: tx.subtitle.copyWith(
+                                      fontWeight: FontWeight.w700,
+                                      decoration: s.isActive
+                                          ? null
+                                          : TextDecoration.lineThrough,
+                                      color: s.isActive
+                                          ? cs.textPrimary
+                                          : cs.textFaint,
+                                    ),
+                                  ),
+                                  Text(
+                                    [s.contactPerson, s.phone, s.email]
+                                        .where((v) => v != null && v.isNotEmpty)
+                                        .join(' · '),
+                                    style: tx.caption,
+                                  ),
+                                ],
                               ),
-                              Text(
-                                [s.contactPerson, s.phone, s.email]
-                                    .where((v) => v != null && v.isNotEmpty)
-                                    .join(' · '),
-                                style: tx.caption,
+                            ),
+                            IconButton(
+                              icon: const Icon(Icons.edit_outlined, size: 18),
+                              onPressed: () => _openForm(existing: s),
+                            ),
+                            IconButton(
+                              icon: Icon(
+                                s.isActive
+                                    ? Icons.close_rounded
+                                    : Icons.check_rounded,
+                                size: 18,
+                                color: s.isActive
+                                    ? cs.danger500
+                                    : cs.primary600,
                               ),
-                            ],
-                          ),
+                              onPressed: _busy ? null : () => _toggleActive(s),
+                            ),
+                          ],
                         ),
-                        IconButton(
-                          icon: const Icon(Icons.edit_outlined, size: 18),
-                          onPressed: () => _openForm(existing: s),
-                        ),
-                        IconButton(
-                          icon: Icon(
-                            s.isActive
-                                ? Icons.close_rounded
-                                : Icons.check_rounded,
-                            size: 18,
-                            color: s.isActive ? cs.danger500 : cs.primary600,
-                          ),
-                          onPressed: _busy ? null : () => _toggleActive(s),
-                        ),
-                      ],
+                      ),
                     ),
                   );
                 },

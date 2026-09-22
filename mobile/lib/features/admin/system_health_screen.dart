@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 
 import '../../core/api_client.dart';
+import '../../navigation/sub_page_scaffold.dart';
 import '../../theme/app_colors.dart';
 import '../../theme/app_palette.dart';
 import '../../theme/app_text_styles.dart';
@@ -102,10 +103,9 @@ class _SystemHealthScreenState extends State<SystemHealthScreen> {
     final tx = context.text;
     final health = _health;
 
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Sistem Durumu'),
-        actions: [
+    return SubPageScaffold(
+      title: 'Sistem Durumu',
+      actions: [
           Padding(
             padding: const EdgeInsets.only(right: 16),
             child: Center(
@@ -127,7 +127,6 @@ class _SystemHealthScreenState extends State<SystemHealthScreen> {
             ),
           ),
         ],
-      ),
       body: health == null && _error == null
           ? const LoadingView()
           : ListView(

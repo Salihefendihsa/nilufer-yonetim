@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
 import '../../core/api_client.dart';
+import '../../navigation/sub_page_scaffold.dart';
 import '../../theme/app_colors.dart';
 import '../../theme/app_palette.dart';
 import '../../theme/app_text_styles.dart';
@@ -43,19 +44,17 @@ class _AuditSettingsScreenState extends State<AuditSettingsScreen>
   @override
   Widget build(BuildContext context) {
     final cs = context.colors;
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Denetim & Ayarlar'),
-        bottom: TabBar(
-          controller: _tabController,
-          labelColor: cs.primary700,
-          unselectedLabelColor: cs.textSecondary,
-          indicatorColor: cs.primary600,
-          tabs: const [
-            Tab(text: 'Denetim Logları'),
-            Tab(text: 'Ayarlar'),
-          ],
-        ),
+    return SubPageScaffold(
+      title: 'Denetim & Ayarlar',
+      bottom: TabBar(
+        controller: _tabController,
+        labelColor: cs.primary700,
+        unselectedLabelColor: cs.textSecondary,
+        indicatorColor: cs.primary600,
+        tabs: const [
+          Tab(text: 'Denetim Logları'),
+          Tab(text: 'Ayarlar'),
+        ],
       ),
       body: TabBarView(
         controller: _tabController,

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../core/api_client.dart';
 import '../../models/decimal.dart';
+import '../../navigation/sub_page_scaffold.dart';
 import '../../theme/app_colors.dart';
 import '../../theme/app_palette.dart';
 import '../../theme/app_text_styles.dart';
@@ -289,17 +290,15 @@ class _JobTemplatesScreenState extends State<JobTemplatesScreen> {
   Widget build(BuildContext context) {
     final cs = context.colors;
     final tx = context.text;
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('İş Şablonları'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.add_rounded),
-            tooltip: 'Yeni şablon',
-            onPressed: () => _openForm(),
-          ),
-        ],
-      ),
+    return SubPageScaffold(
+      title: 'İş Şablonları',
+      actions: [
+        IconButton(
+          icon: const Icon(Icons.add_rounded),
+          tooltip: 'Yeni şablon',
+          onPressed: () => _openForm(),
+        ),
+      ],
       body: _loading
           ? const LoadingView()
           : _error != null
@@ -319,10 +318,17 @@ class _JobTemplatesScreenState extends State<JobTemplatesScreen> {
                 separatorBuilder: (_, _) => const SizedBox(height: 8),
                 itemBuilder: (context, i) {
                   final t = _items[i];
-                  return Container(
+                  return Material(
+                    color: cs.surfaceCard,
+                    borderRadius: BorderRadius.circular(AppRadius.card),
+                    child: InkWell(
+                      borderRadius: BorderRadius.circular(AppRadius.card),
+                      onTap: (t.isActive && _busyId == null)
+                          ? () => _openForm(existing: t)
+                          : null,
+                      child: Container(
                     padding: const EdgeInsets.fromLTRB(14, 12, 6, 12),
                     decoration: BoxDecoration(
-                      color: cs.surfaceCard,
                       borderRadius: BorderRadius.circular(AppRadius.card),
                       border: Border.all(color: cs.borderDefault),
                     ),
@@ -376,6 +382,8 @@ class _JobTemplatesScreenState extends State<JobTemplatesScreen> {
                           onPressed: _busyId == null ? () => _toggle(t) : null,
                         ),
                       ],
+                    ),
+                      ),
                     ),
                   );
                 },

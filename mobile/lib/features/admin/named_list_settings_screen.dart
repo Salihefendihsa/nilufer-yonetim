@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../core/api_client.dart';
+import '../../navigation/sub_page_scaffold.dart';
 import '../../theme/app_colors.dart';
 import '../../theme/app_palette.dart';
 import '../../theme/app_text_styles.dart';
@@ -151,8 +152,8 @@ class _NamedListSettingsScreenState extends State<NamedListSettingsScreen> {
   Widget build(BuildContext context) {
     final cs = context.colors;
     final tx = context.text;
-    return Scaffold(
-      appBar: AppBar(title: Text(widget.title)),
+    return SubPageScaffold(
+      title: widget.title,
       body: _loading
           ? const LoadingView()
           : _error != null

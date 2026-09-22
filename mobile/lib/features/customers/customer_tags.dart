@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../core/api_client.dart';
+import '../../navigation/sub_page_scaffold.dart';
 import '../../theme/app_colors.dart';
 import '../../theme/app_palette.dart';
 import '../../theme/app_text_styles.dart';
@@ -427,17 +428,15 @@ class _CustomerTagsScreenState extends State<CustomerTagsScreen> {
   Widget build(BuildContext context) {
     final cs = context.colors;
     final tx = context.text;
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Müşteri Etiketleri'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.add_rounded),
-            tooltip: 'Yeni etiket',
-            onPressed: () => _openForm(),
-          ),
-        ],
-      ),
+    return SubPageScaffold(
+      title: 'Müşteri Etiketleri',
+      actions: [
+        IconButton(
+          icon: const Icon(Icons.add_rounded),
+          tooltip: 'Yeni etiket',
+          onPressed: () => _openForm(),
+        ),
+      ],
       body: _loading
           ? const LoadingView()
           : _error != null
@@ -457,10 +456,15 @@ class _CustomerTagsScreenState extends State<CustomerTagsScreen> {
                 separatorBuilder: (_, _) => const SizedBox(height: 8),
                 itemBuilder: (context, i) {
                   final t = _items[i];
-                  return Container(
+                  return Material(
+                    color: cs.surfaceCard,
+                    borderRadius: BorderRadius.circular(AppRadius.card),
+                    child: InkWell(
+                      borderRadius: BorderRadius.circular(AppRadius.card),
+                      onTap: _busy ? null : () => _openForm(existing: t),
+                      child: Container(
                     padding: const EdgeInsets.fromLTRB(14, 10, 6, 10),
                     decoration: BoxDecoration(
-                      color: cs.surfaceCard,
                       borderRadius: BorderRadius.circular(AppRadius.card),
                       border: Border.all(color: cs.borderDefault),
                     ),
@@ -506,6 +510,8 @@ class _CustomerTagsScreenState extends State<CustomerTagsScreen> {
                           onPressed: _busy ? null : () => _delete(t),
                         ),
                       ],
+                    ),
+                      ),
                     ),
                   );
                 },

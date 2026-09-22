@@ -3,6 +3,7 @@ import 'package:intl/intl.dart';
 
 import '../../core/api_client.dart';
 import '../../models/user.dart';
+import '../../navigation/sub_page_scaffold.dart';
 import '../../theme/app_colors.dart';
 import '../../theme/app_palette.dart';
 import '../../theme/app_text_styles.dart';
@@ -104,8 +105,8 @@ class _UsageStatsScreenState extends State<UsageStatsScreen> {
         ? topUsers.first['totalSessions'] as int
         : 1;
 
-    return Scaffold(
-      appBar: AppBar(title: const Text('Kullanım İstatistikleri')),
+    return SubPageScaffold(
+      title: 'Kullanım İstatistikleri',
       body: Column(
         children: [
           Padding(

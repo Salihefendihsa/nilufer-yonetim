@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../core/api_client.dart';
 import '../../models/org_chart.dart';
 import '../../models/user.dart';
+import '../../navigation/sub_page_scaffold.dart';
 import '../../theme/app_colors.dart';
 import '../../theme/app_palette.dart';
 import '../../theme/app_text_styles.dart';
@@ -61,8 +62,8 @@ class _OrgChartScreenState extends State<OrgChartScreen> {
   Widget build(BuildContext context) {
     final cs = context.colors;
     final tx = context.text;
-    return Scaffold(
-      appBar: AppBar(title: const Text('Organizasyon Şeması')),
+    return SubPageScaffold(
+      title: 'Organizasyon Şeması',
       body: _loading
           ? const LoadingView()
           : _error != null
