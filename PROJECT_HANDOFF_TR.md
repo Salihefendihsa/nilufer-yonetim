@@ -120,7 +120,7 @@ Kaynak: `.env.example`, `backend/.env.example`, `web/.env.example`.
 | Avans talebi + onay akışı | **Gerçek** | `/advances` |
 | **İzin talebi (personel izni)** | **Yok** | Şemada `LeaveRequest` benzeri bir model bulunamadı; `AdvanceRequest` yalnızca parasal avans talebidir. "bekleyen-onaylar" sayfası muhtemelen avans taleplerini (ve/veya teklif taleplerini) gösteriyor — ayrı bir izin/mazeret sistemi yok |
 | WhatsApp entegrasyonu | **Bulunamadı** | Kod içinde herhangi bir WhatsApp API/kütüphane referansı yok; önceki raporda geçen ifade doğrulanamadı |
-| Demo veri | **Gerçekçi ama sentetik** | `backend/prisma/seed.ts` — tüm isim/telefon/e-posta desenli ve uydurma (`personelN@nilufer.com`, `0533 xxx xx xx`, `@example.com`); gerçek kişisel veri değildir |
+| Demo veri | **Gerçekçi ama sentetik** | `backend/prisma/seed.ts` (temel hesaplar) + `backend/prisma/seedDemo.ts` (zengin, KALICI gösterim verisi — bkz. §12.2.2) — tüm isim/telefon/e-posta desenli ve uydurma (`personelN@nilufer.com`, `0533 xxx xx xx`, `@example.com`); gerçek kişisel veri değildir |
 
 ---
 
@@ -417,6 +417,9 @@ npx prisma migrate dev
 # 5) (Opsiyonel) Demo veri yükle
 npm run db:seed
 
+# 5b) (Opsiyonel, KALICI) Zengin gösterim/demo verisi — bkz. §12.2.2
+npm run db:seed:demo
+
 # 6) Geliştirme sunucusunu başlat
 npm run dev
 ```
@@ -432,6 +435,49 @@ npm run test:typecheck  # test dosyalarının tip kontrolü
 cd ../mobile
 flutter test          # model parse (Decimal serileşme) regresyon testleri + smoke test
 ```
+
+#### 12.2.2 Zengin demo veri (`prisma/seedDemo.ts`) — KALICI, silinmek üzere değil
+
+`prisma/seed.ts` yalnızca temel hesapları (rol başına 1-2 kullanıcı) ve
+referans verisini (6 hizmet türü, 6 ilçe) kurar — sistemi ilk açtığınızda
+her ana tablo neredeyse boştur. `prisma/seedDemo.ts` bunun ÜZERİNE, sistemi
+müşteriye/yatırımcıya gösterirken dolu ve gerçekçi görünmesi için zengin,
+**kalıcı** demo veri ekler (test/geliştirme temizliği kapsamında SİLİNMEK
+ÜZERE tasarlanmadı — bu farkla önemlidir: projedeki "ID bazlı temizlik"
+kuralları/testleri bu veriyi hedef almamalı).
+
+```bash
+cd backend
+npm run db:seed:demo   # önce `npm run db:seed` çalışmış, temel hesaplar var olmalı
+```
+
+Ne ekler (2026-09-22 turunda, `owner@nilufer.com` / `Test1234!` ile görülebilir):
+
+| Tablo | Önceki | Sonra | Not |
+|---|---|---|---|
+| Product | 6 | 21 | +15 gerçekçi kimyasal/sarf/ekipman/dezenfektan (kategori: BIOCIDAL/CONSUMABLE/EQUIPMENT/DISINFECTANT), kod (INS-410 gibi) |
+| ProductBatch | 0 | 8 | Parti no + SKT (Bölüm AM) — biri süresi dolmuş, ikisi 30 gün içinde dolacak |
+| Supplier | 0 | 3 | ProductBatch/StockPurchaseRequest için tedarikçi kataloğu |
+| Customer | 18 | 30 | +12 (8 bireysel + 4 kurumsal); 5'ine referans kodu, biri bir diğerinin referansıyla bağlı |
+| CustomerTag | 0 | 3 | VIP / Kurumsal / Konut, 24 atama |
+| Job | 36 | 76 | +40 — COMPLETED/CANCELLED/SCHEDULED/PENDING/IN_PROGRESS karışık, geçmiş 3 ay + gelecek 2 hafta; bazılarında rating + Bölüm S geri bildirimi + garanti tarihi |
+| Contract | 10 | 18 | +8 — ACTIVE (bazıları 10 gün içinde bitecek) + EXPIRED karışık |
+| QuoteRequest | 6 | 16 | +10 — NEW/CONTACTED/REVISION/CONVERTED/REJECTED karışık |
+| CustomerComplaint | 0 | 8 | Bölüm AO — OPEN/IN_PROGRESS/RESOLVED/CLOSED, öncelik karışık, bazıları bir Job'a bağlı |
+| EvaluationCriterion | 0 | 6 | İş Kalitesi, Zamanında Gelme, Müşteri İletişimi, Ekipman Kullanımı, Güvenlik Prosedürleri, Takım Çalışması — 2026-09-22'de Ayarlar → Değerlendirme Kriterleri ekranının boş çıktığı bulunan hatanın (bkz. kök dizin `CHANGELOG.md`) düzeltmesinden sonra eklendi |
+| EvaluationPeriod | 0 | 3 | 2 kilitli dönem (bonusThreshold/bonusAmount tanımlı) + 1 açık dönem |
+| Evaluation + EvaluationScore | 0 | 15 | Her saha personeline (şef dahil) kilitli dönemler için puanlı değerlendirme + açık dönem için 3 taslak/gönderilmiş örnek |
+| StaffBonus | 0 | 5 | Ortalaması eşiği (16/20) geçen değerlendirmelerden otomatik öneri — biri APPROVED, kalanı PENDING |
+
+**Güvenli tekrar çalıştırma:** her bölüm kendi tablosunun mevcut satır
+sayısını kontrol eder; hedef eşiğe zaten ulaşılmışsa o bölüm atlanır
+("Zaten N ... var, atlanıyor" log'u) — ikinci kez çalıştırmak veri
+yığını/mükerrer kayıt oluşturmaz (doğrulandı: iki kez art arda çalıştırıldı,
+ikinci koşuda yalnızca `Supplier`/`Product` gibi isimle bulunan idempotent
+kayıtlar ve referans kodu ataması tekrarlandı, hacimli tablolar hiç
+dokunulmadı). Yeni bir demo veri turu eklemek isterseniz (ör. daha fazla iş)
+ilgili bölümdeki eşik sayısını (`existingJobCount < 60` gibi) yükseltip
+tekrar çalıştırın.
 
 **Kural: backend veya mobile'da herhangi bir önemli değişiklikten (özellikle
 auth/yetki/finans/personel akışlarında) önce `npm test` (backend) ve
