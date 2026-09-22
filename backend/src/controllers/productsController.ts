@@ -83,7 +83,7 @@ export async function listProducts(req: Request, res: Response) {
           where: { productId: { in: productIds } },
           orderBy: { createdAt: "desc" },
           take: productIds.length * 3,
-          select: { productId: true, type: true, quantity: true, note: true, createdAt: true },
+          select: { id: true, productId: true, type: true, quantity: true, note: true, createdAt: true },
         })
       : Promise.resolve([]),
     productIds.length
