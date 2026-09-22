@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { chartPalette } from "@/lib/chartPalette";
 import { Activity, AlertTriangle, Database, Mail, Server, ShieldCheck, Signal, Timer } from "lucide-react";
 import { RequireRole } from "@/components/RequireRole";
 import { PageHeader } from "@/components/PageHeader";
@@ -219,8 +220,8 @@ function SystemHealthContent() {
           data={samples}
           xKey="label"
           series={[
-            { key: "requests", name: "İstek", color: "#3D8A4E" },
-            { key: "errors", name: "Hata", color: "#C0392B" },
+            { key: "requests", name: "İstek", color: chartPalette.primaryMid },
+            { key: "errors", name: "Hata", color: chartPalette.danger },
           ]}
           area
           emptyLabel="İlk örnekler toplanıyor..."

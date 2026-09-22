@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState, type FormEvent } from "react";
+import { LoadingBlock } from "@/components/LoadingBlock";
 import { Trash2 } from "lucide-react";
 import { Modal } from "@/components/Modal";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
@@ -91,7 +92,7 @@ export function CertificationsModal({ open, onClose, staff }: CertificationsModa
         {error && <p className="rounded-2xl border border-danger-100 bg-danger-50 px-4 py-3 text-sm text-danger-500">{error}</p>}
 
         {loading ? (
-          <p className="py-6 text-center text-sm text-text-faint">Yükleniyor...</p>
+          <LoadingBlock rows={3} className="py-6" />
         ) : (
           <ul className="flex flex-col divide-y divide-border">
             {certifications.map((c) => (

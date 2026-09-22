@@ -4,6 +4,8 @@ import 'package:intl/intl.dart';
 import '../../core/api_client.dart';
 import '../../models/executive_summary.dart';
 import '../../theme/app_colors.dart';
+import '../../theme/app_palette.dart';
+import '../../theme/app_text_styles.dart';
 import '../../widgets/state_views.dart';
 import '../approvals/approvals_screen.dart';
 import '../contracts/contracts_list_screen.dart';
@@ -117,6 +119,8 @@ class _ExecutiveSummaryScreenState extends State<ExecutiveSummaryScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final cs = context.colors;
+    final tx = context.text;
     final summary = _summary;
 
     return Scaffold(
@@ -162,7 +166,7 @@ class _ExecutiveSummaryScreenState extends State<ExecutiveSummaryScreen> {
                             padding: const EdgeInsets.only(bottom: 8),
                             child: Text(
                               _error!,
-                              style: const TextStyle(color: AppColors.danger500),
+                              style: tx.bodySmall.copyWith(color: cs.danger500),
                             ),
                           ),
                         for (final section in summary!.sections) ...[
@@ -172,10 +176,7 @@ class _ExecutiveSummaryScreenState extends State<ExecutiveSummaryScreen> {
                         ],
                         Text(
                           'Son güncelleme: ${DateFormat.Hm().format(summary.generatedAt.toLocal())}',
-                          style: const TextStyle(
-                            fontSize: 11.5,
-                            color: AppColors.textFaint,
-                          ),
+                          style: tx.caption.copyWith(color: cs.textFaint),
                         ),
                       ],
                     ),
@@ -193,20 +194,21 @@ class _SectionHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final (title, icon) = _sectionTitles[sectionKey] ?? (sectionKey, Icons.circle);
+    final cs = context.colors;
+    final tx = context.text;
+    final (title, icon) =
+        _sectionTitles[sectionKey] ?? (sectionKey, Icons.circle);
     return Padding(
       padding: const EdgeInsets.only(bottom: 8, top: 4),
       child: Row(
         children: [
-          Icon(icon, size: 16, color: AppColors.textSecondary),
+          Icon(icon, size: 16, color: cs.textSecondary),
           const SizedBox(width: 6),
           Text(
             title.toUpperCase(),
-            style: const TextStyle(
-              fontSize: 12,
+            style: tx.caption.copyWith(
               fontWeight: FontWeight.w700,
               letterSpacing: 0.6,
-              color: AppColors.textSecondary,
             ),
           ),
         ],
@@ -232,7 +234,8 @@ class _KpiGrid extends StatelessWidget {
         childAspectRatio: 1.45,
       ),
       itemCount: kpis.length,
-      itemBuilder: (_, i) => _KpiCard(kpi: kpis[i], onTap: () => onTap(kpis[i])),
+      itemBuilder: (_, i) =>
+          _KpiCard(kpi: kpis[i], onTap: () => onTap(kpis[i])),
     );
   }
 }
@@ -254,18 +257,18 @@ String formatKpiValue(ExecutiveKpi kpi) {
   }
 }
 
-Color toneColor(String tone) {
+Color toneColor(AppPalette cs, String tone) {
   switch (tone) {
     case 'success':
-      return AppColors.primary600;
+      return cs.primary600;
     case 'warning':
-      return AppColors.warning600;
+      return cs.warning600;
     case 'danger':
-      return AppColors.danger500;
+      return cs.danger500;
     case 'info':
-      return AppColors.info600;
+      return cs.info600;
     default:
-      return AppColors.ink;
+      return cs.ink;
   }
 }
 
@@ -276,7 +279,8 @@ class _KpiCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = toneColor(kpi.tone);
+    final tx = context.text;
+    final color = toneColor(context.colors, kpi.tone);
     final theme = Theme.of(context);
     return Material(
       color: theme.cardColor,
@@ -301,16 +305,16 @@ class _KpiCard extends StatelessWidget {
                       kpi.label,
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        fontSize: 12,
-                        color: AppColors.textSecondary,
-                      ),
+                      style: tx.caption,
                     ),
                   ),
                   Container(
                     width: 8,
                     height: 8,
-                    decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+                    decoration: BoxDecoration(
+                      color: color,
+                      shape: BoxShape.circle,
+                    ),
                   ),
                 ],
               ),
@@ -321,8 +325,7 @@ class _KpiCard extends StatelessWidget {
                     formatKpiValue(kpi),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      fontSize: 20,
+                    style: tx.display.copyWith(
                       fontWeight: FontWeight.w800,
                       color: color,
                     ),
@@ -332,10 +335,7 @@ class _KpiCard extends StatelessWidget {
                       kpi.hint!,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        fontSize: 10.5,
-                        color: AppColors.textFaint,
-                      ),
+                      style: tx.label,
                     ),
                 ],
               ),

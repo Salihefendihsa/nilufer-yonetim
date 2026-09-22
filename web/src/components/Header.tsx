@@ -152,7 +152,7 @@ export function Header({ onOpenMobileNav }: HeaderProps) {
             placeholder="Müşteri, iş, personel, sözleşme, teklif ara..."
             className="w-full bg-transparent text-text-primary outline-none placeholder:text-text-faint"
           />
-          <kbd className="hidden shrink-0 rounded-lg border border-border bg-surface-base px-1.5 py-0.5 text-[10px] font-medium text-text-faint sm:block">
+          <kbd className="hidden shrink-0 rounded-lg border border-border bg-surface-base px-1.5 py-0.5 text-3xs font-medium text-text-faint sm:block">
             ⌘K
           </kbd>
         </div>
@@ -195,7 +195,7 @@ export function Header({ onOpenMobileNav }: HeaderProps) {
                           <span className="block truncate text-sm text-text-primary">{r.title}</span>
                           <span className="block truncate text-xs text-text-faint">{r.subtitle}</span>
                         </span>
-                        <span className="shrink-0 rounded-full bg-surface-subtle px-2 py-0.5 text-[10px] font-medium text-text-faint">
+                        <span className="shrink-0 rounded-full bg-surface-subtle px-2 py-0.5 text-3xs font-medium text-text-faint">
                           {label}
                         </span>
                       </button>
@@ -217,7 +217,7 @@ export function Header({ onOpenMobileNav }: HeaderProps) {
         >
           <Bell size={18} strokeWidth={1.75} />
           {unreadCount > 0 && (
-            <span className="absolute right-1.5 top-1.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-danger-500 px-1 text-[10px] font-semibold text-white">
+            <span className="absolute right-1.5 top-1.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-danger-500 px-1 text-3xs font-semibold text-white">
               {unreadCount > 99 ? "99+" : unreadCount}
             </span>
           )}

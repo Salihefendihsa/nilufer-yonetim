@@ -4,6 +4,9 @@ import 'package:intl/intl.dart';
 import '../../core/api_client.dart';
 import '../../models/attendance.dart';
 import '../../theme/app_colors.dart';
+import '../../theme/app_palette.dart';
+import '../../theme/app_text_styles.dart';
+import '../../widgets/state_views.dart';
 
 final _dayFormat = DateFormat('d MMM', 'tr_TR');
 final _timeFormat = DateFormat('HH:mm', 'tr_TR');
@@ -68,6 +71,8 @@ class _AttendanceCardState extends State<AttendanceCard> {
 
   @override
   Widget build(BuildContext context) {
+    final cs = context.colors;
+    final tx = context.text;
     if (_hidden) return const SizedBox.shrink();
     final m = _month;
     return Padding(
@@ -75,21 +80,21 @@ class _AttendanceCardState extends State<AttendanceCard> {
       child: Container(
         padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
-          color: AppColors.surfaceCard,
+          color: cs.surfaceCard,
           borderRadius: BorderRadius.circular(AppRadius.card),
-          border: Border.all(color: AppColors.borderDefault),
+          border: Border.all(color: cs.borderDefault),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(
               children: [
-                const Icon(Icons.timer_outlined, size: 18, color: AppColors.primary700),
+                Icon(Icons.timer_outlined, size: 18, color: cs.accent),
                 const SizedBox(width: 8),
-                const Expanded(
+                Expanded(
                   child: Text(
                     'Puantaj',
-                    style: TextStyle(fontWeight: FontWeight.w700, fontSize: 14.5),
+                    style: tx.subtitle.copyWith(fontWeight: FontWeight.w700),
                   ),
                 ),
                 IconButton(
@@ -99,7 +104,7 @@ class _AttendanceCardState extends State<AttendanceCard> {
                 ),
                 Text(
                   _monthFormat.format(_cursor),
-                  style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+                  style: tx.caption.copyWith(fontWeight: FontWeight.w600),
                 ),
                 IconButton(
                   onPressed: _isCurrent ? null : () => _shift(1),
@@ -110,7 +115,7 @@ class _AttendanceCardState extends State<AttendanceCard> {
             ),
             const SizedBox(height: 8),
             if (_loading || m == null)
-              const Center(child: Padding(padding: EdgeInsets.all(8), child: CircularProgressIndicator(strokeWidth: 2)))
+              const InlineLoading()
             else ...[
               Row(
                 children: [
@@ -123,8 +128,15 @@ class _AttendanceCardState extends State<AttendanceCard> {
                 const SizedBox(height: 6),
                 TextButton(
                   onPressed: () => setState(() => _expanded = !_expanded),
-                  style: TextButton.styleFrom(padding: EdgeInsets.zero, minimumSize: const Size(0, 32)),
-                  child: Text(_expanded ? 'Günleri gizle' : '${m.records.length} günü göster'),
+                  style: TextButton.styleFrom(
+                    padding: EdgeInsets.zero,
+                    minimumSize: const Size(0, 32),
+                  ),
+                  child: Text(
+                    _expanded
+                        ? 'Günleri gizle'
+                        : '${m.records.length} günü göster',
+                  ),
                 ),
                 if (_expanded)
                   for (final r in m.records)
@@ -136,7 +148,9 @@ class _AttendanceCardState extends State<AttendanceCard> {
                             width: 56,
                             child: Text(
                               _dayFormat.format(DateTime.parse(r.date)),
-                              style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w600),
+                              style: tx.bodySmall.copyWith(
+                                fontWeight: FontWeight.w600,
+                              ),
                             ),
                           ),
                           Expanded(
@@ -144,24 +158,26 @@ class _AttendanceCardState extends State<AttendanceCard> {
                               '${r.clockInAt == null ? '—' : _timeFormat.format(DateTime.parse(r.clockInAt!).toLocal())}'
                               ' → '
                               '${r.clockOutAt == null ? 'çıkış yok' : _timeFormat.format(DateTime.parse(r.clockOutAt!).toLocal())}',
-                              style: TextStyle(
-                                fontSize: 12,
-                                color: r.isOpen ? AppColors.warning600 : AppColors.textSecondary,
+                              style: tx.caption.copyWith(
+                                color: r.isOpen
+                                    ? cs.warning600
+                                    : cs.textSecondary,
                               ),
                             ),
                           ),
                           Text(
-                            r.workedHours == null ? '—' : '${r.workedHours!.toStringAsFixed(1)} s',
-                            style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w700),
+                            r.workedHours == null
+                                ? '—'
+                                : '${r.workedHours!.toStringAsFixed(1)} s',
+                            style: tx.bodySmall.copyWith(
+                              fontWeight: FontWeight.w700,
+                            ),
                           ),
                         ],
                       ),
                     ),
               ] else
-                const Text(
-                  'Bu ay puantaj kaydı yok.',
-                  style: TextStyle(fontSize: 12.5, color: AppColors.textSecondary),
-                ),
+                Text('Bu ay puantaj kaydı yok.', style: tx.bodySmall),
             ],
           ],
         ),
@@ -178,24 +194,25 @@ class _Stat extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final cs = context.colors;
+    final tx = context.text;
     return Expanded(
       child: Container(
         margin: const EdgeInsets.only(right: 6),
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
         decoration: BoxDecoration(
-          color: AppColors.surfaceSubtle,
+          color: cs.surfaceSubtle,
           borderRadius: BorderRadius.circular(10),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(label, style: const TextStyle(fontSize: 10.5, color: AppColors.textSecondary)),
+            Text(label, style: tx.label.copyWith(color: cs.textSecondary)),
             Text(
               value,
-              style: TextStyle(
-                fontSize: 15,
+              style: tx.subtitle.copyWith(
                 fontWeight: FontWeight.w800,
-                color: warn ? AppColors.warning600 : AppColors.textPrimary,
+                color: warn ? cs.warning600 : cs.textPrimary,
               ),
             ),
           ],

@@ -1,6 +1,7 @@
 "use client";
 
 import { Suspense, useCallback, useEffect, useState } from "react";
+import { LoadingBlock } from "@/components/LoadingBlock";
 import { useSearchParams } from "next/navigation";
 import { Plus, Wrench, List, CalendarDays, ChevronLeft, ChevronRight, Search } from "lucide-react";
 import { EmptyState } from "@/components/EmptyState";
@@ -277,7 +278,7 @@ function JobsPageContent() {
       {error && <p className="rounded-2xl border border-danger-100 bg-danger-50 px-4 py-3 text-sm text-danger-500">{error}</p>}
 
       {loading ? (
-        <p className="py-16 text-center text-sm text-text-faint">Yükleniyor...</p>
+        <LoadingBlock rows={4} className="py-6" />
       ) : jobs.length === 0 ? (
         <div className="rounded-2xl border border-border bg-surface-card shadow-card">
           <EmptyState icon={Wrench} title="Gösterilecek iş yok" description="Filtreyi değiştirin veya yeni bir iş oluşturun." />

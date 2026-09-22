@@ -38,7 +38,7 @@ export function MessageBubble({ content, time, mine, read, senderName, attachmen
           {attachmentUrl && <AuthImage path={attachmentUrl} alt="Saha fotoğrafı" className="mb-2 max-h-64 w-full rounded-xl object-cover" />}
           <p className="whitespace-pre-wrap break-words">{content}</p>
           <span className={`mt-1 flex items-center justify-end gap-1 ${mine ? "text-white/70" : "text-text-faint"}`}>
-            <span className="font-mono text-[10px]">{time}</span>
+            <span className="font-mono text-3xs">{time}</span>
             {mine &&
               (read ? <CheckCheck size={12} strokeWidth={2} /> : <Check size={12} strokeWidth={2} />)}
           </span>

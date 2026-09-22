@@ -1,6 +1,8 @@
 "use client";
 
 import { useCallback, useEffect, useState, type FormEvent } from "react";
+import { LoadingBlock } from "@/components/LoadingBlock";
+import { SectionTitle } from "@/components/SectionTitle";
 import { CalendarOff, Trash2 } from "lucide-react";
 import { api, ApiError } from "@/lib/api";
 import { useToast } from "@/lib/ToastProvider";
@@ -112,7 +114,7 @@ export function UnavailabilityPanel({ selectedDate, month, onChanged }: Unavaila
           <CalendarOff size={17} strokeWidth={1.75} />
         </span>
         <div>
-          <h2 className="text-base font-semibold text-text-primary">Müsaitlik</h2>
+          <SectionTitle>Müsaitlik</SectionTitle>
           <p className="text-xs text-text-faint">Müsait olmadığınız gün/saatleri işaretleyin — iş atarken yönetici uyarı görür.</p>
         </div>
       </div>
@@ -194,7 +196,7 @@ export function UnavailabilityPanel({ selectedDate, month, onChanged }: Unavaila
       <div className="mt-4">
         <p className="mb-2 text-xs font-semibold text-text-faint">Bu ayki işaretlerim</p>
         {loading ? (
-          <p className="py-4 text-center text-xs text-text-faint">Yükleniyor...</p>
+          <LoadingBlock lines={2} className="py-4" />
         ) : rows.length === 0 ? (
           <p className="py-4 text-center text-xs text-text-faint">Bu ay için işaret yok.</p>
         ) : (

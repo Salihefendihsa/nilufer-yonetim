@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { LoadingBlock } from "@/components/LoadingBlock";
 import { Modal } from "@/components/Modal";
 import { api, ApiError } from "@/lib/api";
 import { formatDate, decimalValue } from "@/lib/format";
@@ -67,7 +68,7 @@ export function BatchesModal({ open, onClose, product }: BatchesModalProps) {
         <p className="rounded-2xl border border-danger-100 bg-danger-50 px-4 py-3 text-sm text-danger-500">{error}</p>
       )}
       {loading ? (
-        <p className="text-sm text-text-secondary">Yükleniyor...</p>
+        <LoadingBlock lines={3} />
       ) : batches.length === 0 ? (
         <p className="text-sm text-text-secondary">
           Bu ürün için parti kaydı yok. Stok girişinde parti no + SKT girerek takibe başlayabilirsiniz.
@@ -92,7 +93,7 @@ export function BatchesModal({ open, onClose, product }: BatchesModalProps) {
                     {decimalValue(batch.quantityRemaining)} / {decimalValue(batch.quantityReceived)} {product?.unit ?? ""}
                   </p>
                 </div>
-                <span className={`shrink-0 rounded-full border px-2.5 py-1 text-[11px] font-semibold ${depleted ? "border-border bg-surface-base text-text-secondary" : TONE_CLASS[tone]}`}>
+                <span className={`shrink-0 rounded-full border px-2.5 py-1 text-2xs font-semibold ${depleted ? "border-border bg-surface-base text-text-secondary" : TONE_CLASS[tone]}`}>
                   {depleted ? "Tükendi" : batchExpiryLabel(batch)}
                 </span>
               </li>

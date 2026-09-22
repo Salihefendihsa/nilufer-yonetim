@@ -7,6 +7,8 @@ import '../../core/api_client.dart';
 import '../../models/staff.dart';
 import '../../models/user.dart';
 import '../../theme/app_colors.dart';
+import '../../theme/app_palette.dart';
+import '../../theme/app_text_styles.dart';
 import '../../widgets/state_views.dart';
 import 'evaluation_trend_card.dart';
 import 'leave_balance_card.dart';
@@ -130,7 +132,10 @@ class _StaffDetailScreenState extends State<StaffDetailScreen> {
           ),
           TextButton(
             onPressed: () => Navigator.of(context).pop(true),
-            child: const Text('Sil', style: TextStyle(color: Colors.red)),
+            style: TextButton.styleFrom(
+              foregroundColor: context.colors.danger600,
+            ),
+            child: const Text('Sil'),
           ),
         ],
       ),
@@ -139,17 +144,14 @@ class _StaffDetailScreenState extends State<StaffDetailScreen> {
     try {
       await _api.delete(widget.staffId);
       if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(const SnackBar(content: Text('Personel silindi.')));
+        ScaffoldMessenger.of(context)
+            .showSnackBar(const SnackBar(content: Text('Personel silindi.')));
         Navigator.of(context).pop(true);
       }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(e is ApiException ? e.message : 'Silinemedi'),
-          ),
+          SnackBar(content: Text(e is ApiException ? e.message : 'Silinemedi')),
         );
       }
     }
@@ -233,9 +235,8 @@ class _StaffDetailScreenState extends State<StaffDetailScreen> {
       );
       _load();
       if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(const SnackBar(content: Text('Sertifika eklendi.')));
+        ScaffoldMessenger.of(context)
+            .showSnackBar(const SnackBar(content: Text('Sertifika eklendi.')));
       }
     } catch (e) {
       if (mounted) {
@@ -255,9 +256,8 @@ class _StaffDetailScreenState extends State<StaffDetailScreen> {
       await _api.deleteCertification(widget.staffId, cert.id);
       _load();
       if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(const SnackBar(content: Text('Sertifika silindi.')));
+        ScaffoldMessenger.of(context)
+            .showSnackBar(const SnackBar(content: Text('Sertifika silindi.')));
       }
     } catch (e) {
       if (mounted) {
@@ -276,6 +276,7 @@ class _StaffDetailScreenState extends State<StaffDetailScreen> {
   /// gerçek şifre asla görülmez, yalnızca rastgele üretilen geçici şifre bir
   /// kereliğine gösterilir.
   Future<void> _resetPassword() async {
+    final tx = context.text;
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
@@ -285,8 +286,14 @@ class _StaffDetailScreenState extends State<StaffDetailScreen> {
           'Kullanıcı bir sonraki girişinde şifresini değiştirmek zorunda kalacak.',
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.of(ctx).pop(false), child: const Text('Vazgeç')),
-          FilledButton(onPressed: () => Navigator.of(ctx).pop(true), child: const Text('Sıfırla')),
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: const Text('Vazgeç'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: const Text('Sıfırla'),
+          ),
         ],
       ),
     );
@@ -306,27 +313,37 @@ class _StaffDetailScreenState extends State<StaffDetailScreen> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text(
+              Text(
                 'Bu şifre yalnızca burada, bir kereliğine gösteriliyor — kaydedilmiyor, '
                 'tekrar görüntülenemez. Kullanıcıya güvenli bir şekilde iletin.',
-                style: TextStyle(fontSize: 12.5),
+                style: tx.bodySmall,
               ),
               const SizedBox(height: 12),
               SelectableText(
                 temporaryPassword,
-                style: const TextStyle(fontWeight: FontWeight.w700, fontFamily: 'monospace', fontSize: 15),
+                style: tx.subtitle.copyWith(
+                  fontWeight: FontWeight.w700,
+                  fontFamily: 'monospace',
+                ),
               ),
             ],
           ),
           actions: [
-            TextButton(onPressed: () => Navigator.of(ctx).pop(), child: const Text('Kapat')),
+            TextButton(
+              onPressed: () => Navigator.of(ctx).pop(),
+              child: const Text('Kapat'),
+            ),
           ],
         ),
       );
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(e is ApiException ? e.message : 'Şifre sıfırlanamadı')),
+          SnackBar(
+            content: Text(
+              e is ApiException ? e.message : 'Şifre sıfırlanamadı',
+            ),
+          ),
         );
       }
     }
@@ -334,6 +351,7 @@ class _StaffDetailScreenState extends State<StaffDetailScreen> {
 
   /// web/src/app/(dashboard)/personel/ImpersonateModal.tsx ile aynı akış.
   Future<void> _impersonate() async {
+    final tx = context.text;
     final reasonController = TextEditingController();
     final reason = await showDialog<String>(
       context: context,
@@ -346,7 +364,7 @@ class _StaffDetailScreenState extends State<StaffDetailScreen> {
             Text(
               '${_staff!.fullName} hesabına giriş yapacaksınız. Bu oturumda yaptığınız her '
               'işlem denetim kaydına gerçek aktör olarak sizi gösteren bir not ile işlenir.',
-              style: const TextStyle(fontSize: 12.5),
+              style: tx.bodySmall,
             ),
             const SizedBox(height: 12),
             TextField(
@@ -359,9 +377,13 @@ class _StaffDetailScreenState extends State<StaffDetailScreen> {
           ],
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.of(ctx).pop(), child: const Text('Vazgeç')),
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: const Text('Vazgeç'),
+          ),
           FilledButton(
-            onPressed: () => Navigator.of(ctx).pop(reasonController.text.trim()),
+            onPressed: () =>
+                Navigator.of(ctx).pop(reasonController.text.trim()),
             child: const Text('Gir'),
           ),
         ],
@@ -386,7 +408,11 @@ class _StaffDetailScreenState extends State<StaffDetailScreen> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(e is ApiException ? e.message : 'Impersonation başlatılamadı')),
+          SnackBar(
+            content: Text(
+              e is ApiException ? e.message : 'Impersonation başlatılamadı',
+            ),
+          ),
         );
       }
     }
@@ -394,8 +420,14 @@ class _StaffDetailScreenState extends State<StaffDetailScreen> {
 
   /// Gerekçe soran ortak dialog — Terfi/Rol Değiştir/İşten Çıkar aynı deseni
   /// paylaşır (web/src/app/(dashboard)/personel/ReasonModal.tsx ile aynı).
-  Future<String?> _askReason(String title, String description, {bool danger = false}) async {
+  Future<String?> _askReason(
+    String title,
+    String description, {
+    bool danger = false,
+  }) async {
     final controller = TextEditingController();
+    final cs = context.colors;
+    final tx = context.text;
     return showDialog<String>(
       context: context,
       builder: (ctx) => AlertDialog(
@@ -404,7 +436,7 @@ class _StaffDetailScreenState extends State<StaffDetailScreen> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(description, style: const TextStyle(fontSize: 12.5)),
+            Text(description, style: tx.bodySmall),
             const SizedBox(height: 12),
             TextField(
               controller: controller,
@@ -416,9 +448,14 @@ class _StaffDetailScreenState extends State<StaffDetailScreen> {
           ],
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.of(ctx).pop(), child: const Text('Vazgeç')),
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: const Text('Vazgeç'),
+          ),
           FilledButton(
-            style: danger ? FilledButton.styleFrom(backgroundColor: AppColors.danger500) : null,
+            style: danger
+                ? FilledButton.styleFrom(backgroundColor: cs.danger500)
+                : null,
             onPressed: () => Navigator.of(ctx).pop(controller.text.trim()),
             child: Text(danger ? 'Onayla' : 'Devam Et'),
           ),
@@ -435,12 +472,17 @@ class _StaffDetailScreenState extends State<StaffDetailScreen> {
     );
     if (reason == null || reason.isEmpty) return;
     try {
-      await ApiClient.instance.post('/staff/${_staff!.id}/promote-to-manager', body: {'reason': reason});
+      await ApiClient.instance.post(
+        '/staff/${_staff!.id}/promote-to-manager',
+        body: {'reason': reason},
+      );
       if (mounted) Navigator.of(context).pop(true);
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(e is ApiException ? e.message : 'Terfi ettirilemedi')),
+          SnackBar(
+            content: Text(e is ApiException ? e.message : 'Terfi ettirilemedi'),
+          ),
         );
       }
     }
@@ -463,7 +505,11 @@ class _StaffDetailScreenState extends State<StaffDetailScreen> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(e is ApiException ? e.message : 'Rol değiştirilemedi')),
+          SnackBar(
+            content: Text(
+              e is ApiException ? e.message : 'Rol değiştirilemedi',
+            ),
+          ),
         );
       }
     }
@@ -478,12 +524,17 @@ class _StaffDetailScreenState extends State<StaffDetailScreen> {
     );
     if (reason == null || reason.isEmpty) return;
     try {
-      await ApiClient.instance.post('/users/${_staff!.userId}/terminate', body: {'reason': reason});
+      await ApiClient.instance.post(
+        '/users/${_staff!.userId}/terminate',
+        body: {'reason': reason},
+      );
       if (mounted) Navigator.of(context).pop(true);
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(e is ApiException ? e.message : 'İşten çıkarılamadı')),
+          SnackBar(
+            content: Text(e is ApiException ? e.message : 'İşten çıkarılamadı'),
+          ),
         );
       }
     }
@@ -498,7 +549,10 @@ class _StaffDetailScreenState extends State<StaffDetailScreen> {
     );
     if (reason == null || reason.isEmpty) return;
     try {
-      await ApiClient.instance.post('/users/${_staff!.userId}/reactivate', body: {'reason': reason});
+      await ApiClient.instance.post(
+        '/users/${_staff!.userId}/reactivate',
+        body: {'reason': reason},
+      );
       _load();
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -508,7 +562,11 @@ class _StaffDetailScreenState extends State<StaffDetailScreen> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(e is ApiException ? e.message : 'Geri aktif edilemedi')),
+          SnackBar(
+            content: Text(
+              e is ApiException ? e.message : 'Geri aktif edilemedi',
+            ),
+          ),
         );
       }
     }
@@ -516,6 +574,8 @@ class _StaffDetailScreenState extends State<StaffDetailScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final cs = context.colors;
+    final tx = context.text;
     return Scaffold(
       appBar: AppBar(
         title: Text(_staff?.fullName ?? 'Personel'),
@@ -538,17 +598,31 @@ class _StaffDetailScreenState extends State<StaffDetailScreen> {
                 if (value == 'terminate') _terminate();
               },
               itemBuilder: (ctx) => [
-                const PopupMenuItem(value: 'reset', child: Text('Şifreyi Sıfırla')),
-                const PopupMenuItem(value: 'impersonate', child: Text('Bu Kullanıcı Olarak Gir')),
-                const PopupMenuDivider(),
-                const PopupMenuItem(value: 'promote', child: Text("Müdür'e Terfi Ettir")),
-                PopupMenuItem(
-                  value: 'swap_role',
-                  child: Text(_staff!.role == 'TEAM_LEAD' ? 'Personel Yap' : 'Şef Yap'),
+                const PopupMenuItem(
+                  value: 'reset',
+                  child: Text('Şifreyi Sıfırla'),
                 ),
                 const PopupMenuItem(
+                  value: 'impersonate',
+                  child: Text('Bu Kullanıcı Olarak Gir'),
+                ),
+                const PopupMenuDivider(),
+                const PopupMenuItem(
+                  value: 'promote',
+                  child: Text("Müdür'e Terfi Ettir"),
+                ),
+                PopupMenuItem(
+                  value: 'swap_role',
+                  child: Text(
+                    _staff!.role == 'TEAM_LEAD' ? 'Personel Yap' : 'Şef Yap',
+                  ),
+                ),
+                PopupMenuItem(
                   value: 'terminate',
-                  child: Text('İşten Çıkar', style: TextStyle(color: AppColors.danger500)),
+                  child: Text(
+                    'İşten Çıkar',
+                    style: tx.body.copyWith(color: cs.danger500),
+                  ),
                 ),
               ],
             ),
@@ -585,6 +659,8 @@ class _StaffDetailScreenState extends State<StaffDetailScreen> {
   }
 
   Widget _buildBody() {
+    final cs = context.colors;
+    final tx = context.text;
     if (_loading) return const LoadingView();
     if (_error != null) return ErrorRetryView(message: _error!, onRetry: _load);
     final s = _staff!;
@@ -595,7 +671,7 @@ class _StaffDetailScreenState extends State<StaffDetailScreen> {
 
     return RefreshIndicator(
       onRefresh: _load,
-      color: AppColors.primary600,
+      color: cs.accentSoft,
       child: ListView(
         padding: const EdgeInsets.all(16),
         children: [
@@ -604,17 +680,21 @@ class _StaffDetailScreenState extends State<StaffDetailScreen> {
               margin: const EdgeInsets.only(bottom: 12),
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: AppColors.warning50,
+                color: cs.warning50,
                 borderRadius: BorderRadius.circular(AppRadius.card),
               ),
               child: Row(
                 children: [
-                  const Icon(Icons.inventory_2_outlined, size: 16, color: AppColors.warning600),
+                  Icon(
+                    Icons.inventory_2_outlined,
+                    size: 16,
+                    color: cs.warning600,
+                  ),
                   const SizedBox(width: 8),
-                  const Expanded(
+                  Expanded(
                     child: Text(
                       'Bu personel arşivlenmiş — salt okunur görüntüleniyor.',
-                      style: TextStyle(fontSize: 12, color: AppColors.warning600),
+                      style: tx.caption.copyWith(color: cs.warning600),
                     ),
                   ),
                 ],
@@ -623,35 +703,26 @@ class _StaffDetailScreenState extends State<StaffDetailScreen> {
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: AppColors.surfaceCard,
+              color: cs.surfaceCard,
               borderRadius: BorderRadius.circular(AppRadius.sheet),
-              border: Border.all(color: AppColors.borderDefault),
+              border: Border.all(color: cs.borderDefault),
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
                   s.position,
-                  style: const TextStyle(
-                    fontSize: 13.5,
-                    color: AppColors.textSecondary,
-                  ),
+                  style: tx.body.copyWith(color: cs.textSecondary),
                 ),
                 const SizedBox(height: 6),
                 Text(
                   s.email,
-                  style: const TextStyle(
-                    fontSize: 12.5,
-                    color: AppColors.textFaint,
-                  ),
+                  style: tx.bodySmall.copyWith(color: cs.textFaint),
                 ),
                 if (s.phone != null)
                   Text(
                     s.phone!,
-                    style: const TextStyle(
-                      fontSize: 12.5,
-                      color: AppColors.textFaint,
-                    ),
+                    style: tx.bodySmall.copyWith(color: cs.textFaint),
                   ),
                 if (s.supervisor != null)
                   Padding(
@@ -659,11 +730,7 @@ class _StaffDetailScreenState extends State<StaffDetailScreen> {
                     child: Text(
                       '${roleLabelTr(roleFromString(s.supervisor!.role))}: '
                       '${s.supervisor!.fullName}',
-                      style: const TextStyle(
-                        fontSize: 12.5,
-                        fontWeight: FontWeight.w600,
-                        color: AppColors.textSecondary,
-                      ),
+                      style: tx.bodySmall.copyWith(fontWeight: FontWeight.w600),
                     ),
                   ),
                 const SizedBox(height: 10),
@@ -675,25 +742,19 @@ class _StaffDetailScreenState extends State<StaffDetailScreen> {
                         vertical: 5,
                       ),
                       decoration: BoxDecoration(
-                        color: AppColors.surfaceSubtle,
+                        color: cs.surfaceSubtle,
                         borderRadius: BorderRadius.circular(AppRadius.pill),
                       ),
                       child: Text(
                         staffStatusLabelTr(s.status),
-                        style: const TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w700,
-                        ),
+                        style: tx.caption.copyWith(fontWeight: FontWeight.w700),
                       ),
                     ),
                     if (s.statusUntil != null) ...[
                       const SizedBox(width: 8),
                       Text(
                         'Bitiş: ${DateFormat('HH:mm', 'tr_TR').format(s.statusUntil!)}',
-                        style: const TextStyle(
-                          fontSize: 11.5,
-                          color: AppColors.textFaint,
-                        ),
+                        style: tx.caption.copyWith(color: cs.textFaint),
                       ),
                     ],
                   ],
@@ -719,9 +780,9 @@ class _StaffDetailScreenState extends State<StaffDetailScreen> {
 
           if (canChangeStatus) ...[
             const SizedBox(height: 14),
-            const Text(
+            Text(
               'Durumu Değiştir',
-              style: TextStyle(fontWeight: FontWeight.w700, fontSize: 14),
+              style: tx.subtitle.copyWith(fontWeight: FontWeight.w700),
             ),
             const SizedBox(height: 8),
             Wrap(
@@ -744,11 +805,11 @@ class _StaffDetailScreenState extends State<StaffDetailScreen> {
               }).toList(),
             ),
             if (allowedStatuses.contains(StaffStatus.onBreak))
-              const Padding(
+              Padding(
                 padding: EdgeInsets.only(top: 6),
                 child: Text(
                   'Mola seçilirse 30 dakika sonra otomatik olarak müsait duruma döner.',
-                  style: TextStyle(fontSize: 11.5, color: AppColors.textFaint),
+                  style: tx.caption.copyWith(color: cs.textFaint),
                 ),
               ),
           ],
@@ -758,25 +819,25 @@ class _StaffDetailScreenState extends State<StaffDetailScreen> {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const Text(
+                Text(
                   'Sertifikalar',
-                  style: TextStyle(fontWeight: FontWeight.w700, fontSize: 14.5),
+                  style: tx.subtitle.copyWith(fontWeight: FontWeight.w700),
                 ),
                 if (_canManageStaff)
                   IconButton(
                     icon: const Icon(Icons.add_circle_outline_rounded),
                     tooltip: 'Sertifika ekle',
-                    color: AppColors.primary600,
+                    color: cs.primary600,
                     onPressed: _addCertification,
                   ),
               ],
             ),
             if (_certifications.isEmpty)
-              const Padding(
+              Padding(
                 padding: EdgeInsets.only(bottom: 8),
                 child: Text(
                   'Henüz sertifika eklenmemiş.',
-                  style: TextStyle(fontSize: 12.5, color: AppColors.textFaint),
+                  style: tx.bodySmall.copyWith(color: cs.textFaint),
                 ),
               ),
             const SizedBox(height: 8),
@@ -785,18 +846,16 @@ class _StaffDetailScreenState extends State<StaffDetailScreen> {
                   c.daysUntilExpiry <= 30 && c.daysUntilExpiry >= 0;
               final expired = c.daysUntilExpiry < 0;
               final color = expired
-                  ? AppColors.danger600
-                  : (expiringSoon
-                        ? AppColors.warning600
-                        : AppColors.success600);
+                  ? cs.danger600
+                  : (expiringSoon ? cs.warning600 : cs.success600);
               return Padding(
                 padding: const EdgeInsets.only(bottom: 8),
                 child: Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: AppColors.surfaceCard,
+                    color: cs.surfaceCard,
                     borderRadius: BorderRadius.circular(AppRadius.card),
-                    border: Border.all(color: AppColors.borderDefault),
+                    border: Border.all(color: cs.borderDefault),
                   ),
                   child: Row(
                     children: [
@@ -806,17 +865,13 @@ class _StaffDetailScreenState extends State<StaffDetailScreen> {
                           children: [
                             Text(
                               c.name,
-                              style: const TextStyle(
+                              style: tx.bodySmall.copyWith(
                                 fontWeight: FontWeight.w600,
-                                fontSize: 13,
                               ),
                             ),
                             Text(
                               'Bitiş: ${_dateFormat.format(c.expiryDate)}',
-                              style: const TextStyle(
-                                fontSize: 11.5,
-                                color: AppColors.textFaint,
-                              ),
+                              style: tx.caption.copyWith(color: cs.textFaint),
                             ),
                           ],
                         ),
@@ -827,18 +882,17 @@ class _StaffDetailScreenState extends State<StaffDetailScreen> {
                             : (expiringSoon
                                   ? '${c.daysUntilExpiry} Gün Kaldı'
                                   : 'Geçerli'),
-                        style: TextStyle(
-                          fontSize: 11.5,
+                        style: tx.caption.copyWith(
                           fontWeight: FontWeight.w700,
                           color: color,
                         ),
                       ),
                       if (_canManageStaff)
                         IconButton(
-                          icon: const Icon(
+                          icon: Icon(
                             Icons.delete_outline_rounded,
                             size: 18,
-                            color: AppColors.textFaint,
+                            color: cs.textFaint,
                           ),
                           tooltip: 'Sertifikayı sil',
                           onPressed: () => _deleteCertification(c),

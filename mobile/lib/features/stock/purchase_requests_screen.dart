@@ -4,6 +4,9 @@ import 'package:intl/intl.dart';
 import '../../core/api_client.dart';
 import '../../models/product.dart';
 import '../../theme/app_colors.dart';
+import '../../theme/app_palette.dart';
+import '../../theme/app_text_styles.dart';
+import '../../widgets/staggered_fade_in.dart';
 import '../../widgets/state_views.dart';
 import 'stock_api.dart';
 
@@ -57,6 +60,8 @@ class _PurchaseRequestsScreenState extends State<PurchaseRequestsScreen> {
   /// Bölüm AM (9. tur): mal kabulde opsiyonel parti no + SKT sorulur
   /// (ikisi birlikte). Kullanıcı vazgeçerse işlem yapılmaz.
   Future<void> _receiveWithBatch(StockPurchaseRequest r) async {
+    final cs = context.colors;
+    final tx = context.text;
     final batchController = TextEditingController();
     DateTime? expiry;
     final result = await showModalBottomSheet<({String batch, String? expiry})>(
@@ -76,12 +81,12 @@ class _PurchaseRequestsScreenState extends State<PurchaseRequestsScreen> {
             children: [
               Text(
                 'Mal Kabul — ${r.productName ?? 'Ürün'}',
-                style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 15),
+                style: tx.subtitle.copyWith(fontWeight: FontWeight.w700),
               ),
               const SizedBox(height: 6),
               Text(
                 '+${r.quantity.toStringAsFixed(1)} ${r.productUnit ?? ''} stoğa eklenecek. Kimyasallar için parti no ve SKT önerilir (opsiyonel).',
-                style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
+                style: tx.caption,
               ),
               const SizedBox(height: 12),
               TextField(
@@ -96,8 +101,11 @@ class _PurchaseRequestsScreenState extends State<PurchaseRequestsScreen> {
                 onPressed: () async {
                   final picked = await showDatePicker(
                     context: ctx,
-                    initialDate: expiry ?? DateTime.now().add(const Duration(days: 365)),
-                    firstDate: DateTime.now().subtract(const Duration(days: 3650)),
+                    initialDate:
+                        expiry ?? DateTime.now().add(const Duration(days: 365)),
+                    firstDate: DateTime.now().subtract(
+                      const Duration(days: 3650),
+                    ),
                     lastDate: DateTime.now().add(const Duration(days: 3650)),
                   );
                   if (picked != null) setSheetState(() => expiry = picked);
@@ -111,9 +119,7 @@ class _PurchaseRequestsScreenState extends State<PurchaseRequestsScreen> {
               ),
               const SizedBox(height: 16),
               ElevatedButton(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.success600,
-                ),
+                style: ElevatedButton.styleFrom(backgroundColor: cs.success600),
                 onPressed: () {
                   final e = expiry;
                   Navigator.of(ctx).pop((
@@ -136,7 +142,9 @@ class _PurchaseRequestsScreenState extends State<PurchaseRequestsScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('Parti numarası ve son kullanma tarihi birlikte girilmeli'),
+            content: Text(
+              'Parti numarası ve son kullanma tarihi birlikte girilmeli',
+            ),
           ),
         );
       }
@@ -191,6 +199,8 @@ class _PurchaseRequestsScreenState extends State<PurchaseRequestsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final cs = context.colors;
+    final tx = context.text;
     return Scaffold(
       appBar: AppBar(
         title: Text(
@@ -209,7 +219,7 @@ class _PurchaseRequestsScreenState extends State<PurchaseRequestsScreen> {
             )
           : RefreshIndicator(
               onRefresh: _load,
-              color: AppColors.primary600,
+              color: cs.accentSoft,
               child: ListView.separated(
                 padding: const EdgeInsets.all(16),
                 itemCount: _requests.length,
@@ -217,98 +227,102 @@ class _PurchaseRequestsScreenState extends State<PurchaseRequestsScreen> {
                 itemBuilder: (context, i) {
                   final r = _requests[i];
                   final busy = _busyId == r.id;
-                  return Container(
-                    padding: const EdgeInsets.all(14),
-                    decoration: BoxDecoration(
-                      color: AppColors.surfaceCard,
-                      borderRadius: BorderRadius.circular(AppRadius.card),
-                      border: Border.all(color: AppColors.borderDefault),
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          children: [
-                            Expanded(
-                              child: Text(
-                                r.productName ?? 'Ürün',
-                                style: const TextStyle(
+                  return StaggeredFadeIn(
+                    index: i,
+                    child: Container(
+                      padding: const EdgeInsets.all(14),
+                      decoration: BoxDecoration(
+                        color: cs.surfaceCard,
+                        borderRadius: BorderRadius.circular(AppRadius.card),
+                        border: Border.all(color: cs.borderDefault),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Expanded(
+                                child: Text(
+                                  r.productName ?? 'Ürün',
+                                  style: tx.subtitle.copyWith(
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                ),
+                              ),
+                              Text(
+                                '+${r.quantity.toStringAsFixed(1)} '
+                                '${r.productUnit ?? ''}',
+                                style: tx.body.copyWith(
                                   fontWeight: FontWeight.w700,
-                                  fontSize: 14,
+                                  color: cs.info600,
                                 ),
                               ),
-                            ),
-                            Text(
-                              '+${r.quantity.toStringAsFixed(1)} '
-                              '${r.productUnit ?? ''}',
-                              style: const TextStyle(
-                                fontWeight: FontWeight.w700,
-                                color: AppColors.info600,
-                              ),
-                            ),
-                          ],
-                        ),
-                        // Bölüm AI (8. tur): otomatik öneri rozeti
-                        if (r.isAutoGenerated)
-                          Padding(
-                            padding: const EdgeInsets.only(top: 4),
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                              decoration: BoxDecoration(
-                                color: AppColors.info50,
-                                borderRadius: BorderRadius.circular(999),
-                              ),
-                              child: const Text(
-                                'Otomatik Öneri',
-                                style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.w700, color: AppColors.info600),
-                              ),
-                            ),
+                            ],
                           ),
-                        const SizedBox(height: 4),
-                        Text(
-                          [
-                            r.requestedByName ?? '—',
-                            _dateFormat.format(DateTime.parse(r.createdAt)),
-                            if (r.supplierName != null) r.supplierName!,
-                            if (r.orderTrackingNumber != null &&
-                                r.orderTrackingNumber!.isNotEmpty)
-                              'Takip: ${r.orderTrackingNumber}',
-                            if (r.note != null && r.note!.isNotEmpty) r.note!,
-                          ].join(' · '),
-                          style: const TextStyle(
-                            fontSize: 11.5,
-                            color: AppColors.textSecondary,
+                          // Bölüm AI (8. tur): otomatik öneri rozeti
+                          if (r.isAutoGenerated)
+                            Padding(
+                              padding: const EdgeInsets.only(top: 4),
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 8,
+                                  vertical: 2,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: cs.info50,
+                                  borderRadius: BorderRadius.circular(999),
+                                ),
+                                child: Text(
+                                  'Otomatik Öneri',
+                                  style: tx.label.copyWith(color: cs.info600),
+                                ),
+                              ),
+                            ),
+                          const SizedBox(height: 4),
+                          Text(
+                            [
+                              r.requestedByName ?? '—',
+                              _dateFormat.format(DateTime.parse(r.createdAt)),
+                              if (r.supplierName != null) r.supplierName!,
+                              if (r.orderTrackingNumber != null &&
+                                  r.orderTrackingNumber!.isNotEmpty)
+                                'Takip: ${r.orderTrackingNumber}',
+                              if (r.note != null && r.note!.isNotEmpty) r.note!,
+                            ].join(' · '),
+                            style: tx.caption,
                           ),
-                        ),
-                        const SizedBox(height: 10),
-                        Row(
-                          children: [
-                            Expanded(
-                              child: OutlinedButton(
-                                onPressed: busy
-                                    ? null
-                                    : () => _resolve(r, 'CANCELLED'),
-                                style: OutlinedButton.styleFrom(
-                                  foregroundColor: AppColors.danger600,
+                          const SizedBox(height: 10),
+                          Row(
+                            children: [
+                              Expanded(
+                                child: OutlinedButton(
+                                  onPressed: busy
+                                      ? null
+                                      : () => _resolve(r, 'CANCELLED'),
+                                  style: OutlinedButton.styleFrom(
+                                    foregroundColor: cs.danger600,
+                                  ),
+                                  child: const Text('İptal'),
                                 ),
-                                child: const Text('İptal'),
                               ),
-                            ),
-                            const SizedBox(width: 8),
-                            Expanded(
-                              child: ElevatedButton(
-                                onPressed: busy
-                                    ? null
-                                    : () => _receiveWithBatch(r),
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: AppColors.success600,
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: ElevatedButton(
+                                  onPressed: busy
+                                      ? null
+                                      : () => _receiveWithBatch(r),
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: cs.success600,
+                                  ),
+                                  child: Text(
+                                    busy ? 'İşleniyor...' : 'Mal Kabul',
+                                  ),
                                 ),
-                                child: Text(busy ? 'İşleniyor...' : 'Mal Kabul'),
                               ),
-                            ),
-                          ],
-                        ),
-                      ],
+                            ],
+                          ),
+                        ],
+                      ),
                     ),
                   );
                 },

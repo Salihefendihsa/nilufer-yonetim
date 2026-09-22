@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import '../../core/api_client.dart';
 import '../../models/decimal.dart';
 import '../../theme/app_colors.dart';
+import '../../theme/app_palette.dart';
+import '../../theme/app_text_styles.dart';
 import '../../widgets/state_views.dart';
 
 /// Bölüm T (5. tur): backend/prisma/schema.prisma → JobTemplate.
@@ -26,21 +28,21 @@ class JobTemplate {
   });
 
   factory JobTemplate.fromJson(Map<String, dynamic> json) => JobTemplate(
-        id: json['id'] as String,
-        name: json['name'] as String? ?? '—',
-        serviceType: json['serviceType'] as String? ?? '',
-        defaultPrice: decimalOrNull(json['defaultPrice']),
-        defaultDurationMinutes: (json['defaultDurationMinutes'] as num?)?.toInt(),
-        defaultNotes: json['defaultNotes'] as String?,
-        isActive: json['isActive'] as bool? ?? true,
-      );
+    id: json['id'] as String,
+    name: json['name'] as String? ?? '—',
+    serviceType: json['serviceType'] as String? ?? '',
+    defaultPrice: decimalOrNull(json['defaultPrice']),
+    defaultDurationMinutes: (json['defaultDurationMinutes'] as num?)?.toInt(),
+    defaultNotes: json['defaultNotes'] as String?,
+    isActive: json['isActive'] as bool? ?? true,
+  );
 
   /// Liste/dropdown alt satırı: "Hamam Böceği · 1.250 ₺ · 90 dk".
   String get summary => [
-        serviceType,
-        if (defaultPrice != null) '${defaultPrice!.toStringAsFixed(0)} ₺',
-        if (defaultDurationMinutes != null) '$defaultDurationMinutes dk',
-      ].join(' · ');
+    serviceType,
+    if (defaultPrice != null) '${defaultPrice!.toStringAsFixed(0)} ₺',
+    if (defaultDurationMinutes != null) '$defaultDurationMinutes dk',
+  ].join(' · ');
 }
 
 class JobTemplatesApi {
@@ -58,10 +60,17 @@ class JobTemplatesApi {
   }
 
   Future<JobTemplate> create(Map<String, dynamic> body) async =>
-      JobTemplate.fromJson(await _api.post<Map<String, dynamic>>('/job-templates', body: body));
+      JobTemplate.fromJson(
+        await _api.post<Map<String, dynamic>>('/job-templates', body: body),
+      );
 
   Future<JobTemplate> update(String id, Map<String, dynamic> body) async =>
-      JobTemplate.fromJson(await _api.patch<Map<String, dynamic>>('/job-templates/$id', body: body));
+      JobTemplate.fromJson(
+        await _api.patch<Map<String, dynamic>>(
+          '/job-templates/$id',
+          body: body,
+        ),
+      );
 
   Future<void> deactivate(String id) => _api.delete<void>('/job-templates/$id');
 }
@@ -97,7 +106,10 @@ class _JobTemplatesScreenState extends State<JobTemplatesScreen> {
       if (mounted) setState(() => _items = items);
     } catch (e) {
       if (mounted) {
-        setState(() => _error = e is ApiException ? e.message : 'Şablonlar yüklenemedi');
+        setState(
+          () =>
+              _error = e is ApiException ? e.message : 'Şablonlar yüklenemedi',
+        );
       }
     } finally {
       if (mounted) setState(() => _loading = false);
@@ -105,10 +117,15 @@ class _JobTemplatesScreenState extends State<JobTemplatesScreen> {
   }
 
   Future<void> _openForm({JobTemplate? existing}) async {
+    final tx = context.text;
     final name = TextEditingController(text: existing?.name ?? '');
-    final serviceType = TextEditingController(text: existing?.serviceType ?? '');
+    final serviceType = TextEditingController(
+      text: existing?.serviceType ?? '',
+    );
     final price = TextEditingController(
-      text: existing?.defaultPrice != null ? existing!.defaultPrice!.toStringAsFixed(0) : '',
+      text: existing?.defaultPrice != null
+          ? existing!.defaultPrice!.toStringAsFixed(0)
+          : '',
     );
     final duration = TextEditingController(
       text: existing?.defaultDurationMinutes?.toString() ?? '',
@@ -134,20 +151,30 @@ class _JobTemplatesScreenState extends State<JobTemplatesScreen> {
               children: [
                 Text(
                   existing == null ? 'Yeni Şablon' : 'Şablonu Düzenle',
-                  style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 15),
+                  style: tx.subtitle.copyWith(fontWeight: FontWeight.w700),
                 ),
                 const SizedBox(height: 12),
-                TextField(controller: name, decoration: const InputDecoration(labelText: 'Şablon adı *')),
+                TextField(
+                  controller: name,
+                  decoration: const InputDecoration(labelText: 'Şablon adı *'),
+                ),
                 const SizedBox(height: 10),
-                TextField(controller: serviceType, decoration: const InputDecoration(labelText: 'Hizmet türü *')),
+                TextField(
+                  controller: serviceType,
+                  decoration: const InputDecoration(labelText: 'Hizmet türü *'),
+                ),
                 const SizedBox(height: 10),
                 Row(
                   children: [
                     Expanded(
                       child: TextField(
                         controller: price,
-                        keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                        decoration: const InputDecoration(labelText: 'Fiyat (₺)'),
+                        keyboardType: const TextInputType.numberWithOptions(
+                          decimal: true,
+                        ),
+                        decoration: const InputDecoration(
+                          labelText: 'Fiyat (₺)',
+                        ),
                       ),
                     ),
                     const SizedBox(width: 10),
@@ -155,7 +182,9 @@ class _JobTemplatesScreenState extends State<JobTemplatesScreen> {
                       child: TextField(
                         controller: duration,
                         keyboardType: TextInputType.number,
-                        decoration: const InputDecoration(labelText: 'Süre (dk)'),
+                        decoration: const InputDecoration(
+                          labelText: 'Süre (dk)',
+                        ),
                       ),
                     ),
                   ],
@@ -163,7 +192,9 @@ class _JobTemplatesScreenState extends State<JobTemplatesScreen> {
                 const SizedBox(height: 10),
                 TextField(
                   controller: notes,
-                  decoration: const InputDecoration(labelText: 'Varsayılan not'),
+                  decoration: const InputDecoration(
+                    labelText: 'Varsayılan not',
+                  ),
                   minLines: 1,
                   maxLines: 3,
                 ),
@@ -172,9 +203,12 @@ class _JobTemplatesScreenState extends State<JobTemplatesScreen> {
                   onPressed: submitting
                       ? null
                       : () async {
-                          if (name.text.trim().isEmpty || serviceType.text.trim().isEmpty) {
+                          if (name.text.trim().isEmpty ||
+                              serviceType.text.trim().isEmpty) {
                             ScaffoldMessenger.of(ctx).showSnackBar(
-                              const SnackBar(content: Text('Ad ve hizmet türü zorunlu')),
+                              const SnackBar(
+                                content: Text('Ad ve hizmet türü zorunlu'),
+                              ),
                             );
                             return;
                           }
@@ -182,9 +216,18 @@ class _JobTemplatesScreenState extends State<JobTemplatesScreen> {
                           final body = <String, dynamic>{
                             'name': name.text.trim(),
                             'serviceType': serviceType.text.trim(),
-                            'defaultPrice': price.text.trim().isEmpty ? null : double.tryParse(price.text.trim().replaceAll(',', '.')),
-                            'defaultDurationMinutes': duration.text.trim().isEmpty ? null : int.tryParse(duration.text.trim()),
-                            'defaultNotes': notes.text.trim().isEmpty ? null : notes.text.trim(),
+                            'defaultPrice': price.text.trim().isEmpty
+                                ? null
+                                : double.tryParse(
+                                    price.text.trim().replaceAll(',', '.'),
+                                  ),
+                            'defaultDurationMinutes':
+                                duration.text.trim().isEmpty
+                                ? null
+                                : int.tryParse(duration.text.trim()),
+                            'defaultNotes': notes.text.trim().isEmpty
+                                ? null
+                                : notes.text.trim(),
                           };
                           try {
                             if (existing == null) {
@@ -197,7 +240,13 @@ class _JobTemplatesScreenState extends State<JobTemplatesScreen> {
                             if (ctx.mounted) {
                               setSheetState(() => submitting = false);
                               ScaffoldMessenger.of(ctx).showSnackBar(
-                                SnackBar(content: Text(e is ApiException ? e.message : 'Kaydedilemedi')),
+                                SnackBar(
+                                  content: Text(
+                                    e is ApiException
+                                        ? e.message
+                                        : 'Kaydedilemedi',
+                                  ),
+                                ),
                               );
                             }
                           }
@@ -226,7 +275,9 @@ class _JobTemplatesScreenState extends State<JobTemplatesScreen> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(e is ApiException ? e.message : 'Güncellenemedi')),
+          SnackBar(
+            content: Text(e is ApiException ? e.message : 'Güncellenemedi'),
+          ),
         );
       }
     } finally {
@@ -236,6 +287,8 @@ class _JobTemplatesScreenState extends State<JobTemplatesScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final cs = context.colors;
+    final tx = context.text;
     return Scaffold(
       appBar: AppBar(
         title: const Text('İş Şablonları'),
@@ -259,7 +312,7 @@ class _JobTemplatesScreenState extends State<JobTemplatesScreen> {
             )
           : RefreshIndicator(
               onRefresh: _load,
-              color: AppColors.primary600,
+              color: cs.accentSoft,
               child: ListView.separated(
                 padding: const EdgeInsets.all(16),
                 itemCount: _items.length,
@@ -269,9 +322,9 @@ class _JobTemplatesScreenState extends State<JobTemplatesScreen> {
                   return Container(
                     padding: const EdgeInsets.fromLTRB(14, 12, 6, 12),
                     decoration: BoxDecoration(
-                      color: AppColors.surfaceCard,
+                      color: cs.surfaceCard,
                       borderRadius: BorderRadius.circular(AppRadius.card),
-                      border: Border.all(color: AppColors.borderDefault),
+                      border: Border.all(color: cs.borderDefault),
                     ),
                     child: Row(
                       children: [
@@ -281,21 +334,24 @@ class _JobTemplatesScreenState extends State<JobTemplatesScreen> {
                             children: [
                               Text(
                                 t.name,
-                                style: TextStyle(
+                                style: tx.subtitle.copyWith(
                                   fontWeight: FontWeight.w700,
-                                  fontSize: 14,
-                                  color: t.isActive ? AppColors.textPrimary : AppColors.textFaint,
-                                  decoration: t.isActive ? null : TextDecoration.lineThrough,
+                                  color: t.isActive
+                                      ? cs.textPrimary
+                                      : cs.textFaint,
+                                  decoration: t.isActive
+                                      ? null
+                                      : TextDecoration.lineThrough,
                                 ),
                               ),
-                              Text(
-                                t.summary,
-                                style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
-                              ),
-                              if (t.defaultNotes != null && t.defaultNotes!.isNotEmpty)
+                              Text(t.summary, style: tx.caption),
+                              if (t.defaultNotes != null &&
+                                  t.defaultNotes!.isNotEmpty)
                                 Text(
                                   t.defaultNotes!,
-                                  style: const TextStyle(fontSize: 11.5, color: AppColors.textFaint),
+                                  style: tx.caption.copyWith(
+                                    color: cs.textFaint,
+                                  ),
                                 ),
                             ],
                           ),
@@ -304,13 +360,17 @@ class _JobTemplatesScreenState extends State<JobTemplatesScreen> {
                           IconButton(
                             icon: const Icon(Icons.edit_outlined, size: 20),
                             tooltip: 'Düzenle',
-                            onPressed: _busyId == null ? () => _openForm(existing: t) : null,
+                            onPressed: _busyId == null
+                                ? () => _openForm(existing: t)
+                                : null,
                           ),
                         IconButton(
                           icon: Icon(
-                            t.isActive ? Icons.delete_outline_rounded : Icons.restore_rounded,
+                            t.isActive
+                                ? Icons.delete_outline_rounded
+                                : Icons.restore_rounded,
                             size: 20,
-                            color: t.isActive ? AppColors.danger500 : AppColors.primary600,
+                            color: t.isActive ? cs.danger500 : cs.primary600,
                           ),
                           tooltip: t.isActive ? 'Pasife al' : 'Geri al',
                           onPressed: _busyId == null ? () => _toggle(t) : null,

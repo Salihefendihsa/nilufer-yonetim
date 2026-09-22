@@ -1,6 +1,8 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { chartPalette } from "@/lib/chartPalette";
+import { SectionTitle } from "@/components/SectionTitle";
 import { useRouter } from "next/navigation";
 import { Plus, FileText, AlertTriangle, FileSignature, CalendarClock, Repeat, RefreshCw, Wallet, Download, HeartPulse, Wrench } from "lucide-react";
 import { RequireRole } from "@/components/RequireRole";
@@ -250,7 +252,7 @@ function ContractsPageContent() {
         <div className="flex flex-col gap-3 rounded-2xl border border-warning-100 bg-warning-50 p-5">
           <div className="flex items-center gap-2.5">
             <HeartPulse size={17} strokeWidth={1.75} className="text-warning-600" />
-            <h2 className="text-sm font-semibold text-text-primary">Otomasyon Gecikmeleri</h2>
+            <SectionTitle size="sm">Otomasyon Gecikmeleri</SectionTitle>
             <span className="rounded-full bg-warning-100 px-2 py-0.5 text-2xs font-semibold text-warning-700">
               {healthCheck.length}
             </span>
@@ -324,10 +326,10 @@ function ContractsPageContent() {
         loading={loading}
         totalLabel={`${contracts.length} sözleşme`}
         segments={[
-          { label: "aktif", count: contractStats.active, color: "#15803D" },
-          { label: "yenilendi", count: contractStats.renewed, color: "#61A870" },
-          { label: "süresi doldu", count: contractStats.expired, color: "#B57F13" },
-          { label: "iptal", count: contractStats.cancelled, color: "#C0392B" },
+          { label: "aktif", count: contractStats.active, color: chartPalette.success },
+          { label: "yenilendi", count: contractStats.renewed, color: chartPalette.primaryLight },
+          { label: "süresi doldu", count: contractStats.expired, color: chartPalette.warning },
+          { label: "iptal", count: contractStats.cancelled, color: chartPalette.danger },
         ]}
       />
 

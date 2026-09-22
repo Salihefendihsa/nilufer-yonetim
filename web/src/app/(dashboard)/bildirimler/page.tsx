@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { LoadingBlock } from "@/components/LoadingBlock";
 import { useRouter } from "next/navigation";
 import { Bell, BellRing, CheckCheck, ChevronLeft, ChevronRight, Inbox, Layers } from "lucide-react";
 import { EmptyState } from "@/components/EmptyState";
@@ -247,7 +248,7 @@ export default function NotificationsPage() {
             data={categorySegments.map((seg) => ({ name: seg.label, value: seg.count, color: seg.color }))}
             centerValue={loading ? "—" : String(stats.total)}
             centerLabel="bildirim"
-            emptyLabel={loading ? "Yükleniyor..." : "Bildirim yok"}
+            loading={loading} emptyLabel="Bildirim yok"
           />
         </ChartCard>
       </div>
@@ -255,7 +256,7 @@ export default function NotificationsPage() {
       {/* [Detay listesi] */}
       <div className="overflow-hidden rounded-2xl border border-border bg-surface-card shadow-card">
         {loading ? (
-          <p className="py-16 text-center text-sm text-text-faint">Yükleniyor...</p>
+          <LoadingBlock rows={4} className="py-6" />
         ) : notifications.length === 0 ? (
           <EmptyState icon={Bell} title="Bildirim yok" description="Bu filtreye uyan bildirim bulunamadı." />
         ) : (

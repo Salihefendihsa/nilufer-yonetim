@@ -2,12 +2,15 @@ import 'package:flutter/material.dart';
 
 import '../../core/api_client.dart';
 import '../../theme/app_colors.dart';
+import '../../theme/app_palette.dart';
+import '../../theme/app_text_styles.dart';
 import '../../widgets/state_views.dart';
 
 /// Bölüm X (6. tur): backend/prisma/schema.prisma → CustomerTag.
 class CustomerTag {
   final String id;
   final String name;
+
   /// #RRGGBB
   final String color;
   final bool isActive;
@@ -22,17 +25,21 @@ class CustomerTag {
   });
 
   factory CustomerTag.fromJson(Map<String, dynamic> json) => CustomerTag(
-        id: json['id'] as String,
-        name: json['name'] as String? ?? '',
-        color: json['color'] as String? ?? '#3D8A4E',
-        isActive: json['isActive'] as bool? ?? true,
-        customerCount: (json['customerCount'] as num?)?.toInt() ?? 0,
-      );
+    id: json['id'] as String,
+    name: json['name'] as String? ?? '',
+    color: json['color'] as String? ?? '#3D8A4E',
+    isActive: json['isActive'] as bool? ?? true,
+    customerCount: (json['customerCount'] as num?)?.toInt() ?? 0,
+  );
 
   Color get colorValue => colorFromHex(color);
 }
 
 /// "#RRGGBB" → Color; bozuk değerde marka yeşili.
+///
+/// BuildContext'siz üst düzey fonksiyon (model katmanında, `context.colors`
+/// çözülemez) — etiket rengi zaten kullanıcının seçtiği sabit bir RGB değeri,
+/// temaya göre değişmez; kasıtlı `AppColors` kullanımı (bkz. docs/DESIGN_AUDIT.md §0).
 Color colorFromHex(String hex) {
   final clean = hex.replaceFirst('#', '');
   if (clean.length != 6) return AppColors.primary600;
@@ -62,18 +69,28 @@ class CustomerTagsApi {
   }
 
   Future<CustomerTag> create(String name, String color) async =>
-      CustomerTag.fromJson(await _api.post<Map<String, dynamic>>(
-        '/customer-tags',
-        body: {'name': name, 'color': color},
-      ));
+      CustomerTag.fromJson(
+        await _api.post<Map<String, dynamic>>(
+          '/customer-tags',
+          body: {'name': name, 'color': color},
+        ),
+      );
 
   Future<CustomerTag> update(String id, Map<String, dynamic> body) async =>
-      CustomerTag.fromJson(await _api.patch<Map<String, dynamic>>('/customer-tags/$id', body: body));
+      CustomerTag.fromJson(
+        await _api.patch<Map<String, dynamic>>(
+          '/customer-tags/$id',
+          body: body,
+        ),
+      );
 
   Future<void> delete(String id) => _api.delete<void>('/customer-tags/$id');
 
   /// Müşterinin etiket kümesini tam olarak eşitler.
-  Future<List<CustomerTag>> setForCustomer(String customerId, List<String> tagIds) async {
+  Future<List<CustomerTag>> setForCustomer(
+    String customerId,
+    List<String> tagIds,
+  ) async {
     final json = await _api.post<Map<String, dynamic>>(
       '/customers/$customerId/tags',
       body: {'tagIds': tagIds},
@@ -90,10 +107,16 @@ class CustomerTagChip extends StatelessWidget {
   final CustomerTag tag;
   final bool dimmed;
   final VoidCallback? onTap;
-  const CustomerTagChip({super.key, required this.tag, this.dimmed = false, this.onTap});
+  const CustomerTagChip({
+    super.key,
+    required this.tag,
+    this.dimmed = false,
+    this.onTap,
+  });
 
   @override
   Widget build(BuildContext context) {
+    final tx = context.text;
     final c = tag.colorValue;
     final chip = Opacity(
       opacity: dimmed ? 0.4 : 1,
@@ -107,12 +130,13 @@ class CustomerTagChip extends StatelessWidget {
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Container(width: 6, height: 6, decoration: BoxDecoration(color: c, shape: BoxShape.circle)),
-            const SizedBox(width: 5),
-            Text(
-              tag.name,
-              style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.w700, color: c),
+            Container(
+              width: 6,
+              height: 6,
+              decoration: BoxDecoration(color: c, shape: BoxShape.circle),
             ),
+            const SizedBox(width: 5),
+            Text(tag.name, style: tx.label.copyWith(color: c)),
           ],
         ),
       ),
@@ -148,21 +172,32 @@ class _CustomerTagEditorState extends State<CustomerTagEditor> {
   void initState() {
     super.initState();
     if (widget.editable) {
-      _api.list().then((v) {
-        if (mounted) setState(() => _available = v);
-      }).catchError((_) {});
+      _api
+          .list()
+          .then((v) {
+            if (mounted) setState(() => _available = v);
+          })
+          .catchError((_) {});
     }
   }
 
   Future<void> _toggle(CustomerTag t) async {
     final has = _current.any((x) => x.id == t.id);
-    final next = has ? _current.where((x) => x.id != t.id).toList() : [..._current, t];
+    final next = has
+        ? _current.where((x) => x.id != t.id).toList()
+        : [..._current, t];
     setState(() => _busy = true);
     try {
-      final updated = await _api.setForCustomer(widget.customerId, next.map((x) => x.id).toList());
+      final updated = await _api.setForCustomer(
+        widget.customerId,
+        next.map((x) => x.id).toList(),
+      );
       if (mounted) setState(() => _current = updated);
     } on ApiException catch (e) {
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.message)));
+      if (mounted) {
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text(e.message)));
+      }
     } finally {
       if (mounted) setState(() => _busy = false);
     }
@@ -170,14 +205,20 @@ class _CustomerTagEditorState extends State<CustomerTagEditor> {
 
   @override
   Widget build(BuildContext context) {
+    final cs = context.colors;
+    final tx = context.text;
     if (!widget.editable) {
       if (_current.isEmpty) return const SizedBox.shrink();
-      return Wrap(spacing: 6, runSpacing: 6, children: [for (final t in _current) CustomerTagChip(tag: t)]);
+      return Wrap(
+        spacing: 6,
+        runSpacing: 6,
+        children: [for (final t in _current) CustomerTagChip(tag: t)],
+      );
     }
     if (_available.isEmpty) {
-      return const Text(
+      return Text(
         'Tanımlı etiket yok — Ayarlar → Müşteri Etiketleri.',
-        style: TextStyle(fontSize: 11.5, color: AppColors.textFaint),
+        style: tx.caption.copyWith(color: cs.textFaint),
       );
     }
     return Wrap(
@@ -195,7 +236,16 @@ class _CustomerTagEditorState extends State<CustomerTagEditor> {
   }
 }
 
-const _presetColors = ['#3D8A4E', '#1F6FA8', '#B57F13', '#C0392B', '#6B4FBB', '#0F766E', '#7C8A7F', '#D97706'];
+const _presetColors = [
+  '#3D8A4E',
+  '#1F6FA8',
+  '#B57F13',
+  '#C0392B',
+  '#6B4FBB',
+  '#0F766E',
+  '#7C8A7F',
+  '#D97706',
+];
 
 /// Ayarlar → Müşteri Etiketleri (OWNER/MANAGER): ekle / düzenle / pasif / sil.
 class CustomerTagsScreen extends StatefulWidget {
@@ -227,13 +277,20 @@ class _CustomerTagsScreenState extends State<CustomerTagsScreen> {
       final items = await _api.list(includeInactive: true);
       if (mounted) setState(() => _items = items);
     } catch (e) {
-      if (mounted) setState(() => _error = e is ApiException ? e.message : 'Etiketler yüklenemedi');
+      if (mounted) {
+        setState(
+          () =>
+              _error = e is ApiException ? e.message : 'Etiketler yüklenemedi',
+        );
+      }
     } finally {
       if (mounted) setState(() => _loading = false);
     }
   }
 
   Future<void> _openForm({CustomerTag? existing}) async {
+    final cs = context.colors;
+    final tx = context.text;
     final name = TextEditingController(text: existing?.name ?? '');
     var color = existing?.color ?? _presetColors.first;
     final saved = await showModalBottomSheet<bool>(
@@ -241,14 +298,26 @@ class _CustomerTagsScreenState extends State<CustomerTagsScreen> {
       isScrollControlled: true,
       builder: (ctx) => StatefulBuilder(
         builder: (ctx, setSheetState) => Padding(
-          padding: EdgeInsets.only(bottom: MediaQuery.of(ctx).viewInsets.bottom, left: 20, right: 20, top: 20),
+          padding: EdgeInsets.only(
+            bottom: MediaQuery.of(ctx).viewInsets.bottom,
+            left: 20,
+            right: 20,
+            top: 20,
+          ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              Text(existing == null ? 'Yeni Etiket' : 'Etiketi Düzenle', style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 15)),
+              Text(
+                existing == null ? 'Yeni Etiket' : 'Etiketi Düzenle',
+                style: tx.subtitle.copyWith(fontWeight: FontWeight.w700),
+              ),
               const SizedBox(height: 12),
-              TextField(controller: name, decoration: const InputDecoration(labelText: 'Etiket adı *'), maxLength: 40),
+              TextField(
+                controller: name,
+                decoration: const InputDecoration(labelText: 'Etiket adı *'),
+                maxLength: 40,
+              ),
               const SizedBox(height: 8),
               Wrap(
                 spacing: 8,
@@ -264,7 +333,9 @@ class _CustomerTagsScreenState extends State<CustomerTagsScreen> {
                           color: colorFromHex(c),
                           shape: BoxShape.circle,
                           border: Border.all(
-                            color: color == c ? AppColors.textPrimary : Colors.transparent,
+                            color: color == c
+                                ? cs.textPrimary
+                                : Colors.transparent,
                             width: 2.5,
                           ),
                         ),
@@ -275,7 +346,13 @@ class _CustomerTagsScreenState extends State<CustomerTagsScreen> {
               const SizedBox(height: 12),
               Align(
                 alignment: Alignment.centerLeft,
-                child: CustomerTagChip(tag: CustomerTag(id: 'preview', name: name.text.isEmpty ? 'Önizleme' : name.text, color: color)),
+                child: CustomerTagChip(
+                  tag: CustomerTag(
+                    id: 'preview',
+                    name: name.text.isEmpty ? 'Önizleme' : name.text,
+                    color: color,
+                  ),
+                ),
               ),
               const SizedBox(height: 16),
               ElevatedButton(
@@ -285,11 +362,17 @@ class _CustomerTagsScreenState extends State<CustomerTagsScreen> {
                     if (existing == null) {
                       await _api.create(name.text.trim(), color);
                     } else {
-                      await _api.update(existing.id, {'name': name.text.trim(), 'color': color});
+                      await _api.update(existing.id, {
+                        'name': name.text.trim(),
+                        'color': color,
+                      });
                     }
                     if (ctx.mounted) Navigator.of(ctx).pop(true);
                   } on ApiException catch (e) {
-                    if (ctx.mounted) ScaffoldMessenger.of(ctx).showSnackBar(SnackBar(content: Text(e.message)));
+                    if (ctx.mounted) {
+                      ScaffoldMessenger.of(ctx)
+                          .showSnackBar(SnackBar(content: Text(e.message)));
+                    }
                   }
                 },
                 child: const Text('Kaydet'),
@@ -304,15 +387,21 @@ class _CustomerTagsScreenState extends State<CustomerTagsScreen> {
   }
 
   Future<void> _delete(CustomerTag t) async {
+    final cs = context.colors;
     final ok = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
         title: const Text('Etiketi sil'),
-        content: Text('"${t.name}" silinecek ve ${t.customerCount} müşteriden kaldırılacak. Geri alınamaz.'),
+        content: Text(
+          '"${t.name}" silinecek ve ${t.customerCount} müşteriden kaldırılacak. Geri alınamaz.',
+        ),
         actions: [
-          TextButton(onPressed: () => Navigator.of(ctx).pop(false), child: const Text('Vazgeç')),
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: const Text('Vazgeç'),
+          ),
           ElevatedButton(
-            style: ElevatedButton.styleFrom(backgroundColor: AppColors.danger500),
+            style: ElevatedButton.styleFrom(backgroundColor: cs.danger500),
             onPressed: () => Navigator.of(ctx).pop(true),
             child: const Text('Sil'),
           ),
@@ -325,7 +414,10 @@ class _CustomerTagsScreenState extends State<CustomerTagsScreen> {
       await _api.delete(t.id);
       await _load();
     } on ApiException catch (e) {
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.message)));
+      if (mounted) {
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text(e.message)));
+      }
     } finally {
       if (mounted) setState(() => _busy = false);
     }
@@ -333,10 +425,18 @@ class _CustomerTagsScreenState extends State<CustomerTagsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final cs = context.colors;
+    final tx = context.text;
     return Scaffold(
       appBar: AppBar(
         title: const Text('Müşteri Etiketleri'),
-        actions: [IconButton(icon: const Icon(Icons.add_rounded), tooltip: 'Yeni etiket', onPressed: () => _openForm())],
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.add_rounded),
+            tooltip: 'Yeni etiket',
+            onPressed: () => _openForm(),
+          ),
+        ],
       ),
       body: _loading
           ? const LoadingView()
@@ -350,7 +450,7 @@ class _CustomerTagsScreenState extends State<CustomerTagsScreen> {
             )
           : RefreshIndicator(
               onRefresh: _load,
-              color: AppColors.primary600,
+              color: cs.accentSoft,
               child: ListView.separated(
                 padding: const EdgeInsets.all(16),
                 itemCount: _items.length,
@@ -360,9 +460,9 @@ class _CustomerTagsScreenState extends State<CustomerTagsScreen> {
                   return Container(
                     padding: const EdgeInsets.fromLTRB(14, 10, 6, 10),
                     decoration: BoxDecoration(
-                      color: AppColors.surfaceCard,
+                      color: cs.surfaceCard,
                       borderRadius: BorderRadius.circular(AppRadius.card),
-                      border: Border.all(color: AppColors.borderDefault),
+                      border: Border.all(color: cs.borderDefault),
                     ),
                     child: Row(
                       children: [
@@ -371,22 +471,38 @@ class _CustomerTagsScreenState extends State<CustomerTagsScreen> {
                         Expanded(
                           child: Text(
                             '${t.customerCount} müşteri${t.isActive ? '' : ' · pasif'}',
-                            style: const TextStyle(fontSize: 12, color: AppColors.textFaint),
+                            style: tx.caption.copyWith(color: cs.textFaint),
                           ),
                         ),
-                        IconButton(icon: const Icon(Icons.edit_outlined, size: 20), onPressed: _busy ? null : () => _openForm(existing: t)),
                         IconButton(
-                          icon: Icon(t.isActive ? Icons.visibility_off_outlined : Icons.restore_rounded, size: 20),
+                          icon: const Icon(Icons.edit_outlined, size: 20),
+                          onPressed: _busy
+                              ? null
+                              : () => _openForm(existing: t),
+                        ),
+                        IconButton(
+                          icon: Icon(
+                            t.isActive
+                                ? Icons.visibility_off_outlined
+                                : Icons.restore_rounded,
+                            size: 20,
+                          ),
                           tooltip: t.isActive ? 'Pasife al' : 'Geri al',
                           onPressed: _busy
                               ? null
                               : () async {
-                                  await _api.update(t.id, {'isActive': !t.isActive});
+                                  await _api.update(t.id, {
+                                    'isActive': !t.isActive,
+                                  });
                                   _load();
                                 },
                         ),
                         IconButton(
-                          icon: const Icon(Icons.delete_outline_rounded, size: 20, color: AppColors.danger500),
+                          icon: Icon(
+                            Icons.delete_outline_rounded,
+                            size: 20,
+                            color: cs.danger500,
+                          ),
                           onPressed: _busy ? null : () => _delete(t),
                         ),
                       ],

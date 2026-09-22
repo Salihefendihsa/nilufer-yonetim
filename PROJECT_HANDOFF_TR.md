@@ -38,7 +38,7 @@ nilufer-yonetim/
 **Web**: Next.js **14.2.35** (App Router), React 18, Tailwind CSS 3.4, `framer-motion` 13, `lucide-react`. State yönetimi Redux/Zustand değil; özel bir `AuthProvider` (React Context) + sayfa bazlı `useState`/`useEffect` + doğrudan `api.ts` fetch çağrıları.
 
 ### Yerelde çalıştırma
-1. `docker-compose up -d` → PostgreSQL 17 (varsayılan host portu `.env`'deki `POSTGRES_PORT`, örnekte `5433`).
+1. PostgreSQL 17'nin çalıştığından emin olun. Bu geliştirme makinesinde **native (Windows servisi) PostgreSQL 17** kullanılır: `postgresql-x64-17` servisi otomatik başlar, `localhost:5432`'de dinler; `DATABASE_URL` buna işaret eder. Docker gerekmez. (Alternatif: `docker-compose up -d` ile `postgres:17` konteyneri, host portu `.env`'deki `POSTGRES_PORT` = `5433` — native ile çakışmaz; bkz. §12.2.)
 2. `backend/`: `.env` oluştur (bkz. bölüm 3) → `npm install` → `npx prisma migrate dev` → `npm run db:seed` (opsiyonel demo veri) → `npm run dev` (varsayılan port `4000`, `GET /health` ile kontrol edilebilir).
 3. `web/`: `.env.local` oluştur (`NEXT_PUBLIC_API_URL`, gerekirse `NEXT_PUBLIC_RECAPTCHA_SITE_KEY`) → `npm install` → `npm run dev` (Next.js varsayılanı `3000`).
 
@@ -59,6 +59,9 @@ Kaynak: `.env.example`, `backend/.env.example`, `web/.env.example`.
 | `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS` | backend | E-posta bildirimleri (opsiyonel — boşsa gönderim sessizce atlanır, `backend/src/lib/email.ts`) |
 | `RECAPTCHA_SECRET_KEY` | backend | Google reCAPTCHA v3 sunucu tarafı doğrulaması (opsiyonel) |
 | `MOBILE_APP_SECRET` | backend (sonradan eklendi, bkz. §7) | Flutter mobil istemcisinin reCAPTCHA'yı atlaması için paylaşılan sır (`X-Mobile-App-Key` header'ıyla eşleştirilir) |
+| `S3_BUCKET`, `S3_ACCESS_KEY_ID`, `S3_SECRET_ACCESS_KEY`, `S3_REGION`, `S3_ENDPOINT` | backend | S3-uyumlu nesne depolama (opsiyonel; boşsa yerel disk — bkz. §8.1) |
+| `SENTRY_DSN` | backend | Sentry hata izleme (opsiyonel; boşsa no-op — bkz. §8.1) |
+| `LOG_LEVEL` | backend | pino log seviyesi (varsayılan `info` — bkz. §8.1) |
 | `NEXT_PUBLIC_API_URL` | web | Backend'in adresi |
 | `NEXT_PUBLIC_RECAPTCHA_SITE_KEY` | web (`.env.example`'da **listelenmemiş** ama `web/src/lib/recaptcha.ts:10`'da okunuyor) | reCAPTCHA v3 istemci site anahtarı |
 
@@ -117,7 +120,7 @@ Kaynak: `.env.example`, `backend/.env.example`, `web/.env.example`.
 | Avans talebi + onay akışı | **Gerçek** | `/advances` |
 | **İzin talebi (personel izni)** | **Yok** | Şemada `LeaveRequest` benzeri bir model bulunamadı; `AdvanceRequest` yalnızca parasal avans talebidir. "bekleyen-onaylar" sayfası muhtemelen avans taleplerini (ve/veya teklif taleplerini) gösteriyor — ayrı bir izin/mazeret sistemi yok |
 | WhatsApp entegrasyonu | **Bulunamadı** | Kod içinde herhangi bir WhatsApp API/kütüphane referansı yok; önceki raporda geçen ifade doğrulanamadı |
-| Demo veri | **Gerçekçi ama sentetik** | `backend/prisma/seed.ts` — tüm isim/telefon/e-posta desenli ve uydurma (`personelN@nilufer.com`, `0533 xxx xx xx`, `@example.com`); gerçek kişisel veri değildir |
+| Demo veri | **Gerçekçi ama sentetik** | `backend/prisma/seed.ts` (temel hesaplar) + `backend/prisma/seedDemo.ts` (zengin, KALICI gösterim verisi — bkz. §12.2.2) — tüm isim/telefon/e-posta desenli ve uydurma (`personelN@nilufer.com`, `0533 xxx xx xx`, `@example.com`); gerçek kişisel veri değildir |
 
 ---
 
@@ -184,6 +187,21 @@ Kaynak: `backend/src/lib/jwt.ts`, `backend/src/controllers/authController.ts`, `
 - **07:00** her gün — günlük özet e-postası.
 
 Harici servisler: **SMTP** (nodemailer, opsiyonel), **Google reCAPTCHA v3** (giriş ve public teklif formu için sunucu tarafı doğrulama), **Google Takvim** (yalnızca link üretimi, API entegrasyonu yok). Başka bir üçüncü taraf servis (SMS, ödeme ağ geçidi, push bildirim sağlayıcısı) kodda bulunamadı.
+
+
+### 8.1 İşletim araçları: S3 nesne depolama, Sentry, pino (2d45999 ile eklendi)
+
+Üçü de **opsiyoneldir** — ilgili env değişkeni boşsa kod eski davranışına düşer; hiçbir gerçek anahtar repoda veya `.env` dosyalarında yoktur, yalnızca `.env.example`'da boş placeholder vardır.
+
+| Araç | Ne işe yarar | Yapılandırma | Boşsa ne olur |
+|---|---|---|---|
+| **S3-uyumlu depolama** (`backend/src/lib/storage.ts`, `@aws-sdk/client-s3`) | İş fotoğrafı, imza, müşteri belgesi ve mesaj eklerini yerel disk (`backend/uploads/`) yerine AWS S3 / Cloudflare R2 / MinIO / Backblaze B2'ye yazar. Birden fazla backend instance'ı çalıştırılacaksa **zorunlu** (aksi hâlde instance'lar birbirinin dosyasını göremez). | `S3_BUCKET`, `S3_ACCESS_KEY_ID`, `S3_SECRET_ACCESS_KEY` (üçü de dolu olmalı) + `S3_REGION` (AWS için örn. `eu-central-1`, R2/MinIO için genelde `auto`) + `S3_ENDPOINT` (yalnızca AWS dışı servislerde; doluysa path-style adresleme açılır). Bucket **private** kalmalı — kod hiçbir public/presigned URL üretmez. | Dosyalar `backend/uploads/` altında yerel diskte kalır (tek instance dev/küçük kurulum için yeterli). |
+| **Sentry** (`backend/src/lib/errorReporting.ts`, `@sentry/node`) | `errorHandler`'a düşen beklenmeyen 500 hatalarını Sentry'ye bildirir. `tracesSampleRate: 0` — yalnızca hata, performans izleme yok. `beforeSend` istek URL'indeki takvim token'ını (`/calendar/[REDACTED].ics`) maskeler, gövde/cookie'yi düşürür. | `SENTRY_DSN` (sentry.io → Project Settings → Client Keys). `initErrorReporting()` `src/instrument.ts` üzerinden `index.ts`'in **ilk** import'u olarak çağrılır (http enstrümantasyonu için zorunlu sıra). | Tamamen no-op; hata yalnızca konsola (pino) yazılır, dış servise hiçbir şey gitmez. |
+| **pino** (`backend/src/lib/logger.ts`) | `errorHandler`'daki `console.error` yerine yapılandırılmış JSON log (`unhandled_error` + method/path/userId). Prod'da log toplayıcı (CloudWatch, Loki, Docker logs) `stdout`'u okur; ek servis gerekmez. | `LOG_LEVEL` (`fatal|error|warn|info|debug|trace`, varsayılan `info`). | Varsayılan `info` seviyesinde çalışır. |
+
+Dosya erişim güvenlik modeli **değişmedi**: S3 yapılandırılsa da istemci dosyayı yine `GET /files/:type/:id` (Authorization header, kayıt bazlı yetki kuralı) üzerinden alır; backend S3'ten `GetObject` ile okuyup stream eder. Yükleme yolu `upload.single(...) → finalizeUpload → controller` şeklindedir: multer önce yerel diske yazar, `finalizeUpload` S3 açıksa dosyayı bucket'a taşıyıp yerel kopyayı siler.
+
+Aynı commit'te gelen diğer işletim parçaları: `lib/distributedLock.ts` (Postgres advisory lock — cron görevleri çoklu instance'ta tekilleşir), `/v1` altında ikinci API mount'u (ADR-004; önek olmayan yollar aynen çalışır), `backend/Dockerfile`, `web/Dockerfile`, `docker-compose.prod.yml` (postgres+backend+web tam yığın) ve `.github/workflows/ci.yml` (typecheck+test+lint+build).
 
 ---
 
@@ -362,15 +380,23 @@ Bu bölüm, projeyi kendi bilgisayarınızda üçüncü kişi olarak sıfırdan 
 ### 12.1 Ön koşullar
 
 - Node.js 18+ ve npm
-- Docker Desktop (yerel PostgreSQL için) — alternatif olarak kendi Postgres sunucunuz da olur
+- PostgreSQL 17 (native kurulum: `winget install PostgreSQL.PostgreSQL.17` veya EDB installer) — alternatif olarak Docker Desktop ile `docker-compose up -d` de kullanılabilir
 - Flutter SDK 3.x (`flutter --version` ile kontrol edin) + Android SDK (Android Studio ile birlikte gelir)
 - Fiziksel Android cihaz (USB hata ayıklama açık) **veya** Android Studio üzerinden bir AVD (emülatör) — **not**: bu geliştirme ortamının sanal makinesinde donanım hızlandırma olmadığı için emülatör pratikte açılamadı; kendi bilgisayarınızda donanım hızlandırma (Hyper-V/HAXM) etkinse bu sorun yaşanmaz.
 
 ### 12.2 Backend'i çalıştırma
 
 ```bash
-# 1) Proje kökünde PostgreSQL'i başlat
-docker-compose up -d
+# 1) PostgreSQL'in çalıştığını doğrula (native Windows servisi, otomatik başlar)
+#    PowerShell: Get-Service postgresql-x64-17   → Running olmalı
+#    Değilse:    Start-Service postgresql-x64-17
+#    Sıfır kurulumda (rol/DB yoksa) bir kez:
+#      psql -U postgres -c "CREATE ROLE nilufer LOGIN PASSWORD 'change_me' CREATEDB;"
+#      psql -U postgres -c "CREATE DATABASE nilufer_yonetim OWNER nilufer;"
+#    pg_hba.conf localhost için scram-sha-256 (şifreli) — DATABASE_URL'deki
+#    kullanıcı/şifre (nilufer/change_me) gerçekten doğrulanır.
+#    (Docker alternatifi: proje kökünde `docker-compose up -d` → port 5433;
+#     o zaman DATABASE_URL'de 5433 kullanın.)
 
 # 2) Backend bağımlılıklarını kur
 cd backend
@@ -391,6 +417,9 @@ npx prisma migrate dev
 # 5) (Opsiyonel) Demo veri yükle
 npm run db:seed
 
+# 5b) (Opsiyonel, KALICI) Zengin gösterim/demo verisi — bkz. §12.2.2
+npm run db:seed:demo
+
 # 6) Geliştirme sunucusunu başlat
 npm run dev
 ```
@@ -406,6 +435,49 @@ npm run test:typecheck  # test dosyalarının tip kontrolü
 cd ../mobile
 flutter test          # model parse (Decimal serileşme) regresyon testleri + smoke test
 ```
+
+#### 12.2.2 Zengin demo veri (`prisma/seedDemo.ts`) — KALICI, silinmek üzere değil
+
+`prisma/seed.ts` yalnızca temel hesapları (rol başına 1-2 kullanıcı) ve
+referans verisini (6 hizmet türü, 6 ilçe) kurar — sistemi ilk açtığınızda
+her ana tablo neredeyse boştur. `prisma/seedDemo.ts` bunun ÜZERİNE, sistemi
+müşteriye/yatırımcıya gösterirken dolu ve gerçekçi görünmesi için zengin,
+**kalıcı** demo veri ekler (test/geliştirme temizliği kapsamında SİLİNMEK
+ÜZERE tasarlanmadı — bu farkla önemlidir: projedeki "ID bazlı temizlik"
+kuralları/testleri bu veriyi hedef almamalı).
+
+```bash
+cd backend
+npm run db:seed:demo   # önce `npm run db:seed` çalışmış, temel hesaplar var olmalı
+```
+
+Ne ekler (2026-09-22 turunda, `owner@nilufer.com` / `Test1234!` ile görülebilir):
+
+| Tablo | Önceki | Sonra | Not |
+|---|---|---|---|
+| Product | 6 | 21 | +15 gerçekçi kimyasal/sarf/ekipman/dezenfektan (kategori: BIOCIDAL/CONSUMABLE/EQUIPMENT/DISINFECTANT), kod (INS-410 gibi) |
+| ProductBatch | 0 | 8 | Parti no + SKT (Bölüm AM) — biri süresi dolmuş, ikisi 30 gün içinde dolacak |
+| Supplier | 0 | 3 | ProductBatch/StockPurchaseRequest için tedarikçi kataloğu |
+| Customer | 18 | 30 | +12 (8 bireysel + 4 kurumsal); 5'ine referans kodu, biri bir diğerinin referansıyla bağlı |
+| CustomerTag | 0 | 3 | VIP / Kurumsal / Konut, 24 atama |
+| Job | 36 | 76 | +40 — COMPLETED/CANCELLED/SCHEDULED/PENDING/IN_PROGRESS karışık, geçmiş 3 ay + gelecek 2 hafta; bazılarında rating + Bölüm S geri bildirimi + garanti tarihi |
+| Contract | 10 | 18 | +8 — ACTIVE (bazıları 10 gün içinde bitecek) + EXPIRED karışık |
+| QuoteRequest | 6 | 16 | +10 — NEW/CONTACTED/REVISION/CONVERTED/REJECTED karışık |
+| CustomerComplaint | 0 | 8 | Bölüm AO — OPEN/IN_PROGRESS/RESOLVED/CLOSED, öncelik karışık, bazıları bir Job'a bağlı |
+| EvaluationCriterion | 0 | 6 | İş Kalitesi, Zamanında Gelme, Müşteri İletişimi, Ekipman Kullanımı, Güvenlik Prosedürleri, Takım Çalışması — 2026-09-22'de Ayarlar → Değerlendirme Kriterleri ekranının boş çıktığı bulunan hatanın (bkz. kök dizin `CHANGELOG.md`) düzeltmesinden sonra eklendi |
+| EvaluationPeriod | 0 | 3 | 2 kilitli dönem (bonusThreshold/bonusAmount tanımlı) + 1 açık dönem |
+| Evaluation + EvaluationScore | 0 | 15 | Her saha personeline (şef dahil) kilitli dönemler için puanlı değerlendirme + açık dönem için 3 taslak/gönderilmiş örnek |
+| StaffBonus | 0 | 5 | Ortalaması eşiği (16/20) geçen değerlendirmelerden otomatik öneri — biri APPROVED, kalanı PENDING |
+
+**Güvenli tekrar çalıştırma:** her bölüm kendi tablosunun mevcut satır
+sayısını kontrol eder; hedef eşiğe zaten ulaşılmışsa o bölüm atlanır
+("Zaten N ... var, atlanıyor" log'u) — ikinci kez çalıştırmak veri
+yığını/mükerrer kayıt oluşturmaz (doğrulandı: iki kez art arda çalıştırıldı,
+ikinci koşuda yalnızca `Supplier`/`Product` gibi isimle bulunan idempotent
+kayıtlar ve referans kodu ataması tekrarlandı, hacimli tablolar hiç
+dokunulmadı). Yeni bir demo veri turu eklemek isterseniz (ör. daha fazla iş)
+ilgili bölümdeki eşik sayısını (`existingJobCount < 60` gibi) yükseltip
+tekrar çalıştırın.
 
 **Kural: backend veya mobile'da herhangi bir önemli değişiklikten (özellikle
 auth/yetki/finans/personel akışlarında) önce `npm test` (backend) ve

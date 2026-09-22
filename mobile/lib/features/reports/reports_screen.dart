@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import '../../core/api_client.dart';
 import '../../core/file_download.dart';
 import '../../theme/app_colors.dart';
+import '../../theme/app_palette.dart';
+import '../../theme/app_text_styles.dart';
 import '../../widgets/charts.dart';
 import '../../widgets/state_views.dart';
 
@@ -23,10 +25,13 @@ class _ReportsScreenState extends State<ReportsScreen> {
   List<Map<String, dynamic>> _topDistricts = [];
   List<Map<String, dynamic>> _revenueTrend = [];
   Map<String, dynamic>? _retention;
+
   /// Bölüm S (5. tur): /analytics/feedback-summary (null → blok gizli).
   Map<String, dynamic>? _feedback;
+
   /// Bölüm AA (6. tur): /analytics/year-over-year — geçen yıl serisi.
   List<Map<String, dynamic>> _yoy = [];
+
   /// Bölüm AE (7. tur): /analytics/quote-response-time (null → blok gizli).
   Map<String, dynamic>? _responseTime;
   bool _loading = true;
@@ -46,7 +51,9 @@ class _ReportsScreenState extends State<ReportsScreen> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(e is ApiException ? e.message : 'PDF indirilemedi')),
+          SnackBar(
+            content: Text(e is ApiException ? e.message : 'PDF indirilemedi'),
+          ),
         );
       }
     } finally {
@@ -56,16 +63,22 @@ class _ReportsScreenState extends State<ReportsScreen> {
 
   /// Bölüm AE (7. tur): teklif yanıt hızı — son 30 gün (90 günle kıyas).
   Widget _buildResponseTime(Map<String, dynamic> rt) {
+    final cs = context.colors;
+    final tx = context.text;
     final last30 = (rt['last30'] as Map<String, dynamic>?) ?? const {};
     final last90 = (rt['last90'] as Map<String, dynamic>?) ?? const {};
     String fmt(Map<String, dynamic> w, String key) {
       final v = w[key] as num?;
       return v == null ? 'Veri yok' : '${v.toStringAsFixed(1)} sa';
     }
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text('Yanıt Hızı (Teklifler)', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 14.5)),
+        Text(
+          'Yanıt Hızı (Teklifler)',
+          style: tx.subtitle.copyWith(fontWeight: FontWeight.w700),
+        ),
         const SizedBox(height: 8),
         Row(
           children: [
@@ -73,7 +86,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
               child: _MiniStat(
                 label: 'Ort. ilk temas · 30g',
                 value: fmt(last30, 'avgFirstContactHours'),
-                color: AppColors.info500,
+                color: cs.info500,
               ),
             ),
             const SizedBox(width: 10),
@@ -81,7 +94,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
               child: _MiniStat(
                 label: 'Ort. dönüşüm · 30g',
                 value: fmt(last30, 'avgConversionHours'),
-                color: AppColors.warning500,
+                color: cs.warning500,
               ),
             ),
           ],
@@ -90,39 +103,49 @@ class _ReportsScreenState extends State<ReportsScreen> {
         Text(
           '90 gün: ilk temas ${fmt(last90, 'avgFirstContactHours')} · dönüşüm ${fmt(last90, 'avgConversionHours')} '
           '(${last30['quoteCount'] ?? 0} teklif / 30g)',
-          style: const TextStyle(fontSize: 11.5, color: AppColors.textFaint),
+          style: tx.caption.copyWith(color: cs.textFaint),
         ),
       ],
     );
   }
 
   Widget _buildFeedbackSummary(Map<String, dynamic> f) {
+    final cs = context.colors;
+    final tx = context.text;
     final rate = f['recommendRate'] as num?;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
+        Text(
           'Müşteri Geri Bildirimi',
-          style: TextStyle(fontWeight: FontWeight.w700, fontSize: 14.5),
+          style: tx.subtitle.copyWith(fontWeight: FontWeight.w700),
         ),
         Text(
           '${f['responseCount']} detaylı değerlendirme'
           '${rate != null ? ' · %${rate.round()} tavsiye eder' : ''}',
-          style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
+          style: tx.caption,
         ),
         const SizedBox(height: 8),
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
           decoration: BoxDecoration(
-            color: AppColors.surfaceCard,
+            color: cs.surfaceCard,
             borderRadius: BorderRadius.circular(AppRadius.card),
-            border: Border.all(color: AppColors.borderDefault),
+            border: Border.all(color: cs.borderDefault),
           ),
           child: Column(
             children: [
-              _feedbackRow('Hizmet Kalitesi', f['serviceQualityAvg'] as num?),
-              _feedbackRow('Dakiklik', f['punctualityAvg'] as num?),
-              _feedbackRow('Personel Profesyonelliği', f['staffProfessionalismAvg'] as num?),
+              _feedbackRow(
+                context,
+                'Hizmet Kalitesi',
+                f['serviceQualityAvg'] as num?,
+              ),
+              _feedbackRow(context, 'Dakiklik', f['punctualityAvg'] as num?),
+              _feedbackRow(
+                context,
+                'Personel Profesyonelliği',
+                f['staffProfessionalismAvg'] as num?,
+              ),
             ],
           ),
         ),
@@ -155,7 +178,8 @@ class _ReportsScreenState extends State<ReportsScreen> {
         _revenueTrend = (results[3]['data'] as List)
             .cast<Map<String, dynamic>>();
         _feedback = results[4];
-        _yoy = ((results[5]['data'] as List?) ?? const []).cast<Map<String, dynamic>>();
+        _yoy = ((results[5]['data'] as List?) ?? const [])
+            .cast<Map<String, dynamic>>();
         _responseTime = results[6];
       });
     } catch (e) {
@@ -169,6 +193,8 @@ class _ReportsScreenState extends State<ReportsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final cs = context.colors;
+    final tx = context.text;
     return Scaffold(
       appBar: AppBar(
         title: const Text('Raporlar'),
@@ -192,17 +218,14 @@ class _ReportsScreenState extends State<ReportsScreen> {
           ? ErrorRetryView(message: _error!, onRetry: _load)
           : RefreshIndicator(
               onRefresh: _load,
-              color: AppColors.primary600,
+              color: cs.accentSoft,
               child: ListView(
                 padding: const EdgeInsets.all(16),
                 children: [
                   if (_retention != null) ...[
-                    const Text(
+                    Text(
                       'Müşteri Sadakati (Bu Ay)',
-                      style: TextStyle(
-                        fontWeight: FontWeight.w700,
-                        fontSize: 14.5,
-                      ),
+                      style: tx.subtitle.copyWith(fontWeight: FontWeight.w700),
                     ),
                     const SizedBox(height: 8),
                     Row(
@@ -211,7 +234,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
                           child: _MiniStat(
                             label: 'Yeni Müşteri',
                             value: '${_retention!['newCustomers']}',
-                            color: AppColors.info500,
+                            color: cs.info500,
                           ),
                         ),
                         const SizedBox(width: 10),
@@ -219,7 +242,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
                           child: _MiniStat(
                             label: 'Tekrar Eden',
                             value: '${_retention!['returningCustomers']}',
-                            color: AppColors.success500,
+                            color: cs.success500,
                           ),
                         ),
                       ],
@@ -235,12 +258,9 @@ class _ReportsScreenState extends State<ReportsScreen> {
                     _buildFeedbackSummary(_feedback!),
                     const SizedBox(height: 20),
                   ],
-                  const Text(
+                  Text(
                     'Ciro Trendi',
-                    style: TextStyle(
-                      fontWeight: FontWeight.w700,
-                      fontSize: 14.5,
-                    ),
+                    style: tx.subtitle.copyWith(fontWeight: FontWeight.w700),
                   ),
                   const SizedBox(height: 8),
                   if (_revenueTrend.isEmpty)
@@ -270,20 +290,17 @@ class _ReportsScreenState extends State<ReportsScreen> {
                             ],
                     ),
                   if (_yoy.isNotEmpty)
-                    const Padding(
+                    Padding(
                       padding: EdgeInsets.only(top: 4),
                       child: Text(
                         'Yeşil: bu yıl · Gri kesikli: geçen yılın aynı ayları',
-                        style: TextStyle(fontSize: 11, color: AppColors.textFaint),
+                        style: tx.label,
                       ),
                     ),
                   const SizedBox(height: 20),
-                  const Text(
+                  Text(
                     'Hizmet Türü Dağılımı',
-                    style: TextStyle(
-                      fontWeight: FontWeight.w700,
-                      fontSize: 14.5,
-                    ),
+                    style: tx.subtitle.copyWith(fontWeight: FontWeight.w700),
                   ),
                   const SizedBox(height: 8),
                   if (_serviceBreakdown.isEmpty)
@@ -303,12 +320,9 @@ class _ReportsScreenState extends State<ReportsScreen> {
                           .toList(),
                     ),
                   const SizedBox(height: 20),
-                  const Text(
+                  Text(
                     'Bölge Bazında Yoğunluk',
-                    style: TextStyle(
-                      fontWeight: FontWeight.w700,
-                      fontSize: 14.5,
-                    ),
+                    style: tx.subtitle.copyWith(fontWeight: FontWeight.w700),
                   ),
                   const SizedBox(height: 8),
                   if (_topDistricts.isEmpty)
@@ -335,26 +349,31 @@ class _ReportsScreenState extends State<ReportsScreen> {
 }
 
 /// Bölüm S (5. tur): 3 kriterin ortalaması (1–5) + tavsiye oranı.
-Widget _feedbackRow(String label, num? avg) {
+Widget _feedbackRow(BuildContext context, String label, num? avg) {
+  final cs = context.colors;
+  final tx = context.text;
   final v = (avg ?? 0).toDouble();
   return Padding(
     padding: const EdgeInsets.symmetric(vertical: 5),
     child: Row(
       children: [
-        SizedBox(width: 150, child: Text(label, style: const TextStyle(fontSize: 12.5))),
+        SizedBox(width: 150, child: Text(label, style: tx.bodySmall)),
         Expanded(
           child: ClipRRect(
             borderRadius: BorderRadius.circular(AppRadius.pill),
             child: LinearProgressIndicator(
               value: (v / 5).clamp(0, 1),
               minHeight: 8,
-              backgroundColor: AppColors.surfaceMuted,
-              color: AppColors.primary500,
+              backgroundColor: cs.surfaceMuted,
+              color: cs.primary500,
             ),
           ),
         ),
         const SizedBox(width: 10),
-        Text('${v.toStringAsFixed(1)} / 5', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700)),
+        Text(
+          '${v.toStringAsFixed(1)} / 5',
+          style: tx.caption.copyWith(fontWeight: FontWeight.w700),
+        ),
       ],
     ),
   );
@@ -372,6 +391,7 @@ class _MiniStat extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final tx = context.text;
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
@@ -383,19 +403,12 @@ class _MiniStat extends StatelessWidget {
         children: [
           Text(
             value,
-            style: TextStyle(
-              fontSize: 20,
+            style: tx.display.copyWith(
               fontWeight: FontWeight.w800,
               color: color,
             ),
           ),
-          Text(
-            label,
-            style: const TextStyle(
-              fontSize: 11.5,
-              color: AppColors.textSecondary,
-            ),
-          ),
+          Text(label, style: tx.caption),
         ],
       ),
     );
@@ -414,6 +427,8 @@ class _BarRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final cs = context.colors;
+    final tx = context.text;
     return Padding(
       padding: const EdgeInsets.only(bottom: 10),
       child: Column(
@@ -424,18 +439,9 @@ class _BarRow extends StatelessWidget {
             children: [
               Text(
                 label,
-                style: const TextStyle(
-                  fontSize: 12.5,
-                  fontWeight: FontWeight.w600,
-                ),
+                style: tx.bodySmall.copyWith(fontWeight: FontWeight.w600),
               ),
-              Text(
-                caption,
-                style: const TextStyle(
-                  fontSize: 11.5,
-                  color: AppColors.textFaint,
-                ),
-              ),
+              Text(caption, style: tx.caption.copyWith(color: cs.textFaint)),
             ],
           ),
           const SizedBox(height: 4),
@@ -444,8 +450,8 @@ class _BarRow extends StatelessWidget {
             child: LinearProgressIndicator(
               value: value / 100,
               minHeight: 8,
-              backgroundColor: AppColors.surfaceMuted,
-              color: AppColors.primary500,
+              backgroundColor: cs.surfaceMuted,
+              color: cs.primary500,
             ),
           ),
         ],

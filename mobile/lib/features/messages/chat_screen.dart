@@ -10,6 +10,8 @@ import '../../auth/auth_provider.dart';
 import '../../core/api_client.dart';
 import '../../models/conversation.dart';
 import '../../theme/app_colors.dart';
+import '../../theme/app_palette.dart';
+import '../../theme/app_text_styles.dart';
 import '../../widgets/state_views.dart';
 import '../../widgets/auth_image.dart';
 import 'messages_api.dart';
@@ -20,6 +22,7 @@ final _dayFormat = DateFormat('d MMMM yyyy', 'tr_TR');
 class ChatScreen extends StatefulWidget {
   final String conversationId;
   final String participantName;
+
   /// Gözlemci modu (bkz. messages_list_screen.dart → Gözlemci Modu, yalnızca
   /// OWNER): mesajlar gösterilir ama gönderme kutusu yok; okundu işaretleme
   /// isteği de atılmaz — backend `markConversationRead`'i katılımcı olmayan
@@ -149,6 +152,8 @@ class _ChatScreenState extends State<ChatScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final cs = context.colors;
+    final tx = context.text;
     return Scaffold(
       appBar: AppBar(title: Text(widget.participantName)),
       body: Column(
@@ -179,15 +184,16 @@ class _ChatScreenState extends State<ChatScreen> {
                                 vertical: 4,
                               ),
                               decoration: BoxDecoration(
-                                color: AppColors.surfaceMuted,
-                                borderRadius: BorderRadius.circular(AppRadius.pill),
+                                color: cs.surfaceMuted,
+                                borderRadius: BorderRadius.circular(
+                                  AppRadius.pill,
+                                ),
                               ),
                               child: Text(
                                 _dayFormat.format(item),
-                                style: const TextStyle(
-                                  fontSize: 11,
+                                style: tx.label.copyWith(
                                   fontWeight: FontWeight.w600,
-                                  color: AppColors.textSecondary,
+                                  color: cs.textSecondary,
                                 ),
                               ),
                             ),
@@ -210,13 +216,11 @@ class _ChatScreenState extends State<ChatScreen> {
                             maxWidth: MediaQuery.of(context).size.width * 0.72,
                           ),
                           decoration: BoxDecoration(
-                            color: mine
-                                ? AppColors.primary600
-                                : AppColors.surfaceCard,
+                            color: mine ? cs.primary600 : cs.surfaceCard,
                             borderRadius: BorderRadius.circular(AppRadius.card),
                             border: mine
                                 ? null
-                                : Border.all(color: AppColors.borderDefault),
+                                : Border.all(color: cs.borderDefault),
                           ),
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
@@ -227,18 +231,18 @@ class _ChatScreenState extends State<ChatScreen> {
                                   borderRadius: BorderRadius.circular(12),
                                   // Bölüm AC: kimlik doğrulamalı ek (/files/message-attachment/:id).
                                   child: AuthImage(
-                                    path: ApiClient.instance.fileUrl('message-attachment', m.id),
+                                    path: ApiClient.instance.fileUrl(
+                                      'message-attachment',
+                                      m.id,
+                                    ),
                                   ),
                                 ),
                                 const SizedBox(height: 6),
                               ],
                               Text(
                                 m.content,
-                                style: TextStyle(
-                                  color: mine
-                                      ? Colors.white
-                                      : AppColors.textPrimary,
-                                  fontSize: 13.5,
+                                style: tx.body.copyWith(
+                                  color: mine ? Colors.white : cs.textPrimary,
                                 ),
                               ),
                               const SizedBox(height: 4),
@@ -249,11 +253,10 @@ class _ChatScreenState extends State<ChatScreen> {
                                     _timeFormat.format(
                                       DateTime.parse(m.createdAt),
                                     ),
-                                    style: TextStyle(
-                                      fontSize: 10,
+                                    style: tx.label.copyWith(
                                       color: mine
                                           ? Colors.white70
-                                          : AppColors.textFaint,
+                                          : cs.textFaint,
                                     ),
                                   ),
                                   // Okundu bilgisi yalnızca KENDİ gönderdiğimiz
@@ -287,102 +290,96 @@ class _ChatScreenState extends State<ChatScreen> {
               child: Container(
                 width: double.infinity,
                 padding: const EdgeInsets.all(12),
-                color: AppColors.surfaceMuted,
-                child: const Row(
+                color: cs.surfaceMuted,
+                child: Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     Icon(
                       Icons.visibility_outlined,
                       size: 15,
-                      color: AppColors.textSecondary,
+                      color: cs.textSecondary,
                     ),
                     SizedBox(width: 6),
                     Text(
                       'Gözlemci modu — salt okunur, mesaj gönderemezsiniz',
-                      style: TextStyle(
-                        fontSize: 11.5,
-                        color: AppColors.textSecondary,
-                      ),
+                      style: tx.caption,
                     ),
                   ],
                 ),
               ),
             )
           else
-          SafeArea(
-            top: false,
-            child: Padding(
-              padding: const EdgeInsets.all(12),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  if (_pendingPhoto != null)
-                    Padding(
-                      padding: const EdgeInsets.only(bottom: 8),
-                      child: Row(
-                        children: [
-                          ClipRRect(
-                            borderRadius: BorderRadius.circular(8),
-                            child: Image.file(
-                              _pendingPhoto!,
-                              width: 48,
-                              height: 48,
-                              fit: BoxFit.cover,
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          const Expanded(
-                            child: Text(
-                              'Fotoğraf eklendi',
-                              style: TextStyle(
-                                fontSize: 12,
-                                color: AppColors.textSecondary,
+            SafeArea(
+              top: false,
+              child: Padding(
+                padding: const EdgeInsets.all(12),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    if (_pendingPhoto != null)
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: 8),
+                        child: Row(
+                          children: [
+                            ClipRRect(
+                              borderRadius: BorderRadius.circular(8),
+                              child: Image.file(
+                                _pendingPhoto!,
+                                width: 48,
+                                height: 48,
+                                fit: BoxFit.cover,
                               ),
                             ),
-                          ),
-                          IconButton(
-                            icon: const Icon(Icons.close_rounded, size: 18),
-                            onPressed: () =>
-                                setState(() => _pendingPhoto = null),
-                          ),
-                        ],
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                'Fotoğraf eklendi',
+                                style: tx.caption,
+                              ),
+                            ),
+                            IconButton(
+                              icon: const Icon(Icons.close_rounded, size: 18),
+                              onPressed: () =>
+                                  setState(() => _pendingPhoto = null),
+                            ),
+                          ],
+                        ),
                       ),
+                    Row(
+                      children: [
+                        IconButton(
+                          icon: const Icon(Icons.attach_file_rounded),
+                          tooltip: 'Fotoğraf ekle',
+                          onPressed: _sending ? null : _pickPhoto,
+                          color: cs.textSecondary,
+                        ),
+                        Expanded(
+                          child: TextField(
+                            controller: _controller,
+                            decoration: const InputDecoration(
+                              hintText: 'Mesaj yaz...',
+                            ),
+                            minLines: 1,
+                            maxLines: 4,
+                            textInputAction: TextInputAction.send,
+                            onSubmitted: (_) => _send(),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        IconButton.filled(
+                          onPressed: _sending ? null : _send,
+                          icon: const Icon(Icons.send_rounded),
+                          style: IconButton.styleFrom(
+                            backgroundColor: cs.primary600,
+                            foregroundColor: Colors.white,
+                          ),
+                        ),
+                      ],
                     ),
-                  Row(
-                children: [
-                  IconButton(
-                    icon: const Icon(Icons.attach_file_rounded),
-                    tooltip: 'Fotoğraf ekle',
-                    onPressed: _sending ? null : _pickPhoto,
-                    color: AppColors.textSecondary,
-                  ),
-                  Expanded(
-                    child: TextField(
-                      controller: _controller,
-                      decoration: const InputDecoration(
-                        hintText: 'Mesaj yaz...',
-                      ),
-                      minLines: 1,
-                      maxLines: 4,
-                      textInputAction: TextInputAction.send,
-                      onSubmitted: (_) => _send(),
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  IconButton.filled(
-                    onPressed: _sending ? null : _send,
-                    icon: const Icon(Icons.send_rounded),
-                    style: IconButton.styleFrom(
-                      backgroundColor: AppColors.primary600,
-                      foregroundColor: Colors.white,
-                    ),
-                  ),
-                    ],
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
-          ),
         ],
       ),
     );

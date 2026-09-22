@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 
 import '../theme/app_colors.dart';
+import '../theme/app_palette.dart';
+import '../theme/app_text_styles.dart';
 import 'animated_stat_value.dart';
 
 /// [AppStatCard] listelerini sabit `childAspectRatio` ile kırpan
@@ -48,8 +50,10 @@ class AppStatCard extends StatelessWidget {
   final String? caption;
   final String? badge;
   final Color? badgeColor;
-  final Color iconColor;
-  final Color iconBackground;
+
+  /// null → tema vurgu rengi (koyu modda otomatik açık ton).
+  final Color? iconColor;
+  final Color? iconBackground;
 
   const AppStatCard({
     super.key,
@@ -59,18 +63,20 @@ class AppStatCard extends StatelessWidget {
     this.caption,
     this.badge,
     this.badgeColor,
-    this.iconColor = AppColors.primary600,
-    this.iconBackground = AppColors.primary50,
+    this.iconColor,
+    this.iconBackground,
   });
 
   @override
   Widget build(BuildContext context) {
+    final cs = context.colors;
+    final tx = context.text;
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: AppColors.surfaceCard,
+        color: cs.surfaceCard,
         borderRadius: BorderRadius.circular(AppRadius.sheet),
-        border: Border.all(color: AppColors.borderDefault),
+        border: Border.all(color: cs.borderDefault),
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -83,10 +89,10 @@ class AppStatCard extends StatelessWidget {
                 width: 36,
                 height: 36,
                 decoration: BoxDecoration(
-                  color: iconBackground,
+                  color: iconBackground ?? cs.primary50,
                   borderRadius: BorderRadius.circular(AppRadius.chip),
                 ),
-                child: Icon(icon, size: 18, color: iconColor),
+                child: Icon(icon, size: 18, color: iconColor ?? cs.accentSoft),
               ),
               if (badge != null)
                 Container(
@@ -95,17 +101,13 @@ class AppStatCard extends StatelessWidget {
                     vertical: 3,
                   ),
                   decoration: BoxDecoration(
-                    color: (badgeColor ?? AppColors.primary500).withValues(
-                      alpha: 0.1,
-                    ),
+                    color: (badgeColor ?? cs.primary500).withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(AppRadius.pill),
                   ),
                   child: Text(
                     badge!,
-                    style: TextStyle(
-                      fontSize: 11,
-                      fontWeight: FontWeight.w700,
-                      color: badgeColor ?? AppColors.primary700,
+                    style: tx.label.copyWith(
+                      color: badgeColor ?? cs.primary700,
                     ),
                   ),
                 ),
@@ -114,10 +116,8 @@ class AppStatCard extends StatelessWidget {
           const SizedBox(height: 12),
           AnimatedStatValue(
             value: value,
-            style: const TextStyle(
-              fontSize: 22,
+            style: tx.display.copyWith(
               fontWeight: FontWeight.w800,
-              color: AppColors.textPrimary,
               fontFeatures: [FontFeature.tabularFigures()],
             ),
           ),
@@ -126,11 +126,7 @@ class AppStatCard extends StatelessWidget {
             label,
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
-            style: const TextStyle(
-              fontSize: 12.5,
-              color: AppColors.textSecondary,
-              fontWeight: FontWeight.w600,
-            ),
+            style: tx.bodySmall.copyWith(fontWeight: FontWeight.w600),
           ),
           if (caption != null) ...[
             const SizedBox(height: 4),
@@ -138,10 +134,7 @@ class AppStatCard extends StatelessWidget {
               caption!,
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
-              style: const TextStyle(
-                fontSize: 11.5,
-                color: AppColors.textFaint,
-              ),
+              style: tx.caption.copyWith(color: cs.textFaint),
             ),
           ],
         ],

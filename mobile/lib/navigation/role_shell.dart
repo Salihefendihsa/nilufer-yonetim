@@ -2,35 +2,21 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../auth/auth_provider.dart';
-import '../features/admin/audit_settings_screen.dart';
-import '../features/admin/data_deletion_screens.dart';
-import '../features/admin/system_health_screen.dart';
-import '../features/admin/usage_stats_screen.dart';
-import '../features/appointment_requests/my_appointment_requests_screen.dart';
 import '../features/approvals/approvals_screen.dart';
 import '../features/calendar/calendar_screen.dart';
-import '../features/contracts/contracts_list_screen.dart';
-import '../features/customers/customers_list_screen.dart';
-import '../features/customers/referral_screen.dart';
 import '../features/dashboard/dashboard_screen.dart';
-import '../features/finance/finance_screen.dart';
 import '../features/jobs/jobs_list_screen.dart';
 import '../features/messages/messages_list_screen.dart';
-import '../features/notifications/notifications_screen.dart';
-import '../features/performance/performance_screen.dart';
-import '../features/quotes/quotes_list_screen.dart';
-import '../features/reports/reports_screen.dart';
-import '../features/staff/staff_list_screen.dart';
-import '../features/stock/stock_list_screen.dart';
 import '../models/user.dart';
-import '../theme/app_colors.dart';
+import '../theme/app_palette.dart';
+import '../theme/app_text_styles.dart';
 import 'app_drawer.dart';
 import 'manager_nav.dart';
 import 'manager_shell.dart';
+import 'more_menu_screen.dart';
+import 'nav_items.dart';
 import 'staff_shell.dart';
 import 'team_lead_shell.dart';
-import 'more_menu_screen.dart';
-import 'customer_more_menu_screen.dart';
 
 class _NavItem {
   final String label;
@@ -58,111 +44,8 @@ class _RoleShellState extends State<RoleShell> {
   final _scaffoldKey = GlobalKey<ScaffoldState>();
   int _index = 0;
 
-  /// OWNER için çekmece — bottom nav'daki "Daha Fazla" sekmesiyle aynı
-  /// modülleri kapsar (bkz. more_menu_screen.dart); alt navigasyon
-  /// AYNEN kalır, çekmece yalnızca EKLENTİDİR (hızlı erişim için).
-  List<AppDrawerGroup> _ownerGroups(bool isOwner) => [
-    AppDrawerGroup([
-      AppDrawerEntry(
-        'Müşteriler',
-        Icons.people_outline_rounded,
-        (_) => const CustomersListScreen(),
-      ),
-      AppDrawerEntry(
-        'Personel',
-        Icons.groups_outlined,
-        (_) => const StaffListScreen(),
-      ),
-      AppDrawerEntry(
-        'Takvim',
-        Icons.calendar_month_outlined,
-        (_) => const CalendarScreen(),
-      ),
-      AppDrawerEntry(
-        'Stok',
-        Icons.inventory_2_outlined,
-        (_) => const StockListScreen(),
-      ),
-    ], title: 'Operasyon'),
-    AppDrawerGroup([
-      AppDrawerEntry(
-        'Teklifler',
-        Icons.request_quote_outlined,
-        (_) => const QuotesListScreen(),
-      ),
-      AppDrawerEntry(
-        'Sözleşmeler',
-        Icons.description_outlined,
-        (_) => const ContractsListScreen(),
-      ),
-      AppDrawerEntry(
-        'Para & Finans',
-        Icons.payments_outlined,
-        (_) => const FinanceScreen(),
-      ),
-      AppDrawerEntry(
-        'Performans',
-        Icons.emoji_events_outlined,
-        (_) => const PerformanceScreen(),
-      ),
-      AppDrawerEntry(
-        'Raporlar',
-        Icons.bar_chart_rounded,
-        (_) => const ReportsScreen(),
-      ),
-    ], title: 'Finans & Raporlar'),
-    if (isOwner)
-      AppDrawerGroup([
-        AppDrawerEntry(
-          'Denetim & Ayarlar',
-          Icons.admin_panel_settings_outlined,
-          (_) => const AuditSettingsScreen(),
-        ),
-        AppDrawerEntry(
-          'Sistem Durumu',
-          Icons.monitor_heart_outlined,
-          (_) => const SystemHealthScreen(),
-        ),
-        AppDrawerEntry(
-          'Kullanım İstatistikleri',
-          Icons.query_stats_rounded,
-          (_) => const UsageStatsScreen(),
-        ),
-      ], title: 'Yönetici'),
-  ];
-
-  /// CUSTOMER için çekmece — bottom nav'daki "Daha Fazla" sekmesiyle aynı
-  /// modülleri kapsar (bkz. customer_more_menu_screen.dart).
-  static final _customerGroups = <AppDrawerGroup>[
-    AppDrawerGroup([
-      AppDrawerEntry(
-        'Randevu Taleplerim',
-        Icons.event_available_outlined,
-        (_) => const MyAppointmentRequestsScreen(),
-      ),
-      AppDrawerEntry(
-        'Sözleşmelerim',
-        Icons.description_outlined,
-        (_) => const MyContractsScreen(),
-      ),
-      AppDrawerEntry(
-        'Arkadaşını Davet Et',
-        Icons.card_giftcard_outlined,
-        (_) => const ReferralScreen(),
-      ),
-      AppDrawerEntry(
-        'Bildirimler',
-        Icons.notifications_outlined,
-        (_) => const NotificationsScreen(),
-      ),
-      AppDrawerEntry(
-        'Hesabımı ve Verilerimi Sil',
-        Icons.person_off_outlined,
-        (_) => const CustomerDataDeletionScreen(),
-      ),
-    ]),
-  ];
-
+  /// Çekmece ve "Daha Fazla" sekmesi aynı listeden beslenir
+  /// (navigation/nav_items.dart — tek doğruluk kaynağı).
   List<_NavItem> _itemsFor(AppRole role) {
     switch (role) {
       case AppRole.owner:
@@ -177,17 +60,10 @@ class _RoleShellState extends State<RoleShell> {
           _NavItem('Daha Fazla', Icons.menu_rounded, MoreMenuScreen()),
         ];
       case AppRole.teamLead:
-        return const [
-          _NavItem('Ana Sayfa', Icons.dashboard_rounded, DashboardScreen()),
-          _NavItem('İşler', Icons.assignment_rounded, JobsListScreen()),
-          _NavItem('Ekibim', Icons.groups_rounded, StaffListScreen()),
-          _NavItem('Takvim', Icons.calendar_month_rounded, CalendarScreen()),
-          _NavItem('Mesajlar', Icons.chat_bubble_rounded, MessagesListScreen()),
-        ];
       case AppRole.staff:
-        // STAFF kendi kabuğunu (StaffShell) kullanır — bu switch koluna
-        // asla düşmez (bkz. build() içindeki erken dönüş), yalnızca switch
-        // bütünlüğü için burada durur.
+        // TEAM_LEAD/STAFF kendi kabuklarını (TeamLeadShell/StaffShell)
+        // kullanır — bu kola asla düşülmez (bkz. build() içindeki erken
+        // dönüş), yalnızca switch bütünlüğü için burada durur.
         return const [
           _NavItem('Ana Sayfa', Icons.dashboard_rounded, DashboardScreen()),
         ];
@@ -196,20 +72,22 @@ class _RoleShellState extends State<RoleShell> {
         // Bildirimler daha önce mobilde hiç yoktu (bkz.
         // docs/WEB_MOBILE_PARITY.md). Alt navigasyon 5 sekmeyle sınırlı
         // tutulduğu için Sözleşmelerim + Bildirimler "Daha Fazla" altına
-        // taşındı (CustomerMoreMenuScreen) — Para burada YOK, web'de de
+        // taşındı (MoreMenuScreen) — Para burada YOK, web'de de
         // yalnızca OWNER/MANAGER'a açık (Sidebar.tsx), bu bir eksik değil.
         return const [
           _NavItem('Ana Sayfa', Icons.dashboard_rounded, DashboardScreen()),
           _NavItem('İşlerim', Icons.assignment_rounded, JobsListScreen()),
           _NavItem('Takvim', Icons.calendar_month_rounded, CalendarScreen()),
           _NavItem('Mesajlar', Icons.chat_bubble_rounded, MessagesListScreen()),
-          _NavItem('Daha Fazla', Icons.menu_rounded, CustomerMoreMenuScreen()),
+          _NavItem('Daha Fazla', Icons.menu_rounded, MoreMenuScreen()),
         ];
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    final cs = context.colors;
+    final tx = context.text;
     final user = context.watch<AuthProvider>().user;
     if (user == null) return const SizedBox.shrink();
 
@@ -230,9 +108,7 @@ class _RoleShellState extends State<RoleShell> {
 
     final isCustomer = user.role == AppRole.customer;
     final drawerRoleLabel = isCustomer ? 'Müşteri' : 'Patron';
-    final drawerGroups = isCustomer
-        ? _customerGroups
-        : _ownerGroups(user.role == AppRole.owner);
+    final drawerGroups = navGroupsFor(user.role);
 
     return ManagerNav(
       openDrawer: () => _scaffoldKey.currentState?.openDrawer(),
@@ -246,15 +122,12 @@ class _RoleShellState extends State<RoleShell> {
         bottomNavigationBar: NavigationBarTheme(
           data: NavigationBarThemeData(
             backgroundColor: Theme.of(context).colorScheme.surface,
-            indicatorColor: Theme.of(context).brightness == Brightness.dark ? AppDarkColors.primary50 : AppColors.primary50,
+            indicatorColor: cs.primary50,
             labelTextStyle: WidgetStateProperty.resolveWith((states) {
               final selected = states.contains(WidgetState.selected);
-              return TextStyle(
-                fontSize: 11.5,
+              return tx.navLabel.copyWith(
                 fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
-                color: selected
-                    ? AppColors.primary700
-                    : AppColors.textSecondary,
+                color: selected ? cs.primary700 : cs.textSecondary,
               );
             }),
           ),
@@ -264,8 +137,8 @@ class _RoleShellState extends State<RoleShell> {
             destinations: items
                 .map(
                   (e) => NavigationDestination(
-                    icon: Icon(e.icon, color: AppColors.textSecondary),
-                    selectedIcon: Icon(e.icon, color: AppColors.primary700),
+                    icon: Icon(e.icon, color: cs.textSecondary),
+                    selectedIcon: Icon(e.icon, color: cs.accent),
                     label: e.label,
                   ),
                 )

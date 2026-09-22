@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { SectionTitle } from "@/components/SectionTitle";
 import { LogIn, LogOut, Timer } from "lucide-react";
 import { api, ApiError } from "@/lib/api";
 import { useToast } from "@/lib/ToastProvider";
@@ -55,13 +56,13 @@ export function ClockCard() {
   const clockedOut = !!record?.clockOutAt;
 
   return (
-    <section className="flex flex-wrap items-center justify-between gap-4 rounded-3xl border border-border bg-surface-base p-5 shadow-card">
+    <section className="flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-border bg-surface-card p-5 shadow-card">
       <div className="flex items-center gap-3">
         <span className={`flex h-11 w-11 items-center justify-center rounded-2xl ring-1 ${clockedIn && !clockedOut ? "bg-success-50 text-success-600 ring-success-100" : "bg-primary-50 text-primary-600 ring-primary-100"}`}>
           <Timer size={20} strokeWidth={1.75} />
         </span>
         <div>
-          <h2 className="text-sm font-semibold text-text-primary">Puantaj</h2>
+          <SectionTitle size="sm">Puantaj</SectionTitle>
           <p className="text-xs text-text-secondary">
             {loading
               ? "Yükleniyor..."

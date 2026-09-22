@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { LoadingBlock } from "@/components/LoadingBlock";
+import { SectionTitle } from "@/components/SectionTitle";
 import {
   CalendarClock,
   KeyRound,
@@ -173,7 +175,7 @@ function AuditLogsContent() {
       {/* [Dağılım grafikleri] */}
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
         <ChartCard title="En Aktif Kullanıcılar" description="Filtrelenmiş kayıtlara göre" icon={Users2} height={220}>
-          <RankBars rows={actorRows} emptyLabel={loading ? "Yükleniyor..." : "Kayıt yok"} />
+          <RankBars rows={actorRows} loading={loading} emptyLabel="Kayıt yok" />
         </ChartCard>
 
         <ChartCard title="İşlem Türü Dağılımı" description="En sık görülen 6 işlem" icon={Shield} height={220}>
@@ -181,7 +183,7 @@ function AuditLogsContent() {
             data={actionSlices}
             centerValue={loading ? "—" : String(filtered.length)}
             centerLabel="kayıt"
-            emptyLabel={loading ? "Yükleniyor..." : "Kayıt yok"}
+            loading={loading} emptyLabel="Kayıt yok"
           />
         </ChartCard>
       </div>
@@ -235,7 +237,7 @@ function AuditLogsContent() {
 
       {/* [Zaman çizelgesi] */}
       {loading ? (
-        <p className="py-16 text-center text-sm text-text-faint">Yükleniyor...</p>
+        <LoadingBlock rows={4} className="py-6" />
       ) : filtered.length === 0 ? (
         <div className="rounded-2xl border border-border bg-surface-card shadow-card">
           <EmptyState icon={ScrollText} title="Kayıt yok" description="Bu filtrelerle eşleşen bir log kaydı bulunamadı." />
@@ -247,7 +249,7 @@ function AuditLogsContent() {
               <span className="flex h-9 w-9 items-center justify-center rounded-2xl bg-primary-50 text-primary-600 ring-1 ring-primary-100">
                 <CalendarClock size={17} strokeWidth={1.75} />
               </span>
-              <h2 className="text-base font-semibold text-text-primary">İşlem Geçmişi</h2>
+              <SectionTitle>İşlem Geçmişi</SectionTitle>
             </div>
             <span className="rounded-full bg-surface-subtle px-2.5 py-1 font-mono text-2xs text-text-faint">
               {filtered.length} kayıt

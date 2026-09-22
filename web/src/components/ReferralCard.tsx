@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { LoadingBlock } from "@/components/LoadingBlock";
+import { SectionTitle } from "@/components/SectionTitle";
 import { Copy, Check, Gift, Users } from "lucide-react";
 import { api, ApiError } from "@/lib/api";
 import { useToast } from "@/lib/ToastProvider";
@@ -45,13 +47,13 @@ export function ReferralCard() {
           <Gift size={17} strokeWidth={1.75} />
         </span>
         <div>
-          <h2 className="text-base font-semibold text-text-primary">Arkadaşını Davet Et</h2>
+          <SectionTitle>Arkadaşını Davet Et</SectionTitle>
           <p className="text-xs text-text-faint">Linki paylaşın; arkadaşınız teklif isteyip müşterimiz olduğunda burada görünür.</p>
         </div>
       </div>
 
       {loading ? (
-        <p className="py-4 text-center text-sm text-text-faint">Yükleniyor...</p>
+        <LoadingBlock lines={2} className="py-4" />
       ) : error ? (
         <p className="rounded-2xl border border-danger-100 bg-danger-50 px-4 py-3 text-sm text-danger-500">{error}</p>
       ) : data ? (

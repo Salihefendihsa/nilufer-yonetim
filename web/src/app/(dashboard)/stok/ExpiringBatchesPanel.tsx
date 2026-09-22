@@ -1,6 +1,8 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { LoadingBlock } from "@/components/LoadingBlock";
+import { SectionTitle } from "@/components/SectionTitle";
 import { CalendarClock } from "lucide-react";
 import { api, ApiError } from "@/lib/api";
 import { formatDate, decimalValue } from "@/lib/format";
@@ -47,15 +49,15 @@ export function ExpiringBatchesPanel({ refreshKey }: { refreshKey: number }) {
   const expiredCount = batches.filter((b) => b.isExpired).length;
 
   return (
-    <section className="rounded-3xl border border-border bg-surface-base p-5 shadow-card">
+    <section className="rounded-2xl border border-border bg-surface-card p-5 shadow-card">
       <header className="mb-4 flex flex-wrap items-center gap-2">
         <CalendarClock size={16} strokeWidth={1.75} className="text-text-secondary" />
-        <h2 className="text-sm font-semibold text-text-primary">Süresi Yaklaşan Partiler</h2>
+        <SectionTitle size="sm">Süresi Yaklaşan Partiler</SectionTitle>
         {!loading && (
-          <span className="rounded-full bg-surface-subtle px-2 py-0.5 text-[11px] font-semibold text-text-secondary">{batches.length}</span>
+          <span className="rounded-full bg-surface-subtle px-2 py-0.5 text-2xs font-semibold text-text-secondary">{batches.length}</span>
         )}
         {!loading && expiredCount > 0 && (
-          <span className="rounded-full border border-danger-100 bg-danger-50 px-2 py-0.5 text-[11px] font-semibold text-danger-500">
+          <span className="rounded-full border border-danger-100 bg-danger-50 px-2 py-0.5 text-2xs font-semibold text-danger-500">
             {expiredCount} süresi dolmuş
           </span>
         )}
@@ -78,7 +80,7 @@ export function ExpiringBatchesPanel({ refreshKey }: { refreshKey: number }) {
       {error && <p className="mb-3 rounded-2xl border border-danger-100 bg-danger-50 px-4 py-3 text-sm text-danger-500">{error}</p>}
 
       {loading ? (
-        <p className="text-sm text-text-secondary">Yükleniyor...</p>
+        <LoadingBlock lines={3} />
       ) : batches.length === 0 ? (
         <p className="text-sm text-text-secondary">Önümüzdeki {days} gün içinde süresi dolacak parti yok.</p>
       ) : (
@@ -94,7 +96,7 @@ export function ExpiringBatchesPanel({ refreshKey }: { refreshKey: number }) {
                   {batch.supplier ? ` · ${batch.supplier.name}` : ""}
                 </p>
               </div>
-              <span className={`rounded-full border px-2.5 py-1 text-[11px] font-semibold ${TONE_CLASS[batchTone(batch)]}`}>
+              <span className={`rounded-full border px-2.5 py-1 text-2xs font-semibold ${TONE_CLASS[batchTone(batch)]}`}>
                 {batchExpiryLabel(batch)}
               </span>
             </li>

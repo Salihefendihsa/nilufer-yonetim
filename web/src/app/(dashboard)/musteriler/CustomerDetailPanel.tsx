@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { SectionTitle } from "@/components/SectionTitle";
 import { createPortal } from "react-dom";
 import { AnimatePresence, motion } from "framer-motion";
 import { X, Briefcase, Wallet, Pencil, Trash2, FileDown, Star } from "lucide-react";
@@ -61,7 +62,7 @@ export function CustomerDetailPanel({ customerId, onClose, onEdit, onDelete }: C
             <div className="mb-6 flex items-start justify-between">
               <div>
                 <p className="text-xs font-medium uppercase tracking-wide text-text-faint">Müşteri</p>
-                <h2 className="mt-1 text-xl font-semibold text-text-primary">{detail?.fullName ?? "Yükleniyor..."}</h2>
+                <SectionTitle size="lg" className="mt-1 text-xl">{detail?.fullName ?? "Yükleniyor..."}</SectionTitle>
               </div>
               <button
                 type="button"
@@ -135,7 +136,7 @@ export function CustomerDetailPanel({ customerId, onClose, onEdit, onDelete }: C
                       const avg = rated.reduce((sum, j) => sum + (j.rating ?? 0), 0) / rated.length;
                       return (
                         <div className="flex items-center gap-1 text-xs font-medium text-text-secondary">
-                          <Star size={13} strokeWidth={1.75} fill="#B57F13" className="text-warning-500" />
+                          <Star size={13} strokeWidth={1.75} fill="currentColor" className="text-warning-500" />
                           {avg.toFixed(1)} ({rated.length})
                         </div>
                       );

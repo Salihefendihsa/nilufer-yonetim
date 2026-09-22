@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import '../theme/app_colors.dart';
+import '../theme/app_palette.dart';
+import '../theme/app_text_styles.dart';
 import 'auth_provider.dart';
 
 /// web/src/app/sifre-degistir-zorunlu/page.tsx ile aynı akış — OWNER birinin
@@ -18,8 +19,7 @@ class ForceChangePasswordScreen extends StatefulWidget {
       _ForceChangePasswordScreenState();
 }
 
-class _ForceChangePasswordScreenState
-    extends State<ForceChangePasswordScreen> {
+class _ForceChangePasswordScreenState extends State<ForceChangePasswordScreen> {
   final _currentController = TextEditingController();
   final _newController = TextEditingController();
   final _confirmController = TextEditingController();
@@ -54,6 +54,8 @@ class _ForceChangePasswordScreenState
 
   @override
   Widget build(BuildContext context) {
+    final cs = context.colors;
+    final tx = context.text;
     final auth = context.watch<AuthProvider>();
     return Scaffold(
       body: SafeArea(
@@ -64,23 +66,19 @@ class _ForceChangePasswordScreenState
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                const Icon(
-                  Icons.shield_outlined,
-                  size: 48,
-                  color: AppColors.warning600,
-                ),
+                Icon(Icons.shield_outlined, size: 48, color: cs.warning600),
                 const SizedBox(height: 16),
-                const Text(
+                Text(
                   'Şifrenizi Değiştirin',
                   textAlign: TextAlign.center,
-                  style: TextStyle(fontWeight: FontWeight.w800, fontSize: 20),
+                  style: tx.display.copyWith(fontWeight: FontWeight.w800),
                 ),
                 const SizedBox(height: 8),
-                const Text(
+                Text(
                   'Hesabınızın şifresi bir yönetici tarafından sıfırlandı. '
                   'Devam etmeden önce yeni bir şifre belirlemeniz gerekiyor.',
                   textAlign: TextAlign.center,
-                  style: TextStyle(fontSize: 13, color: AppColors.textSecondary),
+                  style: tx.bodySmall,
                 ),
                 const SizedBox(height: 24),
                 TextField(
@@ -106,14 +104,16 @@ class _ForceChangePasswordScreenState
                   const SizedBox(height: 12),
                   Text(
                     _error!,
-                    style: const TextStyle(color: AppColors.danger500, fontSize: 12.5),
+                    style: tx.bodySmall.copyWith(color: cs.danger500),
                   ),
                 ],
                 const SizedBox(height: 20),
                 ElevatedButton(
                   onPressed: auth.isBusy ? null : () => _submit(auth),
                   child: Text(
-                    auth.isBusy ? 'Kaydediliyor...' : 'Şifreyi Değiştir ve Devam Et',
+                    auth.isBusy
+                        ? 'Kaydediliyor...'
+                        : 'Şifreyi Değiştir ve Devam Et',
                   ),
                 ),
               ],

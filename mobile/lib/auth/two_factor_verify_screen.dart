@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../theme/app_colors.dart';
+import '../theme/app_palette.dart';
+import '../theme/app_text_styles.dart';
 import 'auth_provider.dart';
 
 class TwoFactorVerifyScreen extends StatefulWidget {
@@ -34,6 +36,8 @@ class _TwoFactorVerifyScreenState extends State<TwoFactorVerifyScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final cs = context.colors;
+    final tx = context.text;
     final auth = context.watch<AuthProvider>();
 
     return Scaffold(
@@ -52,7 +56,7 @@ class _TwoFactorVerifyScreenState extends State<TwoFactorVerifyScreen> {
                     height: 72,
                     alignment: Alignment.center,
                     decoration: BoxDecoration(
-                      color: AppColors.primary700,
+                      color: cs.primary700,
                       borderRadius: BorderRadius.circular(20),
                     ),
                     child: const Icon(
@@ -69,7 +73,7 @@ class _TwoFactorVerifyScreenState extends State<TwoFactorVerifyScreen> {
                         child: Container(
                           height: 5,
                           decoration: BoxDecoration(
-                            color: AppColors.primary600,
+                            color: cs.primary600,
                             borderRadius: BorderRadius.circular(999),
                           ),
                         ),
@@ -79,31 +83,23 @@ class _TwoFactorVerifyScreenState extends State<TwoFactorVerifyScreen> {
                         child: Container(
                           height: 5,
                           decoration: BoxDecoration(
-                            color: AppColors.primary600,
+                            color: cs.primary600,
                             borderRadius: BorderRadius.circular(999),
                           ),
                         ),
                       ),
                       const SizedBox(width: 10),
-                      const Text(
+                      Text(
                         '2/2 · Doğrulama',
-                        style: TextStyle(
-                          fontSize: 11.5,
-                          fontWeight: FontWeight.w700,
-                          color: AppColors.textSecondary,
-                        ),
+                        style: tx.caption.copyWith(fontWeight: FontWeight.w700),
                       ),
                     ],
                   ),
                   const SizedBox(height: 14),
-                  const Text(
+                  Text(
                     'İki Adımlı Doğrulama',
                     textAlign: TextAlign.center,
-                    style: TextStyle(
-                      fontSize: 22,
-                      fontWeight: FontWeight.w800,
-                      color: AppColors.textPrimary,
-                    ),
+                    style: tx.display.copyWith(fontWeight: FontWeight.w800),
                   ),
                   const SizedBox(height: 4),
                   Text(
@@ -111,10 +107,7 @@ class _TwoFactorVerifyScreenState extends State<TwoFactorVerifyScreen> {
                         ? 'Kurtarma kodlarınızdan birini girin.'
                         : 'Authenticator uygulamanızdaki 6 haneli kodu girin.',
                     textAlign: TextAlign.center,
-                    style: const TextStyle(
-                      fontSize: 13.5,
-                      color: AppColors.textSecondary,
-                    ),
+                    style: tx.body.copyWith(color: cs.textSecondary),
                   ),
                   const SizedBox(height: 28),
                   TextFormField(
@@ -124,13 +117,14 @@ class _TwoFactorVerifyScreenState extends State<TwoFactorVerifyScreen> {
                     keyboardType: _useRecoveryCode
                         ? TextInputType.text
                         : TextInputType.number,
-                    style: const TextStyle(
+                    style: tx.title.copyWith(
                       fontFeatures: [FontFeature.tabularFigures()],
                       letterSpacing: 3,
-                      fontSize: 18,
                     ),
                     decoration: InputDecoration(
-                      labelText: _useRecoveryCode ? 'Kurtarma Kodu' : 'Doğrulama Kodu',
+                      labelText: _useRecoveryCode
+                          ? 'Kurtarma Kodu'
+                          : 'Doğrulama Kodu',
                       hintText: _useRecoveryCode ? 'XXXXX-XXXXX' : '123456',
                     ),
                     validator: (v) =>
@@ -142,24 +136,21 @@ class _TwoFactorVerifyScreenState extends State<TwoFactorVerifyScreen> {
                     Container(
                       padding: const EdgeInsets.all(12),
                       decoration: BoxDecoration(
-                        color: AppColors.danger50,
+                        color: cs.danger50,
                         borderRadius: BorderRadius.circular(AppRadius.chip),
                       ),
                       child: Row(
                         children: [
-                          const Icon(
+                          Icon(
                             Icons.error_outline_rounded,
-                            color: AppColors.danger500,
+                            color: cs.danger500,
                             size: 18,
                           ),
                           const SizedBox(width: 8),
                           Expanded(
                             child: Text(
                               auth.loginError!,
-                              style: const TextStyle(
-                                color: AppColors.danger600,
-                                fontSize: 13,
-                              ),
+                              style: tx.bodySmall.copyWith(color: cs.danger600),
                             ),
                           ),
                         ],
@@ -190,14 +181,15 @@ class _TwoFactorVerifyScreenState extends State<TwoFactorVerifyScreen> {
                       _useRecoveryCode
                           ? 'Authenticator kodu kullan'
                           : 'Kurtarma kodu kullan',
-                      style: const TextStyle(fontSize: 12.5),
+                      style: tx.bodySmall,
                     ),
                   ),
                   TextButton(
-                    onPressed: () => context.read<AuthProvider>().cancelTwoFactor(),
-                    child: const Text(
+                    onPressed: () =>
+                        context.read<AuthProvider>().cancelTwoFactor(),
+                    child: Text(
                       'Vazgeç, tekrar giriş yap',
-                      style: TextStyle(fontSize: 12.5, color: AppColors.textFaint),
+                      style: tx.bodySmall.copyWith(color: cs.textFaint),
                     ),
                   ),
                 ],

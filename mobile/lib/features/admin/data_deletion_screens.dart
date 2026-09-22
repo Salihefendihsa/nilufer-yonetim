@@ -6,6 +6,8 @@ import '../../auth/auth_provider.dart';
 import '../../core/api_client.dart';
 import '../../models/user.dart';
 import '../../theme/app_colors.dart';
+import '../../theme/app_palette.dart';
+import '../../theme/app_text_styles.dart';
 import '../../widgets/state_views.dart';
 
 /// Bölüm AD (7. tur): KVKK veri silme talebi (backend DataDeletionRequest).
@@ -30,25 +32,30 @@ class DataDeletionRequest {
     this.processedByName,
   });
 
-  factory DataDeletionRequest.fromJson(Map<String, dynamic> json) => DataDeletionRequest(
+  factory DataDeletionRequest.fromJson(Map<String, dynamic> json) =>
+      DataDeletionRequest(
         id: json['id'] as String,
         status: json['status'] as String? ?? 'PENDING',
         requestedAt: json['requestedAt'] as String? ?? '',
         processedAt: json['processedAt'] as String?,
         rejectionReason: json['rejectionReason'] as String?,
-        customerName: (json['customer'] as Map<String, dynamic>?)?['fullName'] as String?,
-        customerPhone: (json['customer'] as Map<String, dynamic>?)?['phone'] as String?,
-        processedByName: (json['processedBy'] as Map<String, dynamic>?)?['fullName'] as String?,
+        customerName:
+            (json['customer'] as Map<String, dynamic>?)?['fullName'] as String?,
+        customerPhone:
+            (json['customer'] as Map<String, dynamic>?)?['phone'] as String?,
+        processedByName:
+            (json['processedBy'] as Map<String, dynamic>?)?['fullName']
+                as String?,
       );
 
   bool get isPending => status == 'PENDING';
 }
 
 String deletionStatusLabelTr(String s) => switch (s) {
-      'COMPLETED' => 'Tamamlandı',
-      'REJECTED' => 'Reddedildi',
-      _ => 'Bekliyor',
-    };
+  'COMPLETED' => 'Tamamlandı',
+  'REJECTED' => 'Reddedildi',
+  _ => 'Bekliyor',
+};
 
 final _fmt = DateFormat('d MMM yyyy HH:mm', 'tr_TR');
 
@@ -57,10 +64,12 @@ class CustomerDataDeletionScreen extends StatefulWidget {
   const CustomerDataDeletionScreen({super.key});
 
   @override
-  State<CustomerDataDeletionScreen> createState() => _CustomerDataDeletionScreenState();
+  State<CustomerDataDeletionScreen> createState() =>
+      _CustomerDataDeletionScreenState();
 }
 
-class _CustomerDataDeletionScreenState extends State<CustomerDataDeletionScreen> {
+class _CustomerDataDeletionScreenState
+    extends State<CustomerDataDeletionScreen> {
   final _api = ApiClient.instance;
   DataDeletionRequest? _latest;
   bool _loading = true;
@@ -74,9 +83,17 @@ class _CustomerDataDeletionScreenState extends State<CustomerDataDeletionScreen>
 
   Future<void> _load() async {
     try {
-      final json = await _api.get<Map<String, dynamic>>('/customers/me/deletion-request');
+      final json = await _api.get<Map<String, dynamic>>(
+        '/customers/me/deletion-request',
+      );
       final data = json['data'] as Map<String, dynamic>?;
-      if (mounted) setState(() => _latest = data == null ? null : DataDeletionRequest.fromJson(data));
+      if (mounted) {
+        setState(
+          () => _latest = data == null
+              ? null
+              : DataDeletionRequest.fromJson(data),
+        );
+      }
     } catch (_) {
     } finally {
       if (mounted) setState(() => _loading = false);
@@ -84,6 +101,7 @@ class _CustomerDataDeletionScreenState extends State<CustomerDataDeletionScreen>
   }
 
   Future<void> _submit() async {
+    final cs = context.colors;
     final ok = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
@@ -92,9 +110,12 @@ class _CustomerDataDeletionScreenState extends State<CustomerDataDeletionScreen>
           'Talebiniz işletme yetkilisine iletilecek. Onaylanırsa adınız, telefonunuz, e-postanız ve adresiniz kalıcı olarak kaldırılır ve bu hesapla bir daha giriş yapamazsınız. Geçmiş işleriniz yalnızca kimliksiz istatistik olarak kalır.',
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.of(ctx).pop(false), child: const Text('Vazgeç')),
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: const Text('Vazgeç'),
+          ),
           ElevatedButton(
-            style: ElevatedButton.styleFrom(backgroundColor: AppColors.danger500),
+            style: ElevatedButton.styleFrom(backgroundColor: cs.danger500),
             onPressed: () => Navigator.of(ctx).pop(true),
             child: const Text('Talebi gönder'),
           ),
@@ -104,13 +125,23 @@ class _CustomerDataDeletionScreenState extends State<CustomerDataDeletionScreen>
     if (ok != true) return;
     setState(() => _busy = true);
     try {
-      await _api.post<Map<String, dynamic>>('/customers/me/deletion-request', body: {});
+      await _api.post<Map<String, dynamic>>(
+        '/customers/me/deletion-request',
+        body: {},
+      );
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Talebiniz alındı. Sonuç size bildirilecek.')));
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Talebiniz alındı. Sonuç size bildirilecek.'),
+          ),
+        );
       }
       await _load();
     } on ApiException catch (e) {
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.message)));
+      if (mounted) {
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text(e.message)));
+      }
     } finally {
       if (mounted) setState(() => _busy = false);
     }
@@ -118,6 +149,8 @@ class _CustomerDataDeletionScreenState extends State<CustomerDataDeletionScreen>
 
   @override
   Widget build(BuildContext context) {
+    final cs = context.colors;
+    final tx = context.text;
     final pending = _latest?.isPending ?? false;
     return Scaffold(
       appBar: AppBar(title: const Text('Hesabımı ve Verilerimi Sil')),
@@ -129,33 +162,43 @@ class _CustomerDataDeletionScreenState extends State<CustomerDataDeletionScreen>
                 Container(
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
-                    color: AppColors.surfaceCard,
+                    color: cs.surfaceCard,
                     borderRadius: BorderRadius.circular(AppRadius.card),
-                    border: Border.all(color: AppColors.danger500.withValues(alpha: 0.3)),
+                    border: Border.all(
+                      color: cs.danger500.withValues(alpha: 0.3),
+                    ),
                   ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Row(
+                      Row(
                         children: [
-                          Icon(Icons.person_off_outlined, color: AppColors.danger500),
+                          Icon(Icons.person_off_outlined, color: cs.danger500),
                           SizedBox(width: 8),
-                          Text('KVKK Veri Silme', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 15)),
+                          Text(
+                            'KVKK Veri Silme',
+                            style: tx.subtitle.copyWith(
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
                         ],
                       ),
                       const SizedBox(height: 8),
-                      const Text(
+                      Text(
                         'Kişisel verilerinizin silinmesini talep edebilirsiniz. Onaylandığında adınız, telefonunuz, e-postanız ve adresiniz kaldırılır ve hesabınız kapanır; geçmiş işleriniz yalnızca istatistiksel (kimliksiz) kayıt olarak kalır.',
-                        style: TextStyle(fontSize: 13, color: AppColors.textSecondary),
+                        style: tx.bodySmall,
                       ),
                       const SizedBox(height: 14),
                       if (pending)
                         Container(
                           padding: const EdgeInsets.all(12),
-                          decoration: BoxDecoration(color: AppColors.warning50, borderRadius: BorderRadius.circular(AppRadius.card)),
+                          decoration: BoxDecoration(
+                            color: cs.warning50,
+                            borderRadius: BorderRadius.circular(AppRadius.card),
+                          ),
                           child: Text(
                             'Talebiniz inceleniyor (${_latest!.requestedAt.isNotEmpty ? _fmt.format(DateTime.parse(_latest!.requestedAt).toLocal()) : ''}). Sonuç size bildirilecek.',
-                            style: const TextStyle(fontSize: 12.5, color: AppColors.warning600),
+                            style: tx.bodySmall.copyWith(color: cs.warning600),
                           ),
                         )
                       else ...[
@@ -164,13 +207,18 @@ class _CustomerDataDeletionScreenState extends State<CustomerDataDeletionScreen>
                             padding: const EdgeInsets.only(bottom: 10),
                             child: Text(
                               'Son talebiniz reddedildi${_latest!.rejectionReason != null ? ': ${_latest!.rejectionReason}' : '.'} Dilerseniz yeniden talep açabilirsiniz.',
-                              style: const TextStyle(fontSize: 12.5, color: AppColors.textSecondary),
+                              style: tx.bodySmall,
                             ),
                           ),
                         OutlinedButton.icon(
                           onPressed: _busy ? null : _submit,
-                          style: OutlinedButton.styleFrom(foregroundColor: AppColors.danger500),
-                          icon: const Icon(Icons.delete_forever_outlined, size: 18),
+                          style: OutlinedButton.styleFrom(
+                            foregroundColor: cs.danger500,
+                          ),
+                          icon: const Icon(
+                            Icons.delete_forever_outlined,
+                            size: 18,
+                          ),
                           label: const Text('Silme talebi oluştur'),
                         ),
                       ],
@@ -188,10 +236,12 @@ class DataDeletionRequestsScreen extends StatefulWidget {
   const DataDeletionRequestsScreen({super.key});
 
   @override
-  State<DataDeletionRequestsScreen> createState() => _DataDeletionRequestsScreenState();
+  State<DataDeletionRequestsScreen> createState() =>
+      _DataDeletionRequestsScreenState();
 }
 
-class _DataDeletionRequestsScreenState extends State<DataDeletionRequestsScreen> {
+class _DataDeletionRequestsScreenState
+    extends State<DataDeletionRequestsScreen> {
   final _api = ApiClient.instance;
   List<DataDeletionRequest> _items = [];
   bool _loading = true;
@@ -211,18 +261,31 @@ class _DataDeletionRequestsScreenState extends State<DataDeletionRequestsScreen>
       _error = null;
     });
     try {
-      final json = await _api.get<Map<String, dynamic>>('/data-deletion-requests', query: {'status': _all ? 'ALL' : 'PENDING'});
+      final json = await _api.get<Map<String, dynamic>>(
+        '/data-deletion-requests',
+        query: {'status': _all ? 'ALL' : 'PENDING'},
+      );
       if (mounted) {
-        setState(() => _items = ((json['data'] as List?) ?? const []).cast<Map<String, dynamic>>().map(DataDeletionRequest.fromJson).toList());
+        setState(
+          () => _items = ((json['data'] as List?) ?? const [])
+              .cast<Map<String, dynamic>>()
+              .map(DataDeletionRequest.fromJson)
+              .toList(),
+        );
       }
     } catch (e) {
-      if (mounted) setState(() => _error = e is ApiException ? e.message : 'Talepler yüklenemedi');
+      if (mounted) {
+        setState(
+          () => _error = e is ApiException ? e.message : 'Talepler yüklenemedi',
+        );
+      }
     } finally {
       if (mounted) setState(() => _loading = false);
     }
   }
 
   Future<void> _approve(DataDeletionRequest r) async {
+    final cs = context.colors;
     final ok = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
@@ -231,9 +294,12 @@ class _DataDeletionRequestsScreenState extends State<DataDeletionRequestsScreen>
           '"${r.customerName ?? 'Müşteri'}" adlı müşterinin adı, telefonu, e-postası ve adresi silinecek; hesabı kapanacak. İş/ödeme/sözleşme kayıtları istatistik için kalır. Bu işlem GERİ ALINAMAZ.',
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.of(ctx).pop(false), child: const Text('Vazgeç')),
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: const Text('Vazgeç'),
+          ),
           ElevatedButton(
-            style: ElevatedButton.styleFrom(backgroundColor: AppColors.danger500),
+            style: ElevatedButton.styleFrom(backgroundColor: cs.danger500),
             onPressed: () => Navigator.of(ctx).pop(true),
             child: const Text('Evet, anonimleştir'),
           ),
@@ -241,7 +307,14 @@ class _DataDeletionRequestsScreenState extends State<DataDeletionRequestsScreen>
       ),
     );
     if (ok != true) return;
-    await _act(r.id, () => _api.post<Map<String, dynamic>>('/data-deletion-requests/${r.id}/approve', body: {}), 'Müşteri verileri anonimleştirildi');
+    await _act(
+      r.id,
+      () => _api.post<Map<String, dynamic>>(
+        '/data-deletion-requests/${r.id}/approve',
+        body: {},
+      ),
+      'Müşteri verileri anonimleştirildi',
+    );
   }
 
   Future<void> _reject(DataDeletionRequest r) async {
@@ -250,25 +323,54 @@ class _DataDeletionRequestsScreenState extends State<DataDeletionRequestsScreen>
       context: context,
       builder: (ctx) => AlertDialog(
         title: const Text('Talebi reddet'),
-        content: TextField(controller: controller, decoration: const InputDecoration(labelText: 'Gerekçe (müşteriye iletilir)'), maxLines: 3),
+        content: TextField(
+          controller: controller,
+          decoration: const InputDecoration(
+            labelText: 'Gerekçe (müşteriye iletilir)',
+          ),
+          maxLines: 3,
+        ),
         actions: [
-          TextButton(onPressed: () => Navigator.of(ctx).pop(null), child: const Text('Vazgeç')),
-          ElevatedButton(onPressed: () => Navigator.of(ctx).pop(controller.text.trim()), child: const Text('Reddet')),
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(null),
+            child: const Text('Vazgeç'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.of(ctx).pop(controller.text.trim()),
+            child: const Text('Reddet'),
+          ),
         ],
       ),
     );
     if (reason == null || reason.isEmpty) return;
-    await _act(r.id, () => _api.post<Map<String, dynamic>>('/data-deletion-requests/${r.id}/reject', body: {'reason': reason}), 'Talep reddedildi');
+    await _act(
+      r.id,
+      () => _api.post<Map<String, dynamic>>(
+        '/data-deletion-requests/${r.id}/reject',
+        body: {'reason': reason},
+      ),
+      'Talep reddedildi',
+    );
   }
 
-  Future<void> _act(String id, Future<void> Function() fn, String okMessage) async {
+  Future<void> _act(
+    String id,
+    Future<void> Function() fn,
+    String okMessage,
+  ) async {
     setState(() => _busyId = id);
     try {
       await fn();
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(okMessage)));
+      if (mounted) {
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text(okMessage)));
+      }
       await _load();
     } on ApiException catch (e) {
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.message)));
+      if (mounted) {
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text(e.message)));
+      }
     } finally {
       if (mounted) setState(() => _busyId = null);
     }
@@ -276,6 +378,8 @@ class _DataDeletionRequestsScreenState extends State<DataDeletionRequestsScreen>
 
   @override
   Widget build(BuildContext context) {
+    final cs = context.colors;
+    final tx = context.text;
     final isOwner = context.read<AuthProvider>().user?.role == AppRole.owner;
     return Scaffold(
       appBar: AppBar(
@@ -302,7 +406,7 @@ class _DataDeletionRequestsScreenState extends State<DataDeletionRequestsScreen>
             )
           : RefreshIndicator(
               onRefresh: _load,
-              color: AppColors.primary600,
+              color: cs.accentSoft,
               child: ListView.separated(
                 padding: const EdgeInsets.all(16),
                 itemCount: _items.length,
@@ -312,37 +416,61 @@ class _DataDeletionRequestsScreenState extends State<DataDeletionRequestsScreen>
                   return Container(
                     padding: const EdgeInsets.all(14),
                     decoration: BoxDecoration(
-                      color: AppColors.surfaceCard,
+                      color: cs.surfaceCard,
                       borderRadius: BorderRadius.circular(AppRadius.card),
-                      border: Border.all(color: AppColors.borderDefault),
+                      border: Border.all(color: cs.borderDefault),
                     ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Row(
                           children: [
-                            Expanded(child: Text(r.customerName ?? 'Müşteri', style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14))),
-                            Text(deletionStatusLabelTr(r.status), style: const TextStyle(fontSize: 11.5, fontWeight: FontWeight.w700, color: AppColors.textSecondary)),
+                            Expanded(
+                              child: Text(
+                                r.customerName ?? 'Müşteri',
+                                style: tx.subtitle.copyWith(
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                            ),
+                            Text(
+                              deletionStatusLabelTr(r.status),
+                              style: tx.caption.copyWith(
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
                           ],
                         ),
                         Text(
                           'Talep: ${r.requestedAt.isNotEmpty ? _fmt.format(DateTime.parse(r.requestedAt).toLocal()) : '—'}'
                           '${r.customerPhone != null ? ' · ${r.customerPhone}' : ''}'
                           '${r.rejectionReason != null ? '\nGerekçe: ${r.rejectionReason}' : ''}',
-                          style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
+                          style: tx.caption,
                         ),
                         if (r.isPending && isOwner) ...[
                           const SizedBox(height: 8),
                           Row(
                             children: [
                               ElevatedButton.icon(
-                                style: ElevatedButton.styleFrom(backgroundColor: AppColors.danger500),
-                                onPressed: _busyId == null ? () => _approve(r) : null,
-                                icon: const Icon(Icons.delete_forever_outlined, size: 16),
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: cs.danger500,
+                                ),
+                                onPressed: _busyId == null
+                                    ? () => _approve(r)
+                                    : null,
+                                icon: const Icon(
+                                  Icons.delete_forever_outlined,
+                                  size: 16,
+                                ),
                                 label: const Text('Anonimleştir'),
                               ),
                               const SizedBox(width: 8),
-                              OutlinedButton(onPressed: _busyId == null ? () => _reject(r) : null, child: const Text('Reddet')),
+                              OutlinedButton(
+                                onPressed: _busyId == null
+                                    ? () => _reject(r)
+                                    : null,
+                                child: const Text('Reddet'),
+                              ),
                             ],
                           ),
                         ],

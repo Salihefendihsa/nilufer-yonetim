@@ -1,6 +1,8 @@
 "use client";
 
 import { useCallback, useEffect, useState, type FormEvent } from "react";
+import { LoadingBlock } from "@/components/LoadingBlock";
+import { SectionTitle } from "@/components/SectionTitle";
 import { Tags, Plus, X, Pencil, Trash2, Check, RotateCcw } from "lucide-react";
 import { api, ApiError } from "@/lib/api";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
@@ -90,7 +92,7 @@ export function CustomerTagsSection() {
             <Tags size={17} strokeWidth={1.75} />
           </span>
           <div>
-            <h2 className="text-base font-semibold text-text-primary">Müşteri Etiketleri</h2>
+            <SectionTitle>Müşteri Etiketleri</SectionTitle>
             <p className="mt-0.5 text-sm text-text-secondary">VIP, Kurumsal, Konut gibi segmentler — müşteri listesinde filtre ve rozet olarak görünür.</p>
           </div>
         </div>
@@ -123,7 +125,7 @@ export function CustomerTagsSection() {
         )}
 
         {loading ? (
-          <p className="text-sm text-text-secondary">Yükleniyor...</p>
+          <LoadingBlock lines={3} />
         ) : items.length === 0 ? (
           <p className="py-4 text-center text-sm text-text-faint">Henüz etiket yok — &quot;Yeni etiket&quot; ile ilkini ekleyin.</p>
         ) : (

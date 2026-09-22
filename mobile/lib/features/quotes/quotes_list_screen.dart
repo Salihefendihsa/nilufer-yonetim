@@ -5,6 +5,8 @@ import 'package:url_launcher/url_launcher.dart';
 import '../../core/api_client.dart';
 import '../../models/quote.dart';
 import '../../theme/app_colors.dart';
+import '../../theme/app_palette.dart';
+import '../../theme/app_text_styles.dart';
 import '../../widgets/state_views.dart';
 import 'quote_history_screen.dart';
 import 'quotes_api.dart';
@@ -16,12 +18,12 @@ final _currency = NumberFormat.currency(
 );
 final _dateFormat = DateFormat('d MMM yyyy', 'tr_TR');
 
-const Map<String, Color> _statusColors = {
-  'NEW': AppColors.warning500,
-  'CONTACTED': AppColors.info500,
-  'REVISION': AppColors.danger500,
-  'CONVERTED': AppColors.success500,
-  'REJECTED': AppColors.danger600,
+Map<String, Color> _statusColors(AppPalette cs) => {
+  'NEW': cs.warning500,
+  'CONTACTED': cs.info500,
+  'REVISION': cs.danger500,
+  'CONVERTED': cs.success500,
+  'REJECTED': cs.danger600,
 };
 
 /// backend/src/routes/quotes.ts: GET/PATCH/convert yalnızca OWNER/MANAGER —
@@ -132,9 +134,8 @@ class _QuotesListScreenState extends State<QuotesListScreen> {
       await _api.updateAmount(q.id, result);
       _load();
       if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(const SnackBar(content: Text('Fiyat kaydedildi.')));
+        ScaffoldMessenger.of(context)
+            .showSnackBar(const SnackBar(content: Text('Fiyat kaydedildi.')));
       }
     } catch (e) {
       if (mounted) {
@@ -179,9 +180,8 @@ class _QuotesListScreenState extends State<QuotesListScreen> {
       await _api.updateDetails(q.id, note: controller.text.trim());
       _load();
       if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(const SnackBar(content: Text('Not kaydedildi.')));
+        ScaffoldMessenger.of(context)
+            .showSnackBar(const SnackBar(content: Text('Not kaydedildi.')));
       }
     } catch (e) {
       if (mounted) {
@@ -284,6 +284,8 @@ class _QuotesListScreenState extends State<QuotesListScreen> {
   }
 
   Widget _buildBody() {
+    final cs = context.colors;
+    final tx = context.text;
     if (_loading) return const LoadingView();
     if (_error != null) return ErrorRetryView(message: _error!, onRetry: _load);
     if (_quotes.isEmpty)
@@ -294,21 +296,21 @@ class _QuotesListScreenState extends State<QuotesListScreen> {
 
     return RefreshIndicator(
       onRefresh: _load,
-      color: AppColors.primary600,
+      color: cs.accentSoft,
       child: ListView.separated(
         padding: const EdgeInsets.all(16),
         itemCount: _quotes.length,
         separatorBuilder: (_, __) => const SizedBox(height: 8),
         itemBuilder: (context, i) {
           final q = _quotes[i];
-          final color = _statusColors[q.status] ?? AppColors.textFaint;
+          final color = _statusColors(cs)[q.status] ?? cs.textFaint;
           final busy = _busyId == q.id;
           return Container(
             padding: const EdgeInsets.all(14),
             decoration: BoxDecoration(
-              color: AppColors.surfaceCard,
+              color: cs.surfaceCard,
               borderRadius: BorderRadius.circular(AppRadius.card),
-              border: Border.all(color: AppColors.borderDefault),
+              border: Border.all(color: cs.borderDefault),
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -319,9 +321,8 @@ class _QuotesListScreenState extends State<QuotesListScreen> {
                     Expanded(
                       child: Text(
                         q.fullName,
-                        style: const TextStyle(
+                        style: tx.subtitle.copyWith(
                           fontWeight: FontWeight.w700,
-                          fontSize: 14,
                         ),
                       ),
                     ),
@@ -336,11 +337,7 @@ class _QuotesListScreenState extends State<QuotesListScreen> {
                       ),
                       child: Text(
                         quoteStatusLabelTr(q.status),
-                        style: TextStyle(
-                          fontSize: 10.5,
-                          fontWeight: FontWeight.w700,
-                          color: color,
-                        ),
+                        style: tx.label.copyWith(color: color),
                       ),
                     ),
                   ],
@@ -348,33 +345,23 @@ class _QuotesListScreenState extends State<QuotesListScreen> {
                 const SizedBox(height: 4),
                 Text(
                   '${q.serviceType} · ${q.propertyType}',
-                  style: const TextStyle(
-                    fontSize: 12.5,
-                    color: AppColors.textSecondary,
-                  ),
+                  style: tx.bodySmall,
                 ),
                 const SizedBox(height: 6),
                 Row(
                   children: [
-                    const Icon(
-                      Icons.phone_outlined,
-                      size: 13,
-                      color: AppColors.textFaint,
-                    ),
+                    Icon(Icons.phone_outlined, size: 13, color: cs.textFaint),
                     const SizedBox(width: 4),
                     Text(
                       q.phone,
-                      style: const TextStyle(
-                        fontSize: 11.5,
-                        color: AppColors.textFaint,
-                      ),
+                      style: tx.caption.copyWith(color: cs.textFaint),
                     ),
                     const Spacer(),
                     IconButton(
-                      icon: const Icon(
+                      icon: Icon(
                         Icons.call_rounded,
                         size: 18,
-                        color: AppColors.primary600,
+                        color: cs.accentSoft,
                       ),
                       onPressed: () => launchUrl(Uri.parse('tel:${q.phone}')),
                       visualDensity: VisualDensity.compact,
@@ -383,10 +370,7 @@ class _QuotesListScreenState extends State<QuotesListScreen> {
                 ),
                 Text(
                   _dateFormat.format(DateTime.parse(q.createdAt)),
-                  style: const TextStyle(
-                    fontSize: 11,
-                    color: AppColors.textFaint,
-                  ),
+                  style: tx.label,
                 ),
                 const SizedBox(height: 6),
                 Row(
@@ -399,7 +383,7 @@ class _QuotesListScreenState extends State<QuotesListScreen> {
                           q.surveyAt != null
                               ? 'Keşif: ${_dateFormat.format(q.surveyAt!)}'
                               : 'Keşif Randevusu',
-                          style: const TextStyle(fontSize: 11.5),
+                          style: tx.caption,
                         ),
                       ),
                     ),
@@ -412,20 +396,22 @@ class _QuotesListScreenState extends State<QuotesListScreen> {
                           ),
                         ),
                         icon: const Icon(Icons.history_rounded, size: 15),
-                        label: const Text(
-                          'Tarihçe',
-                          style: TextStyle(fontSize: 11.5),
-                        ),
+                        label: Text('Tarihçe', style: tx.caption),
                       ),
                     ),
                     const SizedBox(width: 8),
                     Expanded(
                       child: OutlinedButton.icon(
                         onPressed: busy ? null : () => _editNote(q),
-                        icon: const Icon(Icons.sticky_note_2_outlined, size: 15),
+                        icon: const Icon(
+                          Icons.sticky_note_2_outlined,
+                          size: 15,
+                        ),
                         label: Text(
-                          q.note != null && q.note!.isNotEmpty ? 'Notu Aç' : 'Not Ekle',
-                          style: const TextStyle(fontSize: 11.5),
+                          q.note != null && q.note!.isNotEmpty
+                              ? 'Notu Aç'
+                              : 'Not Ekle',
+                          style: tx.caption,
                         ),
                       ),
                     ),
@@ -438,11 +424,7 @@ class _QuotesListScreenState extends State<QuotesListScreen> {
                       q.note!,
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        fontSize: 11.5,
-                        color: AppColors.textSecondary,
-                        fontStyle: FontStyle.italic,
-                      ),
+                      style: tx.caption.copyWith(fontStyle: FontStyle.italic),
                     ),
                   ),
                 const SizedBox(height: 8),
@@ -454,34 +436,33 @@ class _QuotesListScreenState extends State<QuotesListScreen> {
                       vertical: 8,
                     ),
                     decoration: BoxDecoration(
-                      color: AppColors.surfaceSubtle,
+                      color: cs.surfaceSubtle,
                       borderRadius: BorderRadius.circular(AppRadius.chip),
                     ),
                     child: Row(
                       children: [
-                        const Icon(
+                        Icon(
                           Icons.sell_outlined,
                           size: 15,
-                          color: AppColors.textSecondary,
+                          color: cs.textSecondary,
                         ),
                         const SizedBox(width: 6),
                         Text(
                           q.amount != null
                               ? _currency.format(q.amount)
                               : 'Fiyat belirlenmedi',
-                          style: TextStyle(
-                            fontSize: 12.5,
+                          style: tx.bodySmall.copyWith(
                             fontWeight: FontWeight.w700,
                             color: q.amount != null
-                                ? AppColors.textPrimary
-                                : AppColors.textFaint,
+                                ? cs.textPrimary
+                                : cs.textFaint,
                           ),
                         ),
                         const Spacer(),
-                        const Icon(
+                        Icon(
                           Icons.edit_outlined,
                           size: 14,
-                          color: AppColors.textFaint,
+                          color: cs.textFaint,
                         ),
                       ],
                     ),
@@ -519,23 +500,28 @@ class _Chip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-        decoration: BoxDecoration(
-          color: selected ? AppColors.primary600 : AppColors.surfaceCard,
-          borderRadius: BorderRadius.circular(AppRadius.pill),
-          border: Border.all(
-            color: selected ? AppColors.primary600 : AppColors.borderDefault,
+    final cs = context.colors;
+    final tx = context.text;
+    return Material(
+      color: selected ? cs.primary600 : cs.surfaceCard,
+      borderRadius: BorderRadius.circular(AppRadius.pill),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(AppRadius.pill),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(AppRadius.pill),
+            border: Border.all(
+              color: selected ? cs.primary600 : cs.borderDefault,
+            ),
           ),
-        ),
-        child: Text(
-          label,
-          style: TextStyle(
-            fontSize: 12.5,
-            fontWeight: FontWeight.w600,
-            color: selected ? Colors.white : AppColors.textSecondary,
+          child: Text(
+            label,
+            style: tx.bodySmall.copyWith(
+              fontWeight: FontWeight.w600,
+              color: selected ? Colors.white : cs.textSecondary,
+            ),
           ),
         ),
       ),

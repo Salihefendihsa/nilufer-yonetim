@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { chartPalette } from "@/lib/chartPalette";
 import { Activity, Clock3, Timer, TrendingUp, UserCheck, Users2 } from "lucide-react";
 import { RequireRole } from "@/components/RequireRole";
 import { EmptyState } from "@/components/EmptyState";
@@ -16,11 +17,11 @@ const DAY_OPTIONS = [7, 30, 90];
 
 /** Rol renkleri — donut ve rozetlerde aynı eşleme kullanılır. */
 const ROLE_COLORS: Record<string, string> = {
-  OWNER: "#2F5233",
-  MANAGER: "#3D8A4E",
-  TEAM_LEAD: "#61A870",
-  STAFF: "#94C79E",
-  CUSTOMER: "#1F6FA8",
+  OWNER: chartPalette.primary,
+  MANAGER: chartPalette.primaryMid,
+  TEAM_LEAD: chartPalette.primaryLight,
+  STAFF: chartPalette.primaryFaint,
+  CUSTOMER: chartPalette.info,
 };
 
 /** Trend grafiğinde gösterilecek gün sayısı üst sınırı (90 günde günlük çizgi okunmaz olur). */
@@ -120,7 +121,7 @@ function UsageStatsContent() {
     return Array.from(counts.entries()).map(([role, value]) => ({
       name: ROLE_LABELS[role as keyof typeof ROLE_LABELS] ?? role,
       value,
-      color: ROLE_COLORS[role] ?? "#8B9A8E",
+      color: ROLE_COLORS[role] ?? chartPalette.neutralSoft,
     }));
   }, [rows]);
 
@@ -147,7 +148,7 @@ function UsageStatsContent() {
         <span
           className="inline-flex items-center gap-1.5 rounded-full bg-surface-subtle px-2.5 py-1 text-xs font-medium text-text-secondary"
         >
-          <span className="h-1.5 w-1.5 rounded-full" style={{ background: ROLE_COLORS[row.role] ?? "#8B9A8E" }} />
+          <span className="h-1.5 w-1.5 rounded-full" style={{ background: ROLE_COLORS[row.role] ?? chartPalette.neutralSoft }} />
           {ROLE_LABELS[row.role as keyof typeof ROLE_LABELS] ?? row.role}
         </span>
       ),
@@ -247,7 +248,7 @@ function UsageStatsContent() {
             xKey="label"
             series={[{ key: "count", name: "Kullanıcı" }]}
             area
-            emptyLabel={loading ? "Yükleniyor..." : "Veri yok"}
+            loading={loading} emptyLabel="Veri yok"
           />
         </ChartCard>
 
@@ -256,7 +257,7 @@ function UsageStatsContent() {
             data={roleSlices}
             centerValue={loading ? "—" : String(stats.totalUsers)}
             centerLabel="kullanıcı"
-            emptyLabel={loading ? "Yükleniyor..." : "Veri yok"}
+            loading={loading} emptyLabel="Veri yok"
           />
         </ChartCard>
 
@@ -267,7 +268,7 @@ function UsageStatsContent() {
           height={220}
           className="lg:col-span-3"
         >
-          <RankBars rows={topUsers} emptyLabel={loading ? "Yükleniyor..." : "Oturum kaydı yok"} />
+          <RankBars rows={topUsers} loading={loading} emptyLabel="Oturum kaydı yok" />
         </ChartCard>
       </div>
 

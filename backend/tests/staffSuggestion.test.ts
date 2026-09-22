@@ -2,6 +2,7 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { Role, StaffStatus } from "@prisma/client";
 import { prisma } from "../src/lib/prisma";
 import { api, TestContext, type TestUser } from "./helpers/fixtures";
+import type { StaffSuggestion } from "../src/controllers/staffSuggestionController";
 
 /**
  * Bölüm Z (6. tur): GET /jobs/suggest-staff — iş yüküne göre artan sıralama,
@@ -63,7 +64,7 @@ describe("Personel atama önerisi", () => {
 
   afterAll(() => ctx.cleanup());
 
-  const mine = (rows: { staffId: string }[]) => {
+  const mine = (rows: StaffSuggestion[]) => {
     const ids = new Set([lead, light, busy, partial, allDay, onLeave, outsider].map((u) => u.staffId));
     return rows.filter((r) => ids.has(r.staffId));
   };

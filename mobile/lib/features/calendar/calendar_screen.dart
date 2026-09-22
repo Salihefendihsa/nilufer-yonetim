@@ -6,9 +6,12 @@ import '../../core/api_client.dart';
 import '../../models/job.dart';
 import '../../models/staff_unavailability.dart';
 import '../../theme/app_colors.dart';
+import '../../theme/app_palette.dart';
+import '../../theme/app_text_styles.dart';
 import '../../auth/auth_provider.dart';
 import '../../models/user.dart';
 import '../../navigation/manager_nav.dart';
+import '../search/search_action.dart';
 import '../../widgets/state_views.dart';
 import '../../widgets/stat_card.dart';
 import '../team/team_api.dart';
@@ -83,7 +86,8 @@ class _CalendarScreenState extends State<CalendarScreen> {
           myUnavailability = []; // işaretler alınamazsa takvim yine gösterilir
         }
       }
-      if (mounted && context.read<AuthProvider>().user?.role == AppRole.teamLead) {
+      if (mounted &&
+          context.read<AuthProvider>().user?.role == AppRole.teamLead) {
         final month = DateFormat('yyyy-MM').format(_monthStart);
         try {
           teamCalendar = await _teamApi.calendar(month: month);
@@ -116,6 +120,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
 
   /// Seçili gün için "müsait değilim" işareti — tüm gün veya saat aralığı.
   Future<void> _openUnavailabilitySheet() async {
+    final tx = context.text;
     final dateKey = DateFormat('yyyy-MM-dd').format(_selectedDate);
     final today = DateTime.now();
     final todayKey = DateFormat('yyyy-MM-dd').format(today);
@@ -153,10 +158,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
               Text(
                 'Müsait değilim — '
                 '${DateFormat('d MMMM yyyy', 'tr_TR').format(_selectedDate)}',
-                style: const TextStyle(
-                  fontWeight: FontWeight.w700,
-                  fontSize: 15,
-                ),
+                style: tx.subtitle.copyWith(fontWeight: FontWeight.w700),
               ),
               const SizedBox(height: 12),
               SegmentedButton<bool>(
@@ -265,9 +267,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(e is ApiException ? e.message : 'Silinemedi'),
-          ),
+          SnackBar(content: Text(e is ApiException ? e.message : 'Silinemedi')),
         );
       }
     } finally {
@@ -277,47 +277,46 @@ class _CalendarScreenState extends State<CalendarScreen> {
 
   /// Seçili günün "Müsaitlik" bloğu — yalnızca STAFF/TEAM_LEAD.
   Widget _buildUnavailabilitySection(String selectedKey) {
+    final cs = context.colors;
+    final tx = context.text;
     final rows = _myUnavailability.where((u) => u.date == selectedKey).toList();
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: AppColors.warning50,
+        color: cs.warning50,
         borderRadius: BorderRadius.circular(AppRadius.card),
-        border: Border.all(color: AppColors.warning500.withValues(alpha: 0.35)),
+        border: Border.all(color: cs.warning500.withValues(alpha: 0.35)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              const Icon(
-                Icons.event_busy_outlined,
-                size: 16,
-                color: AppColors.warning600,
-              ),
+              Icon(Icons.event_busy_outlined, size: 16, color: cs.warning600),
               const SizedBox(width: 6),
-              const Expanded(
+              Expanded(
                 child: Text(
                   'Müsaitlik',
-                  style: TextStyle(
+                  style: tx.bodySmall.copyWith(
                     fontWeight: FontWeight.w700,
-                    fontSize: 13,
-                    color: AppColors.warning600,
+                    color: cs.warning600,
                   ),
                 ),
               ),
               TextButton.icon(
-                onPressed: _unavailabilityBusy ? null : _openUnavailabilitySheet,
+                onPressed: _unavailabilityBusy
+                    ? null
+                    : _openUnavailabilitySheet,
                 icon: const Icon(Icons.add_rounded, size: 16),
                 label: const Text('Müsait değilim'),
               ),
             ],
           ),
           if (rows.isEmpty)
-            const Text(
+            Text(
               'Bu gün için işaret yok. İşaretlerseniz yönetici iş atarken uyarı görür (atama engellenmez).',
-              style: TextStyle(fontSize: 11.5, color: AppColors.textSecondary),
+              style: tx.caption,
             )
           else
             for (final u in rows)
@@ -326,13 +325,13 @@ class _CalendarScreenState extends State<CalendarScreen> {
                   Expanded(
                     child: Text(
                       '${u.rangeLabel}${u.reason != null && u.reason!.isNotEmpty ? ' · ${u.reason}' : ''}',
-                      style: const TextStyle(fontSize: 12.5),
+                      style: tx.bodySmall,
                     ),
                   ),
                   IconButton(
                     icon: const Icon(Icons.delete_outline_rounded, size: 18),
                     tooltip: 'İşareti kaldır',
-                    color: AppColors.danger500,
+                    color: cs.danger500,
                     onPressed: _unavailabilityBusy
                         ? null
                         : () => _deleteUnavailability(u),
@@ -371,6 +370,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
       appBar: AppBar(
         leading: ManagerNav.maybeLeading(context),
         title: const Text('Takvim'),
+        actions: const [SearchAction()],
       ),
       body: _loading
           ? const LoadingView()
@@ -383,39 +383,34 @@ class _CalendarScreenState extends State<CalendarScreen> {
   /// Ekip kapasite kartı — kapasite tanımlı değilse (dailyCapacity null)
   /// doluluk yüzdesi GÖSTERİLMEZ, yalnızca iş sayıları yazılır.
   Widget _buildCapacityCard(TeamCalendar c) {
+    final cs = context.colors;
+    final tx = context.text;
     final today = c.todayCapacity;
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: AppColors.surfaceCard,
+        color: cs.surfaceCard,
         borderRadius: BorderRadius.circular(AppRadius.card),
-        border: Border.all(color: AppColors.borderDefault),
+        border: Border.all(color: cs.borderDefault),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              const Icon(
-                Icons.speed_rounded,
-                size: 18,
-                color: AppColors.primary700,
-              ),
+              Icon(Icons.speed_rounded, size: 18, color: cs.accent),
               const SizedBox(width: 8),
-              const Expanded(
+              Expanded(
                 child: Text(
                   'Ekip Kapasite Durumu (Bugün)',
-                  style: TextStyle(fontSize: 13.5, fontWeight: FontWeight.w700),
+                  style: tx.body.copyWith(fontWeight: FontWeight.w700),
                 ),
               ),
               Text(
                 today != null
                     ? '${c.todayJobCount} / $today slot'
                     : '${c.todayJobCount} iş',
-                style: const TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w800,
-                ),
+                style: tx.bodySmall.copyWith(fontWeight: FontWeight.w800),
               ),
             ],
           ),
@@ -426,21 +421,16 @@ class _CalendarScreenState extends State<CalendarScreen> {
               child: LinearProgressIndicator(
                 value: (c.todayJobCount / today).clamp(0.0, 1.0),
                 minHeight: 6,
-                backgroundColor: AppColors.surfaceMuted,
+                backgroundColor: cs.surfaceMuted,
                 valueColor: AlwaysStoppedAnimation(
-                  c.todayJobCount > today
-                      ? AppColors.danger500
-                      : AppColors.primary500,
+                  c.todayJobCount > today ? cs.danger500 : cs.primary500,
                 ),
               ),
             ),
             const SizedBox(height: 4),
             Text(
               'Kalan boşluk: ${(today - c.todayJobCount).clamp(0, today)} görev',
-              style: const TextStyle(
-                fontSize: 11.5,
-                color: AppColors.textSecondary,
-              ),
+              style: tx.caption,
             ),
           ],
           const SizedBox(height: 10),
@@ -450,10 +440,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
                 child: Text(
                   'Bu hafta: ${c.weekJobCount}'
                   '${c.weekCapacity != null ? ' / ${c.weekCapacity}' : ''}',
-                  style: const TextStyle(
-                    fontSize: 12,
-                    color: AppColors.textSecondary,
-                  ),
+                  style: tx.caption,
                 ),
               ),
               if (c.busiestDay != null)
@@ -461,10 +448,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
                   'En yoğun: '
                   '${DateFormat('d MMM', 'tr_TR').format(DateTime.parse(c.busiestDay!.date))}'
                   ' (${c.busiestDay!.jobCount})',
-                  style: const TextStyle(
-                    fontSize: 12,
-                    color: AppColors.textSecondary,
-                  ),
+                  style: tx.caption,
                 ),
             ],
           ),
@@ -479,12 +463,17 @@ class _CalendarScreenState extends State<CalendarScreen> {
   /// hiçbirini görmüyordu. Artık zaten çekilen `_jobs` (ay kapsamlı) listesinden
   /// istemci tarafında türetiliyor — ek bir API çağrısı gerekmiyor.
   Widget _buildSummaryCards() {
+    final cs = context.colors;
     final now = DateTime.now();
     final todayKey = DateFormat('yyyy-MM-dd').format(now);
     final todaysJobs = _jobsByDay[todayKey] ?? [];
 
     final weekStart = now.subtract(Duration(days: (now.weekday - 1) % 7));
-    final weekStartDay = DateTime(weekStart.year, weekStart.month, weekStart.day);
+    final weekStartDay = DateTime(
+      weekStart.year,
+      weekStart.month,
+      weekStart.day,
+    );
     final weekEndDay = weekStartDay.add(const Duration(days: 7));
     final thisWeekJobs = _jobs
         .where(
@@ -523,25 +512,28 @@ class _CalendarScreenState extends State<CalendarScreen> {
           label: 'Bu Hafta',
           value: '${thisWeekJobs.length}',
           icon: Icons.date_range_rounded,
-          iconColor: AppColors.info600,
-          iconBackground: AppColors.info50,
+          iconColor: cs.info600,
+          iconBackground: cs.info50,
         ),
         AppStatCard(
           label: 'Tamamlanma (Ay)',
           value: completionPct != null ? '%$completionPct' : '—',
           icon: Icons.check_circle_outline_rounded,
-          iconColor: AppColors.success600,
-          iconBackground: AppColors.success50,
+          iconColor: cs.success600,
+          iconBackground: cs.success50,
           caption: '$monthCompleted / ${_jobs.length} iş',
         ),
         AppStatCard(
           label: 'En Yoğun Gün',
           value: busiestLabel != null
-              ? DateFormat('d MMM', 'tr_TR').format(DateTime.parse(busiestLabel!))
+              ? DateFormat(
+                  'd MMM',
+                  'tr_TR',
+                ).format(DateTime.parse(busiestLabel!))
               : '—',
           icon: Icons.local_fire_department_outlined,
-          iconColor: AppColors.warning600,
-          iconBackground: AppColors.warning50,
+          iconColor: cs.warning600,
+          iconBackground: cs.warning50,
           caption: busiestLabel != null ? '$busiestCount iş' : null,
         ),
       ],
@@ -552,6 +544,8 @@ class _CalendarScreenState extends State<CalendarScreen> {
   /// "Haftalık Dağılım" çubuk grafiğinin karşılığı, mevcut çubuk-satır
   /// deseniyle (grafik kütüphanesi eklenmeden).
   Widget _buildWeeklyDistribution() {
+    final cs = context.colors;
+    final tx = context.text;
     final counts = List<int>.filled(7, 0);
     for (final j in _jobs) {
       if (j.scheduledAt == null) continue;
@@ -562,9 +556,9 @@ class _CalendarScreenState extends State<CalendarScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
+        Text(
           'Haftalık Dağılım (Bu Ay)',
-          style: TextStyle(fontWeight: FontWeight.w700, fontSize: 14.5),
+          style: tx.subtitle.copyWith(fontWeight: FontWeight.w700),
         ),
         const SizedBox(height: 8),
         for (var i = 0; i < 7; i++)
@@ -574,13 +568,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
               children: [
                 SizedBox(
                   width: 32,
-                  child: Text(
-                    _weekdayLabelsTr[i],
-                    style: const TextStyle(
-                      fontSize: 11.5,
-                      color: AppColors.textSecondary,
-                    ),
-                  ),
+                  child: Text(_weekdayLabelsTr[i], style: tx.caption),
                 ),
                 Expanded(
                   child: ClipRRect(
@@ -588,8 +576,8 @@ class _CalendarScreenState extends State<CalendarScreen> {
                     child: LinearProgressIndicator(
                       value: maxCount == 0 ? 0 : counts[i] / maxCount,
                       minHeight: 8,
-                      backgroundColor: AppColors.surfaceMuted,
-                      color: AppColors.primary500,
+                      backgroundColor: cs.surfaceMuted,
+                      color: cs.primary500,
                     ),
                   ),
                 ),
@@ -598,10 +586,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
                   child: Text(
                     '${counts[i]}',
                     textAlign: TextAlign.right,
-                    style: const TextStyle(
-                      fontSize: 11.5,
-                      fontWeight: FontWeight.w700,
-                    ),
+                    style: tx.caption.copyWith(fontWeight: FontWeight.w700),
                   ),
                 ),
               ],
@@ -612,6 +597,8 @@ class _CalendarScreenState extends State<CalendarScreen> {
   }
 
   Widget _buildCalendar() {
+    final cs = context.colors;
+    final tx = context.text;
     final byDay = _jobsByDay;
     final maxCount = byDay.values.fold(
       0,
@@ -656,7 +643,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
             ),
             Text(
               DateFormat('MMMM yyyy', 'tr_TR').format(_monthStart),
-              style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 15),
+              style: tx.subtitle.copyWith(fontWeight: FontWeight.w700),
             ),
             IconButton(
               icon: const Icon(Icons.chevron_right_rounded),
@@ -684,46 +671,48 @@ class _CalendarScreenState extends State<CalendarScreen> {
             final isSelected = key == selectedKey;
             final isUnavailable = unavailableDays.contains(key);
             final bg = count == 0
-                ? AppColors.surfaceBase
-                : Color.lerp(AppColors.primary50, AppColors.primary400, ratio)!;
+                ? cs.surfaceBase
+                : Color.lerp(cs.primary50, cs.primary400, ratio)!;
 
-            return GestureDetector(
-              onTap: () => setState(() => _selectedDate = date),
-              child: Container(
-                decoration: BoxDecoration(
-                  color: bg,
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(
-                    color: isSelected
-                        ? AppColors.primary700
-                        : AppColors.borderDefault,
-                    width: isSelected ? 2 : 1,
-                  ),
-                ),
-                alignment: Alignment.center,
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Text(
-                      '$day',
-                      style: TextStyle(
-                        fontSize: 12,
-                        fontWeight:
-                            isSelected ? FontWeight.w800 : FontWeight.w500,
-                      ),
+            return Material(
+              color: bg,
+              borderRadius: BorderRadius.circular(8),
+              child: InkWell(
+                onTap: () => setState(() => _selectedDate = date),
+                borderRadius: BorderRadius.circular(8),
+                child: Container(
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(
+                      color: isSelected ? cs.primary700 : cs.borderDefault,
+                      width: isSelected ? 2 : 1,
                     ),
-                    // Bölüm K: müsait değilim işareti (turuncu nokta).
-                    if (isUnavailable)
-                      Container(
-                        margin: const EdgeInsets.only(top: 2),
-                        width: 5,
-                        height: 5,
-                        decoration: const BoxDecoration(
-                          color: AppColors.warning500,
-                          shape: BoxShape.circle,
+                  ),
+                  alignment: Alignment.center,
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text(
+                        '$day',
+                        style: tx.caption.copyWith(
+                          fontWeight: isSelected
+                              ? FontWeight.w800
+                              : FontWeight.w500,
                         ),
                       ),
-                  ],
+                      // Bölüm K: müsait değilim işareti (turuncu nokta).
+                      if (isUnavailable)
+                        Container(
+                          margin: const EdgeInsets.only(top: 2),
+                          width: 5,
+                          height: 5,
+                          decoration: BoxDecoration(
+                            color: cs.warning500,
+                            shape: BoxShape.circle,
+                          ),
+                        ),
+                    ],
+                  ),
                 ),
               ),
             );
@@ -732,7 +721,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
         const SizedBox(height: 18),
         Text(
           DateFormat('d MMMM yyyy, EEEE', 'tr_TR').format(_selectedDate),
-          style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14.5),
+          style: tx.subtitle.copyWith(fontWeight: FontWeight.w700),
         ),
         const SizedBox(height: 8),
         if (canMark) _buildUnavailabilitySection(selectedKey),
@@ -746,21 +735,18 @@ class _CalendarScreenState extends State<CalendarScreen> {
             (j) => Padding(
               padding: const EdgeInsets.only(bottom: 8),
               child: ListTile(
-                tileColor: AppColors.surfaceCard,
+                tileColor: cs.surfaceCard,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(AppRadius.card),
-                  side: const BorderSide(color: AppColors.borderDefault),
+                  side: BorderSide(color: cs.borderDefault),
                 ),
                 title: Text(
                   j.customerName ?? j.serviceType,
-                  style: const TextStyle(
-                    fontWeight: FontWeight.w600,
-                    fontSize: 13.5,
-                  ),
+                  style: tx.body.copyWith(fontWeight: FontWeight.w600),
                 ),
                 subtitle: Text(
                   '${j.serviceType} · ${DateFormat('HH:mm').format(j.scheduledAt!)} · ${jobStatusLabelTr(j.status)}',
-                  style: const TextStyle(fontSize: 12),
+                  style: tx.caption,
                 ),
                 onTap: () => Navigator.of(context).push(
                   MaterialPageRoute(

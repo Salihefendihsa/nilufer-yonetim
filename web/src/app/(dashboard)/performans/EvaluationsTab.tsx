@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState, type FormEvent } from "react";
+import { LoadingBlock } from "@/components/LoadingBlock";
 import { ClipboardList, Lock, Plus, Send, Gift, Check, X } from "lucide-react";
 import { EmptyState } from "@/components/EmptyState";
 import { Modal } from "@/components/Modal";
@@ -152,7 +153,7 @@ export function EvaluationsTab() {
       </div>
 
       {loading ? (
-        <p className="py-16 text-center text-sm text-text-faint">Yükleniyor...</p>
+        <LoadingBlock rows={4} className="py-6" />
       ) : !selectedPeriodId ? (
         <EmptyState icon={ClipboardList} title="Önce bir dönem oluşturun" description="Değerlendirme yapabilmek için bir dönem seçin." />
       ) : (
@@ -578,7 +579,7 @@ function SelfEvaluationTrend() {
       .finally(() => setResolved(true));
   }, []);
 
-  if (!resolved) return <p className="py-8 text-center text-sm text-text-faint">Yükleniyor...</p>;
+  if (!resolved) return <LoadingBlock rows={3} className="py-6" />;
   if (!staffId) {
     return <EmptyState icon={ClipboardList} title="Personel kaydı bulunamadı" description="Hesabınıza bağlı bir personel kaydı yok." />;
   }

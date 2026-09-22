@@ -1,6 +1,8 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { LoadingBlock } from "@/components/LoadingBlock";
+import { SectionTitle } from "@/components/SectionTitle";
 import Link from "next/link";
 import {
   CalendarCheck,
@@ -267,6 +269,8 @@ function OwnerDashboard() {
             </div>
           </div>
         </div>
+        {/* bg-white kasıtlı: koyu yeşil hero zemininde her iki temada da
+            en yüksek kontrastlı CTA; primary-700 metin koyu modda da sabit. */}
         <Link
           href="/bekleyen-onaylar"
           className="relative flex items-center gap-2 rounded-2xl bg-white px-4 py-2.5 text-sm font-semibold text-primary-700 shadow-card transition hover:bg-white/90"
@@ -347,14 +351,14 @@ function OwnerDashboard() {
             data={toStatusSegments(jobs).map((seg) => ({ name: seg.label, value: seg.count, color: seg.color }))}
             centerValue={String(jobs.length)}
             centerLabel="bugünkü iş"
-            emptyLabel={loading ? "Yükleniyor..." : "Bugün iş yok"}
+            loading={loading} emptyLabel="Bugün iş yok"
           />
         </ChartCard>
 
         <ChartCard title="Bölge Dağılımı" description="Müşterilerin semt kırılımı" icon={MapPin} height={240} className="lg:col-span-2">
           <RankBars
             rows={data.districtCounts.map((d) => ({ label: d.district, value: d.count }))}
-            emptyLabel={loading ? "Yükleniyor..." : "Henüz veri yok"}
+            loading={loading} emptyLabel="Henüz veri yok"
           />
         </ChartCard>
 
@@ -396,7 +400,7 @@ function OwnerDashboard() {
           <span className="flex h-9 w-9 items-center justify-center rounded-2xl bg-primary-50 text-primary-600 ring-1 ring-primary-100">
             <Activity size={17} strokeWidth={1.75} />
           </span>
-          <h2 className="text-base font-semibold text-text-primary">Aktivite Akışı</h2>
+          <SectionTitle>Aktivite Akışı</SectionTitle>
         </div>
         <ActivityFeed events={data.activity} loading={loading} />
       </div>
@@ -552,12 +556,12 @@ function ManagerDashboard() {
             data={statusSegments.map((seg) => ({ name: seg.label, value: seg.count, color: seg.color }))}
             centerValue={summary ? String(summary.todaysJobsCount) : "—"}
             centerLabel="bugünkü iş"
-            emptyLabel={loading ? "Yükleniyor..." : "Bugün iş yok"}
+            loading={loading} emptyLabel="Bugün iş yok"
           />
         </ChartCard>
 
         <ChartCard title="Hizmet Türü Kırılımı" description="Bugünkü işler" icon={BarChart3} height={240}>
-          <RankBars rows={serviceRows} emptyLabel={loading ? "Yükleniyor..." : "Bugün iş yok"} />
+          <RankBars rows={serviceRows} loading={loading} emptyLabel="Bugün iş yok" />
         </ChartCard>
       </div>
 
@@ -567,11 +571,11 @@ function ManagerDashboard() {
           <span className="flex h-9 w-9 items-center justify-center rounded-2xl bg-primary-50 text-primary-600 ring-1 ring-primary-100">
             <Clock size={17} strokeWidth={1.75} />
           </span>
-          <h2 className="text-base font-semibold text-text-primary">Bugünkü işler</h2>
+          <SectionTitle>Bugünkü işler</SectionTitle>
         </div>
 
         {loading ? (
-          <p className="py-8 text-center text-sm text-text-faint">Yükleniyor...</p>
+          <LoadingBlock rows={3} className="py-6" />
         ) : jobs.length === 0 ? (
           <EmptyState icon={CalendarCheck} title="Bugün için planlanmış iş yok" />
         ) : (
@@ -736,11 +740,11 @@ function TeamLeadDashboard() {
 
       {/* [Ekip iş yükü] */}
       <ChartCard title="Ekip İş Yükü" description="Bugün kişi başına düşen iş" icon={Shuffle} height={200}>
-        <RankBars rows={teamLoadRows} emptyLabel={loading ? "Yükleniyor..." : "Bugün atanmış iş yok"} />
+        <RankBars rows={teamLoadRows} loading={loading} emptyLabel="Bugün atanmış iş yok" />
       </ChartCard>
 
       {loading ? (
-        <p className="py-8 text-center text-sm text-text-faint">Yükleniyor...</p>
+        <LoadingBlock rows={3} className="py-6" />
       ) : jobs.length === 0 ? (
         <div className="rounded-2xl border border-border bg-surface-card shadow-card">
           <EmptyState icon={CalendarCheck} title="Bugün ekibine ait planlanmış iş yok" />
@@ -867,7 +871,7 @@ function StaffDashboard() {
       )}
 
       {loading ? (
-        <p className="py-8 text-center text-sm text-text-faint">Yükleniyor...</p>
+        <LoadingBlock rows={3} className="py-6" />
       ) : jobs.length === 0 ? (
         <div className="rounded-2xl border border-border bg-surface-card shadow-card">
           <EmptyState icon={CalendarCheck} title="Bugün için işin yok" description="Yeni bir iş atandığında burada görünecek." />
@@ -1097,7 +1101,7 @@ function CustomerDashboard() {
             <span className="flex h-9 w-9 items-center justify-center rounded-2xl bg-primary-50 text-primary-600 ring-1 ring-primary-100">
               <CalendarCheck size={17} strokeWidth={1.75} />
             </span>
-            <h2 className="text-base font-semibold text-text-primary">Randevu Taleplerim</h2>
+            <SectionTitle>Randevu Taleplerim</SectionTitle>
           </div>
           <ul className="flex flex-col divide-y divide-border">
             {appointmentRequests.map((r) => (
@@ -1137,11 +1141,11 @@ function CustomerDashboard() {
           <span className="flex h-9 w-9 items-center justify-center rounded-2xl bg-primary-50 text-primary-600 ring-1 ring-primary-100">
             <Bug size={17} strokeWidth={1.75} />
           </span>
-          <h2 className="text-base font-semibold text-text-primary">Son Uygulamanız</h2>
+          <SectionTitle>Son Uygulamanız</SectionTitle>
         </div>
 
         {loading ? (
-          <p className="py-6 text-center text-sm text-text-faint">Yükleniyor...</p>
+          <LoadingBlock rows={3} className="py-6" />
         ) : lastJob ? (
           <div className="flex flex-wrap items-center justify-between gap-4">
             <div>
@@ -1160,7 +1164,7 @@ function CustomerDashboard() {
           <span className="flex h-9 w-9 items-center justify-center rounded-2xl bg-primary-50 text-primary-600 ring-1 ring-primary-100">
             <History size={17} strokeWidth={1.75} />
           </span>
-          <h2 className="text-base font-semibold text-text-primary">Geçmiş İşlemler</h2>
+          <SectionTitle>Geçmiş İşlemler</SectionTitle>
         </div>
 
         {pastJobs.length === 0 ? (
@@ -1224,7 +1228,7 @@ function CustomerDashboard() {
                   {isExpanded && (
                     <div className="mt-3 rounded-2xl bg-surface-subtle p-4">
                       {report === "loading" ? (
-                        <p className="text-sm text-text-faint">Yükleniyor...</p>
+                        <LoadingBlock lines={2} />
                       ) : report === "none" || !report ? (
                         <p className="text-sm text-text-faint">Bu iş için rapor bulunamadı.</p>
                       ) : (

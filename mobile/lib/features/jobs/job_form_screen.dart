@@ -5,6 +5,8 @@ import '../../models/customer.dart';
 import '../../models/staff.dart';
 import '../../models/staff_unavailability.dart';
 import '../../theme/app_colors.dart';
+import '../../theme/app_palette.dart';
+import '../../theme/app_text_styles.dart';
 import '../customers/customers_api.dart';
 import '../staff/staff_api.dart';
 import '../staff/staff_unavailability_api.dart';
@@ -41,6 +43,7 @@ class _JobFormScreenState extends State<JobFormScreen> {
   /// Bölüm K (3. tur): seçilen tarihte müsait olmayan personel (staffId →
   /// kayıtlar). Atamayı ENGELLEMEZ, yalnızca uyarı gösterir.
   Map<String, List<StaffUnavailability>> _unavailable = {};
+
   /// Bölüm Z (6. tur): öneri sırası (en az yüklü müsait önce) — seçim yönetimde.
   final _suggestionApi = StaffSuggestionApi();
   List<StaffSuggestion> _suggestions = [];
@@ -52,10 +55,12 @@ class _JobFormScreenState extends State<JobFormScreen> {
       final i = _suggestions.indexWhere((s) => s.staffId == id);
       return i == -1 ? 999 : i;
     }
+
     final copy = [..._staff];
     copy.sort((a, b) => idx(a.id).compareTo(idx(b.id)));
     return copy;
   }
+
   String? _unavailableForDate;
 
   Future<void> _refreshUnavailability() async {
@@ -68,10 +73,13 @@ class _JobFormScreenState extends State<JobFormScreen> {
         '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
     if (key == _unavailableForDate) return;
     try {
-      final time = '${date.hour.toString().padLeft(2, '0')}:${date.minute.toString().padLeft(2, '0')}';
+      final time =
+          '${date.hour.toString().padLeft(2, '0')}:${date.minute.toString().padLeft(2, '0')}';
       final results = await Future.wait([
         _unavailabilityApi.unavailableOn(key),
-        _suggestionApi.suggest(key, time: time).catchError((_) => <StaffSuggestion>[]),
+        _suggestionApi
+            .suggest(key, time: time)
+            .catchError((_) => <StaffSuggestion>[]),
       ]);
       final rows = results[0] as List<StaffUnavailability>;
       final map = <String, List<StaffUnavailability>>{};
@@ -95,6 +103,7 @@ class _JobFormScreenState extends State<JobFormScreen> {
     if (rows == null || rows.isEmpty) return '';
     return rows.map((r) => r.rangeLabel.toLowerCase()).join(', ');
   }
+
   final _jobsApi = JobsApi();
 
   List<Customer> _customers = [];
@@ -146,7 +155,9 @@ class _JobFormScreenState extends State<JobFormScreen> {
         _notesController.text = t.defaultNotes!;
       }
       if (t.defaultDurationMinutes != null && _scheduledAt != null) {
-        _scheduledEndAt = _scheduledAt!.add(Duration(minutes: t.defaultDurationMinutes!));
+        _scheduledEndAt = _scheduledAt!.add(
+          Duration(minutes: t.defaultDurationMinutes!),
+        );
       }
     });
   }
@@ -297,6 +308,8 @@ class _JobFormScreenState extends State<JobFormScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final cs = context.colors;
+    final tx = context.text;
     return Scaffold(
       appBar: AppBar(title: const Text('Yeni İş')),
       body: _loadingOptions
@@ -354,19 +367,23 @@ class _JobFormScreenState extends State<JobFormScreen> {
                       margin: const EdgeInsets.only(top: 10),
                       padding: const EdgeInsets.all(10),
                       decoration: BoxDecoration(
-                        color: AppColors.primary50,
+                        color: cs.primary50,
                         borderRadius: BorderRadius.circular(AppRadius.card),
-                        border: Border.all(color: AppColors.primary100),
+                        border: Border.all(color: cs.primary100),
                       ),
                       child: Row(
                         children: [
-                          const Icon(Icons.verified_user_outlined, size: 18, color: AppColors.primary700),
+                          Icon(
+                            Icons.verified_user_outlined,
+                            size: 18,
+                            color: cs.accent,
+                          ),
                           const SizedBox(width: 8),
                           Expanded(
                             child: Text(
                               'Bu müşterinin ${_warrantyServiceType ?? 'bu hizmet'} için devam eden garantisi var — '
                               '$_warrantyDaysLeft gün kaldı. Ücretlendirmeyi buna göre değerlendirin.',
-                              style: const TextStyle(fontSize: 12, color: AppColors.primary700),
+                              style: tx.caption.copyWith(color: cs.accent),
                             ),
                           ),
                         ],
@@ -387,9 +404,13 @@ class _JobFormScreenState extends State<JobFormScreen> {
                               children: [
                                 // Bölüm Z: en uygun öneri yıldızlı.
                                 if (_suggestionOf(s.id)?.isRecommended ?? false)
-                                  const Padding(
+                                  Padding(
                                     padding: EdgeInsets.only(right: 4),
-                                    child: Icon(Icons.star_rounded, size: 16, color: AppColors.warning500),
+                                    child: Icon(
+                                      Icons.star_rounded,
+                                      size: 16,
+                                      color: cs.warning500,
+                                    ),
                                   ),
                                 Expanded(
                                   child: Text(
@@ -397,16 +418,16 @@ class _JobFormScreenState extends State<JobFormScreen> {
                                         ? s.fullName
                                         : '${s.fullName} · ${_suggestionOf(s.id)!.hint}',
                                     overflow: TextOverflow.ellipsis,
-                                    style: const TextStyle(fontSize: 13.5),
+                                    style: tx.body,
                                   ),
                                 ),
                                 if (_unavailable.containsKey(s.id))
-                                  const Padding(
+                                  Padding(
                                     padding: EdgeInsets.only(left: 6),
                                     child: Icon(
                                       Icons.warning_amber_rounded,
                                       size: 16,
-                                      color: AppColors.warning600,
+                                      color: cs.warning600,
                                     ),
                                   ),
                               ],
@@ -422,18 +443,18 @@ class _JobFormScreenState extends State<JobFormScreen> {
                     Container(
                       padding: const EdgeInsets.all(10),
                       decoration: BoxDecoration(
-                        color: AppColors.warning50,
+                        color: cs.warning50,
                         borderRadius: BorderRadius.circular(AppRadius.card),
                         border: Border.all(
-                          color: AppColors.warning500.withValues(alpha: 0.35),
+                          color: cs.warning500.withValues(alpha: 0.35),
                         ),
                       ),
                       child: Row(
                         children: [
-                          const Icon(
+                          Icon(
                             Icons.warning_amber_rounded,
                             size: 18,
-                            color: AppColors.warning600,
+                            color: cs.warning600,
                           ),
                           const SizedBox(width: 8),
                           Expanded(
@@ -441,10 +462,7 @@ class _JobFormScreenState extends State<JobFormScreen> {
                               'Bu personel bu gün müsait değil '
                               '(${_unavailableLabel(_selectedStaffId!)}). '
                               'Yine de atayabilirsiniz.',
-                              style: const TextStyle(
-                                fontSize: 12,
-                                color: AppColors.warning600,
-                              ),
+                              style: tx.caption.copyWith(color: cs.warning600),
                             ),
                           ),
                         ],
@@ -513,7 +531,7 @@ class _JobFormScreenState extends State<JobFormScreen> {
                     const SizedBox(height: 12),
                     Text(
                       _error!,
-                      style: const TextStyle(color: Colors.red, fontSize: 13),
+                      style: tx.bodySmall.copyWith(color: Colors.red),
                     ),
                   ],
                   const SizedBox(height: 20),

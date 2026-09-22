@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { SectionTitle } from "@/components/SectionTitle";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import {
@@ -190,18 +191,24 @@ function ExecutiveSummaryContent() {
         const kpis = summary?.sections[section.key] ?? [];
         return (
           <section key={section.key} className="space-y-3">
-            <h2 className="flex items-center gap-2 text-sm font-semibold uppercase tracking-wide text-text-secondary">
+            <SectionTitle size="sm" tone="eyebrow" className="flex items-center gap-2">
               <Icon size={16} strokeWidth={1.75} />
               {section.title}
-            </h2>
+            </SectionTitle>
             {loading && !summary ? (
               <SkeletonGrid />
             ) : (
-              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
-                {kpis.map((kpi) => (
-                  <KpiCard key={kpi.key} kpi={kpi} />
-                ))}
-              </div>
+              kpis.length === 0 ? (
+                <p className="rounded-2xl border border-dashed border-border bg-surface-subtle/60 px-4 py-6 text-center text-xs text-text-faint">
+                  Bu bölüm için henüz veri yok.
+                </p>
+              ) : (
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+                  {kpis.map((kpi) => (
+                    <KpiCard key={kpi.key} kpi={kpi} />
+                  ))}
+                </div>
+              )
             )}
           </section>
         );

@@ -1,7 +1,8 @@
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 
-import '../theme/app_colors.dart';
+import '../theme/app_palette.dart';
+import '../theme/app_text_styles.dart';
 
 /// Tek bir veri noktası — hem çizgi hem çubuk grafiklerde kullanılır.
 class ChartPoint {
@@ -17,10 +18,12 @@ class ChartPoint {
 /// sürüm basit yatay çubuklardı — artık gerçek, animasyonlu bir çizgi grafik.
 class RevenueTrendChart extends StatelessWidget {
   final List<ChartPoint> points;
+
   /// Bölüm V (5. tur): Y ekseni sabit üst sınırı (örn. 20 puanlık ölçek) ve
   /// tooltip biçimi — verilmezse ciro davranışı (₺, otomatik üst sınır) korunur.
   final double? fixedMaxY;
   final String Function(double value)? valueFormatter;
+
   /// Bölüm AA (6. tur): aynı eksende ikinci seri (örn. geçen yıl) — gri, kesikli.
   final List<ChartPoint>? secondaryPoints;
   const RevenueTrendChart({
@@ -33,10 +36,13 @@ class RevenueTrendChart extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final cs = context.colors;
+    final tx = context.text;
     if (points.isEmpty) return const SizedBox.shrink();
-    final maxY = [...points, ...?secondaryPoints]
-        .map((p) => p.value)
-        .fold<double>(0, (a, b) => a > b ? a : b);
+    final maxY = [
+      ...points,
+      ...?secondaryPoints,
+    ].map((p) => p.value).fold<double>(0, (a, b) => a > b ? a : b);
     final safeMaxY = fixedMaxY ?? (maxY <= 0 ? 1.0 : maxY * 1.25);
     final fmt = valueFormatter ?? (double v) => '₺${v.toStringAsFixed(0)}';
 
@@ -50,7 +56,7 @@ class RevenueTrendChart extends StatelessWidget {
             drawVerticalLine: false,
             horizontalInterval: safeMaxY / 4,
             getDrawingHorizontalLine: (_) =>
-                const FlLine(color: AppColors.borderDefault, strokeWidth: 1),
+                FlLine(color: cs.borderDefault, strokeWidth: 1),
           ),
           titlesData: FlTitlesData(
             leftTitles: const AxisTitles(
@@ -73,13 +79,7 @@ class RevenueTrendChart extends StatelessWidget {
                   }
                   return Padding(
                     padding: const EdgeInsets.only(top: 6),
-                    child: Text(
-                      points[i].label,
-                      style: const TextStyle(
-                        fontSize: 10,
-                        color: AppColors.textFaint,
-                      ),
-                    ),
+                    child: Text(points[i].label, style: tx.label),
                   );
                 },
               ),
@@ -88,16 +88,12 @@ class RevenueTrendChart extends StatelessWidget {
           borderData: FlBorderData(show: false),
           lineTouchData: LineTouchData(
             touchTooltipData: LineTouchTooltipData(
-              getTooltipColor: (_) => AppColors.textPrimary,
+              getTooltipColor: (_) => cs.textPrimary,
               getTooltipItems: (spots) => spots
                   .map(
                     (s) => LineTooltipItem(
                       fmt(s.y),
-                      const TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.w700,
-                        fontSize: 11,
-                      ),
+                      tx.label.copyWith(color: Colors.white),
                     ),
                   )
                   .toList(),
@@ -112,7 +108,7 @@ class RevenueTrendChart extends StatelessWidget {
                 ],
                 isCurved: true,
                 curveSmoothness: 0.25,
-                color: AppColors.neutral400,
+                color: cs.neutral400,
                 barWidth: 2,
                 dashArray: [6, 4],
                 dotData: const FlDotData(show: false),
@@ -124,7 +120,7 @@ class RevenueTrendChart extends StatelessWidget {
               ],
               isCurved: true,
               curveSmoothness: 0.25,
-              color: AppColors.primary600,
+              color: cs.primary600,
               barWidth: 3,
               dotData: const FlDotData(show: true),
               belowBarData: BarAreaData(
@@ -133,8 +129,8 @@ class RevenueTrendChart extends StatelessWidget {
                   begin: Alignment.topCenter,
                   end: Alignment.bottomCenter,
                   colors: [
-                    AppColors.primary500.withValues(alpha: 0.25),
-                    AppColors.primary500.withValues(alpha: 0.0),
+                    cs.primary500.withValues(alpha: 0.25),
+                    cs.primary500.withValues(alpha: 0.0),
                   ],
                 ),
               ),
@@ -148,13 +144,13 @@ class RevenueTrendChart extends StatelessWidget {
   }
 }
 
-const _pieColors = [
-  AppColors.primary600,
-  AppColors.info500,
-  AppColors.warning500,
-  AppColors.success500,
-  AppColors.danger500,
-  AppColors.primary100,
+List<Color> _pieColors(AppPalette cs) => [
+  cs.primary600,
+  cs.info500,
+  cs.warning500,
+  cs.success500,
+  cs.danger500,
+  cs.primary100,
 ];
 
 /// Kategori dağılımı pasta grafiği — "Hizmet Türü Dağılımı" gibi yüzdesel
@@ -165,6 +161,8 @@ class CategoryPieChart extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final cs = context.colors;
+    final tx = context.text;
     if (points.isEmpty) return const SizedBox.shrink();
 
     return Row(
@@ -181,7 +179,7 @@ class CategoryPieChart extends StatelessWidget {
                 for (var i = 0; i < points.length; i++)
                   PieChartSectionData(
                     value: points[i].value <= 0 ? 0.001 : points[i].value,
-                    color: _pieColors[i % _pieColors.length],
+                    color: _pieColors(cs)[i % 6],
                     radius: 22,
                     showTitle: false,
                   ),
@@ -205,7 +203,7 @@ class CategoryPieChart extends StatelessWidget {
                         width: 9,
                         height: 9,
                         decoration: BoxDecoration(
-                          color: _pieColors[i % _pieColors.length],
+                          color: _pieColors(cs)[i % 6],
                           shape: BoxShape.circle,
                         ),
                       ),
@@ -215,19 +213,14 @@ class CategoryPieChart extends StatelessWidget {
                           points[i].label,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
-                            fontSize: 11.5,
+                          style: tx.caption.copyWith(
                             fontWeight: FontWeight.w600,
                           ),
                         ),
                       ),
                       Text(
                         '%${points[i].value.toStringAsFixed(0)}',
-                        style: const TextStyle(
-                          fontSize: 11,
-                          color: AppColors.textFaint,
-                          fontWeight: FontWeight.w600,
-                        ),
+                        style: tx.label.copyWith(fontWeight: FontWeight.w600),
                       ),
                     ],
                   ),

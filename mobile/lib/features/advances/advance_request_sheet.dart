@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 
 import '../../core/api_client.dart';
 import '../../theme/app_colors.dart';
+import '../../theme/app_palette.dart';
+import '../../theme/app_text_styles.dart';
 import 'advances_api.dart';
 
 /// Stitch Personel → Ana Sayfa: "Avans Talep Et" modalı. backend zaten
@@ -70,14 +72,16 @@ class _AdvanceRequestSheetState extends State<_AdvanceRequestSheet> {
 
   @override
   Widget build(BuildContext context) {
+    final cs = context.colors;
+    final tx = context.text;
     return Padding(
       padding: EdgeInsets.only(
         bottom: MediaQuery.of(context).viewInsets.bottom,
       ),
       child: Container(
         padding: const EdgeInsets.fromLTRB(20, 20, 20, 28),
-        decoration: const BoxDecoration(
-          color: AppColors.surfaceCard,
+        decoration: BoxDecoration(
+          color: cs.surfaceCard,
           borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
         ),
         child: Column(
@@ -90,19 +94,19 @@ class _AdvanceRequestSheetState extends State<_AdvanceRequestSheet> {
                   width: 36,
                   height: 36,
                   decoration: BoxDecoration(
-                    color: AppColors.primary50,
+                    color: cs.primary50,
                     borderRadius: BorderRadius.circular(AppRadius.chip),
                   ),
-                  child: const Icon(
+                  child: Icon(
                     Icons.payments_rounded,
                     size: 18,
-                    color: AppColors.primary600,
+                    color: cs.accentSoft,
                   ),
                 ),
                 const SizedBox(width: 10),
-                const Text(
+                Text(
                   'Avans Talebi',
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800),
+                  style: tx.title.copyWith(fontWeight: FontWeight.w800),
                 ),
                 const Spacer(),
                 IconButton(
@@ -112,13 +116,9 @@ class _AdvanceRequestSheetState extends State<_AdvanceRequestSheet> {
               ],
             ),
             const SizedBox(height: 12),
-            const Text(
+            Text(
               'Talep Edilen Tutar (₺)',
-              style: TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.w600,
-                color: AppColors.textSecondary,
-              ),
+              style: tx.caption.copyWith(fontWeight: FontWeight.w600),
             ),
             const SizedBox(height: 6),
             TextField(
@@ -129,13 +129,9 @@ class _AdvanceRequestSheetState extends State<_AdvanceRequestSheet> {
               decoration: const InputDecoration(hintText: 'Örn: 1500'),
             ),
             const SizedBox(height: 14),
-            const Text(
+            Text(
               'Açıklama / Sebep',
-              style: TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.w600,
-                color: AppColors.textSecondary,
-              ),
+              style: tx.caption.copyWith(fontWeight: FontWeight.w600),
             ),
             const SizedBox(height: 6),
             TextField(
@@ -147,20 +143,16 @@ class _AdvanceRequestSheetState extends State<_AdvanceRequestSheet> {
             ),
             if (_error != null) ...[
               const SizedBox(height: 8),
-              Text(
-                _error!,
-                style: const TextStyle(
-                  color: AppColors.danger500,
-                  fontSize: 12.5,
-                ),
-              ),
+              Text(_error!, style: tx.bodySmall.copyWith(color: cs.danger500)),
             ],
             const SizedBox(height: 16),
             Row(
               children: [
                 Expanded(
                   child: OutlinedButton(
-                    onPressed: _saving ? null : () => Navigator.of(context).pop(),
+                    onPressed: _saving
+                        ? null
+                        : () => Navigator.of(context).pop(),
                     child: const Text('Vazgeç'),
                   ),
                 ),

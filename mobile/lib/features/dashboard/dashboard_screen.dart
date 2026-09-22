@@ -9,15 +9,16 @@ import '../../core/api_client.dart';
 import '../../models/job.dart';
 import '../../models/user.dart';
 import '../../theme/app_colors.dart';
+import '../../theme/app_palette.dart';
+import '../../theme/app_text_styles.dart';
 import '../../navigation/manager_nav.dart';
 import '../../widgets/state_views.dart';
 import '../../widgets/stat_card.dart';
 import '../advances/advance_request_sheet.dart';
 import '../jobs/job_detail_screen.dart';
 import '../jobs/jobs_api.dart';
-import '../search/search_screen.dart';
+import '../search/search_action.dart';
 import '../team/team_api.dart';
-import '../../widgets/announcement_banner.dart';
 import '../../widgets/clock_card.dart';
 import '../../widgets/badges.dart';
 import 'dashboard_api.dart';
@@ -51,8 +52,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
   int? _staffTodaysJobs;
   List<Job> _staffTodaysJobsList = [];
   TeamSummary? _team;
+
   /// Bölüm M (4. tur): Şef "Bugün Ekibim" brifingi (null → blok gizli).
   TeamDailyBriefing? _briefing;
+
   /// Bölüm Q (4. tur): müşteri "Sadık Müşteri" rozeti (backend hesaplar).
   bool _isLoyalCustomer = false;
 
@@ -64,8 +67,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   bool get _isTeamLead =>
       context.read<AuthProvider>().user?.role == AppRole.teamLead;
 
-  bool get _isStaff =>
-      context.read<AuthProvider>().user?.role == AppRole.staff;
+  bool get _isStaff => context.read<AuthProvider>().user?.role == AppRole.staff;
 
   @override
   void initState() {
@@ -112,7 +114,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
       } else {
         _staffTodaysJobs = await _api.getTodaysJobsCountForCurrentUser();
         try {
-          final badges = await ApiClient.instance.get<Map<String, dynamic>>('/customers/me/badges');
+          final badges = await ApiClient.instance.get<Map<String, dynamic>>(
+            '/customers/me/badges',
+          );
           _isLoyalCustomer = badges['isLoyal'] as bool? ?? false;
         } on ApiException {
           _isLoyalCustomer = false;
@@ -127,6 +131,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final cs = context.colors;
+    final tx = context.text;
     final user = context.watch<AuthProvider>().user;
 
     return Scaffold(
@@ -135,29 +141,16 @@ class _DashboardScreenState extends State<DashboardScreen> {
         title: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
-              'Nilüfer İlaçlama',
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
-            ),
+            Text('Nilüfer İlaçlama', style: tx.title),
             Text(
               'Ana Sayfa · ${user != null ? roleLabelTr(user.role) : ''}',
-              style: const TextStyle(
-                fontSize: 12,
-                color: AppColors.textSecondary,
-                fontWeight: FontWeight.w400,
-              ),
+              style: tx.caption.copyWith(fontWeight: FontWeight.w400),
             ),
           ],
         ),
         actions: [
           // Bölüm I (3. tur): global arama — tüm roller (sunucu kapsam uygular).
-          IconButton(
-            icon: const Icon(Icons.search_rounded),
-            tooltip: 'Ara',
-            onPressed: () => Navigator.of(context).push(
-              MaterialPageRoute(builder: (_) => const SearchScreen()),
-            ),
-          ),
+          const SearchAction(),
           IconButton(
             icon: const Icon(Icons.logout_rounded),
             tooltip: 'Çıkış yap',
@@ -167,7 +160,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
       ),
       body: RefreshIndicator(
         onRefresh: _load,
-        color: AppColors.primary600,
+        color: cs.accentSoft,
         child: _buildBody(user),
       ),
     );
@@ -194,12 +187,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   Widget _buildManagementBody() {
+    final cs = context.colors;
+    final tx = context.text;
     final s = _summary!;
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
-        // Bölüm AK (8. tur): sistem geneli duyuru şeridi
-        const AnnouncementBanner(),
         StatCardGrid(
           children: [
             AppStatCard(
@@ -212,51 +205,51 @@ class _DashboardScreenState extends State<DashboardScreen> {
               label: 'Bekleyen Onay',
               value: '${_pending?.total ?? 0}',
               icon: Icons.fact_check_rounded,
-              iconColor: AppColors.danger500,
-              iconBackground: AppColors.danger50,
+              iconColor: cs.danger500,
+              iconBackground: cs.danger50,
               caption: _pending == null
                   ? null
                   : '${_pending!.quotes} teklif, ${_pending!.advances} avans, ${_pending!.expiringContracts} sözleşme',
               badge: (_pending?.total ?? 0) > 0 ? 'DİKKAT' : null,
-              badgeColor: AppColors.danger500,
+              badgeColor: cs.danger500,
             ),
             AppStatCard(
               label: 'Bu Ay Tahsilat',
               value: _currency.format(s.thisMonthPaymentsTotal),
               icon: Icons.payments_rounded,
-              iconColor: AppColors.info600,
-              iconBackground: AppColors.info50,
+              iconColor: cs.info600,
+              iconBackground: cs.info50,
             ),
             AppStatCard(
               label: 'Tamamlanan İş (Ay)',
               value: '${s.completedJobsThisMonth}',
               icon: Icons.check_circle_rounded,
-              iconColor: AppColors.success600,
-              iconBackground: AppColors.success50,
+              iconColor: cs.success600,
+              iconBackground: cs.success50,
             ),
             AppStatCard(
               label: 'Sahadaki Personel',
               value: '${s.staffOnJobCount}/${s.activeStaffCount}',
               icon: Icons.groups_rounded,
-              iconColor: AppColors.primary700,
+              iconColor: cs.primary700,
               caption: 'İşteki / toplam personel',
             ),
             AppStatCard(
               label: 'Yeni Teklif Talebi',
               value: '${s.newQuoteRequestsCount}',
               icon: Icons.request_quote_rounded,
-              iconColor: AppColors.warning600,
-              iconBackground: AppColors.warning50,
+              iconColor: cs.warning600,
+              iconBackground: cs.warning50,
             ),
             AppStatCard(
               label: 'Rapor Onayı',
               value: '${s.pendingReportApprovals}',
               icon: Icons.rate_review_rounded,
-              iconColor: AppColors.warning600,
-              iconBackground: AppColors.warning50,
+              iconColor: cs.warning600,
+              iconBackground: cs.warning50,
               caption: 'Onay bekleyen saha raporu',
               badge: s.pendingReportApprovals > 0 ? 'BEKLİYOR' : null,
-              badgeColor: AppColors.warning600,
+              badgeColor: cs.warning600,
             ),
             AppStatCard(
               // Formül: tamamlanan / (tamamlanan + iptal). Bu ay hiç
@@ -266,29 +259,25 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   ? '—'
                   : '%${s.completionRateThisMonth!.toStringAsFixed(0)}',
               icon: Icons.insights_rounded,
-              iconColor: AppColors.success600,
-              iconBackground: AppColors.success50,
+              iconColor: cs.success600,
+              iconBackground: cs.success50,
               caption: 'Bu ay tamamlanan / sonuçlanan',
             ),
           ],
         ),
         if (s.todaysServiceBreakdown.isNotEmpty) ...[
           const SizedBox(height: 24),
-          const Text(
+          Text(
             'Bugünün Hizmet Türü Kırılımı',
-            style: TextStyle(
-              fontSize: 15,
-              fontWeight: FontWeight.w700,
-              color: AppColors.textPrimary,
-            ),
+            style: tx.subtitle.copyWith(fontWeight: FontWeight.w700),
           ),
           const SizedBox(height: 10),
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             decoration: BoxDecoration(
-              color: AppColors.surfaceCard,
+              color: cs.surfaceCard,
               borderRadius: BorderRadius.circular(AppRadius.sheet),
-              border: Border.all(color: AppColors.borderDefault),
+              border: Border.all(color: cs.borderDefault),
             ),
             child: Column(
               children: [
@@ -302,7 +291,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                             entry.serviceType,
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(fontSize: 13.5),
+                            style: tx.body,
                           ),
                         ),
                         const SizedBox(width: 12),
@@ -315,18 +304,15 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                   ? entry.count / s.todaysJobsCount
                                   : 0,
                               minHeight: 6,
-                              backgroundColor: AppColors.surfaceMuted,
-                              valueColor: const AlwaysStoppedAnimation(
-                                AppColors.primary500,
-                              ),
+                              backgroundColor: cs.surfaceMuted,
+                              valueColor: AlwaysStoppedAnimation(cs.primary500),
                             ),
                           ),
                         ),
                         const SizedBox(width: 10),
                         Text(
                           '${entry.count}',
-                          style: const TextStyle(
-                            fontSize: 13,
+                          style: tx.bodySmall.copyWith(
                             fontWeight: FontWeight.w700,
                           ),
                         ),
@@ -338,13 +324,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
           ),
         ],
         const SizedBox(height: 24),
-        const Text(
+        Text(
           'Son Hareketler',
-          style: TextStyle(
-            fontSize: 15,
-            fontWeight: FontWeight.w700,
-            color: AppColors.textPrimary,
-          ),
+          style: tx.subtitle.copyWith(fontWeight: FontWeight.w700),
         ),
         const SizedBox(height: 10),
         if (_activity.isEmpty)
@@ -355,9 +337,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
         else
           Container(
             decoration: BoxDecoration(
-              color: AppColors.surfaceCard,
+              color: cs.surfaceCard,
               borderRadius: BorderRadius.circular(AppRadius.sheet),
-              border: Border.all(color: AppColors.borderDefault),
+              border: Border.all(color: cs.borderDefault),
             ),
             child: Column(
               children: List.generate(_activity.length, (i) {
@@ -366,18 +348,15 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   children: [
                     ListTile(
                       dense: true,
-                      leading: const Icon(
+                      leading: Icon(
                         Icons.circle,
                         size: 8,
-                        color: AppColors.primary500,
+                        color: cs.primary500,
                       ),
-                      title: Text(
-                        e.text,
-                        style: const TextStyle(fontSize: 13.5),
-                      ),
+                      title: Text(e.text, style: tx.body),
                       subtitle: Text(
                         _timeFormat.format(e.timestamp),
-                        style: const TextStyle(fontSize: 11.5),
+                        style: tx.caption,
                       ),
                     ),
                     if (i != _activity.length - 1) const Divider(height: 1),
@@ -392,12 +371,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   /// Şef ana sayfası — Stitch "sef/ana_sayfa": bugünkü ekip işleri, tamamlama
   /// oranı, sahadaki teknisyen sayısı, durum dağılımı ve ekip iş yükü.
-  static const _staffStatusColors = <String, Color>{
-    'AVAILABLE': AppColors.success500,
-    'ON_JOB': AppColors.info500,
-    'ON_BREAK': AppColors.warning500,
-    'ON_LEAVE': AppColors.danger500,
-    'OFFLINE': AppColors.neutral500,
+  static Map<String, Color> _staffStatusColors(AppPalette cs) => {
+    'AVAILABLE': cs.success500,
+    'ON_JOB': cs.info500,
+    'ON_BREAK': cs.warning500,
+    'ON_LEAVE': cs.danger500,
+    'OFFLINE': cs.neutral500,
   };
   static const _staffStatusLabels = <String, String>{
     'AVAILABLE': 'Müsait',
@@ -410,38 +389,36 @@ class _DashboardScreenState extends State<DashboardScreen> {
   /// Bölüm M (4. tur): "Bugün Ekibim" — her üye bir satır: durum noktası,
   /// bugünkü iş sayısı, izinli/müsait-değil rozeti.
   Widget _buildTeamBriefing(TeamDailyBriefing b) {
+    final cs = context.colors;
+    final tx = context.text;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
+        Text(
           'Bugün Ekibim',
-          style: TextStyle(
-            fontSize: 15,
-            fontWeight: FontWeight.w700,
-            color: AppColors.textPrimary,
-          ),
+          style: tx.subtitle.copyWith(fontWeight: FontWeight.w700),
         ),
         const SizedBox(height: 4),
         Text(
           '${b.availableNowCount} müsait · ${b.onLeaveCount} izinli · '
           '${b.unavailableCount} kısmen müsait değil · '
           '${b.completedTodayCount}/${b.todaysJobsCount} iş tamamlandı',
-          style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
+          style: tx.caption,
         ),
         const SizedBox(height: 10),
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
           decoration: BoxDecoration(
-            color: AppColors.surfaceCard,
+            color: cs.surfaceCard,
             borderRadius: BorderRadius.circular(AppRadius.sheet),
-            border: Border.all(color: AppColors.borderDefault),
+            border: Border.all(color: cs.borderDefault),
           ),
           child: b.members.isEmpty
-              ? const Padding(
+              ? Padding(
                   padding: EdgeInsets.symmetric(vertical: 12),
                   child: Text(
                     'Ekibinizde personel yok',
-                    style: TextStyle(color: AppColors.textFaint),
+                    style: tx.body.copyWith(color: cs.textFaint),
                   ),
                 )
               : Column(
@@ -455,8 +432,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
                               width: 10,
                               height: 10,
                               decoration: BoxDecoration(
-                                color: _staffStatusColors[m.status] ??
-                                    AppColors.neutral500,
+                                color:
+                                    _staffStatusColors(
+                                      context.colors,
+                                    )[m.status] ??
+                                    cs.neutral500,
                                 shape: BoxShape.circle,
                               ),
                             ),
@@ -466,19 +446,17 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Text(
-                                    m.isSelf ? '${m.fullName} (siz)' : m.fullName,
-                                    style: const TextStyle(
-                                      fontSize: 13.5,
+                                    m.isSelf
+                                        ? '${m.fullName} (siz)'
+                                        : m.fullName,
+                                    style: tx.body.copyWith(
                                       fontWeight: FontWeight.w600,
                                     ),
                                     overflow: TextOverflow.ellipsis,
                                   ),
                                   Text(
                                     '${_staffStatusLabels[m.status] ?? m.status} · ${m.position}',
-                                    style: const TextStyle(
-                                      fontSize: 11.5,
-                                      color: AppColors.textSecondary,
-                                    ),
+                                    style: tx.caption,
                                   ),
                                   if (m.badgeLabel != null)
                                     Padding(
@@ -490,19 +468,18 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                         ),
                                         decoration: BoxDecoration(
                                           color: m.onLeave
-                                              ? AppColors.danger50
-                                              : AppColors.warning50,
-                                          borderRadius:
-                                              BorderRadius.circular(AppRadius.pill),
+                                              ? cs.danger50
+                                              : cs.warning50,
+                                          borderRadius: BorderRadius.circular(
+                                            AppRadius.pill,
+                                          ),
                                         ),
                                         child: Text(
                                           m.badgeLabel!,
-                                          style: TextStyle(
-                                            fontSize: 10.5,
-                                            fontWeight: FontWeight.w700,
+                                          style: tx.label.copyWith(
                                             color: m.onLeave
-                                                ? AppColors.danger500
-                                                : AppColors.warning600,
+                                                ? cs.danger500
+                                                : cs.warning600,
                                           ),
                                         ),
                                       ),
@@ -513,8 +490,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                             const SizedBox(width: 8),
                             Text(
                               '${m.todaysJobsCount} iş',
-                              style: const TextStyle(
-                                fontSize: 12.5,
+                              style: tx.bodySmall.copyWith(
                                 fontWeight: FontWeight.w700,
                               ),
                             ),
@@ -529,6 +505,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   Widget _buildTeamLeadBody(AppUser? user) {
+    final cs = context.colors;
+    final tx = context.text;
     final t = _team;
     if (t == null) {
       return const EmptyStateView(
@@ -540,17 +518,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
-        // Bölüm AK (8. tur): sistem geneli duyuru şeridi
-        const AnnouncementBanner(),
         // Bölüm AR (9. tur): şefin kendi günlük puantajı
         const ClockCard(),
         Text(
           'Merhaba, ${user?.fullName.split(' ').first ?? ''}. '
           'Ekibinin bugünkü işleri burada.',
-          style: const TextStyle(
-            fontSize: 14,
-            color: AppColors.textSecondary,
-          ),
+          style: tx.body.copyWith(color: cs.textSecondary),
         ),
         const SizedBox(height: 14),
         StatCardGrid(
@@ -567,24 +540,24 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   ? '${t.completedTodayCount}/${t.todaysJobsCount}'
                   : '%${t.completionRateToday!.toStringAsFixed(0)}',
               icon: Icons.check_circle_rounded,
-              iconColor: AppColors.success600,
-              iconBackground: AppColors.success50,
+              iconColor: cs.success600,
+              iconBackground: cs.success50,
               caption: '${t.completedTodayCount} / ${t.todaysJobsCount}',
             ),
             AppStatCard(
               label: 'Sahada Aktif',
               value: '${t.activeTechnicianCount} Teknisyen',
               icon: Icons.badge_rounded,
-              iconColor: AppColors.info600,
-              iconBackground: AppColors.info50,
+              iconColor: cs.info600,
+              iconBackground: cs.info50,
               caption: '${t.teamSize} kişilik ekip',
             ),
             AppStatCard(
               label: 'Devam Eden',
               value: '${t.todaysJobsByStatus['IN_PROGRESS'] ?? 0}',
               icon: Icons.timelapse_rounded,
-              iconColor: AppColors.warning600,
-              iconBackground: AppColors.warning50,
+              iconColor: cs.warning600,
+              iconBackground: cs.warning50,
               caption: 'Şu an sürüyor',
             ),
           ],
@@ -594,21 +567,17 @@ class _DashboardScreenState extends State<DashboardScreen> {
           _buildTeamBriefing(_briefing!),
         ],
         const SizedBox(height: 20),
-        const Text(
+        Text(
           'Bugünkü Durum Dağılımı',
-          style: TextStyle(
-            fontSize: 15,
-            fontWeight: FontWeight.w700,
-            color: AppColors.textPrimary,
-          ),
+          style: tx.subtitle.copyWith(fontWeight: FontWeight.w700),
         ),
         const SizedBox(height: 10),
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
           decoration: BoxDecoration(
-            color: AppColors.surfaceCard,
+            color: cs.surfaceCard,
             borderRadius: BorderRadius.circular(AppRadius.sheet),
-            border: Border.all(color: AppColors.borderDefault),
+            border: Border.all(color: cs.borderDefault),
           ),
           child: Column(
             children: [
@@ -623,18 +592,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   padding: const EdgeInsets.symmetric(vertical: 7),
                   child: Row(
                     children: [
-                      Expanded(
-                        child: Text(
-                          entry.$2,
-                          style: const TextStyle(fontSize: 13.5),
-                        ),
-                      ),
+                      Expanded(child: Text(entry.$2, style: tx.body)),
                       Text(
                         '${t.todaysJobsByStatus[entry.$1] ?? 0}',
-                        style: const TextStyle(
-                          fontSize: 13.5,
-                          fontWeight: FontWeight.w700,
-                        ),
+                        style: tx.body.copyWith(fontWeight: FontWeight.w700),
                       ),
                     ],
                   ),
@@ -643,19 +604,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
           ),
         ),
         const SizedBox(height: 20),
-        const Text(
+        Text(
           'Ekip İş Yükü',
-          style: TextStyle(
-            fontSize: 15,
-            fontWeight: FontWeight.w700,
-            color: AppColors.textPrimary,
-          ),
+          style: tx.subtitle.copyWith(fontWeight: FontWeight.w700),
         ),
         const SizedBox(height: 4),
-        const Text(
-          'Bugün kişi başına düşen iş',
-          style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
-        ),
+        Text('Bugün kişi başına düşen iş', style: tx.caption),
         const SizedBox(height: 10),
         if (t.workload.isEmpty)
           const EmptyStateView(
@@ -670,9 +624,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   margin: const EdgeInsets.only(bottom: 8),
                   padding: const EdgeInsets.all(14),
                   decoration: BoxDecoration(
-                    color: AppColors.surfaceCard,
+                    color: cs.surfaceCard,
                     borderRadius: BorderRadius.circular(AppRadius.card),
-                    border: Border.all(color: AppColors.borderDefault),
+                    border: Border.all(color: cs.borderDefault),
                   ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -681,7 +635,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                         children: [
                           CircleAvatar(
                             radius: 16,
-                            backgroundColor: AppColors.primary100,
+                            backgroundColor: cs.primary100,
                             child: Text(
                               w.fullName
                                   .trim()
@@ -690,10 +644,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                   .take(2)
                                   .join()
                                   .toUpperCase(),
-                              style: const TextStyle(
-                                fontSize: 12,
+                              style: tx.caption.copyWith(
                                 fontWeight: FontWeight.w700,
-                                color: AppColors.primary700,
+                                color: cs.accent,
                               ),
                             ),
                           ),
@@ -704,8 +657,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                               children: [
                                 Text(
                                   w.fullName,
-                                  style: const TextStyle(
-                                    fontSize: 13.5,
+                                  style: tx.body.copyWith(
                                     fontWeight: FontWeight.w700,
                                   ),
                                 ),
@@ -714,10 +666,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                     w.position,
                                     if (w.vehiclePlate != null) w.vehiclePlate!,
                                   ].join(' · '),
-                                  style: const TextStyle(
-                                    fontSize: 11.5,
-                                    color: AppColors.textSecondary,
-                                  ),
+                                  style: tx.caption,
                                 ),
                               ],
                             ),
@@ -726,8 +675,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                             w.dailyJobCapacity != null
                                 ? '${w.todaysJobsCount}/${w.dailyJobCapacity}'
                                 : '${w.todaysJobsCount} iş',
-                            style: const TextStyle(
-                              fontSize: 13,
+                            style: tx.bodySmall.copyWith(
                               fontWeight: FontWeight.w800,
                             ),
                           ),
@@ -743,13 +691,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
                             value: (w.todaysJobsCount / w.dailyJobCapacity!)
                                 .clamp(0.0, 1.0),
                             minHeight: 6,
-                            backgroundColor: AppColors.surfaceMuted,
+                            backgroundColor: cs.surfaceMuted,
                             valueColor: AlwaysStoppedAnimation(
                               w.todaysJobsCount > w.dailyJobCapacity!
-                                  ? AppColors.danger500
+                                  ? cs.danger500
                                   : w.todaysJobsCount == w.dailyJobCapacity!
-                                  ? AppColors.warning500
-                                  : AppColors.primary500,
+                                  ? cs.warning500
+                                  : cs.primary500,
                             ),
                           ),
                         ),
@@ -768,12 +716,16 @@ class _DashboardScreenState extends State<DashboardScreen> {
   /// backend'in zaten STAFF'a kendi işleriyle sınırlayarak döndürdüğü
   /// `/jobs?date=` sonucundan (bkz. _load) istemcide özetlenir.
   Widget _buildStaffBody(AppUser? user) {
+    final cs = context.colors;
+    final tx = context.text;
     final jobs = _staffTodaysJobsList;
     final total = jobs.length;
     final completed = jobs.where((j) => j.status == JobStatus.completed).length;
     final pending = jobs.where((j) => j.status == JobStatus.pending).length;
     final scheduled = jobs.where((j) => j.status == JobStatus.scheduled).length;
-    final inProgress = jobs.where((j) => j.status == JobStatus.inProgress).length;
+    final inProgress = jobs
+        .where((j) => j.status == JobStatus.inProgress)
+        .length;
     final cancelled = jobs.where((j) => j.status == JobStatus.cancelled).length;
     final active = pending + scheduled + inProgress;
     final completionPct = total > 0 ? (completed / total * 100).round() : 0;
@@ -782,8 +734,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
-        // Bölüm AK (8. tur): sistem geneli duyuru şeridi
-        const AnnouncementBanner(),
         Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -793,17 +743,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 children: [
                   Text(
                     'Merhaba, $firstName',
-                    style: const TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.w800,
-                      color: AppColors.textPrimary,
-                    ),
+                    style: tx.display.copyWith(fontWeight: FontWeight.w800),
                   ),
                   const SizedBox(height: 2),
-                  const Text(
-                    'Bugünkü işlerin burada.',
-                    style: TextStyle(fontSize: 13, color: AppColors.textSecondary),
-                  ),
+                  Text('Bugünkü işlerin burada.', style: tx.bodySmall),
                 ],
               ),
             ),
@@ -813,9 +756,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
               icon: const Icon(Icons.payments_rounded, size: 16),
               label: const Text('Avans Talep Et'),
               style: OutlinedButton.styleFrom(
-                foregroundColor: AppColors.primary700,
-                side: const BorderSide(color: AppColors.borderDefault),
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                foregroundColor: cs.primary700,
+                side: BorderSide(color: cs.borderDefault),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 8,
+                ),
               ),
             ),
           ],
@@ -836,16 +782,16 @@ class _DashboardScreenState extends State<DashboardScreen> {
               label: 'Tamamlanan',
               value: '$completed',
               icon: Icons.check_circle_rounded,
-              iconColor: AppColors.success600,
-              iconBackground: AppColors.success50,
+              iconColor: cs.success600,
+              iconBackground: cs.success50,
               badge: total > 0 ? '%$completionPct' : null,
-              badgeColor: AppColors.success600,
+              badgeColor: cs.success600,
             ),
             AppStatCard(
               label: 'Bekleyen',
               value: '$active',
               icon: Icons.schedule_rounded,
-              iconColor: AppColors.primary700,
+              iconColor: cs.primary700,
               caption: 'Sırada bekliyor',
             ),
           ],
@@ -854,9 +800,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
         Container(
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: AppColors.surfaceCard,
+            color: cs.surfaceCard,
             borderRadius: BorderRadius.circular(AppRadius.card),
-            border: Border.all(color: AppColors.borderDefault),
+            border: Border.all(color: cs.borderDefault),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -864,27 +810,39 @@ class _DashboardScreenState extends State<DashboardScreen> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  const Text(
+                  Text(
                     'Vardiya Durumu',
-                    style: TextStyle(fontWeight: FontWeight.w800, fontSize: 14),
+                    style: tx.subtitle.copyWith(fontWeight: FontWeight.w800),
                   ),
                   Text(
                     '$completed / $total Tamamlandı',
-                    style: const TextStyle(
-                      fontSize: 12,
-                      color: AppColors.textSecondary,
-                      fontWeight: FontWeight.w600,
-                    ),
+                    style: tx.caption.copyWith(fontWeight: FontWeight.w600),
                   ),
                 ],
               ),
               const SizedBox(height: 12),
               Row(
                 children: [
-                  _ShiftStatusDot(color: AppColors.warning500, label: 'Bekliyor', count: pending),
-                  _ShiftStatusDot(color: AppColors.primary300, label: 'Planlandı', count: scheduled),
-                  _ShiftStatusDot(color: AppColors.primary600, label: 'Tamam', count: completed),
-                  _ShiftStatusDot(color: AppColors.danger500, label: 'İptal', count: cancelled),
+                  _ShiftStatusDot(
+                    color: cs.warning500,
+                    label: 'Bekliyor',
+                    count: pending,
+                  ),
+                  _ShiftStatusDot(
+                    color: cs.primary300,
+                    label: 'Planlandı',
+                    count: scheduled,
+                  ),
+                  _ShiftStatusDot(
+                    color: cs.primary600,
+                    label: 'Tamam',
+                    count: completed,
+                  ),
+                  _ShiftStatusDot(
+                    color: cs.danger500,
+                    label: 'İptal',
+                    count: cancelled,
+                  ),
                 ],
               ),
               const SizedBox(height: 10),
@@ -908,10 +866,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   child: LinearProgressIndicator(
                     value: completed / total,
                     minHeight: 8,
-                    backgroundColor: AppColors.surfaceMuted,
-                    valueColor: const AlwaysStoppedAnimation(
-                      AppColors.primary600,
-                    ),
+                    backgroundColor: cs.surfaceMuted,
+                    valueColor: AlwaysStoppedAnimation(cs.primary600),
                   ),
                 ),
             ],
@@ -921,22 +877,21 @@ class _DashboardScreenState extends State<DashboardScreen> {
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            const Text(
+            Text(
               'Bugünkü Görevlerin',
-              style: TextStyle(fontWeight: FontWeight.w800, fontSize: 16),
+              style: tx.title.copyWith(fontWeight: FontWeight.w800),
             ),
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
               decoration: BoxDecoration(
-                color: AppColors.success50,
+                color: cs.success50,
                 borderRadius: BorderRadius.circular(AppRadius.pill),
               ),
               child: Text(
                 '$active Aktif',
-                style: const TextStyle(
-                  fontSize: 12,
+                style: tx.caption.copyWith(
                   fontWeight: FontWeight.w800,
-                  color: AppColors.success600,
+                  color: cs.success600,
                 ),
               ),
             ),
@@ -955,15 +910,15 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   Widget _buildFieldBody(AppUser? user) {
+    final cs = context.colors;
+    final tx = context.text;
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
-        // Bölüm AK (8. tur): sistem geneli duyuru şeridi
-        const AnnouncementBanner(),
         Container(
           padding: const EdgeInsets.all(20),
           decoration: BoxDecoration(
-            color: AppColors.primary700,
+            color: cs.primary700,
             borderRadius: BorderRadius.circular(20),
           ),
           child: Column(
@@ -971,11 +926,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
             children: [
               Text(
                 'Merhaba, ${user?.fullName ?? ''}',
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 18,
-                  fontWeight: FontWeight.w700,
-                ),
+                style: tx.title.copyWith(color: Colors.white),
               ),
               if (_isLoyalCustomer) ...[
                 const SizedBox(height: 6),
@@ -984,7 +935,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
               const SizedBox(height: 4),
               Text(
                 DateFormat('d MMMM yyyy, EEEE', 'tr_TR').format(DateTime.now()),
-                style: const TextStyle(color: Colors.white70, fontSize: 13),
+                style: tx.bodySmall.copyWith(color: Colors.white70),
               ),
             ],
           ),
@@ -1013,6 +964,8 @@ class _ShiftStatusDot extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final cs = context.colors;
+    final tx = context.text;
     return Expanded(
       child: Row(
         children: [
@@ -1027,19 +980,12 @@ class _ShiftStatusDot extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisSize: MainAxisSize.min,
               children: [
-                Text(
-                  label,
-                  style: const TextStyle(
-                    fontSize: 10.5,
-                    color: AppColors.textSecondary,
-                  ),
-                ),
+                Text(label, style: tx.label.copyWith(color: cs.textSecondary)),
                 Text(
                   '$count',
-                  style: const TextStyle(
-                    fontSize: 13,
+                  style: tx.bodySmall.copyWith(
                     fontWeight: FontWeight.w800,
-                    color: AppColors.textPrimary,
+                    color: cs.textPrimary,
                   ),
                 ),
               ],
@@ -1084,21 +1030,24 @@ class _StaffJobCardState extends State<_StaffJobCard> {
   }
 
   Color _statusColor(JobStatus s) {
+    final cs = context.colors;
     switch (s) {
       case JobStatus.completed:
-        return AppColors.success600;
+        return cs.success600;
       case JobStatus.inProgress:
-        return AppColors.primary600;
+        return cs.primary600;
       case JobStatus.cancelled:
-        return AppColors.danger500;
+        return cs.danger500;
       case JobStatus.pending:
       case JobStatus.scheduled:
-        return AppColors.textSecondary;
+        return cs.textSecondary;
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    final cs = context.colors;
+    final tx = context.text;
     final job = widget.job;
     final timeLabel = job.scheduledAt != null
         ? (job.scheduledEndAt != null
@@ -1114,12 +1063,12 @@ class _StaffJobCardState extends State<_StaffJobCard> {
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: AppColors.surfaceCard,
+        color: cs.surfaceCard,
         borderRadius: BorderRadius.circular(AppRadius.card),
         border: Border.all(
           color: job.status == JobStatus.inProgress
-              ? AppColors.primary500
-              : AppColors.borderDefault,
+              ? cs.primary500
+              : cs.borderDefault,
         ),
       ),
       child: Column(
@@ -1130,11 +1079,7 @@ class _StaffJobCardState extends State<_StaffJobCard> {
             children: [
               Text(
                 timeLabel,
-                style: const TextStyle(
-                  fontSize: 12.5,
-                  fontWeight: FontWeight.w700,
-                  color: AppColors.textSecondary,
-                ),
+                style: tx.bodySmall.copyWith(fontWeight: FontWeight.w700),
               ),
               Container(
                 padding: const EdgeInsets.symmetric(
@@ -1147,8 +1092,7 @@ class _StaffJobCardState extends State<_StaffJobCard> {
                 ),
                 child: Text(
                   jobStatusLabelTr(job.status),
-                  style: TextStyle(
-                    fontSize: 11.5,
+                  style: tx.caption.copyWith(
                     fontWeight: FontWeight.w800,
                     color: _statusColor(job.status),
                   ),
@@ -1159,14 +1103,13 @@ class _StaffJobCardState extends State<_StaffJobCard> {
           const SizedBox(height: 8),
           Text(
             job.customerName ?? '—',
-            style: const TextStyle(fontSize: 15.5, fontWeight: FontWeight.w800),
+            style: tx.title.copyWith(fontWeight: FontWeight.w800),
           ),
           const SizedBox(height: 2),
           Text(
             job.serviceType,
-            style: const TextStyle(
-              fontSize: 12.5,
-              color: AppColors.primary700,
+            style: tx.bodySmall.copyWith(
+              color: cs.accent,
               fontWeight: FontWeight.w600,
             ),
           ),
@@ -1174,21 +1117,14 @@ class _StaffJobCardState extends State<_StaffJobCard> {
             const SizedBox(height: 6),
             Row(
               children: [
-                const Icon(
-                  Icons.location_on_outlined,
-                  size: 15,
-                  color: AppColors.textFaint,
-                ),
+                Icon(Icons.location_on_outlined, size: 15, color: cs.textFaint),
                 const SizedBox(width: 4),
                 Expanded(
                   child: Text(
                     locationLabel,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                      fontSize: 12,
-                      color: AppColors.textSecondary,
-                    ),
+                    style: tx.caption,
                   ),
                 ),
               ],
@@ -1225,8 +1161,7 @@ class _StaffJobCardState extends State<_StaffJobCard> {
                         : job.status == JobStatus.inProgress
                         ? () => Navigator.of(context).push(
                             MaterialPageRoute(
-                              builder: (_) =>
-                                  JobDetailScreen(jobId: job.id),
+                              builder: (_) => JobDetailScreen(jobId: job.id),
                             ),
                           )
                         : _startJob,
@@ -1268,6 +1203,7 @@ class _RoundIconButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final cs = context.colors;
     return InkWell(
       borderRadius: BorderRadius.circular(12),
       onTap: onTap,
@@ -1275,10 +1211,10 @@ class _RoundIconButton extends StatelessWidget {
         width: 44,
         height: 44,
         decoration: BoxDecoration(
-          color: AppColors.surfaceMuted,
+          color: cs.surfaceMuted,
           borderRadius: BorderRadius.circular(12),
         ),
-        child: Icon(icon, size: 20, color: AppColors.primary700),
+        child: Icon(icon, size: 20, color: cs.accent),
       ),
     );
   }

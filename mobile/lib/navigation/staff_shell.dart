@@ -1,16 +1,15 @@
 import 'package:flutter/material.dart';
 
-import '../features/calendar/calendar_screen.dart';
 import '../features/dashboard/dashboard_screen.dart';
-import '../features/evaluations/evaluations_screen.dart';
 import '../features/jobs/jobs_list_screen.dart';
-import '../features/leave_requests/leave_requests_screen.dart';
-import '../features/payslip/payslip_screen.dart';
 import '../features/messages/messages_list_screen.dart';
 import '../features/notifications/notifications_screen.dart';
-import '../theme/app_colors.dart';
+import '../models/user.dart';
+import '../theme/app_palette.dart';
+import '../theme/app_text_styles.dart';
 import 'app_drawer.dart';
 import 'manager_nav.dart';
+import 'nav_items.dart';
 
 /// STAFF (Personel) rolüne özel kabuk — Stitch "personel" paketindeki 4
 /// sekmeli alt navigasyon + kayan çekmece düzeni (bkz. TeamLeadShell/
@@ -42,11 +41,7 @@ class _StaffShellState extends State<StaffShell> {
   int _index = 0;
 
   static const _tabs = <({String label, IconData icon, Widget screen})>[
-    (
-      label: 'Ana Sayfa',
-      icon: Icons.home_rounded,
-      screen: DashboardScreen(),
-    ),
+    (label: 'Ana Sayfa', icon: Icons.home_rounded, screen: DashboardScreen()),
     (label: 'İşler', icon: Icons.build_rounded, screen: JobsListScreen()),
     (
       label: 'Bildirimler',
@@ -60,38 +55,18 @@ class _StaffShellState extends State<StaffShell> {
     ),
   ];
 
-  static const _groups = <AppDrawerGroup>[
-    AppDrawerGroup([
-      AppDrawerEntry('Takvim', Icons.calendar_month_outlined, _buildCalendar),
-      // Formal Değerlendirme sistemi — kendi aldığı değerlendirmeleri salt
-      // okunur görür, değerlendirenin kimliği backend tarafından zaten gizlenir.
-      AppDrawerEntry(
-        'Değerlendirmelerim',
-        Icons.checklist_rtl_outlined,
-        _buildEvaluations,
-      ),
-      AppDrawerEntry(
-        'İzinlerim',
-        Icons.event_busy_outlined,
-        _buildLeaveRequests,
-      ),
-      // Bölüm AN (9. tur): kişisel bordro özeti (salt görüntüleme).
-      AppDrawerEntry('Bordrom', Icons.receipt_long_outlined, _buildPayslip),
-    ]),
-  ];
-
-  static Widget _buildCalendar(BuildContext _) => const CalendarScreen();
-  static Widget _buildEvaluations(BuildContext _) => const EvaluationsScreen();
-  static Widget _buildLeaveRequests(BuildContext _) => const LeaveRequestsScreen();
-  static Widget _buildPayslip(BuildContext _) => const PayslipScreen();
+  /// Çekmece içeriği: navigation/nav_items.dart (tek kaynak).
+  static final _groups = navGroupsFor(AppRole.staff);
 
   @override
   Widget build(BuildContext context) {
+    final cs = context.colors;
+    final tx = context.text;
     return ManagerNav(
       openDrawer: () => _scaffoldKey.currentState?.openDrawer(),
       child: Scaffold(
         key: _scaffoldKey,
-        drawer: const AppDrawer(roleLabel: 'Personel', groups: _groups),
+        drawer: AppDrawer(roleLabel: 'Personel', groups: _groups),
         body: IndexedStack(
           index: _index,
           children: _tabs.map((t) => t.screen).toList(),
@@ -99,15 +74,12 @@ class _StaffShellState extends State<StaffShell> {
         bottomNavigationBar: NavigationBarTheme(
           data: NavigationBarThemeData(
             backgroundColor: Theme.of(context).colorScheme.surface,
-            indicatorColor: Theme.of(context).brightness == Brightness.dark ? AppDarkColors.primary50 : AppColors.primary50,
+            indicatorColor: cs.primary50,
             labelTextStyle: WidgetStateProperty.resolveWith((states) {
               final selected = states.contains(WidgetState.selected);
-              return TextStyle(
-                fontSize: 11,
+              return tx.navLabel.copyWith(
                 fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
-                color: selected
-                    ? AppColors.primary700
-                    : AppColors.textSecondary,
+                color: selected ? cs.primary700 : cs.textSecondary,
               );
             }),
           ),
@@ -118,8 +90,8 @@ class _StaffShellState extends State<StaffShell> {
             destinations: _tabs
                 .map(
                   (t) => NavigationDestination(
-                    icon: Icon(t.icon, color: AppColors.textSecondary),
-                    selectedIcon: Icon(t.icon, color: AppColors.primary700),
+                    icon: Icon(t.icon, color: cs.textSecondary),
+                    selectedIcon: Icon(t.icon, color: cs.accent),
                     label: t.label,
                   ),
                 )

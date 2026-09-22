@@ -3,6 +3,8 @@ import 'package:intl/intl.dart';
 
 import '../../core/api_client.dart';
 import '../../theme/app_colors.dart';
+import '../../theme/app_palette.dart';
+import '../../theme/app_text_styles.dart';
 import '../../widgets/state_views.dart';
 import '../../widgets/stat_card.dart';
 import '../customers/customer_tags.dart';
@@ -40,14 +42,15 @@ class _AuditSettingsScreenState extends State<AuditSettingsScreen>
 
   @override
   Widget build(BuildContext context) {
+    final cs = context.colors;
     return Scaffold(
       appBar: AppBar(
         title: const Text('Denetim & Ayarlar'),
         bottom: TabBar(
           controller: _tabController,
-          labelColor: AppColors.primary700,
-          unselectedLabelColor: AppColors.textSecondary,
-          indicatorColor: AppColors.primary600,
+          labelColor: cs.primary700,
+          unselectedLabelColor: cs.textSecondary,
+          indicatorColor: cs.primary600,
           tabs: const [
             Tab(text: 'Denetim Logları'),
             Tab(text: 'Ayarlar'),
@@ -107,6 +110,8 @@ class _AuditLogTabState extends State<_AuditLogTab> {
   /// istemcide zaten çekilen `_logs` kümesinden türetilir (web'de de aynı
   /// desen, backend'de ayrı bir özet ucu yok).
   Widget _buildLogSummary() {
+    final cs = context.colors;
+    final tx = context.text;
     final startOfToday = DateTime.now();
     final todayStart = DateTime(
       startOfToday.year,
@@ -116,13 +121,18 @@ class _AuditLogTabState extends State<_AuditLogTab> {
     final weekAgo = DateTime.now().subtract(const Duration(days: 7));
 
     final todayCount = _logs
-        .where((l) => DateTime.parse(l['createdAt'] as String).isAfter(todayStart))
+        .where(
+          (l) => DateTime.parse(l['createdAt'] as String).isAfter(todayStart),
+        )
         .length;
     final weekCount = _logs
         .where((l) => DateTime.parse(l['createdAt'] as String).isAfter(weekAgo))
         .length;
     final actorCount = _logs
-        .map((l) => (l['actor'] as Map<String, dynamic>?)?['id'] ?? l['actorUserId'])
+        .map(
+          (l) =>
+              (l['actor'] as Map<String, dynamic>?)?['id'] ?? l['actorUserId'],
+        )
         .toSet()
         .length;
 
@@ -160,30 +170,30 @@ class _AuditLogTabState extends State<_AuditLogTab> {
                 label: 'Bugün',
                 value: '$todayCount',
                 icon: Icons.today_rounded,
-                iconColor: AppColors.info600,
-                iconBackground: AppColors.info50,
+                iconColor: cs.info600,
+                iconBackground: cs.info50,
               ),
               AppStatCard(
                 label: 'Son 7 Gün',
                 value: '$weekCount',
                 icon: Icons.date_range_rounded,
-                iconColor: AppColors.success600,
-                iconBackground: AppColors.success50,
+                iconColor: cs.success600,
+                iconBackground: cs.success50,
               ),
               AppStatCard(
                 label: 'Farklı Kullanıcı',
                 value: '$actorCount',
                 icon: Icons.people_outline_rounded,
-                iconColor: AppColors.warning600,
-                iconBackground: AppColors.warning50,
+                iconColor: cs.warning600,
+                iconBackground: cs.warning50,
               ),
             ],
           ),
           if (topActors.isNotEmpty) ...[
             const SizedBox(height: 16),
-            const Text(
+            Text(
               'En Aktif Kullanıcılar',
-              style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13.5),
+              style: tx.body.copyWith(fontWeight: FontWeight.w700),
             ),
             const SizedBox(height: 8),
             ..._logBars(
@@ -192,9 +202,9 @@ class _AuditLogTabState extends State<_AuditLogTab> {
           ],
           if (topActions.isNotEmpty) ...[
             const SizedBox(height: 16),
-            const Text(
+            Text(
               'İşlem Türü Dağılımı',
-              style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13.5),
+              style: tx.body.copyWith(fontWeight: FontWeight.w700),
             ),
             const SizedBox(height: 8),
             ..._logBars(
@@ -202,9 +212,9 @@ class _AuditLogTabState extends State<_AuditLogTab> {
             ),
           ],
           const SizedBox(height: 16),
-          const Text(
+          Text(
             'Son Kayıtlar',
-            style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13.5),
+            style: tx.body.copyWith(fontWeight: FontWeight.w700),
           ),
           const SizedBox(height: 8),
         ],
@@ -213,6 +223,8 @@ class _AuditLogTabState extends State<_AuditLogTab> {
   }
 
   List<Widget> _logBars(Iterable<({String label, int count})> rows) {
+    final cs = context.colors;
+    final tx = context.text;
     final list = rows.toList();
     final maxCount = list.fold(0, (m, r) => r.count > m ? r.count : m);
     return list
@@ -227,10 +239,7 @@ class _AuditLogTabState extends State<_AuditLogTab> {
                     r.label,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                      fontSize: 11.5,
-                      color: AppColors.textSecondary,
-                    ),
+                    style: tx.caption,
                   ),
                 ),
                 Expanded(
@@ -239,8 +248,8 @@ class _AuditLogTabState extends State<_AuditLogTab> {
                     child: LinearProgressIndicator(
                       value: maxCount == 0 ? 0 : r.count / maxCount,
                       minHeight: 8,
-                      backgroundColor: AppColors.surfaceMuted,
-                      color: AppColors.primary500,
+                      backgroundColor: cs.surfaceMuted,
+                      color: cs.primary500,
                     ),
                   ),
                 ),
@@ -250,10 +259,7 @@ class _AuditLogTabState extends State<_AuditLogTab> {
                   child: Text(
                     '${r.count}',
                     textAlign: TextAlign.right,
-                    style: const TextStyle(
-                      fontSize: 11.5,
-                      fontWeight: FontWeight.w700,
-                    ),
+                    style: tx.caption.copyWith(fontWeight: FontWeight.w700),
                   ),
                 ),
               ],
@@ -265,6 +271,8 @@ class _AuditLogTabState extends State<_AuditLogTab> {
 
   @override
   Widget build(BuildContext context) {
+    final cs = context.colors;
+    final tx = context.text;
     if (_loading) return const LoadingView();
     if (_error != null) return ErrorRetryView(message: _error!, onRetry: _load);
     if (_logs.isEmpty)
@@ -275,11 +283,12 @@ class _AuditLogTabState extends State<_AuditLogTab> {
 
     return RefreshIndicator(
       onRefresh: _load,
-      color: AppColors.primary600,
+      color: cs.accentSoft,
       child: ListView.separated(
         padding: const EdgeInsets.all(16),
         itemCount: _logs.length + 1,
-        separatorBuilder: (_, i) => i == 0 ? const SizedBox.shrink() : const SizedBox(height: 8),
+        separatorBuilder: (_, i) =>
+            i == 0 ? const SizedBox.shrink() : const SizedBox(height: 8),
         itemBuilder: (context, index) {
           if (index == 0) return _buildLogSummary();
           final i = index - 1;
@@ -290,9 +299,9 @@ class _AuditLogTabState extends State<_AuditLogTab> {
           return Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: AppColors.surfaceCard,
+              color: cs.surfaceCard,
               borderRadius: BorderRadius.circular(AppRadius.card),
-              border: Border.all(color: AppColors.borderDefault),
+              border: Border.all(color: cs.borderDefault),
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -303,9 +312,8 @@ class _AuditLogTabState extends State<_AuditLogTab> {
                     Expanded(
                       child: Text(
                         log['action'] as String,
-                        style: const TextStyle(
+                        style: tx.bodySmall.copyWith(
                           fontWeight: FontWeight.w700,
-                          fontSize: 13,
                         ),
                       ),
                     ),
@@ -313,28 +321,16 @@ class _AuditLogTabState extends State<_AuditLogTab> {
                       _dateFormat.format(
                         DateTime.parse(log['createdAt'] as String),
                       ),
-                      style: const TextStyle(
-                        fontSize: 10.5,
-                        color: AppColors.textFaint,
-                      ),
+                      style: tx.label,
                     ),
                   ],
                 ),
                 const SizedBox(height: 4),
-                Text(
-                  'Aktör: $actor',
-                  style: const TextStyle(
-                    fontSize: 11.5,
-                    color: AppColors.textSecondary,
-                  ),
-                ),
+                Text('Aktör: $actor', style: tx.caption),
                 if (log['detail'] != null)
                   Text(
                     log['detail'] as String,
-                    style: const TextStyle(
-                      fontSize: 11.5,
-                      color: AppColors.textFaint,
-                    ),
+                    style: tx.caption.copyWith(color: cs.textFaint),
                   ),
               ],
             ),
@@ -406,6 +402,8 @@ class _SettingsTabState extends State<_SettingsTab> {
 
   @override
   Widget build(BuildContext context) {
+    final cs = context.colors;
+    final tx = context.text;
     if (_loading) return const LoadingView();
     if (_error != null) return ErrorRetryView(message: _error!, onRetry: _load);
 
@@ -415,53 +413,43 @@ class _SettingsTabState extends State<_SettingsTab> {
         // web/src/app/(dashboard)/ayarlar/page.tsx: ServiceTypesSection +
         // DistrictsSection — mobilde daha önce hiç yoktu.
         Material(
-          color: AppColors.surfaceCard,
+          color: cs.surfaceCard,
           borderRadius: BorderRadius.circular(AppRadius.card),
           child: ListTile(
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(AppRadius.card),
-              side: const BorderSide(color: AppColors.borderDefault),
+              side: BorderSide(color: cs.borderDefault),
             ),
-            leading: const Icon(
-              Icons.dashboard_customize_outlined,
-              color: AppColors.primary700,
-            ),
+            leading: Icon(Icons.dashboard_customize_outlined, color: cs.accent),
             title: const Text('Veri Silme Talepleri (KVKK)'),
-            subtitle: const Text(
+            subtitle: Text(
               'Bölüm AD: onay geri alınamaz — anonimleştirme',
-              style: TextStyle(fontSize: 11.5),
+              style: tx.caption,
             ),
-            trailing: const Icon(
-              Icons.chevron_right_rounded,
-              color: AppColors.textFaint,
-            ),
+            trailing: Icon(Icons.chevron_right_rounded, color: cs.textFaint),
             onTap: () => Navigator.of(context).push(
-              MaterialPageRoute(builder: (_) => const DataDeletionRequestsScreen()),
+              MaterialPageRoute(
+                builder: (_) => const DataDeletionRequestsScreen(),
+              ),
             ),
           ),
         ),
         const SizedBox(height: 8),
         Material(
-          color: AppColors.surfaceCard,
+          color: cs.surfaceCard,
           borderRadius: BorderRadius.circular(AppRadius.card),
           child: ListTile(
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(AppRadius.card),
-              side: const BorderSide(color: AppColors.borderDefault),
+              side: BorderSide(color: cs.borderDefault),
             ),
-            leading: const Icon(
-              Icons.label_outline_rounded,
-              color: AppColors.primary700,
-            ),
+            leading: Icon(Icons.label_outline_rounded, color: cs.accent),
             title: const Text('Müşteri Etiketleri'),
-            subtitle: const Text(
+            subtitle: Text(
               'Bölüm X: VIP / Kurumsal / Konut segmentleri',
-              style: TextStyle(fontSize: 11.5),
+              style: tx.caption,
             ),
-            trailing: const Icon(
-              Icons.chevron_right_rounded,
-              color: AppColors.textFaint,
-            ),
+            trailing: Icon(Icons.chevron_right_rounded, color: cs.textFaint),
             onTap: () => Navigator.of(context).push(
               MaterialPageRoute(builder: (_) => const CustomerTagsScreen()),
             ),
@@ -469,26 +457,20 @@ class _SettingsTabState extends State<_SettingsTab> {
         ),
         const SizedBox(height: 8),
         Material(
-          color: AppColors.surfaceCard,
+          color: cs.surfaceCard,
           borderRadius: BorderRadius.circular(AppRadius.card),
           child: ListTile(
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(AppRadius.card),
-              side: const BorderSide(color: AppColors.borderDefault),
+              side: BorderSide(color: cs.borderDefault),
             ),
-            leading: const Icon(
-              Icons.dashboard_customize_outlined,
-              color: AppColors.primary700,
-            ),
+            leading: Icon(Icons.dashboard_customize_outlined, color: cs.accent),
             title: const Text('İş Şablonları'),
-            subtitle: const Text(
+            subtitle: Text(
               'Bölüm T: iş formunda "Şablondan Doldur"',
-              style: TextStyle(fontSize: 11.5),
+              style: tx.caption,
             ),
-            trailing: const Icon(
-              Icons.chevron_right_rounded,
-              color: AppColors.textFaint,
-            ),
+            trailing: Icon(Icons.chevron_right_rounded, color: cs.textFaint),
             onTap: () => Navigator.of(context).push(
               MaterialPageRoute(builder: (_) => const JobTemplatesScreen()),
             ),
@@ -496,22 +478,16 @@ class _SettingsTabState extends State<_SettingsTab> {
         ),
         const SizedBox(height: 8),
         Material(
-          color: AppColors.surfaceCard,
+          color: cs.surfaceCard,
           borderRadius: BorderRadius.circular(AppRadius.card),
           child: ListTile(
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(AppRadius.card),
-              side: const BorderSide(color: AppColors.borderDefault),
+              side: BorderSide(color: cs.borderDefault),
             ),
-            leading: const Icon(
-              Icons.auto_awesome_outlined,
-              color: AppColors.primary700,
-            ),
+            leading: Icon(Icons.auto_awesome_outlined, color: cs.accent),
             title: const Text('Hizmet Türleri'),
-            trailing: const Icon(
-              Icons.chevron_right_rounded,
-              color: AppColors.textFaint,
-            ),
+            trailing: Icon(Icons.chevron_right_rounded, color: cs.textFaint),
             onTap: () => Navigator.of(context).push(
               MaterialPageRoute(
                 builder: (_) => const NamedListSettingsScreen(
@@ -527,22 +503,16 @@ class _SettingsTabState extends State<_SettingsTab> {
         ),
         const SizedBox(height: 8),
         Material(
-          color: AppColors.surfaceCard,
+          color: cs.surfaceCard,
           borderRadius: BorderRadius.circular(AppRadius.card),
           child: ListTile(
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(AppRadius.card),
-              side: const BorderSide(color: AppColors.borderDefault),
+              side: BorderSide(color: cs.borderDefault),
             ),
-            leading: const Icon(
-              Icons.map_outlined,
-              color: AppColors.primary700,
-            ),
+            leading: Icon(Icons.map_outlined, color: cs.accent),
             title: const Text('Semtler'),
-            trailing: const Icon(
-              Icons.chevron_right_rounded,
-              color: AppColors.textFaint,
-            ),
+            trailing: Icon(Icons.chevron_right_rounded, color: cs.textFaint),
             onTap: () => Navigator.of(context).push(
               MaterialPageRoute(
                 builder: (_) => const NamedListSettingsScreen(
@@ -558,28 +528,21 @@ class _SettingsTabState extends State<_SettingsTab> {
         ),
         const SizedBox(height: 8),
         Material(
-          color: AppColors.surfaceCard,
+          color: cs.surfaceCard,
           borderRadius: BorderRadius.circular(AppRadius.card),
           child: ListTile(
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(AppRadius.card),
-              side: const BorderSide(color: AppColors.borderDefault),
+              side: BorderSide(color: cs.borderDefault),
             ),
-            leading: const Icon(
-              Icons.checklist_rtl_outlined,
-              color: AppColors.primary700,
-            ),
+            leading: Icon(Icons.checklist_rtl_outlined, color: cs.accent),
             title: const Text('Değerlendirme Kriterleri'),
-            trailing: const Icon(
-              Icons.chevron_right_rounded,
-              color: AppColors.textFaint,
-            ),
+            trailing: Icon(Icons.chevron_right_rounded, color: cs.textFaint),
             onTap: () => Navigator.of(context).push(
               MaterialPageRoute(
                 builder: (_) => const NamedListSettingsScreen(
                   title: 'Değerlendirme Kriterleri',
-                  description:
-                      'Personel değerlendirme formunda kullanılacak kriterler (1-20 arası puanlanır).',
+                  description: 'Personel değerlendirme formunda kullanılacak kriterler (1-20 arası puanlanır).',
                   endpoint: '/evaluation-criteria',
                   addHint: 'Yeni kriter adı',
                 ),
@@ -589,17 +552,17 @@ class _SettingsTabState extends State<_SettingsTab> {
         ),
         const SizedBox(height: 20),
         if (_settings.isEmpty)
-          const Padding(
+          Padding(
             padding: EdgeInsets.symmetric(vertical: 12),
             child: Text(
               'Başka ayar bulunamadı.',
-              style: TextStyle(color: AppColors.textFaint),
+              style: tx.body.copyWith(color: cs.textFaint),
             ),
           )
         else ...[
-          const Text(
+          Text(
             'Diğer Ayarlar',
-            style: TextStyle(fontWeight: FontWeight.w700, fontSize: 14),
+            style: tx.subtitle.copyWith(fontWeight: FontWeight.w700),
           ),
           const SizedBox(height: 10),
           ..._settings.entries.map((e) {

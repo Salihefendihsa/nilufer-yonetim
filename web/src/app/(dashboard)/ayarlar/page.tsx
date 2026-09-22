@@ -1,6 +1,8 @@
 "use client";
 
 import { useCallback, useEffect, useState, type FormEvent } from "react";
+import { LoadingBlock } from "@/components/LoadingBlock";
+import { SectionTitle } from "@/components/SectionTitle";
 import {
   AlertTriangle,
   Bell,
@@ -23,6 +25,7 @@ import {
   Sun,
   Target,
   Trash2,
+  UserCog,
   type LucideIcon,
 } from "lucide-react";
 import { RequireRole } from "@/components/RequireRole";
@@ -33,6 +36,8 @@ import { CustomerDataExportSection } from "./CustomerDataExportSection";
 import { AnnouncementSection } from "./AnnouncementSection";
 import { CalendarExportSection } from "./CalendarExportSection";
 import { PageHeader } from "@/components/PageHeader";
+import { SegmentedTabs, type SegmentedTab } from "@/components/SegmentedTabs";
+import { useInitialQueryParam } from "@/lib/useDrillDownFilter";
 import { Modal } from "@/components/Modal";
 import { Toggle } from "@/components/Toggle";
 import { useAuth } from "@/lib/AuthProvider";
@@ -48,12 +53,60 @@ import type {
   SystemHealth,
 } from "@/lib/types";
 
+type SettingsTab = "hesap" | "isletme" | "operasyon" | "sistem";
+
+const SETTINGS_TABS: SegmentedTab<SettingsTab>[] = [
+  { value: "hesap", label: "Hesap", icon: UserCog },
+  { value: "isletme", label: "İşletme", icon: Building2 },
+  { value: "operasyon", label: "Operasyon", icon: ClipboardList },
+  { value: "sistem", label: "Sistem", icon: ShieldCheck },
+];
+
+function isSettingsTab(v: string | null): v is SettingsTab {
+  return v === "hesap" || v === "isletme" || v === "operasyon" || v === "sistem";
+}
+
+/**
+ * Tasarım turu #4: OWNER için 18 bölüm tek dikey sayfadaydı; artık 4 sekme.
+ * - Hesap: kişisel tercihler (görünüm, bildirim, 2FA) + role özel kişisel
+ *   araçlar (takvim aboneliği, KVKK veri indirme/silme).
+ * - İşletme: firma bilgisi, hedefler, hizmet türleri, semtler (OWNER).
+ * - Operasyon: iş şablonları, müşteri etiketleri (OWNER/MANAGER),
+ *   değerlendirme kriterleri (OWNER).
+ * - Sistem: duyuru, KVKK talepleri, yedek, tehlikeli bölge (OWNER).
+ * Tek sekmesi olan roller (STAFF/TEAM_LEAD/CUSTOMER) sekme çubuğu görmez.
+ * `?tab=` ile derin link desteklenir (ör. Bekleyen Onaylar → KVKK kuyruğu).
+ */
 export default function SettingsPage() {
   const { user } = useAuth();
   const isOwner = user?.role === "OWNER";
   const canUseTwoFactor = user?.role === "OWNER" || user?.role === "MANAGER";
   // Bölüm T (5. tur): iş şablonları OWNER ve MANAGER tarafından yönetilir.
   const canManageTemplates = canUseTwoFactor;
+
+  const availableTabs = SETTINGS_TABS.filter((t) => {
+    if (t.value === "hesap") return true;
+    if (t.value === "operasyon") return canManageTemplates;
+    return isOwner;
+  });
+
+  const [tab, setTab] = useState<SettingsTab>("hesap");
+  const initialTab = useInitialQueryParam("tab");
+  useEffect(() => {
+    if (isSettingsTab(initialTab) && availableTabs.some((t) => t.value === initialTab)) setTab(initialTab);
+    // availableTabs her render'da yeni dizi; yalnızca ilk query değeri ve rol önemli.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [initialTab, user?.role]);
+
+  const changeTab = (next: SettingsTab) => {
+    setTab(next);
+    if (typeof window !== "undefined") {
+      const url = new URL(window.location.href);
+      if (next === "hesap") url.searchParams.delete("tab");
+      else url.searchParams.set("tab", next);
+      window.history.replaceState(null, "", url.toString());
+    }
+  };
 
   return (
     <RequireRole roles={["OWNER", "MANAGER", "TEAM_LEAD", "STAFF", "CUSTOMER"]}>
@@ -66,23 +119,25 @@ export default function SettingsPage() {
 
         {isOwner && <EmailStatusNote />}
 
-        <ThemeSection />
-        <NotificationPreferencesSection isOwner={isOwner} />
-        {canUseTwoFactor && <TwoFactorSection />}
-        {canManageTemplates && <JobTemplatesSection />}
-        {canManageTemplates && <CustomerTagsSection />}
+        {availableTabs.length > 1 && (
+          <SegmentedTabs tabs={availableTabs} value={tab} onChange={changeTab} ariaLabel="Ayar grupları" />
+        )}
 
-        {/* Bölüm AD (7. tur): KVKK — müşteri talep açar, OWNER sonuçlandırır */}
-        {/* Bölüm AJ (8. tur): müşteri kendi verisini indirir */}
-        {/* Bölüm AP (9. tur): personel takvim aboneliği (ICS) */}
-        {(user?.role === "STAFF" || user?.role === "TEAM_LEAD") && <CalendarExportSection />}
-        {user?.role === "CUSTOMER" && <CustomerDataExportSection />}
-        {user?.role === "CUSTOMER" && <CustomerDataDeletionSection />}
-        {/* Bölüm AK (8. tur): duyuru şeridi yönetimi */}
-        {isOwner && <AnnouncementSection />}
-        {isOwner && <DataDeletionRequestsSection />}
+        {tab === "hesap" && (
+          <>
+            <ThemeSection />
+            <NotificationPreferencesSection isOwner={isOwner} />
+            {canUseTwoFactor && <TwoFactorSection />}
+            {/* Bölüm AP (9. tur): personel takvim aboneliği (ICS) */}
+            {(user?.role === "STAFF" || user?.role === "TEAM_LEAD") && <CalendarExportSection />}
+            {/* Bölüm AJ (8. tur): müşteri kendi verisini indirir */}
+            {user?.role === "CUSTOMER" && <CustomerDataExportSection />}
+            {/* Bölüm AD (7. tur): KVKK — müşteri talep açar */}
+            {user?.role === "CUSTOMER" && <CustomerDataDeletionSection />}
+          </>
+        )}
 
-        {isOwner && (
+        {tab === "isletme" && isOwner && (
           <>
             <CompanyInfoSection />
             <TargetsSection />
@@ -90,7 +145,23 @@ export default function SettingsPage() {
               <ServiceTypesSection />
               <DistrictsSection />
             </div>
-            <EvaluationCriteriaSection />
+          </>
+        )}
+
+        {tab === "operasyon" && canManageTemplates && (
+          <>
+            <JobTemplatesSection />
+            <CustomerTagsSection />
+            {isOwner && <EvaluationCriteriaSection />}
+          </>
+        )}
+
+        {tab === "sistem" && isOwner && (
+          <>
+            {/* Bölüm AK (8. tur): duyuru şeridi yönetimi */}
+            <AnnouncementSection />
+            {/* Bölüm AD (7. tur): OWNER KVKK taleplerini sonuçlandırır */}
+            <DataDeletionRequestsSection />
             <BackupSection />
             <DangerZoneSection />
           </>
@@ -172,7 +243,7 @@ function NotificationPreferencesSection({ isOwner }: { isOwner: boolean }) {
       description="Sistem bildirimlerini email olarak da almak isteyip istemediğinizi seçin."
     >
       {loading ? (
-        <p className="text-sm text-text-secondary">Yükleniyor...</p>
+        <LoadingBlock lines={3} />
       ) : !preference ? (
         <p className="text-sm text-text-secondary">Bildirim tercihleri yüklenemedi.</p>
       ) : (
@@ -334,7 +405,7 @@ function TwoFactorSection() {
       }
     >
       {loading ? (
-        <p className="text-sm text-text-secondary">Yükleniyor...</p>
+        <LoadingBlock lines={3} />
       ) : (
         <div className="flex flex-col gap-4">
           {error && <p className="rounded-2xl border border-danger-100 bg-danger-50 px-4 py-3 text-sm text-danger-500">{error}</p>}
@@ -496,7 +567,7 @@ function SectionCard({
             <Icon size={17} strokeWidth={1.75} />
           </span>
           <div>
-            <h2 className="text-base font-semibold text-text-primary">{title}</h2>
+            <SectionTitle>{title}</SectionTitle>
             {description && <p className="mt-0.5 text-sm text-text-secondary">{description}</p>}
           </div>
         </div>
@@ -552,7 +623,7 @@ function CompanyInfoSection() {
       description="Bu bilgiler raporlarda ve müşteriye görünen belgelerde kullanılır."
     >
       {loading ? (
-        <p className="text-sm text-text-secondary">Yükleniyor...</p>
+        <LoadingBlock lines={3} />
       ) : (
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
           {COMPANY_FIELDS.map((field) => (
@@ -632,7 +703,7 @@ function TargetsSection() {
       description="Panel ve performans ekranlarındaki hedef göstergeleri bu değerlerden hesaplanır."
     >
       {loading ? (
-        <p className="text-sm text-text-secondary">Yükleniyor...</p>
+        <LoadingBlock lines={3} />
       ) : (
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
           {TARGET_FIELDS.map((field) => (
@@ -751,7 +822,7 @@ function ServiceTypesSection() {
         {error && <p className="rounded-2xl border border-danger-100 bg-danger-50 px-4 py-3 text-sm text-danger-500">{error}</p>}
 
         {loading ? (
-          <p className="text-sm text-text-secondary">Yükleniyor...</p>
+          <LoadingBlock lines={3} />
         ) : (
           <ul className="flex flex-col divide-y divide-border">
             {items.map((item) => (
@@ -959,7 +1030,7 @@ function DistrictsSection() {
         {error && <p className="rounded-2xl border border-danger-100 bg-danger-50 px-4 py-3 text-sm text-danger-500">{error}</p>}
 
         {loading ? (
-          <p className="text-sm text-text-secondary">Yükleniyor...</p>
+          <LoadingBlock lines={3} />
         ) : (
           <ul className="flex flex-col divide-y divide-border">
             {items.map((item) => (
@@ -1149,7 +1220,7 @@ function EvaluationCriteriaSection() {
         {error && <p className="rounded-2xl border border-danger-100 bg-danger-50 px-4 py-3 text-sm text-danger-500">{error}</p>}
 
         {loading ? (
-          <p className="text-sm text-text-secondary">Yükleniyor...</p>
+          <LoadingBlock lines={3} />
         ) : (
           <ul className="flex flex-col divide-y divide-border">
             {items.map((item) => (
@@ -1322,7 +1393,7 @@ function DangerZoneSection() {
           <AlertTriangle size={18} strokeWidth={1.75} />
         </div>
         <div>
-          <h2 className="text-base font-semibold text-danger-500">Tehlikeli Bölge</h2>
+          <SectionTitle tone="danger">Tehlikeli Bölge</SectionTitle>
           <p className="mt-1 text-sm text-text-secondary">
             Tüm müşteri, iş, sözleşme, ödeme, teklif, mesaj ve avans kayıtlarını kalıcı olarak siler. Kullanıcı
             hesapları ve giriş bilgileri etkilenmez, sisteme giriş yapmaya devam edebilirsiniz.

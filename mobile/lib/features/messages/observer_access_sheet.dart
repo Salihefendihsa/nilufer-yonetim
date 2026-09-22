@@ -2,15 +2,14 @@ import 'package:flutter/material.dart';
 
 import '../../core/api_client.dart';
 import '../../models/observer_access_grant.dart';
-import '../../theme/app_colors.dart';
+import '../../theme/app_palette.dart';
+import '../../theme/app_text_styles.dart';
 import 'observer_access_api.dart';
 
 /// web/src/app/(dashboard)/mesajlar/ObserverAccessModal.tsx ile aynı akış —
 /// Gözlemci Modu'na girmeden önce gerekçe + süre (veya acil durum) sorar.
 /// Kullanıcı vazgeçerse veya form başarısız kapanırsa null döner.
-Future<ObserverAccessGrant?> showObserverAccessSheet(
-  BuildContext context,
-) {
+Future<ObserverAccessGrant?> showObserverAccessSheet(BuildContext context) {
   return showModalBottomSheet<ObserverAccessGrant>(
     context: context,
     isScrollControlled: true,
@@ -33,7 +32,11 @@ class _ObserverAccessSheetState extends State<_ObserverAccessSheet> {
   bool _submitting = false;
   String? _error;
 
-  static const _durationLabels = {'1h': '1 saat', '1d': '1 gün', '1w': '1 hafta'};
+  static const _durationLabels = {
+    '1h': '1 saat',
+    '1d': '1 gün',
+    '1w': '1 hafta',
+  };
 
   Future<void> _submit() async {
     final reason = _reasonController.text.trim();
@@ -54,7 +57,9 @@ class _ObserverAccessSheetState extends State<_ObserverAccessSheet> {
       if (mounted) Navigator.of(context).pop(grant);
     } catch (e) {
       setState(
-        () => _error = e is ApiException ? e.message : 'Erişim talebi oluşturulamadı',
+        () => _error = e is ApiException
+            ? e.message
+            : 'Erişim talebi oluşturulamadı',
       );
     } finally {
       if (mounted) setState(() => _submitting = false);
@@ -69,6 +74,8 @@ class _ObserverAccessSheetState extends State<_ObserverAccessSheet> {
 
   @override
   Widget build(BuildContext context) {
+    final cs = context.colors;
+    final tx = context.text;
     return Padding(
       padding: EdgeInsets.only(
         bottom: MediaQuery.of(context).viewInsets.bottom,
@@ -81,19 +88,19 @@ class _ObserverAccessSheetState extends State<_ObserverAccessSheet> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
+            Text(
               'Gözlemci Erişimi Talep Et',
-              style: TextStyle(fontWeight: FontWeight.w700, fontSize: 15),
+              style: tx.subtitle.copyWith(fontWeight: FontWeight.w700),
             ),
             const SizedBox(height: 4),
-            const Text(
+            Text(
               'Tüm konuşmaları görüntülemek için bir gerekçe ve süre belirtmelisiniz. '
               'Her erişim ve kullanım denetim kaydına işlenir.',
-              style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
+              style: tx.caption,
             ),
             const SizedBox(height: 16),
             if (_error != null) ...[
-              Text(_error!, style: const TextStyle(color: AppColors.danger500, fontSize: 12.5)),
+              Text(_error!, style: tx.bodySmall.copyWith(color: cs.danger500)),
               const SizedBox(height: 8),
             ],
             TextField(
@@ -105,7 +112,10 @@ class _ObserverAccessSheetState extends State<_ObserverAccessSheet> {
             ),
             const SizedBox(height: 16),
             if (!_isEmergency) ...[
-              const Text('Süre', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
+              Text(
+                'Süre',
+                style: tx.bodySmall.copyWith(fontWeight: FontWeight.w600),
+              ),
               const SizedBox(height: 8),
               Wrap(
                 spacing: 8,
@@ -114,7 +124,8 @@ class _ObserverAccessSheetState extends State<_ObserverAccessSheet> {
                       (entry) => ChoiceChip(
                         label: Text(entry.value),
                         selected: _duration == entry.key,
-                        onSelected: (_) => setState(() => _duration = entry.key),
+                        onSelected: (_) =>
+                            setState(() => _duration = entry.key),
                       ),
                     )
                     .toList(),
@@ -125,15 +136,15 @@ class _ObserverAccessSheetState extends State<_ObserverAccessSheet> {
               contentPadding: EdgeInsets.zero,
               value: _isEmergency,
               onChanged: (v) => setState(() => _isEmergency = v),
-              title: const Text(
+              title: Text(
                 'Acil Durum Erişimi (sınırsız)',
-                style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
+                style: tx.bodySmall.copyWith(fontWeight: FontWeight.w600),
               ),
-              subtitle: const Text(
+              subtitle: Text(
                 'Süre sınırı olmadan erişim verir; ayrı ve belirgin şekilde işaretlenmiş bir denetim kaydı oluşturulur.',
-                style: TextStyle(fontSize: 11.5),
+                style: tx.caption,
               ),
-              activeThumbColor: AppColors.warning500,
+              activeThumbColor: cs.warning500,
             ),
             const SizedBox(height: 8),
             ElevatedButton(

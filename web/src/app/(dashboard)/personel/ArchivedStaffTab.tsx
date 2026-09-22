@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { LoadingBlock } from "@/components/LoadingBlock";
 import { History, RotateCcw } from "lucide-react";
 import { EmptyState } from "@/components/EmptyState";
 import { api, ApiError } from "@/lib/api";
@@ -37,7 +38,7 @@ export function ArchivedStaffTab() {
     load();
   }, [load]);
 
-  if (loading) return <p className="py-16 text-center text-sm text-text-faint">Yükleniyor...</p>;
+  if (loading) return <LoadingBlock rows={4} className="py-6" />;
   if (error) return <p className="rounded-2xl border border-danger-100 bg-danger-50 px-4 py-3 text-sm text-danger-500">{error}</p>;
   if (rows.length === 0) {
     return <EmptyState icon={History} title="Geçmiş personel yok" description="Terfi ettirilen veya işten çıkarılan personel burada listelenir." />;

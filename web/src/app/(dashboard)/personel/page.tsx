@@ -1,6 +1,8 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { chartPalette } from "@/lib/chartPalette";
+import { LoadingBlock } from "@/components/LoadingBlock";
 import {
   Plus,
   HardHat,
@@ -24,6 +26,9 @@ import {
   UserCog,
   Users,
   History,
+  TrendingUp,
+  Repeat,
+  UserX,
 } from "lucide-react";
 import { RequireRole } from "@/components/RequireRole";
 import { PageHeader } from "@/components/PageHeader";
@@ -49,7 +54,7 @@ import { EvaluationsModal } from "./EvaluationsModal";
 import { OrgChartView } from "./OrgChartView";
 import { ResetPasswordModal } from "./ResetPasswordModal";
 import { ImpersonateModal } from "./ImpersonateModal";
-import { RoleActionsMenu } from "./RoleActionsMenu";
+import { ActionMenu } from "@/components/ActionMenu";
 import { ReasonModal } from "./ReasonModal";
 import { ManagersTab } from "./ManagersTab";
 import { ArchivedStaffTab } from "./ArchivedStaffTab";
@@ -280,7 +285,7 @@ function StaffPageContent() {
         loading={loading}
         totalLabel={`${rows.length} personel`}
         segments={[
-          { label: "bugün işi var", count: workload.busy, color: "#3D8A4E" },
+          { label: "bugün işi var", count: workload.busy, color: chartPalette.primaryMid },
           { label: "bugün boşta", count: workload.idle, color: "rgb(var(--border-strong))" },
         ]}
       />
@@ -296,7 +301,7 @@ function StaffPageContent() {
       )}
 
       {loading ? (
-        <p className="py-16 text-center text-sm text-text-faint">Yükleniyor...</p>
+        <LoadingBlock rows={4} className="py-6" />
       ) : rows.length === 0 ? (
         <div className="rounded-2xl border border-border bg-surface-card shadow-card">
           <EmptyState
@@ -337,23 +342,15 @@ function StaffPageContent() {
                   )}
                 </div>
                 <div className="ml-auto flex flex-col items-end gap-1">
-                  {isOwner && (
-                    <RoleActionsMenu
-                      currentRole={staff.user.role as "STAFF" | "TEAM_LEAD"}
-                      onPromote={() => setPromoteTarget(staff)}
-                      onSwapRole={() => setSwapRoleTarget(staff)}
-                      onTerminate={() => setTerminateTarget(staff)}
-                    />
-                  )}
                   {staff.averageRating !== null && (
-                    <span className="inline-flex items-center gap-1 rounded-full bg-warning-50 px-2 py-0.5 text-[11px] font-semibold text-warning-600">
+                    <span className="inline-flex items-center gap-1 rounded-full bg-warning-50 px-2 py-0.5 text-2xs font-semibold text-warning-600">
                       <Star size={10} strokeWidth={2} />
                       {staff.averageRating.toFixed(1)}
                       <span className="font-normal text-text-faint">({staff.ratedJobsCount})</span>
                     </span>
                   )}
                   {staff.expiringCertificationCount > 0 && (
-                    <span className="inline-flex items-center gap-1 rounded-full bg-danger-50 px-2 py-0.5 text-[11px] font-semibold text-danger-500">
+                    <span className="inline-flex items-center gap-1 rounded-full bg-danger-50 px-2 py-0.5 text-2xs font-semibold text-danger-500">
                       <AlertTriangle size={10} strokeWidth={2} />
                       {staff.expiringCertificationCount} belge
                     </span>
@@ -393,6 +390,10 @@ function StaffPageContent() {
                 </span>
               </div>
 
+              {/* Bölüm AH (7. tur): izin bakiyesi */}
+              <LeaveBalanceCard staffId={staff.id} compact />
+
+              {/* Tasarım turu #5: 3 birincil aksiyon + "⋯" menüsü (önceden 8–10 buton). */}
               <div className="flex gap-2">
                 <button
                   type="button"
@@ -407,98 +408,57 @@ function StaffPageContent() {
                 </button>
                 <button
                   type="button"
-                  onClick={() => setDeleteTarget(staff)}
-                  className="flex flex-1 items-center justify-center gap-2 rounded-xl border border-danger-100 bg-danger-50 px-3 py-2 text-xs font-medium text-danger-500 transition hover:bg-danger-100"
+                  onClick={() => setCertificationsTarget(staff)}
+                  className={`flex flex-1 items-center justify-center gap-2 rounded-xl border px-3 py-2 text-xs font-medium transition ${
+                    staff.expiringCertificationCount > 0
+                      ? "border-danger-100 bg-danger-50 text-danger-500 hover:bg-danger-100"
+                      : "border-border bg-surface-base text-text-secondary hover:border-border-strong hover:bg-surface-subtle hover:text-text-primary"
+                  }`}
                 >
-                  <Trash2 size={14} strokeWidth={1.75} />
-                  Sil
+                  <FileBadge size={14} strokeWidth={1.75} />
+                  Belgeler
                 </button>
+                {/* Bölüm AR (9. tur): aylık giriş/çıkış özeti */}
+                <button
+                  type="button"
+                  onClick={() => setAttendanceTarget(staff)}
+                  className="flex flex-1 items-center justify-center gap-2 rounded-xl border border-border bg-surface-base px-3 py-2 text-xs font-medium text-text-secondary transition hover:border-border-strong hover:bg-surface-subtle hover:text-text-primary"
+                >
+                  <Timer size={14} strokeWidth={1.75} />
+                  Puantaj
+                </button>
+                <ActionMenu
+                  label={`${staff.user.fullName} — diğer işlemler`}
+                  items={[
+                    // Bölüm AQ (9. tur): yalnızca zimmetli aracı olan personelde
+                    staff.vehiclePlate
+                      ? { label: "Araç Bakımı", icon: Truck, onClick: () => setVehicleTarget(staff) }
+                      : null,
+                    // Bölüm U (5. tur): işe alım süreci
+                    { label: "İşe Alım", icon: ClipboardCheck, onClick: () => setOnboardingTarget(staff) },
+                    { label: "Değerlendirmeler", icon: ClipboardList, onClick: () => setEvaluationsTarget(staff) },
+                    isOwner ? { label: "Yetkiler", icon: ShieldCheck, onClick: () => setPermissionsTarget(staff) } : null,
+                    null,
+                    isOwner ? { label: "Şifreyi Sıfırla", icon: KeyRound, onClick: () => setResetPasswordTarget(staff) } : null,
+                    isOwner
+                      ? { label: "Olarak Gir", icon: UserCog, tone: "warning", onClick: () => setImpersonateTarget(staff) }
+                      : null,
+                    null,
+                    // Rol işlemleri (eski RoleActionsMenu) — yalnızca OWNER
+                    isOwner ? { label: "Müdür'e Terfi Ettir", icon: TrendingUp, onClick: () => setPromoteTarget(staff) } : null,
+                    isOwner
+                      ? {
+                          label: staff.user.role === "TEAM_LEAD" ? "Personel Yap" : "Şef Yap",
+                          icon: Repeat,
+                          onClick: () => setSwapRoleTarget(staff),
+                        }
+                      : null,
+                    isOwner ? { label: "İşten Çıkar", icon: UserX, tone: "danger", onClick: () => setTerminateTarget(staff) } : null,
+                    null,
+                    { label: "Sil", icon: Trash2, tone: "danger", onClick: () => setDeleteTarget(staff) },
+                  ]}
+                />
               </div>
-
-              {/* Bölüm AH (7. tur): izin bakiyesi */}
-              <LeaveBalanceCard staffId={staff.id} compact />
-
-              <button
-                type="button"
-                onClick={() => setCertificationsTarget(staff)}
-                className="flex items-center justify-center gap-2 rounded-xl border border-border bg-surface-base px-3 py-2 text-xs font-medium text-text-secondary transition hover:border-border-strong hover:bg-surface-subtle hover:text-text-primary"
-              >
-                <FileBadge size={14} strokeWidth={1.75} />
-                Belgeler
-              </button>
-
-              {/* Bölüm AR (9. tur): aylık giriş/çıkış özeti */}
-              <button
-                type="button"
-                onClick={() => setAttendanceTarget(staff)}
-                className="flex items-center justify-center gap-2 rounded-xl border border-border bg-surface-base px-3 py-2 text-xs font-medium text-text-secondary transition hover:border-border-strong hover:bg-surface-subtle hover:text-text-primary"
-              >
-                <Timer size={14} strokeWidth={1.75} />
-                Puantaj
-              </button>
-
-              {/* Bölüm AQ (9. tur): yalnızca zimmetli aracı olan personelde */}
-              {staff.vehiclePlate && (
-                <button
-                  type="button"
-                  onClick={() => setVehicleTarget(staff)}
-                  className="flex items-center justify-center gap-2 rounded-xl border border-border bg-surface-base px-3 py-2 text-xs font-medium text-text-secondary transition hover:border-border-strong hover:bg-surface-subtle hover:text-text-primary"
-                >
-                  <Truck size={14} strokeWidth={1.75} />
-                  Araç Bakımı
-                </button>
-              )}
-
-              {/* Bölüm U (5. tur): işe alım süreci — yeni personelde takip için */}
-              <button
-                type="button"
-                onClick={() => setOnboardingTarget(staff)}
-                className="flex items-center justify-center gap-2 rounded-xl border border-border bg-surface-base px-3 py-2 text-xs font-medium text-text-secondary transition hover:border-border-strong hover:bg-surface-subtle hover:text-text-primary"
-              >
-                <ClipboardCheck size={14} strokeWidth={1.75} />
-                İşe Alım
-              </button>
-
-              <button
-                type="button"
-                onClick={() => setEvaluationsTarget(staff)}
-                className="flex items-center justify-center gap-2 rounded-xl border border-border bg-surface-base px-3 py-2 text-xs font-medium text-text-secondary transition hover:border-border-strong hover:bg-surface-subtle hover:text-text-primary"
-              >
-                <ClipboardList size={14} strokeWidth={1.75} />
-                Değerlendirmeler
-              </button>
-
-              {user?.role === "OWNER" && (
-                <button
-                  type="button"
-                  onClick={() => setPermissionsTarget(staff)}
-                  className="flex items-center justify-center gap-2 rounded-xl border border-border bg-surface-base px-3 py-2 text-xs font-medium text-text-secondary transition hover:border-border-strong hover:bg-surface-subtle hover:text-text-primary"
-                >
-                  <ShieldCheck size={14} strokeWidth={1.75} />
-                  Yetkiler
-                </button>
-              )}
-
-              {isOwner && (
-                <div className="flex gap-2">
-                  <button
-                    type="button"
-                    onClick={() => setResetPasswordTarget(staff)}
-                    className="flex flex-1 items-center justify-center gap-2 rounded-xl border border-border bg-surface-base px-3 py-2 text-xs font-medium text-text-secondary transition hover:border-border-strong hover:bg-surface-subtle hover:text-text-primary"
-                  >
-                    <KeyRound size={14} strokeWidth={1.75} />
-                    Şifreyi Sıfırla
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setImpersonateTarget(staff)}
-                    className="flex flex-1 items-center justify-center gap-2 rounded-xl border border-warning-100 bg-warning-50 px-3 py-2 text-xs font-medium text-warning-600 transition hover:bg-warning-100"
-                  >
-                    <UserCog size={14} strokeWidth={1.75} />
-                    Olarak Gir
-                  </button>
-                </div>
-              )}
             </div>
           ))}
         </div>

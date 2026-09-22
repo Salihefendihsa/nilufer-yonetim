@@ -5,6 +5,39 @@ gerekçe/karar kaydı için `docs/STITCH_FEATURE_MATRIX.md` ve
 `docs/WEB_MOBILE_PARITY.md`'ye bakın; bu dosya yalnızca "ne zaman ne
 yapıldı"nın hızlı bir özeti.
 
+## 2026-09-22 — Mobil canlı test hataları + kalıcı demo veri
+
+**3 gerçek hata (Chrome'da canlı test sırasında bulundu), kök nedeni ortak:**
+`mobile/lib/features/admin/named_list_settings_screen.dart`'taki "Ekle"
+butonu bir `Row` içinde (Expanded(TextField) yanında) sarmalanmadan/stil
+geçersiz kılınmadan duruyordu. Tema varsayılanı (`minimumSize:
+Size.fromHeight(48)`, genişlik=sonsuz) Row'un esnek olmayan çocuklarına
+verdiği sınırsız genişlik kısıtıyla çakışıp "BoxConstraints forces an
+infinite width" layout exception'ı fırlatıyordu (kanıt: `flutter run`
+konsol logu, tam olarak bu buton). Bu, aynı genel widget'ı kullanan
+Değerlendirme Kriterleri (ve Semtler/Hizmet Türleri gibi diğer) ekranını
+tamamen boş bırakıyordu; layout hatası sonrası Flutter'ın `MouseTracker`'ı
+sürekli assertion fırlatmaya başlıyor (log'da yüzlerce tekrar), bu da o
+sayfadaki geri tuşu dahil dokunma olaylarını güvenilmez hale getiriyordu.
+- Düzeltme: butona sonlu `ElevatedButton.styleFrom(minimumSize: Size(64,
+  48))` eklendi. Chrome'da canlı doğrulandı: ekran artık içerik gösteriyor,
+  geri tuşu 5 kez art arda doğru çalıştı.
+- `customer_detail_screen.dart`'ın Sözleşmeler sekmesindeki kartlara
+  eksik olan `onTap` eklendi — tıklayınca durum/dönem/süre/tutar + "PDF
+  İndir" gösteren bir bottom sheet açılıyor (ayrı bir sözleşme detay
+  ekranı yok, `contracts_list_screen.dart`'taki "kart zaten tüm bilgiyi
+  gösterir" deseniyle tutarlı).
+
+**Kalıcı demo veri (`backend/prisma/seedDemo.ts`, YENİ, `npm run
+db:seed:demo`):** `seed.ts`'in temel hesaplarının ÜZERİNE — silinmek üzere
+DEĞİL, müşteriye/yatırımcıya gösterirken sistemin dolu görünmesi için.
+Product 6→21, Customer 18→30, Job 36→76, Contract 10→18, QuoteRequest
+6→16, artı sıfırdan: 8 ProductBatch (parti/SKT), 3 Supplier, 3 CustomerTag
+(VIP/Kurumsal/Konut), 8 CustomerComplaint, 6 EvaluationCriterion, 3
+EvaluationPeriod, 15 Evaluation+Score, 5 StaffBonus. Ayrıntı ve tablo
+başına tam liste: `PROJECT_HANDOFF_TR.md` §12.2.2. Her bölüm kendi mevcut
+satır sayısını kontrol ettiği için tekrar çalıştırmak güvenli (doğrulandı).
+
 ## 2026-09-10 — Production-hazırlık turu
 
 **Bölüm A — STAFF Ana Sayfa boş ekran hatası (olası düzeltme, cihazda

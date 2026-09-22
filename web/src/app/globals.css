@@ -116,6 +116,15 @@
   --chart-4: 148 199 158;
   --chart-5: 181 127 19;
   --chart-6: 31 111 168;
+  /* Anlamsal grafik renkleri (lib/chartPalette.ts) — koyu modda parlaklaşır */
+  --chart-success: 21 128 61;
+  --chart-warning: 181 127 19;
+  --chart-danger: 192 57 43;
+  --chart-danger-deep: 155 28 28;
+  --chart-info: 31 111 168;
+  --chart-purple: 107 79 187;
+  --chart-neutral: 90 107 94;
+  --chart-neutral-soft: 163 176 165;
   --chart-cursor-fill: rgba(22, 33, 26, 0.04);
 
   /* Gölgeler */
@@ -227,6 +236,14 @@
     --chart-4: 168 218 180;
     --chart-5: 232 188 92;
     --chart-6: 111 184 232;
+    --chart-success: 74 196 118;
+    --chart-warning: 232 188 92;
+    --chart-danger: 232 106 92;
+    --chart-danger-deep: 204 72 72;
+    --chart-info: 111 184 232;
+    --chart-purple: 158 134 222;
+    --chart-neutral: 140 156 144;
+    --chart-neutral-soft: 96 112 100;
     --chart-cursor-fill: rgba(234, 242, 235, 0.06);
 
     --shadow-card: 0 1px 2px rgba(0, 0, 0, 0.2), 0 4px 16px rgba(0, 0, 0, 0.28);
@@ -314,6 +331,14 @@
   --chart-4: 168 218 180;
   --chart-5: 232 188 92;
   --chart-6: 111 184 232;
+  --chart-success: 74 196 118;
+  --chart-warning: 232 188 92;
+  --chart-danger: 232 106 92;
+  --chart-danger-deep: 204 72 72;
+  --chart-info: 111 184 232;
+  --chart-purple: 158 134 222;
+  --chart-neutral: 140 156 144;
+  --chart-neutral-soft: 96 112 100;
   --chart-cursor-fill: rgba(234, 242, 235, 0.06);
 
   --shadow-card: 0 1px 2px rgba(0, 0, 0, 0.2), 0 4px 16px rgba(0, 0, 0, 0.28);

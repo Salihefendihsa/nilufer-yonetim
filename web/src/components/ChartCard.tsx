@@ -1,7 +1,8 @@
 "use client";
 
+import { ChartSkeleton } from "@/components/LoadingBlock";
 import type { ReactNode } from "react";
-import type { LucideIcon } from "lucide-react";
+import { BarChart3, type LucideIcon } from "lucide-react";
 import {
   Bar,
   BarChart,
@@ -101,12 +102,25 @@ export function ChartCard({ title, description, icon: Icon, action, height = 260
   );
 }
 
+/**
+ * Tasarım turu #10: veri yokken boş eksen yerine ikonlu boş durum. Seri
+ * değerlerinin tamamı 0 olan aralıklar da (ör. hiç tahsilat olmayan ay) boş
+ * sayılır — `allZero` yardımcısı.
+ */
 function EmptyChart({ label = "Gösterilecek veri yok" }: { label?: string }) {
   return (
-    <div className="flex h-full items-center justify-center rounded-xl border border-dashed border-border bg-surface-subtle/60">
-      <p className="text-xs text-text-faint">{label}</p>
+    <div className="flex h-full flex-col items-center justify-center gap-2 rounded-xl border border-dashed border-border bg-surface-subtle/60 px-4 text-center">
+      <span className="flex h-9 w-9 items-center justify-center rounded-full bg-surface-muted text-text-faint">
+        <BarChart3 size={16} strokeWidth={1.75} />
+      </span>
+      <p className="text-xs font-medium text-text-secondary">{label}</p>
+      <p className="text-2xs text-text-faint">Veri geldikçe grafik burada oluşur.</p>
     </div>
   );
+}
+
+function allZero<T extends object>(data: T[], keys: string[]): boolean {
+  return data.every((row) => keys.every((k) => !Number((row as Record<string, unknown>)[k])));
 }
 
 /** recharts'ın varsayılan tooltip'i yerine panelin kart diline uyan özel gövde. */
@@ -165,6 +179,8 @@ interface SimpleBarChartProps<T> {
   /** Değerleri para birimi olarak biçimlendirir. */
   currency?: boolean;
   emptyLabel?: string;
+  /** true iken iskelet çizilir ("Yükleniyor..." metni yerine). */
+  loading?: boolean;
 }
 
 export function SimpleBarChart<T extends object>({
@@ -174,8 +190,10 @@ export function SimpleBarChart<T extends object>({
   stacked = false,
   currency,
   emptyLabel,
+  loading,
 }: SimpleBarChartProps<T>) {
-  if (data.length === 0) return <EmptyChart label={emptyLabel} />;
+  if (loading) return <ChartSkeleton />;
+  if (data.length === 0 || allZero(data, series.map((s) => String(s.key)))) return <EmptyChart label={emptyLabel} />;
   const colorOf = (i: number) => series[i].color ?? CHART_COLORS[i % CHART_COLORS.length];
 
   return (
@@ -217,10 +235,13 @@ interface TrendChartProps<T> {
   area?: boolean;
   currency?: boolean;
   emptyLabel?: string;
+  /** true iken iskelet çizilir ("Yükleniyor..." metni yerine). */
+  loading?: boolean;
 }
 
-export function TrendChart<T extends object>({ data, xKey, series, area = false, currency, emptyLabel }: TrendChartProps<T>) {
-  if (data.length === 0) return <EmptyChart label={emptyLabel} />;
+export function TrendChart<T extends object>({ data, xKey, series, area = false, currency, emptyLabel, loading }: TrendChartProps<T>) {
+  if (loading) return <ChartSkeleton />;
+  if (data.length === 0 || allZero(data, series.map((s) => String(s.key)))) return <EmptyChart label={emptyLabel} />;
   const colorOf = (i: number) => series[i].color ?? CHART_COLORS[i % CHART_COLORS.length];
   const Chart = area ? AreaChart : LineChart;
 
@@ -289,10 +310,13 @@ interface DonutChartProps {
   centerValue?: string;
   centerLabel?: string;
   emptyLabel?: string;
+  /** true iken iskelet çizilir ("Yükleniyor..." metni yerine). */
+  loading?: boolean;
 }
 
-export function DonutChart({ data, centerValue, centerLabel, emptyLabel }: DonutChartProps) {
+export function DonutChart({ data, centerValue, centerLabel, emptyLabel, loading }: DonutChartProps) {
   const total = data.reduce((sum, d) => sum + d.value, 0);
+  if (loading) return <ChartSkeleton />;
   if (total === 0) return <EmptyChart label={emptyLabel} />;
   const slices = data.filter((d) => d.value > 0);
 
@@ -379,7 +403,8 @@ export interface RankRow {
  * geçmedi (bilinçli): bu bir eksen/tooltip gerektiren "grafik" değil, düz bir
  * liste + doluluk çubuğu — mevcut CSS animasyonu (animate-grow-bar) yeterli.
  */
-export function RankBars({ rows, emptyLabel = "Veri yok" }: { rows: RankRow[]; emptyLabel?: string }) {
+export function RankBars({ rows, emptyLabel = "Veri yok", loading }: { rows: RankRow[]; emptyLabel?: string; loading?: boolean }) {
+  if (loading) return <ChartSkeleton />;
   if (rows.length === 0) return <EmptyChart label={emptyLabel} />;
   const max = Math.max(1, ...rows.map((r) => r.value));
 

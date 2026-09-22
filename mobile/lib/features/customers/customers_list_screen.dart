@@ -10,6 +10,9 @@ import '../../core/file_download.dart';
 import '../../models/customer.dart';
 import '../../models/user.dart';
 import '../../theme/app_colors.dart';
+import '../../theme/app_palette.dart';
+import '../../theme/app_text_styles.dart';
+import '../../widgets/staggered_fade_in.dart';
 import '../../widgets/state_views.dart';
 import 'customer_tags.dart';
 import 'customers_api.dart';
@@ -40,6 +43,7 @@ class _CustomersListScreenState extends State<CustomersListScreen> {
   List<Customer> _customers = [];
   bool _loading = true;
   bool _loadingMore = false;
+
   /// 'newest' | 'name' | 'balance' - backend'deki sort parametresi.
   String _sort = 'newest';
   String? _error;
@@ -80,9 +84,12 @@ class _CustomersListScreenState extends State<CustomersListScreen> {
   void initState() {
     super.initState();
     _load();
-    _tagsApi.list().then((v) {
-      if (mounted) setState(() => _tagOptions = v);
-    }).catchError((_) {});
+    _tagsApi
+        .list()
+        .then((v) {
+          if (mounted) setState(() => _tagOptions = v);
+        })
+        .catchError((_) {});
   }
 
   @override
@@ -103,7 +110,12 @@ class _CustomersListScreenState extends State<CustomersListScreen> {
     });
     try {
       final page = append ? _page + 1 : 1;
-      final res = await _api.list(page: page, search: _search, sort: _sort, tagId: _tagFilter);
+      final res = await _api.list(
+        page: page,
+        search: _search,
+        sort: _sort,
+        tagId: _tagFilter,
+      );
       setState(() {
         _customers = append ? [..._customers, ...res.data] : res.data;
         _page = res.pagination.page;
@@ -131,6 +143,7 @@ class _CustomersListScreenState extends State<CustomersListScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final tx = context.text;
     return Scaffold(
       appBar: AppBar(
         title: const Text('Müşteriler'),
@@ -194,7 +207,9 @@ class _CustomersListScreenState extends State<CustomersListScreen> {
                         tag: t,
                         dimmed: _tagFilter != null && _tagFilter != t.id,
                         onTap: () {
-                          setState(() => _tagFilter = _tagFilter == t.id ? null : t.id);
+                          setState(
+                            () => _tagFilter = _tagFilter == t.id ? null : t.id,
+                          );
                           _load();
                         },
                       ),
@@ -216,10 +231,7 @@ class _CustomersListScreenState extends State<CustomersListScreen> {
                   Padding(
                     padding: const EdgeInsets.only(right: 8),
                     child: ChoiceChip(
-                      label: Text(
-                        option.$2,
-                        style: const TextStyle(fontSize: 12),
-                      ),
+                      label: Text(option.$2, style: tx.caption),
                       selected: _sort == option.$1,
                       onSelected: (_) {
                         setState(() => _sort = option.$1);
@@ -237,6 +249,7 @@ class _CustomersListScreenState extends State<CustomersListScreen> {
   }
 
   Widget _buildBody() {
+    final cs = context.colors;
     if (_loading) return const LoadingView();
     if (_error != null)
       return ErrorRetryView(message: _error!, onRetry: () => _load());
@@ -249,7 +262,7 @@ class _CustomersListScreenState extends State<CustomersListScreen> {
 
     return RefreshIndicator(
       onRefresh: () => _load(),
-      color: AppColors.primary600,
+      color: cs.accentSoft,
       child: NotificationListener<ScrollNotification>(
         onNotification: (n) {
           if (n.metrics.pixels >= n.metrics.maxScrollExtent - 200 &&
@@ -271,16 +284,19 @@ class _CustomersListScreenState extends State<CustomersListScreen> {
               );
             }
             final c = _customers[i];
-            return _CustomerCard(
-              customer: c,
-              onTap: () async {
-                final changed = await Navigator.of(context).push<bool>(
-                  MaterialPageRoute(
-                    builder: (_) => CustomerDetailScreen(customerId: c.id),
-                  ),
-                );
-                if (changed == true) _load();
-              },
+            return StaggeredFadeIn(
+              index: i,
+              child: _CustomerCard(
+                customer: c,
+                onTap: () async {
+                  final changed = await Navigator.of(context).push<bool>(
+                    MaterialPageRoute(
+                      builder: (_) => CustomerDetailScreen(customerId: c.id),
+                    ),
+                  );
+                  if (changed == true) _load();
+                },
+              ),
             );
           },
         ),
@@ -297,6 +313,8 @@ class _CustomerCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final cs = context.colors;
+    final tx = context.text;
     final initials = customer.fullName.isNotEmpty
         ? customer.fullName
               .trim()
@@ -308,7 +326,7 @@ class _CustomerCard extends StatelessWidget {
         : '?';
 
     return Material(
-      color: AppColors.surfaceCard,
+      color: cs.surfaceCard,
       borderRadius: BorderRadius.circular(AppRadius.card),
       child: InkWell(
         borderRadius: BorderRadius.circular(AppRadius.card),
@@ -317,17 +335,17 @@ class _CustomerCard extends StatelessWidget {
           padding: const EdgeInsets.all(14),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(AppRadius.card),
-            border: Border.all(color: AppColors.borderDefault),
+            border: Border.all(color: cs.borderDefault),
           ),
           child: Row(
             children: [
               CircleAvatar(
                 radius: 22,
-                backgroundColor: AppColors.primary100,
+                backgroundColor: cs.primary100,
                 child: Text(
                   initials,
-                  style: const TextStyle(
-                    color: AppColors.primary700,
+                  style: tx.body.copyWith(
+                    color: cs.primary700,
                     fontWeight: FontWeight.w700,
                   ),
                 ),
@@ -339,10 +357,7 @@ class _CustomerCard extends StatelessWidget {
                   children: [
                     Text(
                       customer.fullName,
-                      style: const TextStyle(
-                        fontWeight: FontWeight.w700,
-                        fontSize: 14.5,
-                      ),
+                      style: tx.subtitle.copyWith(fontWeight: FontWeight.w700),
                     ),
                     if (customer.tags.isNotEmpty)
                       Padding(
@@ -351,7 +366,8 @@ class _CustomerCard extends StatelessWidget {
                           spacing: 4,
                           runSpacing: 4,
                           children: [
-                            for (final t in customer.tags) CustomerTagChip(tag: CustomerTag.fromJson(t)),
+                            for (final t in customer.tags)
+                              CustomerTagChip(tag: CustomerTag.fromJson(t)),
                           ],
                         ),
                       ),
@@ -361,10 +377,7 @@ class _CustomerCard extends StatelessWidget {
                         customer.phone,
                         if (customer.district != null) customer.district!,
                       ].join(' · '),
-                      style: const TextStyle(
-                        fontSize: 12.5,
-                        color: AppColors.textSecondary,
-                      ),
+                      style: tx.bodySmall,
                     ),
                   ],
                 ),
@@ -381,29 +394,22 @@ class _CustomerCard extends StatelessWidget {
                             ? customer.outstandingBalance
                             : 0,
                       ),
-                      style: TextStyle(
-                        fontSize: 12.5,
+                      style: tx.bodySmall.copyWith(
                         fontWeight: FontWeight.w700,
                         color: customer.outstandingBalance! > 0
-                            ? AppColors.danger600
-                            : AppColors.success600,
+                            ? cs.danger600
+                            : cs.success600,
                       ),
                     ),
                     Text(
                       customer.activeContractCount > 0
                           ? '${customer.activeContractCount} sözleşme'
                           : '${customer.jobCount} iş',
-                      style: const TextStyle(
-                        fontSize: 10.5,
-                        color: AppColors.textFaint,
-                      ),
+                      style: tx.label,
                     ),
                   ],
                 ),
-              const Icon(
-                Icons.chevron_right_rounded,
-                color: AppColors.textFaint,
-              ),
+              Icon(Icons.chevron_right_rounded, color: cs.textFaint),
             ],
           ),
         ),

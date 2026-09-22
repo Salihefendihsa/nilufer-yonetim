@@ -6,9 +6,12 @@ import 'package:url_launcher/url_launcher.dart';
 import '../../auth/auth_provider.dart';
 import '../../core/api_client.dart';
 import '../../core/file_download.dart';
+import '../../models/contract.dart';
 import '../../models/customer.dart';
 import '../../models/user.dart';
 import '../../theme/app_colors.dart';
+import '../../theme/app_palette.dart';
+import '../../theme/app_text_styles.dart';
 import '../../widgets/state_views.dart';
 import '../jobs/job_detail_screen.dart';
 import 'customer_documents_tab.dart';
@@ -118,7 +121,10 @@ class _CustomerDetailScreenState extends State<CustomerDetailScreen>
           ),
           TextButton(
             onPressed: () => Navigator.of(context).pop(true),
-            child: const Text('Sil', style: TextStyle(color: Colors.red)),
+            style: TextButton.styleFrom(
+              foregroundColor: context.colors.danger600,
+            ),
+            child: const Text('Sil'),
           ),
         ],
       ),
@@ -128,17 +134,14 @@ class _CustomerDetailScreenState extends State<CustomerDetailScreen>
       await _api.delete(widget.customerId);
       _changed = true;
       if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(const SnackBar(content: Text('Müşteri silindi.')));
+        ScaffoldMessenger.of(context)
+            .showSnackBar(const SnackBar(content: Text('Müşteri silindi.')));
         Navigator.of(context).pop(true);
       }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(e is ApiException ? e.message : 'Silinemedi'),
-          ),
+          SnackBar(content: Text(e is ApiException ? e.message : 'Silinemedi')),
         );
       }
     }
@@ -190,6 +193,8 @@ class _CustomerDetailScreenState extends State<CustomerDetailScreen>
   }
 
   Widget _buildBody() {
+    final cs = context.colors;
+    final tx = context.text;
     if (_loading) return const LoadingView();
     if (_error != null) return ErrorRetryView(message: _error!, onRetry: _load);
     final c = _customer!;
@@ -222,20 +227,12 @@ class _CustomerDetailScreenState extends State<CustomerDetailScreen>
                 const SizedBox(height: 6),
                 Row(
                   children: [
-                    const Icon(
-                      Icons.star_rounded,
-                      size: 16,
-                      color: AppColors.warning500,
-                    ),
+                    Icon(Icons.star_rounded, size: 16, color: cs.warning500),
                     const SizedBox(width: 4),
                     Text(
                       '${_averageRating(c.jobs)!.toStringAsFixed(1)} '
                       '(${_ratedJobCount(c.jobs)} değerlendirme)',
-                      style: const TextStyle(
-                        fontSize: 12.5,
-                        fontWeight: FontWeight.w600,
-                        color: AppColors.textSecondary,
-                      ),
+                      style: tx.bodySmall.copyWith(fontWeight: FontWeight.w600),
                     ),
                   ],
                 ),
@@ -249,17 +246,17 @@ class _CustomerDetailScreenState extends State<CustomerDetailScreen>
                   ),
                   decoration: BoxDecoration(
                     color: (c.outstandingBalance ?? 0) > 0
-                        ? AppColors.danger50
-                        : AppColors.success50,
+                        ? cs.danger50
+                        : cs.success50,
                     borderRadius: BorderRadius.circular(AppRadius.chip),
                   ),
                   child: Text(
                     'Bakiye: ${_currency.format(c.outstandingBalance)}',
-                    style: TextStyle(
+                    style: tx.body.copyWith(
                       fontWeight: FontWeight.w700,
                       color: (c.outstandingBalance ?? 0) > 0
-                          ? AppColors.danger600
-                          : AppColors.success600,
+                          ? cs.danger600
+                          : cs.success600,
                     ),
                   ),
                 ),
@@ -269,9 +266,9 @@ class _CustomerDetailScreenState extends State<CustomerDetailScreen>
         ),
         TabBar(
           controller: _tabController,
-          labelColor: AppColors.primary700,
-          unselectedLabelColor: AppColors.textSecondary,
-          indicatorColor: AppColors.primary600,
+          labelColor: cs.primary700,
+          unselectedLabelColor: cs.textSecondary,
+          indicatorColor: cs.primary600,
           tabs: [
             Tab(text: 'İşler (${c.jobs.length})'),
             Tab(text: 'Sözleşmeler (${c.contracts.length})'),
@@ -311,28 +308,18 @@ class _InfoRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final cs = context.colors;
+    final tx = context.text;
     return Padding(
       padding: const EdgeInsets.only(bottom: 4),
       child: Row(
         children: [
-          Icon(icon, size: 15, color: AppColors.textFaint),
+          Icon(icon, size: 15, color: cs.textFaint),
           const SizedBox(width: 6),
-          Expanded(
-            child: Text(
-              text,
-              style: const TextStyle(
-                fontSize: 13,
-                color: AppColors.textSecondary,
-              ),
-            ),
-          ),
+          Expanded(child: Text(text, style: tx.bodySmall)),
           if (icon == Icons.phone_rounded)
             IconButton(
-              icon: const Icon(
-                Icons.call_rounded,
-                size: 18,
-                color: AppColors.primary600,
-              ),
+              icon: Icon(Icons.call_rounded, size: 18, color: cs.accentSoft),
               onPressed: () => launchUrl(Uri.parse('tel:$text')),
               visualDensity: VisualDensity.compact,
             ),
@@ -349,6 +336,7 @@ class _JobsTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final cs = context.colors;
     if (jobs.isEmpty)
       return const EmptyStateView(
         title: 'Henüz iş yok',
@@ -356,7 +344,7 @@ class _JobsTab extends StatelessWidget {
       );
     return RefreshIndicator(
       onRefresh: onRefresh,
-      color: AppColors.primary600,
+      color: cs.accentSoft,
       child: ListView.separated(
         padding: const EdgeInsets.all(16),
         itemCount: jobs.length,
@@ -404,22 +392,21 @@ class _JobRowState extends State<_JobRow> {
 
   @override
   Widget build(BuildContext context) {
+    final cs = context.colors;
+    final tx = context.text;
     final j = widget.job;
     final isCompleted = j['status'] == 'COMPLETED';
     return ListTile(
-      tileColor: AppColors.surfaceCard,
+      tileColor: cs.surfaceCard,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(AppRadius.card),
-        side: const BorderSide(color: AppColors.borderDefault),
+        side: BorderSide(color: cs.borderDefault),
       ),
       title: Text(
         j['serviceType'] as String? ?? '',
-        style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13.5),
+        style: tx.body.copyWith(fontWeight: FontWeight.w600),
       ),
-      subtitle: Text(
-        j['status'] as String? ?? '',
-        style: const TextStyle(fontSize: 12),
-      ),
+      subtitle: Text(j['status'] as String? ?? '', style: tx.caption),
       trailing: isCompleted
           ? (_downloading
                 ? const SizedBox(
@@ -429,9 +416,9 @@ class _JobRowState extends State<_JobRow> {
                   )
                 : IconButton(
                     tooltip: 'PDF İndir',
-                    icon: const Icon(
+                    icon: Icon(
                       Icons.picture_as_pdf_outlined,
-                      color: AppColors.textFaint,
+                      color: cs.textFaint,
                     ),
                     onPressed: _downloadReport,
                   ))
@@ -452,6 +439,8 @@ class _ContractsTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final cs = context.colors;
+    final tx = context.text;
     if (contracts.isEmpty)
       return const EmptyStateView(
         title: 'Sözleşme yok',
@@ -459,7 +448,7 @@ class _ContractsTab extends StatelessWidget {
       );
     return RefreshIndicator(
       onRefresh: onRefresh,
-      color: AppColors.primary600,
+      color: cs.accentSoft,
       child: ListView.separated(
         padding: const EdgeInsets.all(16),
         itemCount: contracts.length,
@@ -467,27 +456,132 @@ class _ContractsTab extends StatelessWidget {
         itemBuilder: (context, i) {
           final c = contracts[i] as Map<String, dynamic>;
           final amount = (c['amount'] as num?)?.toDouble();
-          return ListTile(
-            tileColor: AppColors.surfaceCard,
-            shape: RoundedRectangleBorder(
+          return Material(
+            color: cs.surfaceCard,
+            borderRadius: BorderRadius.circular(AppRadius.card),
+            child: InkWell(
               borderRadius: BorderRadius.circular(AppRadius.card),
-              side: const BorderSide(color: AppColors.borderDefault),
-            ),
-            title: Text(
-              c['serviceType'] as String? ?? c['status'] as String? ?? '',
-              style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13.5),
-            ),
-            subtitle: Text(
-              amount != null
-                  ? '${_currency.format(amount)} · ${c['status']}'
-                  : c['status'] as String? ?? '',
-              style: const TextStyle(fontSize: 12),
+              onTap: () => _showContractDetail(context, c),
+              child: ListTile(
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(AppRadius.card),
+                  side: BorderSide(color: cs.borderDefault),
+                ),
+                title: Text(
+                  c['serviceType'] as String? ?? c['status'] as String? ?? '',
+                  style: tx.body.copyWith(fontWeight: FontWeight.w600),
+                ),
+                subtitle: Text(
+                  amount != null
+                      ? '${_currency.format(amount)} · ${contractStatusLabelTr(c['status'] as String? ?? '')}'
+                      : contractStatusLabelTr(c['status'] as String? ?? ''),
+                  style: tx.caption,
+                ),
+                trailing: Icon(
+                  Icons.chevron_right_rounded,
+                  color: cs.textFaint,
+                ),
+              ),
             ),
           );
         },
       ),
     );
   }
+}
+
+/// Ayrı bir sözleşme detay ekranı yok (bkz. `contracts_list_screen.dart` —
+/// orada da kartlar zaten tüm bilgiyi satır içinde gösterir, push edilen bir
+/// detay yok); bu yüzden burada da aynı desen: eksik bilgiyi tek bir alt
+/// sayfada (bottom sheet) gösteriyoruz — kart artık boşta durmuyor.
+void _showContractDetail(BuildContext context, Map<String, dynamic> c) {
+  final tx = context.text;
+  final amount = (c['amount'] as num?)?.toDouble();
+  final status = c['status'] as String? ?? '';
+  final startDate = c['startDate'] as String?;
+  final endDate = c['endDate'] as String?;
+  final id = c['id'] as String?;
+
+  Widget row(String label, String value) => Padding(
+    padding: const EdgeInsets.symmetric(vertical: 6),
+    child: Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        SizedBox(width: 120, child: Text(label, style: tx.caption)),
+        Expanded(
+          child: Text(
+            value,
+            style: tx.body.copyWith(fontWeight: FontWeight.w600),
+          ),
+        ),
+      ],
+    ),
+  );
+
+  showModalBottomSheet<void>(
+    context: context,
+    isScrollControlled: true,
+    builder: (ctx) => Padding(
+      padding: EdgeInsets.only(
+        bottom: MediaQuery.of(ctx).viewInsets.bottom,
+        left: 20,
+        right: 20,
+        top: 20,
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(c['serviceType'] as String? ?? 'Sözleşme', style: tx.title),
+          const SizedBox(height: 8),
+          row('Durum', contractStatusLabelTr(status)),
+          if (startDate != null && endDate != null)
+            row(
+              'Dönem',
+              '${_dateFormat.format(DateTime.parse(startDate))} → ${_dateFormat.format(DateTime.parse(endDate))}',
+            ),
+          if (c['durationMonths'] != null)
+            row('Süre', '${c['durationMonths']} ay'),
+          if (amount != null)
+            row(
+              'Tutar',
+              '${_currency.format(amount)}${c['recurrenceType'] != null ? ' · ${recurrenceTypeLabelTr(c['recurrenceType'] as String?)}' : ''}',
+            ),
+          if (c['isPaused'] == true)
+            row('Not', 'Müşteri tarafından duraklatıldı'),
+          const SizedBox(height: 16),
+          if (id != null)
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton.icon(
+                onPressed: () async {
+                  Navigator.of(ctx).pop();
+                  try {
+                    await downloadAndShare(
+                      '/contracts/$id/pdf',
+                      'sozlesme-$id.pdf',
+                    );
+                  } catch (e) {
+                    if (context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text(
+                            e is ApiException ? e.message : 'PDF indirilemedi',
+                          ),
+                        ),
+                      );
+                    }
+                  }
+                },
+                icon: const Icon(Icons.picture_as_pdf_outlined, size: 16),
+                label: const Text('PDF İndir'),
+              ),
+            ),
+          const SizedBox(height: 12),
+        ],
+      ),
+    ),
+  );
 }
 
 class _PaymentsTab extends StatelessWidget {
@@ -497,6 +591,8 @@ class _PaymentsTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final cs = context.colors;
+    final tx = context.text;
     if (payments.isEmpty)
       return const EmptyStateView(
         title: 'Ödeme yok',
@@ -504,7 +600,7 @@ class _PaymentsTab extends StatelessWidget {
       );
     return RefreshIndicator(
       onRefresh: onRefresh,
-      color: AppColors.primary600,
+      color: cs.accentSoft,
       child: ListView.separated(
         padding: const EdgeInsets.all(16),
         itemCount: payments.length,
@@ -512,18 +608,18 @@ class _PaymentsTab extends StatelessWidget {
         itemBuilder: (context, i) {
           final p = payments[i] as Map<String, dynamic>;
           return ListTile(
-            tileColor: AppColors.surfaceCard,
+            tileColor: cs.surfaceCard,
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(AppRadius.card),
-              side: const BorderSide(color: AppColors.borderDefault),
+              side: BorderSide(color: cs.borderDefault),
             ),
             title: Text(
               _currency.format((p['amount'] as num).toDouble()),
-              style: const TextStyle(fontWeight: FontWeight.w700),
+              style: tx.body.copyWith(fontWeight: FontWeight.w700),
             ),
             subtitle: Text(
               '${p['paymentType']} · ${_dateFormat.format(DateTime.parse(p['createdAt'] as String))}',
-              style: const TextStyle(fontSize: 12),
+              style: tx.caption,
             ),
           );
         },

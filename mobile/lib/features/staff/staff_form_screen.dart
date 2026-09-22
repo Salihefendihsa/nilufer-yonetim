@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import '../../core/api_client.dart';
 import '../../models/staff.dart';
 import '../../theme/app_colors.dart';
+import '../../theme/app_palette.dart';
+import '../../theme/app_text_styles.dart';
 import 'staff_api.dart';
 
 const Map<String, String> _staffRoleLabels = {
@@ -27,6 +29,7 @@ class _StaffFormScreenState extends State<StaffFormScreen> {
   final _salaryController = TextEditingController();
   final _vehicleController = TextEditingController();
   final _capacityController = TextEditingController();
+
   /// Bölüm AH (8. tur): yıllık izin hakkı (gün).
   final _quotaController = TextEditingController(text: '14');
 
@@ -73,9 +76,7 @@ class _StaffFormScreenState extends State<StaffFormScreen> {
   Future<void> _load() async {
     setState(() => _loadingOptions = true);
     try {
-      final teamLeads = await _api
-          .list(role: 'TEAM_LEAD')
-          .then((r) => r.data);
+      final teamLeads = await _api.list(role: 'TEAM_LEAD').then((r) => r.data);
       final managers = await _api.listUnlinkedUsers('MANAGER');
       List<UnlinkedUser> unlinked = [];
       if (!_isEdit) {
@@ -163,6 +164,8 @@ class _StaffFormScreenState extends State<StaffFormScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final cs = context.colors;
+    final tx = context.text;
     return Scaffold(
       appBar: AppBar(
         title: Text(_isEdit ? 'Personeli Düzenle' : 'Yeni Personel'),
@@ -193,7 +196,9 @@ class _StaffFormScreenState extends State<StaffFormScreen> {
                     DropdownButtonFormField<String>(
                       initialValue: _userId,
                       isExpanded: true,
-                      decoration: const InputDecoration(labelText: 'Kullanıcı *'),
+                      decoration: const InputDecoration(
+                        labelText: 'Kullanıcı *',
+                      ),
                       items: _unlinkedUsers
                           .map(
                             (u) => DropdownMenuItem(
@@ -214,10 +219,7 @@ class _StaffFormScreenState extends State<StaffFormScreen> {
                           'Bağlanabilecek ${_staffRoleLabels[_staffRole]} rolünde '
                           'kullanıcı yok. Önce bu rolle bir kullanıcı hesabı '
                           'oluşturulmalı.',
-                          style: const TextStyle(
-                            fontSize: 11.5,
-                            color: Colors.grey,
-                          ),
+                          style: tx.caption.copyWith(color: cs.textFaint),
                         ),
                       ),
                   ] else ...[
@@ -254,7 +256,9 @@ class _StaffFormScreenState extends State<StaffFormScreen> {
                     keyboardType: const TextInputType.numberWithOptions(
                       decimal: true,
                     ),
-                    decoration: const InputDecoration(labelText: 'Taban Maaş (₺) *'),
+                    decoration: const InputDecoration(
+                      labelText: 'Taban Maaş (₺) *',
+                    ),
                     validator: (v) =>
                         (v == null || double.tryParse(v.trim()) == null)
                         ? 'Geçerli bir tutar girin'
@@ -296,7 +300,8 @@ class _StaffFormScreenState extends State<StaffFormScreen> {
                     ),
                     validator: (v) {
                       final n = int.tryParse((v ?? '').trim());
-                      if (n == null || n < 0 || n > 365) return '0–365 arası bir sayı girin';
+                      if (n == null || n < 0 || n > 365)
+                        return '0–365 arası bir sayı girin';
                       return null;
                     },
                   ),
@@ -304,7 +309,9 @@ class _StaffFormScreenState extends State<StaffFormScreen> {
                   DropdownButtonFormField<String>(
                     initialValue: _supervisorId,
                     isExpanded: true,
-                    decoration: const InputDecoration(labelText: 'Şef (opsiyonel)'),
+                    decoration: const InputDecoration(
+                      labelText: 'Şef (opsiyonel)',
+                    ),
                     items: [
                       const DropdownMenuItem<String>(
                         value: null,
@@ -337,7 +344,7 @@ class _StaffFormScreenState extends State<StaffFormScreen> {
                     const SizedBox(height: 12),
                     Text(
                       _error!,
-                      style: const TextStyle(color: Colors.red, fontSize: 13),
+                      style: tx.bodySmall.copyWith(color: cs.danger600),
                     ),
                   ],
                   const SizedBox(height: 20),

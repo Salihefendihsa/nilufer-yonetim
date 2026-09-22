@@ -3,7 +3,8 @@ import 'package:provider/provider.dart';
 
 import '../auth/auth_provider.dart';
 import '../core/api_client.dart';
-import '../theme/app_colors.dart';
+import '../theme/app_palette.dart';
+import '../theme/app_text_styles.dart';
 
 /// web/src/components/ImpersonationBanner.tsx ile aynı işlev — OWNER birini
 /// impersonate ederken TÜM ekranlarda belirgin şekilde görünür.
@@ -31,6 +32,8 @@ class _ImpersonationBannerState extends State<ImpersonationBanner> {
 
   @override
   Widget build(BuildContext context) {
+    final cs = context.colors;
+    final tx = context.text;
     final auth = context.watch<AuthProvider>();
     final meta = auth.impersonationMeta;
     if (meta == null) return const SizedBox.shrink();
@@ -40,7 +43,7 @@ class _ImpersonationBannerState extends State<ImpersonationBanner> {
 
     return Container(
       width: double.infinity,
-      color: AppColors.warning500,
+      color: cs.warning500,
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       child: SafeArea(
         bottom: false,
@@ -51,9 +54,8 @@ class _ImpersonationBannerState extends State<ImpersonationBanner> {
             Expanded(
               child: Text(
                 '$targetName olarak görüntüleniyorsunuz — $reason',
-                style: const TextStyle(
+                style: tx.caption.copyWith(
                   color: Colors.white,
-                  fontSize: 11.5,
                   fontWeight: FontWeight.w600,
                 ),
                 maxLines: 1,
@@ -68,7 +70,7 @@ class _ImpersonationBannerState extends State<ImpersonationBanner> {
                 minimumSize: const Size(0, 28),
                 padding: const EdgeInsets.symmetric(horizontal: 10),
               ),
-              child: Text(_ending ? 'Çıkılıyor...' : 'Çık', style: const TextStyle(fontSize: 11.5)),
+              child: Text(_ending ? 'Çıkılıyor...' : 'Çık', style: tx.caption),
             ),
           ],
         ),

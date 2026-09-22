@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, type FormEvent } from "react";
+import { SectionTitle } from "@/components/SectionTitle";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Bug,
@@ -295,7 +296,7 @@ export default function GirisPage() {
                       setSelectedTab(tab);
                       setError(null);
                     }}
-                    className={`relative flex flex-col items-center gap-1 rounded-xl px-1 py-2 text-[11px] font-semibold transition sm:text-xs ${
+                    className={`relative flex flex-col items-center gap-1 rounded-xl px-1 py-2 text-2xs font-semibold transition sm:text-xs ${
                       active ? "text-white" : "text-text-secondary hover:text-text-primary"
                     }`}
                   >
@@ -322,7 +323,7 @@ export default function GirisPage() {
             {step === "login" && (
               <motion.div key="login" variants={stepVariants} initial="initial" animate="animate" exit="exit" transition={{ duration: 0.2 }}>
                 <div className="mb-6">
-                  <h2 className="text-2xl font-bold tracking-tight text-text-primary">{selectedTab.label} Girişi</h2>
+                  <SectionTitle size="xl">{selectedTab.label} Girişi</SectionTitle>
                   <p className="mt-1 text-sm text-text-secondary">Devam etmek için hesap bilgilerinizi girin.</p>
                 </div>
 
@@ -365,7 +366,7 @@ export default function GirisPage() {
               <motion.div key="2fa" variants={stepVariants} initial="initial" animate="animate" exit="exit" transition={{ duration: 0.2 }}>
                 <StepIndicator current={2} total={2} labels={["Hesap", "Doğrulama"]} />
                 <div className="mb-6">
-                  <h2 className="text-2xl font-bold tracking-tight text-text-primary">İki Adımlı Doğrulama</h2>
+                  <SectionTitle size="xl">İki Adımlı Doğrulama</SectionTitle>
                   <p className="mt-1 text-sm text-text-secondary">
                     {useRecoveryCode ? "Kurtarma kodlarınızdan birini girin." : "Authenticator uygulamanızdaki 6 haneli kodu girin."}
                   </p>
@@ -429,7 +430,7 @@ export default function GirisPage() {
                     <span className="flex h-12 w-12 items-center justify-center rounded-full bg-primary-50 text-primary-600">
                       <MailCheck size={22} strokeWidth={1.75} />
                     </span>
-                    <h2 className="text-lg font-semibold text-text-primary">Bağlantı Gönderildi</h2>
+                    <SectionTitle size="lg">Bağlantı Gönderildi</SectionTitle>
                     <p className="text-sm text-text-secondary">
                       Bu e-posta sistemde kayıtlıysa şifre sıfırlama bağlantısı gönderildi. Gelen kutunuzu (ve spam klasörünü) kontrol edin.
                     </p>
@@ -441,7 +442,7 @@ export default function GirisPage() {
                 ) : (
                   <>
                     <div className="mb-6">
-                      <h2 className="text-2xl font-bold tracking-tight text-text-primary">Şifremi Unuttum</h2>
+                      <SectionTitle size="xl">Şifremi Unuttum</SectionTitle>
                       <p className="mt-1 text-sm text-text-secondary">Hesabınızın e-posta adresini girin, size bir sıfırlama bağlantısı gönderelim.</p>
                     </div>
                     <form onSubmit={handleForgot} className="flex flex-col gap-4">

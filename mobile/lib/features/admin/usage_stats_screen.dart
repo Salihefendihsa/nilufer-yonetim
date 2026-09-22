@@ -4,6 +4,8 @@ import 'package:intl/intl.dart';
 import '../../core/api_client.dart';
 import '../../models/user.dart';
 import '../../theme/app_colors.dart';
+import '../../theme/app_palette.dart';
+import '../../theme/app_text_styles.dart';
 import '../../widgets/state_views.dart';
 
 const _dayOptions = [7, 30, 90];
@@ -42,10 +44,14 @@ class _UsageStatsScreenState extends State<UsageStatsScreen> {
         '/sessions/report',
         query: {'days': _days},
       );
-      setState(() => _rows = (json['data'] as List).cast<Map<String, dynamic>>());
+      setState(
+        () => _rows = (json['data'] as List).cast<Map<String, dynamic>>(),
+      );
     } catch (e) {
       setState(
-        () => _error = e is ApiException ? e.message : 'Kullanım istatistikleri yüklenemedi',
+        () => _error = e is ApiException
+            ? e.message
+            : 'Kullanım istatistikleri yüklenemedi',
       );
     } finally {
       setState(() => _loading = false);
@@ -62,16 +68,25 @@ class _UsageStatsScreenState extends State<UsageStatsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final cs = context.colors;
+    final tx = context.text;
     final totalUsers = _rows.length;
-    final totalSessions = _rows.fold<int>(0, (s, r) => s + (r['totalSessions'] as int));
+    final totalSessions = _rows.fold<int>(
+      0,
+      (s, r) => s + (r['totalSessions'] as int),
+    );
     final weightedMinutes = _rows.fold<double>(
       0,
-      (s, r) => s + (r['averageDurationMinutes'] as num) * (r['totalSessions'] as int),
+      (s, r) =>
+          s +
+          (r['averageDurationMinutes'] as num) * (r['totalSessions'] as int),
     );
     final avgDuration = totalSessions > 0 ? weightedMinutes / totalSessions : 0;
     final weekAgo = DateTime.now().subtract(const Duration(days: 7));
     final activeUsers = _rows
-        .where((r) => DateTime.parse(r['lastLoginAt'] as String).isAfter(weekAgo))
+        .where(
+          (r) => DateTime.parse(r['lastLoginAt'] as String).isAfter(weekAgo),
+        )
         .length;
 
     final roleCounts = <String, int>{};
@@ -81,8 +96,13 @@ class _UsageStatsScreenState extends State<UsageStatsScreen> {
     }
 
     final topUsers = _rows.toList()
-      ..sort((a, b) => (b['totalSessions'] as int).compareTo(a['totalSessions'] as int));
-    final maxSessions = topUsers.isNotEmpty ? topUsers.first['totalSessions'] as int : 1;
+      ..sort(
+        (a, b) =>
+            (b['totalSessions'] as int).compareTo(a['totalSessions'] as int),
+      );
+    final maxSessions = topUsers.isNotEmpty
+        ? topUsers.first['totalSessions'] as int
+        : 1;
 
     return Scaffold(
       appBar: AppBar(title: const Text('Kullanım İstatistikleri')),
@@ -102,14 +122,13 @@ class _UsageStatsScreenState extends State<UsageStatsScreen> {
                           setState(() => _days = d);
                           _load();
                         },
-                        selectedColor: AppColors.primary600,
-                        labelStyle: TextStyle(
-                          color: _days == d ? AppColors.textInverse : AppColors.textSecondary,
+                        selectedColor: cs.primary600,
+                        labelStyle: tx.bodySmall.copyWith(
+                          color: _days == d ? cs.textInverse : cs.textSecondary,
                           fontWeight: FontWeight.w600,
-                          fontSize: 12.5,
                         ),
-                        backgroundColor: AppColors.surfaceCard,
-                        side: const BorderSide(color: AppColors.borderDefault),
+                        backgroundColor: cs.surfaceCard,
+                        side: BorderSide(color: cs.borderDefault),
                       ),
                     ),
                   )
@@ -123,7 +142,7 @@ class _UsageStatsScreenState extends State<UsageStatsScreen> {
                 ? ErrorRetryView(message: _error!, onRetry: _load)
                 : RefreshIndicator(
                     onRefresh: _load,
-                    color: AppColors.primary600,
+                    color: cs.accentSoft,
                     child: ListView(
                       padding: const EdgeInsets.all(16),
                       children: [
@@ -135,8 +154,14 @@ class _UsageStatsScreenState extends State<UsageStatsScreen> {
                           crossAxisSpacing: 10,
                           childAspectRatio: 1.7,
                           children: [
-                            _StatCard(label: 'Toplam kullanıcı', value: '$totalUsers'),
-                            _StatCard(label: 'Toplam oturum', value: '$totalSessions'),
+                            _StatCard(
+                              label: 'Toplam kullanıcı',
+                              value: '$totalUsers',
+                            ),
+                            _StatCard(
+                              label: 'Toplam oturum',
+                              value: '$totalSessions',
+                            ),
                             _StatCard(
                               label: 'Son 7 günde aktif',
                               value: '$activeUsers',
@@ -157,38 +182,56 @@ class _UsageStatsScreenState extends State<UsageStatsScreen> {
                             icon: Icons.timer_outlined,
                           )
                         else ...[
-                          const Text(
+                          Text(
                             'Rol Dağılımı',
-                            style: TextStyle(fontWeight: FontWeight.w700, fontSize: 14.5),
+                            style: tx.subtitle.copyWith(
+                              fontWeight: FontWeight.w700,
+                            ),
                           ),
                           const SizedBox(height: 8),
                           ...roleCounts.entries.map(
                             (e) => _BarRow(
                               label: roleLabelTr(roleFromString(e.key)),
-                              value: totalUsers == 0 ? 0 : (e.value / totalUsers) * 100,
+                              value: totalUsers == 0
+                                  ? 0
+                                  : (e.value / totalUsers) * 100,
                               caption: '${e.value} kullanıcı',
                             ),
                           ),
                           const SizedBox(height: 20),
-                          const Text(
+                          Text(
                             'En Çok Oturum Açanlar',
-                            style: TextStyle(fontWeight: FontWeight.w700, fontSize: 14.5),
-                          ),
-                          const SizedBox(height: 8),
-                          ...topUsers.take(8).map(
-                            (r) => _BarRow(
-                              label: r['fullName'] as String,
-                              value: (r['totalSessions'] as int) / maxSessions * 100,
-                              caption: '${r['totalSessions']} oturum',
+                            style: tx.subtitle.copyWith(
+                              fontWeight: FontWeight.w700,
                             ),
                           ),
+                          const SizedBox(height: 8),
+                          ...topUsers
+                              .take(8)
+                              .map(
+                                (r) => _BarRow(
+                                  label: r['fullName'] as String,
+                                  value:
+                                      (r['totalSessions'] as int) /
+                                      maxSessions *
+                                      100,
+                                  caption: '${r['totalSessions']} oturum',
+                                ),
+                              ),
                           const SizedBox(height: 20),
-                          const Text(
+                          Text(
                             'Detaylı Liste',
-                            style: TextStyle(fontWeight: FontWeight.w700, fontSize: 14.5),
+                            style: tx.subtitle.copyWith(
+                              fontWeight: FontWeight.w700,
+                            ),
                           ),
                           const SizedBox(height: 8),
-                          ..._rows.map((r) => _SessionRow(row: r, formatDuration: _formatDuration)),
+                          ..._rows.map(
+                            (r) => _SessionRow(
+                              row: r,
+                              formatDuration: _formatDuration,
+                            ),
+                          ),
                         ],
                       ],
                     ),
@@ -208,33 +251,28 @@ class _StatCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final cs = context.colors;
+    final tx = context.text;
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: AppColors.surfaceCard,
+        color: cs.surfaceCard,
         borderRadius: BorderRadius.circular(AppRadius.card),
-        border: Border.all(color: AppColors.borderDefault),
+        border: Border.all(color: cs.borderDefault),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisSize: MainAxisSize.min,
         children: [
-          Text(
-            value,
-            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
-          ),
+          Text(value, style: tx.title.copyWith(fontWeight: FontWeight.w800)),
           const SizedBox(height: 2),
           Text(
             label,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
-            style: const TextStyle(fontSize: 10.5, color: AppColors.textSecondary),
+            style: tx.label.copyWith(color: cs.textSecondary),
           ),
-          if (caption != null)
-            Text(
-              caption!,
-              style: const TextStyle(fontSize: 10, color: AppColors.textFaint),
-            ),
+          if (caption != null) Text(caption!, style: tx.label),
         ],
       ),
     );
@@ -245,10 +283,16 @@ class _BarRow extends StatelessWidget {
   final String label;
   final double value;
   final String caption;
-  const _BarRow({required this.label, required this.value, required this.caption});
+  const _BarRow({
+    required this.label,
+    required this.value,
+    required this.caption,
+  });
 
   @override
   Widget build(BuildContext context) {
+    final cs = context.colors;
+    final tx = context.text;
     return Padding(
       padding: const EdgeInsets.only(bottom: 10),
       child: Column(
@@ -261,13 +305,10 @@ class _BarRow extends StatelessWidget {
                 child: Text(
                   label,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w600),
+                  style: tx.bodySmall.copyWith(fontWeight: FontWeight.w600),
                 ),
               ),
-              Text(
-                caption,
-                style: const TextStyle(fontSize: 11.5, color: AppColors.textFaint),
-              ),
+              Text(caption, style: tx.caption.copyWith(color: cs.textFaint)),
             ],
           ),
           const SizedBox(height: 4),
@@ -276,8 +317,8 @@ class _BarRow extends StatelessWidget {
             child: LinearProgressIndicator(
               value: (value / 100).clamp(0, 1),
               minHeight: 8,
-              backgroundColor: AppColors.surfaceMuted,
-              color: AppColors.primary500,
+              backgroundColor: cs.surfaceMuted,
+              color: cs.primary500,
             ),
           ),
         ],
@@ -293,14 +334,16 @@ class _SessionRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final cs = context.colors;
+    final tx = context.text;
     final approximate = row['isApproximate'] == true;
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: AppColors.surfaceCard,
+        color: cs.surfaceCard,
         borderRadius: BorderRadius.circular(AppRadius.card),
-        border: Border.all(color: AppColors.borderDefault),
+        border: Border.all(color: cs.borderDefault),
       ),
       child: Row(
         children: [
@@ -310,12 +353,12 @@ class _SessionRow extends StatelessWidget {
               children: [
                 Text(
                   row['fullName'] as String,
-                  style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700),
+                  style: tx.bodySmall.copyWith(fontWeight: FontWeight.w700),
                 ),
                 const SizedBox(height: 2),
                 Text(
                   roleLabelTr(roleFromString(row['role'] as String)),
-                  style: const TextStyle(fontSize: 11, color: AppColors.textSecondary),
+                  style: tx.label.copyWith(color: cs.textSecondary),
                 ),
               ],
             ),
@@ -325,15 +368,17 @@ class _SessionRow extends StatelessWidget {
             children: [
               Text(
                 '${row['totalSessions']} oturum',
-                style: const TextStyle(fontSize: 11.5, fontWeight: FontWeight.w600),
+                style: tx.caption.copyWith(fontWeight: FontWeight.w600),
               ),
               Text(
                 '${approximate ? '~' : ''}${formatDuration(row['averageDurationMinutes'] as num)}',
-                style: const TextStyle(fontSize: 10.5, color: AppColors.textFaint),
+                style: tx.label,
               ),
               Text(
-                _dateFormat.format(DateTime.parse(row['lastLoginAt'] as String)),
-                style: const TextStyle(fontSize: 10, color: AppColors.textFaint),
+                _dateFormat.format(
+                  DateTime.parse(row['lastLoginAt'] as String),
+                ),
+                style: tx.label,
               ),
             ],
           ),

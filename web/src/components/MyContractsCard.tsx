@@ -1,6 +1,8 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { LoadingBlock } from "@/components/LoadingBlock";
+import { SectionTitle } from "@/components/SectionTitle";
 import { FileSignature, PauseCircle, PlayCircle } from "lucide-react";
 import { EmptyState } from "@/components/EmptyState";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
@@ -62,7 +64,7 @@ export function MyContractsCard() {
           <FileSignature size={17} strokeWidth={1.75} />
         </span>
         <div>
-          <h2 className="text-base font-semibold text-text-primary">Sözleşmelerim</h2>
+          <SectionTitle>Sözleşmelerim</SectionTitle>
           <p className="text-xs text-text-faint">Aktif bir sözleşmeyi geçici olarak duraklatabilirsiniz — periyodik işler o sürede planlanmaz.</p>
         </div>
       </div>
@@ -70,7 +72,7 @@ export function MyContractsCard() {
       {error && <p className="mb-3 rounded-2xl border border-danger-100 bg-danger-50 px-4 py-3 text-sm text-danger-500">{error}</p>}
 
       {loading ? (
-        <p className="py-6 text-center text-sm text-text-faint">Yükleniyor...</p>
+        <LoadingBlock rows={3} className="py-6" />
       ) : contracts.length === 0 ? (
         <EmptyState icon={FileSignature} title="Sözleşmeniz yok" description="Bir sözleşme oluşturulduğunda burada görünür." />
       ) : (

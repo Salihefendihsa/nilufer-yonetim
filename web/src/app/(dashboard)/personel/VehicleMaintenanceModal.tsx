@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState, type FormEvent } from "react";
+import { LoadingBlock } from "@/components/LoadingBlock";
 import { Trash2, Truck } from "lucide-react";
 import { Modal } from "@/components/Modal";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
@@ -123,7 +124,7 @@ export function VehicleMaintenanceModal({ open, onClose, staff, readOnly = false
         {error && <p className="rounded-2xl border border-danger-100 bg-danger-50 px-4 py-3 text-sm text-danger-500">{error}</p>}
 
         {loading ? (
-          <p className="text-sm text-text-secondary">Yükleniyor...</p>
+          <LoadingBlock lines={3} />
         ) : rows.length === 0 ? (
           <p className="text-sm text-text-secondary">Henüz bakım kaydı yok.</p>
         ) : (
@@ -138,7 +139,7 @@ export function VehicleMaintenanceModal({ open, onClose, staff, readOnly = false
                   </p>
                 </div>
                 <div className="flex shrink-0 items-center gap-2">
-                  <span className={`rounded-full border px-2.5 py-1 text-[11px] font-semibold ${dueTone(row)}`}>{dueLabel(row)}</span>
+                  <span className={`rounded-full border px-2.5 py-1 text-2xs font-semibold ${dueTone(row)}`}>{dueLabel(row)}</span>
                   {!readOnly && (
                     <button type="button" onClick={() => setDeleteTarget(row)} className="rounded-xl border border-danger-100 bg-danger-50 p-1.5 text-danger-500 transition hover:bg-danger-100" aria-label="Sil">
                       <Trash2 size={13} strokeWidth={1.75} />

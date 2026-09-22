@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { LoadingBlock } from "@/components/LoadingBlock";
 import { Modal } from "@/components/Modal";
 import { Toggle } from "@/components/Toggle";
 import { api, ApiError } from "@/lib/api";
@@ -54,7 +55,7 @@ export function PermissionsModal({ open, onClose, staff }: PermissionsModalProps
   return (
     <Modal open={open} onClose={onClose} title={staff ? `${staff.user.fullName} — Yetkiler` : "Yetkiler"}>
       {loading ? (
-        <p className="py-8 text-center text-sm text-text-faint">Yükleniyor...</p>
+        <LoadingBlock rows={3} className="py-6" />
       ) : (
         <div className="flex flex-col gap-4">
           <ul className="flex flex-col divide-y divide-border">

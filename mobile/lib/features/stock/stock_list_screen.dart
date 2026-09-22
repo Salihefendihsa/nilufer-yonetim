@@ -6,6 +6,9 @@ import '../../core/api_client.dart';
 import '../../models/product.dart';
 import '../../models/user.dart';
 import '../../theme/app_colors.dart';
+import '../../theme/app_palette.dart';
+import '../../theme/app_text_styles.dart';
+import '../../widgets/staggered_fade_in.dart';
 import '../../widgets/state_views.dart';
 import 'purchase_requests_screen.dart';
 import 'stock_api.dart';
@@ -69,6 +72,7 @@ class _StockListScreenState extends State<StockListScreen> {
 
   /// Satin alma (ikmal) talebi olusturur - stok bu asamada artmaz.
   Future<void> _showPurchaseSheet(Product p) async {
+    final tx = context.text;
     final quantityController = TextEditingController();
     final noteController = TextEditingController();
     final trackingController = TextEditingController();
@@ -96,15 +100,12 @@ class _StockListScreenState extends State<StockListScreen> {
             children: [
               Text(
                 '${p.name} — Satın Alma Talebi',
-                style: const TextStyle(
-                  fontWeight: FontWeight.w700,
-                  fontSize: 15,
-                ),
+                style: tx.subtitle.copyWith(fontWeight: FontWeight.w700),
               ),
               const SizedBox(height: 4),
-              const Text(
+              Text(
                 'Talep oluşturulduğunda stok hemen artmaz; mal kabulünde işlenir.',
-                style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
+                style: tx.caption,
               ),
               const SizedBox(height: 12),
               TextField(
@@ -201,6 +202,8 @@ class _StockListScreenState extends State<StockListScreen> {
   /// Fiili sayim mutabakati: kullanici sayilan gercek miktari girer, backend
   /// farki otomatik bir stok hareketine cevirip stogu sayilan degere esitler.
   Future<void> _showCountSheet(Product p) async {
+    final cs = context.colors;
+    final tx = context.text;
     final controller = TextEditingController();
     final counted = await showModalBottomSheet<double>(
       context: context,
@@ -222,19 +225,13 @@ class _StockListScreenState extends State<StockListScreen> {
               children: [
                 Text(
                   '${p.name} — Fiili Sayım',
-                  style: const TextStyle(
-                    fontWeight: FontWeight.w700,
-                    fontSize: 15,
-                  ),
+                  style: tx.subtitle.copyWith(fontWeight: FontWeight.w700),
                 ),
                 const SizedBox(height: 4),
                 Text(
                   'Sistemdeki miktar: '
                   '${p.currentStock.toStringAsFixed(1)} ${p.unit}',
-                  style: const TextStyle(
-                    fontSize: 12,
-                    color: AppColors.textSecondary,
-                  ),
+                  style: tx.caption,
                 ),
                 const SizedBox(height: 12),
                 TextField(
@@ -256,14 +253,13 @@ class _StockListScreenState extends State<StockListScreen> {
                         : 'Fark: ${diff > 0 ? '+' : ''}'
                               '${diff.toStringAsFixed(1)} ${p.unit} — '
                               '${diff > 0 ? 'giriş' : 'çıkış'} hareketi oluşturulacak.',
-                    style: TextStyle(
-                      fontSize: 12,
+                    style: tx.caption.copyWith(
                       fontWeight: FontWeight.w600,
                       color: diff == 0
-                          ? AppColors.textSecondary
+                          ? cs.textSecondary
                           : diff > 0
-                          ? AppColors.success600
-                          : AppColors.danger600,
+                          ? cs.success600
+                          : cs.danger600,
                     ),
                   ),
                 ],
@@ -300,7 +296,9 @@ class _StockListScreenState extends State<StockListScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(e is ApiException ? e.message : 'Sayım kaydedilemedi'),
+            content: Text(
+              e is ApiException ? e.message : 'Sayım kaydedilemedi',
+            ),
           ),
         );
       }
@@ -308,94 +306,107 @@ class _StockListScreenState extends State<StockListScreen> {
   }
 
   Future<void> _showRestockSheet(Product p) async {
+    final cs = context.colors;
+    final tx = context.text;
     final controller = TextEditingController();
     // Bölüm AM (9. tur): opsiyonel parti no + SKT (ikisi birlikte).
     final batchController = TextEditingController();
     DateTime? expiry;
-    final result = await showModalBottomSheet<({double qty, String? batch, String? expiry})>(
-      context: context,
-      isScrollControlled: true,
-      builder: (ctx) => StatefulBuilder(
-        builder: (ctx, setSheetState) => Padding(
-          padding: EdgeInsets.only(
-            bottom: MediaQuery.of(ctx).viewInsets.bottom,
-            left: 20,
-            right: 20,
-            top: 20,
+    final result =
+        await showModalBottomSheet<
+          ({double qty, String? batch, String? expiry})
+        >(
+          context: context,
+          isScrollControlled: true,
+          builder: (ctx) => StatefulBuilder(
+            builder: (ctx, setSheetState) => Padding(
+              padding: EdgeInsets.only(
+                bottom: MediaQuery.of(ctx).viewInsets.bottom,
+                left: 20,
+                right: 20,
+                top: 20,
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    '${p.name} — Stok Ekle',
+                    style: tx.subtitle.copyWith(fontWeight: FontWeight.w700),
+                  ),
+                  const SizedBox(height: 12),
+                  TextField(
+                    controller: controller,
+                    keyboardType: const TextInputType.numberWithOptions(
+                      decimal: true,
+                    ),
+                    decoration: InputDecoration(
+                      labelText: 'Miktar (${p.unit})',
+                    ),
+                    autofocus: true,
+                  ),
+                  const SizedBox(height: 12),
+                  TextField(
+                    controller: batchController,
+                    decoration: const InputDecoration(
+                      labelText: 'Parti No (opsiyonel)',
+                      hintText: 'Örn. LOT-2409A',
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  OutlinedButton.icon(
+                    onPressed: () async {
+                      final picked = await showDatePicker(
+                        context: ctx,
+                        initialDate:
+                            expiry ??
+                            DateTime.now().add(const Duration(days: 365)),
+                        firstDate: DateTime.now().subtract(
+                          const Duration(days: 3650),
+                        ),
+                        lastDate: DateTime.now().add(
+                          const Duration(days: 3650),
+                        ),
+                      );
+                      if (picked != null) setSheetState(() => expiry = picked);
+                    },
+                    icon: const Icon(Icons.event_outlined, size: 16),
+                    label: Text(
+                      expiry == null
+                          ? 'Son Kullanma Tarihi seç'
+                          : 'SKT: ${expiry!.day.toString().padLeft(2, '0')}.${expiry!.month.toString().padLeft(2, '0')}.${expiry!.year}',
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    'Kimyasallarda parti + SKT yasal takip için önerilir; çıkışlar en önce süresi dolacak partiden düşülür.',
+                    style: tx.label.copyWith(color: cs.textSecondary),
+                  ),
+                  const SizedBox(height: 16),
+                  ElevatedButton(
+                    onPressed: () {
+                      final v = double.tryParse(controller.text.trim());
+                      if (v == null) {
+                        Navigator.of(ctx).pop();
+                        return;
+                      }
+                      final e = expiry;
+                      Navigator.of(ctx).pop((
+                        qty: v,
+                        batch: batchController.text.trim(),
+                        expiry: e == null
+                            ? null
+                            : '${e.year}-${e.month.toString().padLeft(2, '0')}-${e.day.toString().padLeft(2, '0')}',
+                      ));
+                    },
+                    child: const Text('Ekle'),
+                  ),
+                  const SizedBox(height: 12),
+                ],
+              ),
+            ),
           ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                '${p.name} — Stok Ekle',
-                style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 15),
-              ),
-              const SizedBox(height: 12),
-              TextField(
-                controller: controller,
-                keyboardType: const TextInputType.numberWithOptions(
-                  decimal: true,
-                ),
-                decoration: InputDecoration(labelText: 'Miktar (${p.unit})'),
-                autofocus: true,
-              ),
-              const SizedBox(height: 12),
-              TextField(
-                controller: batchController,
-                decoration: const InputDecoration(
-                  labelText: 'Parti No (opsiyonel)',
-                  hintText: 'Örn. LOT-2409A',
-                ),
-              ),
-              const SizedBox(height: 8),
-              OutlinedButton.icon(
-                onPressed: () async {
-                  final picked = await showDatePicker(
-                    context: ctx,
-                    initialDate: expiry ?? DateTime.now().add(const Duration(days: 365)),
-                    firstDate: DateTime.now().subtract(const Duration(days: 3650)),
-                    lastDate: DateTime.now().add(const Duration(days: 3650)),
-                  );
-                  if (picked != null) setSheetState(() => expiry = picked);
-                },
-                icon: const Icon(Icons.event_outlined, size: 16),
-                label: Text(
-                  expiry == null
-                      ? 'Son Kullanma Tarihi seç'
-                      : 'SKT: ${expiry!.day.toString().padLeft(2, '0')}.${expiry!.month.toString().padLeft(2, '0')}.${expiry!.year}',
-                ),
-              ),
-              const SizedBox(height: 4),
-              const Text(
-                'Kimyasallarda parti + SKT yasal takip için önerilir; çıkışlar en önce süresi dolacak partiden düşülür.',
-                style: TextStyle(fontSize: 11, color: AppColors.textSecondary),
-              ),
-              const SizedBox(height: 16),
-              ElevatedButton(
-                onPressed: () {
-                  final v = double.tryParse(controller.text.trim());
-                  if (v == null) {
-                    Navigator.of(ctx).pop();
-                    return;
-                  }
-                  final e = expiry;
-                  Navigator.of(ctx).pop((
-                    qty: v,
-                    batch: batchController.text.trim(),
-                    expiry: e == null
-                        ? null
-                        : '${e.year}-${e.month.toString().padLeft(2, '0')}-${e.day.toString().padLeft(2, '0')}',
-                  ));
-                },
-                child: const Text('Ekle'),
-              ),
-              const SizedBox(height: 12),
-            ],
-          ),
-        ),
-      ),
-    );
+        );
     if (result == null || result.qty <= 0) return;
     final hasBatch = (result.batch ?? '').isNotEmpty;
     final hasExpiry = (result.expiry ?? '').isNotEmpty;
@@ -403,7 +414,9 @@ class _StockListScreenState extends State<StockListScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('Parti numarası ve son kullanma tarihi birlikte girilmeli'),
+            content: Text(
+              'Parti numarası ve son kullanma tarihi birlikte girilmeli',
+            ),
           ),
         );
       }
@@ -418,9 +431,8 @@ class _StockListScreenState extends State<StockListScreen> {
       );
       _load();
       if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(const SnackBar(content: Text('Stok eklendi.')));
+        ScaffoldMessenger.of(context)
+            .showSnackBar(const SnackBar(content: Text('Stok eklendi.')));
       }
     } catch (e) {
       if (mounted) {
@@ -446,7 +458,10 @@ class _StockListScreenState extends State<StockListScreen> {
           ),
           TextButton(
             onPressed: () => Navigator.of(context).pop(true),
-            child: const Text('Sil', style: TextStyle(color: Colors.red)),
+            style: TextButton.styleFrom(
+              foregroundColor: context.colors.danger600,
+            ),
+            child: const Text('Sil'),
           ),
         ],
       ),
@@ -456,16 +471,13 @@ class _StockListScreenState extends State<StockListScreen> {
       await _api.delete(p.id);
       _load();
       if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(const SnackBar(content: Text('Ürün silindi.')));
+        ScaffoldMessenger.of(context)
+            .showSnackBar(const SnackBar(content: Text('Ürün silindi.')));
       }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(e is ApiException ? e.message : 'Silinemedi'),
-          ),
+          SnackBar(content: Text(e is ApiException ? e.message : 'Silinemedi')),
         );
       }
     }
@@ -569,6 +581,8 @@ class _StockListScreenState extends State<StockListScreen> {
   }
 
   Widget _buildBody() {
+    final cs = context.colors;
+    final tx = context.text;
     if (_loading) return const LoadingView();
     if (_error != null) return ErrorRetryView(message: _error!, onRetry: _load);
     if (_products.isEmpty)
@@ -579,7 +593,7 @@ class _StockListScreenState extends State<StockListScreen> {
 
     return RefreshIndicator(
       onRefresh: _load,
-      color: AppColors.primary600,
+      color: cs.accentSoft,
       child: ListView.separated(
         padding: const EdgeInsets.all(16),
         itemCount: _products.length,
@@ -589,314 +603,289 @@ class _StockListScreenState extends State<StockListScreen> {
           final ratio = p.criticalThreshold == 0
               ? 1.0
               : (p.currentStock / (p.criticalThreshold * 2)).clamp(0.0, 1.0);
-          return Container(
-            padding: const EdgeInsets.all(14),
-            decoration: BoxDecoration(
-              color: AppColors.surfaceCard,
-              borderRadius: BorderRadius.circular(AppRadius.card),
-              border: Border.all(
-                color: p.isCritical
-                    ? AppColors.danger500
-                    : AppColors.borderDefault,
+          return StaggeredFadeIn(
+            index: i,
+            child: Container(
+              padding: const EdgeInsets.all(14),
+              decoration: BoxDecoration(
+                color: cs.surfaceCard,
+                borderRadius: BorderRadius.circular(AppRadius.card),
+                border: Border.all(
+                  color: p.isCritical ? cs.danger500 : cs.borderDefault,
+                ),
               ),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            p.name,
-                            style: const TextStyle(
-                              fontWeight: FontWeight.w700,
-                              fontSize: 14,
-                            ),
-                          ),
-                          if (p.code != null || p.description != null)
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
                             Text(
-                              [
-                                if (p.code != null) p.code!,
-                                if (p.description != null) p.description!,
-                              ].join(' · '),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: const TextStyle(
-                                fontSize: 11,
-                                color: AppColors.textFaint,
-                              ),
-                            ),
-                        ],
-                      ),
-                    ),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 8,
-                        vertical: 3,
-                      ),
-                      decoration: BoxDecoration(
-                        color: AppColors.surfaceSubtle,
-                        borderRadius: BorderRadius.circular(AppRadius.pill),
-                      ),
-                      child: Text(
-                        productCategoryLabelTr(p.category),
-                        style: const TextStyle(
-                          fontSize: 10.5,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ),
-                    if (_canManage)
-                      PopupMenuButton<String>(
-                        icon: const Icon(
-                          Icons.more_vert_rounded,
-                          size: 18,
-                          color: AppColors.textFaint,
-                        ),
-                        padding: EdgeInsets.zero,
-                        onSelected: (v) async {
-                          if (v == 'edit') {
-                            final updated = await Navigator.of(context)
-                                .push<bool>(
-                                  MaterialPageRoute(
-                                    builder: (_) =>
-                                        _ProductFormScreen(product: p),
-                                  ),
-                                );
-                            if (updated == true) {
-                              _load();
-                              if (context.mounted) {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(
-                                    content: Text('Ürün kaydedildi.'),
-                                  ),
-                                );
-                              }
-                            }
-                          } else if (v == 'delete') {
-                            _deleteProduct(p);
-                          }
-                        },
-                        itemBuilder: (context) => const [
-                          PopupMenuItem(
-                            value: 'edit',
-                            child: Text('Düzenle'),
-                          ),
-                          PopupMenuItem(
-                            value: 'delete',
-                            child: Text(
-                              'Sil',
-                              style: TextStyle(color: Colors.red),
-                            ),
-                          ),
-                        ],
-                      ),
-                  ],
-                ),
-                const SizedBox(height: 8),
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(AppRadius.pill),
-                  child: LinearProgressIndicator(
-                    value: ratio,
-                    minHeight: 6,
-                    backgroundColor: AppColors.surfaceMuted,
-                    color: p.isCritical
-                        ? AppColors.danger500
-                        : AppColors.success500,
-                  ),
-                ),
-                const SizedBox(height: 6),
-                if (p.lastMovement != null || p.pendingPurchaseQuantity > 0)
-                  Padding(
-                    padding: const EdgeInsets.only(bottom: 6),
-                    child: Row(
-                      children: [
-                        if (p.lastMovement != null)
-                          Text(
-                            'Son hareket: '
-                            '${p.lastMovement!.type == 'IN' ? '+' : '-'}'
-                            '${p.lastMovement!.quantity.toStringAsFixed(1)} ${p.unit}',
-                            style: TextStyle(
-                              fontSize: 11,
-                              fontWeight: FontWeight.w600,
-                              color: p.lastMovement!.type == 'IN'
-                                  ? AppColors.success600
-                                  : AppColors.danger600,
-                            ),
-                          ),
-                        if (p.pendingPurchaseQuantity > 0) ...[
-                          const Spacer(),
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 7,
-                              vertical: 2,
-                            ),
-                            decoration: BoxDecoration(
-                              color: AppColors.info50,
-                              borderRadius: BorderRadius.circular(AppRadius.pill),
-                            ),
-                            child: Text(
-                              'Sipariş bekleyen: '
-                              '${p.pendingPurchaseQuantity.toStringAsFixed(1)} ${p.unit}',
-                              style: const TextStyle(
-                                fontSize: 10.5,
+                              p.name,
+                              style: tx.subtitle.copyWith(
                                 fontWeight: FontWeight.w700,
-                                color: AppColors.info600,
                               ),
                             ),
+                            if (p.code != null || p.description != null)
+                              Text(
+                                [
+                                  if (p.code != null) p.code!,
+                                  if (p.description != null) p.description!,
+                                ].join(' · '),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: tx.label,
+                              ),
+                          ],
+                        ),
+                      ),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 3,
+                        ),
+                        decoration: BoxDecoration(
+                          color: cs.surfaceSubtle,
+                          borderRadius: BorderRadius.circular(AppRadius.pill),
+                        ),
+                        child: Text(
+                          productCategoryLabelTr(p.category),
+                          style: tx.label.copyWith(fontWeight: FontWeight.w600),
+                        ),
+                      ),
+                      if (_canManage)
+                        PopupMenuButton<String>(
+                          icon: Icon(
+                            Icons.more_vert_rounded,
+                            size: 18,
+                            color: cs.textFaint,
                           ),
+                          padding: EdgeInsets.zero,
+                          onSelected: (v) async {
+                            if (v == 'edit') {
+                              final updated = await Navigator.of(context)
+                                  .push<bool>(
+                                    MaterialPageRoute(
+                                      builder: (_) =>
+                                          _ProductFormScreen(product: p),
+                                    ),
+                                  );
+                              if (updated == true) {
+                                _load();
+                                if (context.mounted) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                      content: Text('Ürün kaydedildi.'),
+                                    ),
+                                  );
+                                }
+                              }
+                            } else if (v == 'delete') {
+                              _deleteProduct(p);
+                            }
+                          },
+                          itemBuilder: (context) => [
+                            const PopupMenuItem(
+                              value: 'edit',
+                              child: Text('Düzenle'),
+                            ),
+                            PopupMenuItem(
+                              value: 'delete',
+                              child: Text(
+                                'Sil',
+                                style: context.text.body.copyWith(
+                                  color: context.colors.danger600,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(AppRadius.pill),
+                    child: LinearProgressIndicator(
+                      value: ratio,
+                      minHeight: 6,
+                      backgroundColor: cs.surfaceMuted,
+                      color: p.isCritical ? cs.danger500 : cs.success500,
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  if (p.lastMovement != null || p.pendingPurchaseQuantity > 0)
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 6),
+                      child: Row(
+                        children: [
+                          if (p.lastMovement != null)
+                            Text(
+                              'Son hareket: '
+                              '${p.lastMovement!.type == 'IN' ? '+' : '-'}'
+                              '${p.lastMovement!.quantity.toStringAsFixed(1)} ${p.unit}',
+                              style: tx.label.copyWith(
+                                fontWeight: FontWeight.w600,
+                                color: p.lastMovement!.type == 'IN'
+                                    ? cs.success600
+                                    : cs.danger600,
+                              ),
+                            ),
+                          if (p.pendingPurchaseQuantity > 0) ...[
+                            const Spacer(),
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 7,
+                                vertical: 2,
+                              ),
+                              decoration: BoxDecoration(
+                                color: cs.info50,
+                                borderRadius: BorderRadius.circular(
+                                  AppRadius.pill,
+                                ),
+                              ),
+                              child: Text(
+                                'Sipariş bekleyen: '
+                                '${p.pendingPurchaseQuantity.toStringAsFixed(1)} ${p.unit}',
+                                style: tx.label.copyWith(color: cs.info600),
+                              ),
+                            ),
+                          ],
                         ],
-                      ],
-                    ),
-                  ),
-                // Bölüm W (5. tur): kullanım bazlı tahmin — veri yoksa gösterilmez.
-                if (p.forecastLabel != null)
-                  Padding(
-                    padding: const EdgeInsets.only(bottom: 6),
-                    child: Row(
-                      children: [
-                        Icon(
-                          Icons.timer_outlined,
-                          size: 13,
-                          color: (p.forecastDaysRemaining ?? 99) <= 7
-                              ? AppColors.danger500
-                              : (p.forecastDaysRemaining ?? 99) <= 30
-                                  ? AppColors.warning600
-                                  : AppColors.textSecondary,
-                        ),
-                        const SizedBox(width: 4),
-                        Text(
-                          p.forecastLabel!,
-                          style: TextStyle(
-                            fontSize: 11.5,
-                            fontWeight: FontWeight.w600,
-                            color: (p.forecastDaysRemaining ?? 99) <= 7
-                                ? AppColors.danger500
-                                : (p.forecastDaysRemaining ?? 99) <= 30
-                                    ? AppColors.warning600
-                                    : AppColors.textSecondary,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      'Mevcut: ${p.currentStock.toStringAsFixed(1)} ${p.unit} · Min: ${p.criticalThreshold.toStringAsFixed(1)} ${p.unit}',
-                      style: TextStyle(
-                        fontSize: 11.5,
-                        color: p.isCritical
-                            ? AppColors.danger600
-                            : AppColors.textSecondary,
-                        fontWeight: p.isCritical
-                            ? FontWeight.w700
-                            : FontWeight.w500,
                       ),
                     ),
-                    Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        if (_canManage) ...[
-                          TextButton.icon(
-                            onPressed: () => Navigator.of(context).push(
-                              MaterialPageRoute(
-                                builder: (_) =>
-                                    StockMovementsScreen(product: p),
-                              ),
-                            ),
-                            icon: const Icon(Icons.history_rounded, size: 15),
-                            label: const Text(
-                              'Hareketler',
-                              style: TextStyle(fontSize: 12),
-                            ),
-                            style: TextButton.styleFrom(
-                              padding: EdgeInsets.zero,
-                              minimumSize: const Size(0, 0),
-                              visualDensity: VisualDensity.compact,
-                            ),
+                  // Bölüm W (5. tur): kullanım bazlı tahmin — veri yoksa gösterilmez.
+                  if (p.forecastLabel != null)
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 6),
+                      child: Row(
+                        children: [
+                          Icon(
+                            Icons.timer_outlined,
+                            size: 13,
+                            color: (p.forecastDaysRemaining ?? 99) <= 7
+                                ? cs.danger500
+                                : (p.forecastDaysRemaining ?? 99) <= 30
+                                ? cs.warning600
+                                : cs.textSecondary,
                           ),
-                          const SizedBox(width: 12),
-                          TextButton.icon(
-                            onPressed: () => Navigator.of(context).push(
-                              MaterialPageRoute(
-                                builder: (_) =>
-                                    ProductBatchesScreen(product: p),
-                              ),
-                            ),
-                            icon: const Icon(Icons.sell_outlined, size: 15),
-                            label: const Text(
-                              'Partiler',
-                              style: TextStyle(fontSize: 12),
-                            ),
-                            style: TextButton.styleFrom(
-                              padding: EdgeInsets.zero,
-                              minimumSize: const Size(0, 0),
-                              visualDensity: VisualDensity.compact,
-                            ),
-                          ),
-                          const SizedBox(width: 12),
-                          TextButton.icon(
-                            onPressed: () => _showCountSheet(p),
-                            icon: const Icon(
-                              Icons.fact_check_outlined,
-                              size: 15,
-                            ),
-                            label: const Text(
-                              'Sayım',
-                              style: TextStyle(fontSize: 12),
-                            ),
-                            style: TextButton.styleFrom(
-                              padding: EdgeInsets.zero,
-                              minimumSize: const Size(0, 0),
-                              visualDensity: VisualDensity.compact,
-                            ),
-                          ),
-                          const SizedBox(width: 12),
-                        ],
-                        if (_canRequestPurchase)
-                          TextButton.icon(
-                            onPressed: () => _showPurchaseSheet(p),
-                            icon: const Icon(
-                              Icons.shopping_cart_outlined,
-                              size: 15,
-                            ),
-                            label: const Text(
-                              'Talep',
-                              style: TextStyle(fontSize: 12),
-                            ),
-                            style: TextButton.styleFrom(
-                              padding: EdgeInsets.zero,
-                              minimumSize: const Size(0, 0),
-                              visualDensity: VisualDensity.compact,
-                            ),
-                          ),
-                        if (_canManage) ...[
-                          const SizedBox(width: 12),
-                          TextButton.icon(
-                            onPressed: () => _showRestockSheet(p),
-                            icon: const Icon(Icons.add_box_outlined, size: 15),
-                            label: const Text(
-                              'Giriş',
-                              style: TextStyle(fontSize: 12),
-                            ),
-                            style: TextButton.styleFrom(
-                              padding: EdgeInsets.zero,
-                              minimumSize: const Size(0, 0),
-                              visualDensity: VisualDensity.compact,
+                          const SizedBox(width: 4),
+                          Text(
+                            p.forecastLabel!,
+                            style: tx.caption.copyWith(
+                              fontWeight: FontWeight.w600,
+                              color: (p.forecastDaysRemaining ?? 99) <= 7
+                                  ? cs.danger500
+                                  : (p.forecastDaysRemaining ?? 99) <= 30
+                                  ? cs.warning600
+                                  : cs.textSecondary,
                             ),
                           ),
                         ],
-                      ],
+                      ),
                     ),
-                  ],
-                ),
-              ],
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        'Mevcut: ${p.currentStock.toStringAsFixed(1)} ${p.unit} · Min: ${p.criticalThreshold.toStringAsFixed(1)} ${p.unit}',
+                        style: tx.caption.copyWith(
+                          color: p.isCritical ? cs.danger600 : cs.textSecondary,
+                          fontWeight: p.isCritical
+                              ? FontWeight.w700
+                              : FontWeight.w500,
+                        ),
+                      ),
+                      Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          if (_canManage) ...[
+                            TextButton.icon(
+                              onPressed: () => Navigator.of(context).push(
+                                MaterialPageRoute(
+                                  builder: (_) =>
+                                      StockMovementsScreen(product: p),
+                                ),
+                              ),
+                              icon: const Icon(Icons.history_rounded, size: 15),
+                              label: Text('Hareketler', style: tx.caption),
+                              style: TextButton.styleFrom(
+                                padding: EdgeInsets.zero,
+                                minimumSize: const Size(0, 0),
+                                visualDensity: VisualDensity.compact,
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            TextButton.icon(
+                              onPressed: () => Navigator.of(context).push(
+                                MaterialPageRoute(
+                                  builder: (_) =>
+                                      ProductBatchesScreen(product: p),
+                                ),
+                              ),
+                              icon: const Icon(Icons.sell_outlined, size: 15),
+                              label: Text('Partiler', style: tx.caption),
+                              style: TextButton.styleFrom(
+                                padding: EdgeInsets.zero,
+                                minimumSize: const Size(0, 0),
+                                visualDensity: VisualDensity.compact,
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            TextButton.icon(
+                              onPressed: () => _showCountSheet(p),
+                              icon: const Icon(
+                                Icons.fact_check_outlined,
+                                size: 15,
+                              ),
+                              label: Text('Sayım', style: tx.caption),
+                              style: TextButton.styleFrom(
+                                padding: EdgeInsets.zero,
+                                minimumSize: const Size(0, 0),
+                                visualDensity: VisualDensity.compact,
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                          ],
+                          if (_canRequestPurchase)
+                            TextButton.icon(
+                              onPressed: () => _showPurchaseSheet(p),
+                              icon: const Icon(
+                                Icons.shopping_cart_outlined,
+                                size: 15,
+                              ),
+                              label: Text('Talep', style: tx.caption),
+                              style: TextButton.styleFrom(
+                                padding: EdgeInsets.zero,
+                                minimumSize: const Size(0, 0),
+                                visualDensity: VisualDensity.compact,
+                              ),
+                            ),
+                          if (_canManage) ...[
+                            const SizedBox(width: 12),
+                            TextButton.icon(
+                              onPressed: () => _showRestockSheet(p),
+                              icon: const Icon(
+                                Icons.add_box_outlined,
+                                size: 15,
+                              ),
+                              label: Text('Giriş', style: tx.caption),
+                              style: TextButton.styleFrom(
+                                padding: EdgeInsets.zero,
+                                minimumSize: const Size(0, 0),
+                                visualDensity: VisualDensity.compact,
+                              ),
+                            ),
+                          ],
+                        ],
+                      ),
+                    ],
+                  ),
+                ],
+              ),
             ),
           );
         },
@@ -917,23 +906,28 @@ class _Chip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-        decoration: BoxDecoration(
-          color: selected ? AppColors.primary600 : AppColors.surfaceCard,
-          borderRadius: BorderRadius.circular(AppRadius.pill),
-          border: Border.all(
-            color: selected ? AppColors.primary600 : AppColors.borderDefault,
+    final cs = context.colors;
+    final tx = context.text;
+    return Material(
+      color: selected ? cs.primary600 : cs.surfaceCard,
+      borderRadius: BorderRadius.circular(AppRadius.pill),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(AppRadius.pill),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(AppRadius.pill),
+            border: Border.all(
+              color: selected ? cs.primary600 : cs.borderDefault,
+            ),
           ),
-        ),
-        child: Text(
-          label,
-          style: TextStyle(
-            fontSize: 12.5,
-            fontWeight: FontWeight.w600,
-            color: selected ? Colors.white : AppColors.textSecondary,
+          child: Text(
+            label,
+            style: tx.bodySmall.copyWith(
+              fontWeight: FontWeight.w600,
+              color: selected ? Colors.white : cs.textSecondary,
+            ),
           ),
         ),
       ),
@@ -1018,6 +1012,7 @@ class _ProductFormScreenState extends State<_ProductFormScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final tx = context.text;
     return Scaffold(
       appBar: AppBar(title: Text(_isEdit ? 'Ürünü Düzenle' : 'Yeni Ürün')),
       body: Form(
@@ -1089,10 +1084,7 @@ class _ProductFormScreenState extends State<_ProductFormScreen> {
             ),
             if (_error != null) ...[
               const SizedBox(height: 12),
-              Text(
-                _error!,
-                style: const TextStyle(color: Colors.red, fontSize: 13),
-              ),
+              Text(_error!, style: tx.bodySmall.copyWith(color: Colors.red)),
             ],
             const SizedBox(height: 20),
             ElevatedButton(
