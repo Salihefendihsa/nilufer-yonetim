@@ -793,12 +793,31 @@ class _PhotosSectionState extends State<_PhotosSection> {
               itemBuilder: (context, i) {
                 final p = widget.photos[i];
                 // Bölüm AC: kimlik doğrulamalı görsel (/files/job-photo/:id).
-                return ClipRRect(
+                final path = widget.api.fileUrl('job-photo', p['id'] as String);
+                return InkWell(
                   borderRadius: BorderRadius.circular(12),
-                  child: AuthImage(
-                    path: widget.api.fileUrl('job-photo', p['id'] as String),
-                    width: 84,
-                    height: 84,
+                  onTap: () => showDialog<void>(
+                    context: context,
+                    builder: (_) => Dialog(
+                      backgroundColor: Colors.black,
+                      insetPadding: const EdgeInsets.all(12),
+                      child: Stack(
+                        alignment: Alignment.topRight,
+                        children: [
+                          InteractiveViewer(
+                            child: AuthImage(path: path, fit: BoxFit.contain),
+                          ),
+                          IconButton(
+                            icon: const Icon(Icons.close_rounded, color: Colors.white),
+                            onPressed: () => Navigator.of(context).pop(),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(12),
+                    child: AuthImage(path: path, width: 84, height: 84),
                   ),
                 );
               },

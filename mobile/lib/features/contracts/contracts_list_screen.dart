@@ -10,6 +10,7 @@ import '../../theme/app_palette.dart';
 import '../../theme/app_text_styles.dart';
 import '../../widgets/state_views.dart';
 import '../../widgets/stat_card.dart';
+import '../customers/customer_detail_screen.dart';
 import '../customers/customers_api.dart';
 import '../jobs/job_form_screen.dart';
 import 'contracts_api.dart';
@@ -306,95 +307,117 @@ class _ContractsListScreenState extends State<ContractsListScreen> {
           ..._contracts.map(
             (c) => Padding(
               padding: const EdgeInsets.only(bottom: 8),
-              child: Container(
-                padding: const EdgeInsets.all(14),
-                decoration: BoxDecoration(
-                  color: cs.surfaceCard,
+              child: Material(
+                color: cs.surfaceCard,
+                borderRadius: BorderRadius.circular(AppRadius.card),
+                child: InkWell(
                   borderRadius: BorderRadius.circular(AppRadius.card),
-                  border: Border.all(color: cs.borderDefault),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Expanded(
-                          child: Text(
-                            c.serviceType ?? 'Sözleşme',
-                            style: tx.subtitle.copyWith(
-                              fontWeight: FontWeight.w700,
-                            ),
-                          ),
-                        ),
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 8,
-                            vertical: 3,
-                          ),
-                          decoration: BoxDecoration(
-                            color: cs.surfaceSubtle,
-                            borderRadius: BorderRadius.circular(AppRadius.pill),
-                          ),
-                          child: Text(
-                            contractStatusLabelTr(c.status),
-                            style: tx.label,
-                          ),
-                        ),
-                      ],
+                  onTap: () => Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (_) =>
+                          CustomerDetailScreen(customerId: c.customerId),
                     ),
-                    const SizedBox(height: 4),
-                    Text(
-                      '${_dateFormat.format(DateTime.parse(c.startDate))} → ${_dateFormat.format(DateTime.parse(c.endDate))} (${c.durationMonths} ay)',
-                      style: tx.caption,
+                  ),
+                  child: Container(
+                    padding: const EdgeInsets.all(14),
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(AppRadius.card),
+                      border: Border.all(color: cs.borderDefault),
                     ),
-                    if (c.amount != null) ...[
-                      const SizedBox(height: 4),
-                      Text(
-                        '${_currency.format(c.amount)}'
-                        '${c.recurrenceType != null ? ' · ${recurrenceTypeLabelTr(c.recurrenceType)}' : ''}',
-                        style: tx.bodySmall.copyWith(
-                          fontWeight: FontWeight.w700,
-                          color: cs.accent,
-                        ),
-                      ),
-                    ],
-                    const SizedBox(height: 8),
-                    Row(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Expanded(
-                          child: OutlinedButton.icon(
-                            onPressed: _pdfDownloadingId == c.id
-                                ? null
-                                : () => _downloadContractPdf(c),
-                            icon: const Icon(
-                              Icons.picture_as_pdf_outlined,
-                              size: 16,
-                            ),
-                            label: Text(
-                              _pdfDownloadingId == c.id
-                                  ? 'İndiriliyor...'
-                                  : 'PDF İndir',
-                            ),
-                          ),
-                        ),
-                        if (c.status == 'ACTIVE') ...[
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: OutlinedButton.icon(
-                              onPressed: _busyId == c.id
-                                  ? null
-                                  : () => _renew(c),
-                              icon: const Icon(Icons.refresh_rounded, size: 16),
-                              label: Text(
-                                _busyId == c.id ? 'İşleniyor...' : 'Yenile',
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Expanded(
+                              child: Text(
+                                c.customerName ?? c.serviceType ?? 'Sözleşme',
+                                style: tx.subtitle.copyWith(
+                                  fontWeight: FontWeight.w700,
+                                ),
                               ),
+                            ),
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 8,
+                                vertical: 3,
+                              ),
+                              decoration: BoxDecoration(
+                                color: cs.surfaceSubtle,
+                                borderRadius: BorderRadius.circular(
+                                  AppRadius.pill,
+                                ),
+                              ),
+                              child: Text(
+                                contractStatusLabelTr(c.status),
+                                style: tx.label,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          c.serviceType ?? 'Hizmet belirtilmemiş',
+                          style: tx.caption.copyWith(color: cs.textSecondary),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          '${_dateFormat.format(DateTime.parse(c.startDate))} → ${_dateFormat.format(DateTime.parse(c.endDate))} (${c.durationMonths} ay)',
+                          style: tx.caption,
+                        ),
+                        if (c.amount != null) ...[
+                          const SizedBox(height: 4),
+                          Text(
+                            '${_currency.format(c.amount)}'
+                            '${c.recurrenceType != null ? ' · ${recurrenceTypeLabelTr(c.recurrenceType)}' : ''}',
+                            style: tx.bodySmall.copyWith(
+                              fontWeight: FontWeight.w700,
+                              color: cs.accent,
                             ),
                           ),
                         ],
+                        const SizedBox(height: 8),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: OutlinedButton.icon(
+                                onPressed: _pdfDownloadingId == c.id
+                                    ? null
+                                    : () => _downloadContractPdf(c),
+                                icon: const Icon(
+                                  Icons.picture_as_pdf_outlined,
+                                  size: 16,
+                                ),
+                                label: Text(
+                                  _pdfDownloadingId == c.id
+                                      ? 'İndiriliyor...'
+                                      : 'PDF İndir',
+                                ),
+                              ),
+                            ),
+                            if (c.status == 'ACTIVE') ...[
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: OutlinedButton.icon(
+                                  onPressed: _busyId == c.id
+                                      ? null
+                                      : () => _renew(c),
+                                  icon: const Icon(
+                                    Icons.refresh_rounded,
+                                    size: 16,
+                                  ),
+                                  label: Text(
+                                    _busyId == c.id ? 'İşleniyor...' : 'Yenile',
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ],
+                        ),
                       ],
                     ),
-                  ],
+                  ),
                 ),
               ),
             ),
