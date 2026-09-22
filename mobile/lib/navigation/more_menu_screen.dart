@@ -63,6 +63,7 @@ class _MoreTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final cs = context.colors;
+    final tx = context.text;
     return Material(
       color: cs.surfaceCard,
       borderRadius: BorderRadius.circular(AppRadius.card),
@@ -72,10 +73,7 @@ class _MoreTile extends StatelessWidget {
           side: BorderSide(color: cs.borderDefault),
         ),
         leading: Icon(entry.icon, color: cs.accent),
-        title: Text(
-          entry.label,
-          style: const TextStyle(fontWeight: FontWeight.w600),
-        ),
+        title: Text(entry.label, style: tx.subtitle),
         trailing: Icon(Icons.chevron_right_rounded, color: cs.textFaint),
         onTap: () =>
             Navigator.of(context)

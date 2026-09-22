@@ -8,6 +8,7 @@ import '../../core/file_download.dart';
 import '../../theme/app_colors.dart';
 import '../../theme/app_palette.dart';
 import '../../theme/app_text_styles.dart';
+import '../../widgets/state_views.dart';
 
 /// Bölüm AP (9. tur): STAFF/TEAM_LEAD → Ayarlar → "Takvimimi Dışa Aktar".
 /// GET /staff/me/calendar-token abonelik linkini verir (token'lı
@@ -125,7 +126,8 @@ class _CalendarExportCardState extends State<CalendarExportCard> {
           ),
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(true),
-            child: const Text('Yenile', style: TextStyle(color: Colors.red)),
+            style: TextButton.styleFrom(foregroundColor: ctx.colors.danger600),
+            child: const Text('Yenile'),
           ),
         ],
       ),
@@ -179,12 +181,7 @@ class _CalendarExportCardState extends State<CalendarExportCard> {
           ),
           const SizedBox(height: 12),
           if (_loading)
-            const Center(
-              child: Padding(
-                padding: EdgeInsets.all(8),
-                child: CircularProgressIndicator(strokeWidth: 2),
-              ),
-            )
+            const InlineLoading()
           else if (_error != null)
             Row(
               children: [

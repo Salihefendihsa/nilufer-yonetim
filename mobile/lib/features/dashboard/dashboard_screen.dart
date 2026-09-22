@@ -418,7 +418,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   padding: EdgeInsets.symmetric(vertical: 12),
                   child: Text(
                     'Ekibinizde personel yok',
-                    style: TextStyle(color: cs.textFaint),
+                    style: tx.body.copyWith(color: cs.textFaint),
                   ),
                 )
               : Column(

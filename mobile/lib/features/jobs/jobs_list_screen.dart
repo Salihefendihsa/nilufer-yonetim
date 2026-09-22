@@ -222,21 +222,25 @@ class _FilterChip extends StatelessWidget {
     final cs = context.colors;
     final tx = context.text;
     final base = color ?? cs.primary600;
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-        decoration: BoxDecoration(
-          color: selected ? base : cs.surfaceCard,
-          borderRadius: BorderRadius.circular(AppRadius.pill),
-          border: Border.all(color: selected ? base : cs.borderDefault),
-        ),
-        alignment: Alignment.center,
-        child: Text(
-          label,
-          style: tx.bodySmall.copyWith(
-            fontWeight: FontWeight.w600,
-            color: selected ? Colors.white : cs.textSecondary,
+    return Material(
+      color: selected ? base : cs.surfaceCard,
+      borderRadius: BorderRadius.circular(AppRadius.pill),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(AppRadius.pill),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(AppRadius.pill),
+            border: Border.all(color: selected ? base : cs.borderDefault),
+          ),
+          alignment: Alignment.center,
+          child: Text(
+            label,
+            style: tx.bodySmall.copyWith(
+              fontWeight: FontWeight.w600,
+              color: selected ? Colors.white : cs.textSecondary,
+            ),
           ),
         ),
       ),

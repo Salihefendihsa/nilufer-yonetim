@@ -6,6 +6,7 @@ import '../features/jobs/jobs_list_screen.dart';
 import '../features/messages/messages_list_screen.dart';
 import '../models/user.dart';
 import '../theme/app_palette.dart';
+import '../theme/app_text_styles.dart';
 import 'app_drawer.dart';
 import 'manager_nav.dart';
 import 'more_menu_screen.dart';
@@ -107,6 +108,7 @@ class _ManagerShellState extends State<ManagerShell> {
 
   Widget _tabButton(int i) {
     final cs = context.colors;
+    final tx = context.text;
     final tab = _tabs[i];
     final selected = _index == i;
     return Expanded(
@@ -123,8 +125,7 @@ class _ManagerShellState extends State<ManagerShell> {
             const SizedBox(height: 2),
             Text(
               tab.label,
-              style: TextStyle(
-                fontSize: 11,
+              style: tx.navLabel.copyWith(
                 fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
                 color: selected ? cs.primary700 : cs.textSecondary,
               ),

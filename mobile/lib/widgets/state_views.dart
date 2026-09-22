@@ -17,6 +17,32 @@ class LoadingView extends StatelessWidget {
   }
 }
 
+/// Kart içi küçük yükleniyor göstergesi — tam sayfa `LoadingView` yerine
+/// dashboard/detay kartlarında (Puantaj, Araç Bakımı, Takvim dışa aktarma
+/// gibi) tek bir bölümün yüklendiğini göstermek için (tasarım turu cila:
+/// önceden her kart kendi `CircularProgressIndicator` kopyasını yazıyordu).
+class InlineLoading extends StatelessWidget {
+  const InlineLoading({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = context.colors;
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(8),
+        child: SizedBox(
+          width: 20,
+          height: 20,
+          child: CircularProgressIndicator(
+            strokeWidth: 2,
+            color: cs.accentSoft,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 /// Hata durumu + "Tekrar Dene" butonu — her API çağrısı bu widget'ı kullanmalı.
 class ErrorRetryView extends StatelessWidget {
   final String message;

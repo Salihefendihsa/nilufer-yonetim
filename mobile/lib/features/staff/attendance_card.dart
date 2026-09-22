@@ -6,6 +6,7 @@ import '../../models/attendance.dart';
 import '../../theme/app_colors.dart';
 import '../../theme/app_palette.dart';
 import '../../theme/app_text_styles.dart';
+import '../../widgets/state_views.dart';
 
 final _dayFormat = DateFormat('d MMM', 'tr_TR');
 final _timeFormat = DateFormat('HH:mm', 'tr_TR');
@@ -114,12 +115,7 @@ class _AttendanceCardState extends State<AttendanceCard> {
             ),
             const SizedBox(height: 8),
             if (_loading || m == null)
-              const Center(
-                child: Padding(
-                  padding: EdgeInsets.all(8),
-                  child: CircularProgressIndicator(strokeWidth: 2),
-                ),
-              )
+              const InlineLoading()
             else ...[
               Row(
                 children: [

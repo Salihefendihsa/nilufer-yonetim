@@ -379,7 +379,7 @@ class _FinanceScreenState extends State<FinanceScreen>
                         children: [
                           Text(
                             _currency.format(e.amount),
-                            style: TextStyle(
+                            style: tx.body.copyWith(
                               fontWeight: FontWeight.w700,
                               color: cs.danger500,
                             ),
@@ -605,7 +605,7 @@ class _FinanceScreenState extends State<FinanceScreen>
                         children: [
                           Text(
                             _currency.format(p.amount),
-                            style: TextStyle(
+                            style: tx.body.copyWith(
                               fontWeight: FontWeight.w700,
                               color: cs.success600,
                             ),

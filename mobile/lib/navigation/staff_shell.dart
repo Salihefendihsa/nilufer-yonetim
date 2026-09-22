@@ -5,8 +5,8 @@ import '../features/jobs/jobs_list_screen.dart';
 import '../features/messages/messages_list_screen.dart';
 import '../features/notifications/notifications_screen.dart';
 import '../models/user.dart';
-import '../theme/app_colors.dart';
 import '../theme/app_palette.dart';
+import '../theme/app_text_styles.dart';
 import 'app_drawer.dart';
 import 'manager_nav.dart';
 import 'nav_items.dart';
@@ -61,6 +61,7 @@ class _StaffShellState extends State<StaffShell> {
   @override
   Widget build(BuildContext context) {
     final cs = context.colors;
+    final tx = context.text;
     return ManagerNav(
       openDrawer: () => _scaffoldKey.currentState?.openDrawer(),
       child: Scaffold(
@@ -73,13 +74,10 @@ class _StaffShellState extends State<StaffShell> {
         bottomNavigationBar: NavigationBarTheme(
           data: NavigationBarThemeData(
             backgroundColor: Theme.of(context).colorScheme.surface,
-            indicatorColor: Theme.of(context).brightness == Brightness.dark
-                ? AppDarkColors.primary50
-                : cs.primary50,
+            indicatorColor: cs.primary50,
             labelTextStyle: WidgetStateProperty.resolveWith((states) {
               final selected = states.contains(WidgetState.selected);
-              return TextStyle(
-                fontSize: 11,
+              return tx.navLabel.copyWith(
                 fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
                 color: selected ? cs.primary700 : cs.textSecondary,
               );

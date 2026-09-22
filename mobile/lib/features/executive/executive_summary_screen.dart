@@ -166,7 +166,7 @@ class _ExecutiveSummaryScreenState extends State<ExecutiveSummaryScreen> {
                             padding: const EdgeInsets.only(bottom: 8),
                             child: Text(
                               _error!,
-                              style: TextStyle(color: cs.danger500),
+                              style: tx.bodySmall.copyWith(color: cs.danger500),
                             ),
                           ),
                         for (final section in summary!.sections) ...[

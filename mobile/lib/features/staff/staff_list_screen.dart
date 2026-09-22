@@ -171,7 +171,7 @@ class _StaffListScreenState extends State<StaffListScreen> {
                             backgroundColor: cs.primary100,
                             child: Text(
                               initials.isEmpty ? '?' : initials,
-                              style: TextStyle(
+                              style: tx.body.copyWith(
                                 color: cs.primary700,
                                 fontWeight: FontWeight.w700,
                               ),

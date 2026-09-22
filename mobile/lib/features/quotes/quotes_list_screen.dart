@@ -502,22 +502,26 @@ class _Chip extends StatelessWidget {
   Widget build(BuildContext context) {
     final cs = context.colors;
     final tx = context.text;
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-        decoration: BoxDecoration(
-          color: selected ? cs.primary600 : cs.surfaceCard,
-          borderRadius: BorderRadius.circular(AppRadius.pill),
-          border: Border.all(
-            color: selected ? cs.primary600 : cs.borderDefault,
+    return Material(
+      color: selected ? cs.primary600 : cs.surfaceCard,
+      borderRadius: BorderRadius.circular(AppRadius.pill),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(AppRadius.pill),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(AppRadius.pill),
+            border: Border.all(
+              color: selected ? cs.primary600 : cs.borderDefault,
+            ),
           ),
-        ),
-        child: Text(
-          label,
-          style: tx.bodySmall.copyWith(
-            fontWeight: FontWeight.w600,
-            color: selected ? Colors.white : cs.textSecondary,
+          child: Text(
+            label,
+            style: tx.bodySmall.copyWith(
+              fontWeight: FontWeight.w600,
+              color: selected ? Colors.white : cs.textSecondary,
+            ),
           ),
         ),
       ),

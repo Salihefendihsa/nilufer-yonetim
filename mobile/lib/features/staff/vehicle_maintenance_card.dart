@@ -6,6 +6,7 @@ import '../../models/vehicle_maintenance.dart';
 import '../../theme/app_colors.dart';
 import '../../theme/app_palette.dart';
 import '../../theme/app_text_styles.dart';
+import '../../widgets/state_views.dart';
 
 final _dateFormat = DateFormat('d MMM yyyy', 'tr_TR');
 
@@ -84,7 +85,8 @@ class _VehicleMaintenanceCardState extends State<VehicleMaintenanceCard> {
           ),
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(true),
-            child: const Text('Sil', style: TextStyle(color: Colors.red)),
+            style: TextButton.styleFrom(foregroundColor: ctx.colors.danger600),
+            child: const Text('Sil'),
           ),
         ],
       ),
@@ -146,12 +148,7 @@ class _VehicleMaintenanceCardState extends State<VehicleMaintenanceCard> {
             ),
             const SizedBox(height: 8),
             if (_loading)
-              const Center(
-                child: Padding(
-                  padding: EdgeInsets.all(8),
-                  child: CircularProgressIndicator(strokeWidth: 2),
-                ),
-              )
+              const InlineLoading()
             else if (_rows.isEmpty)
               Text('Henüz bakım kaydı yok.', style: tx.bodySmall)
             else

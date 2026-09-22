@@ -7,6 +7,7 @@ import '../../models/product_batch.dart';
 import '../../theme/app_colors.dart';
 import '../../theme/app_palette.dart';
 import '../../theme/app_text_styles.dart';
+import '../../widgets/staggered_fade_in.dart';
 import '../../widgets/state_views.dart';
 import 'stock_api.dart';
 
@@ -95,8 +96,13 @@ class _ProductBatchesScreenState extends State<ProductBatchesScreen> {
                 padding: const EdgeInsets.all(16),
                 itemCount: _batches.length,
                 separatorBuilder: (_, __) => const SizedBox(height: 8),
-                itemBuilder: (context, i) =>
-                    BatchTile(batch: _batches[i], unit: widget.product.unit),
+                itemBuilder: (context, i) => StaggeredFadeIn(
+                  index: i,
+                  child: BatchTile(
+                    batch: _batches[i],
+                    unit: widget.product.unit,
+                  ),
+                ),
               ),
             ),
     );
@@ -278,8 +284,13 @@ class _ExpiringBatchesScreenState extends State<ExpiringBatchesScreen> {
                       padding: const EdgeInsets.all(16),
                       itemCount: _batches.length,
                       separatorBuilder: (_, __) => const SizedBox(height: 8),
-                      itemBuilder: (context, i) =>
-                          BatchTile(batch: _batches[i], showProductName: true),
+                      itemBuilder: (context, i) => StaggeredFadeIn(
+                        index: i,
+                        child: BatchTile(
+                          batch: _batches[i],
+                          showProductName: true,
+                        ),
+                      ),
                     ),
                   ),
           ),

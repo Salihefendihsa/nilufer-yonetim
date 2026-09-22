@@ -4,6 +4,7 @@ import '../../core/api_client.dart';
 import '../../theme/app_colors.dart';
 import '../../theme/app_palette.dart';
 import '../../theme/app_text_styles.dart';
+import '../../widgets/staggered_fade_in.dart';
 import '../../widgets/state_views.dart';
 import '../evaluations/evaluations_screen.dart';
 import '../../widgets/badges.dart';
@@ -440,103 +441,106 @@ class _PerformanceScreenState extends State<PerformanceScreen> {
                       : rank == 3
                       ? const Color(0xFFB08D57)
                       : cs.textFaint;
-                  return Container(
-                    padding: const EdgeInsets.all(14),
-                    decoration: BoxDecoration(
-                      color: cs.surfaceCard,
-                      borderRadius: BorderRadius.circular(AppRadius.card),
-                      border: Border.all(color: cs.borderDefault),
-                    ),
-                    child: Row(
-                      children: [
-                        Container(
-                          width: 32,
-                          height: 32,
-                          alignment: Alignment.center,
-                          decoration: BoxDecoration(
-                            color: rankColor.withValues(alpha: 0.15),
-                            shape: BoxShape.circle,
-                          ),
-                          child: Text(
-                            '$rank',
-                            style: TextStyle(
-                              fontWeight: FontWeight.w800,
-                              color: rankColor,
+                  return StaggeredFadeIn(
+                    index: i,
+                    child: Container(
+                      padding: const EdgeInsets.all(14),
+                      decoration: BoxDecoration(
+                        color: cs.surfaceCard,
+                        borderRadius: BorderRadius.circular(AppRadius.card),
+                        border: Border.all(color: cs.borderDefault),
+                      ),
+                      child: Row(
+                        children: [
+                          Container(
+                            width: 32,
+                            height: 32,
+                            alignment: Alignment.center,
+                            decoration: BoxDecoration(
+                              color: rankColor.withValues(alpha: 0.15),
+                              shape: BoxShape.circle,
+                            ),
+                            child: Text(
+                              '$rank',
+                              style: tx.subtitle.copyWith(
+                                fontWeight: FontWeight.w800,
+                                color: rankColor,
+                              ),
                             ),
                           ),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Row(
-                                children: [
-                                  Flexible(
-                                    child: Text(
-                                      e.fullName,
-                                      overflow: TextOverflow.ellipsis,
-                                      style: tx.subtitle.copyWith(
-                                        fontWeight: FontWeight.w700,
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  children: [
+                                    Flexible(
+                                      child: Text(
+                                        e.fullName,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: tx.subtitle.copyWith(
+                                          fontWeight: FontWeight.w700,
+                                        ),
                                       ),
                                     ),
-                                  ),
-                                  if (e.achievementTier != null) ...[
-                                    const SizedBox(width: 6),
-                                    AchievementBadge(tier: e.achievementTier),
+                                    if (e.achievementTier != null) ...[
+                                      const SizedBox(width: 6),
+                                      AchievementBadge(tier: e.achievementTier),
+                                    ],
                                   ],
-                                ],
-                              ),
-                              Text(
-                                '${e.position} · ${e.completedJobsInPeriod} iş '
-                                '(önceki dönem ${e.completedJobsPreviousPeriod})',
-                                style: tx.caption,
-                              ),
-                              if (e.onTimeRate != null)
-                                Text(
-                                  'Zamanında %${e.onTimeRate!.toStringAsFixed(0)}'
-                                  ' (${e.onTimeMeasuredJobs} planlı iş)',
-                                  style: tx.caption.copyWith(
-                                    fontWeight: FontWeight.w600,
-                                    color: e.onTimeRate! >= 90
-                                        ? cs.success600
-                                        : cs.warning600,
-                                  ),
                                 ),
-                              if (e.targetCompletionPercent != null)
                                 Text(
-                                  'Hedefin '
-                                  '%${e.targetCompletionPercent!.toStringAsFixed(0)}'
-                                  "'i",
-                                  style: tx.caption.copyWith(
+                                  '${e.position} · ${e.completedJobsInPeriod} iş '
+                                  '(önceki dönem ${e.completedJobsPreviousPeriod})',
+                                  style: tx.caption,
+                                ),
+                                if (e.onTimeRate != null)
+                                  Text(
+                                    'Zamanında %${e.onTimeRate!.toStringAsFixed(0)}'
+                                    ' (${e.onTimeMeasuredJobs} planlı iş)',
+                                    style: tx.caption.copyWith(
+                                      fontWeight: FontWeight.w600,
+                                      color: e.onTimeRate! >= 90
+                                          ? cs.success600
+                                          : cs.warning600,
+                                    ),
+                                  ),
+                                if (e.targetCompletionPercent != null)
+                                  Text(
+                                    'Hedefin '
+                                    '%${e.targetCompletionPercent!.toStringAsFixed(0)}'
+                                    "'i",
+                                    style: tx.caption.copyWith(
+                                      fontWeight: FontWeight.w700,
+                                      color: e.targetCompletionPercent! >= 100
+                                          ? cs.success600
+                                          : cs.warning600,
+                                    ),
+                                  ),
+                              ],
+                            ),
+                          ),
+                          if (e.averageRating != null)
+                            Row(
+                              children: [
+                                Icon(
+                                  Icons.star_rounded,
+                                  size: 16,
+                                  color: cs.warning500,
+                                ),
+                                const SizedBox(width: 2),
+                                Text(
+                                  '${e.averageRating!.toStringAsFixed(2)}'
+                                  ' (${e.ratedJobsCount})',
+                                  style: tx.bodySmall.copyWith(
                                     fontWeight: FontWeight.w700,
-                                    color: e.targetCompletionPercent! >= 100
-                                        ? cs.success600
-                                        : cs.warning600,
                                   ),
                                 ),
-                            ],
-                          ),
-                        ),
-                        if (e.averageRating != null)
-                          Row(
-                            children: [
-                              Icon(
-                                Icons.star_rounded,
-                                size: 16,
-                                color: cs.warning500,
-                              ),
-                              const SizedBox(width: 2),
-                              Text(
-                                '${e.averageRating!.toStringAsFixed(2)}'
-                                ' (${e.ratedJobsCount})',
-                                style: tx.bodySmall.copyWith(
-                                  fontWeight: FontWeight.w700,
-                                ),
-                              ),
-                            ],
-                          ),
-                      ],
+                              ],
+                            ),
+                        ],
+                      ),
                     ),
                   );
                 },

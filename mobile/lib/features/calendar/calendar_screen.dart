@@ -674,42 +674,45 @@ class _CalendarScreenState extends State<CalendarScreen> {
                 ? cs.surfaceBase
                 : Color.lerp(cs.primary50, cs.primary400, ratio)!;
 
-            return GestureDetector(
-              onTap: () => setState(() => _selectedDate = date),
-              child: Container(
-                decoration: BoxDecoration(
-                  color: bg,
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(
-                    color: isSelected ? cs.primary700 : cs.borderDefault,
-                    width: isSelected ? 2 : 1,
-                  ),
-                ),
-                alignment: Alignment.center,
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Text(
-                      '$day',
-                      style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: isSelected
-                            ? FontWeight.w800
-                            : FontWeight.w500,
-                      ),
+            return Material(
+              color: bg,
+              borderRadius: BorderRadius.circular(8),
+              child: InkWell(
+                onTap: () => setState(() => _selectedDate = date),
+                borderRadius: BorderRadius.circular(8),
+                child: Container(
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(
+                      color: isSelected ? cs.primary700 : cs.borderDefault,
+                      width: isSelected ? 2 : 1,
                     ),
-                    // Bölüm K: müsait değilim işareti (turuncu nokta).
-                    if (isUnavailable)
-                      Container(
-                        margin: const EdgeInsets.only(top: 2),
-                        width: 5,
-                        height: 5,
-                        decoration: BoxDecoration(
-                          color: cs.warning500,
-                          shape: BoxShape.circle,
+                  ),
+                  alignment: Alignment.center,
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text(
+                        '$day',
+                        style: tx.caption.copyWith(
+                          fontWeight: isSelected
+                              ? FontWeight.w800
+                              : FontWeight.w500,
                         ),
                       ),
-                  ],
+                      // Bölüm K: müsait değilim işareti (turuncu nokta).
+                      if (isUnavailable)
+                        Container(
+                          margin: const EdgeInsets.only(top: 2),
+                          width: 5,
+                          height: 5,
+                          decoration: BoxDecoration(
+                            color: cs.warning500,
+                            shape: BoxShape.circle,
+                          ),
+                        ),
+                    ],
+                  ),
                 ),
               ),
             );

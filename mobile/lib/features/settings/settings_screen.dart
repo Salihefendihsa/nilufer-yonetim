@@ -621,6 +621,7 @@ class _ThemeCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final cs = context.colors;
+    final tx = context.text;
     final controller = context.watch<ThemeController>();
     final options = <(ThemeMode, String, IconData)>[
       (ThemeMode.light, 'Açık', Icons.light_mode_outlined),
@@ -640,9 +641,9 @@ class _ThemeCard extends StatelessWidget {
               selected: controller.mode == mode,
               onSelected: (_) => context.read<ThemeController>().setMode(mode),
               selectedColor: cs.primary600,
-              labelStyle: TextStyle(
+              labelStyle: tx.bodySmall.copyWith(
                 color: controller.mode == mode
-                    ? Colors.white
+                    ? cs.textInverse
                     : cs.textSecondary,
                 fontWeight: FontWeight.w600,
               ),

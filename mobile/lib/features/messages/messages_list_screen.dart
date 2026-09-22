@@ -11,6 +11,7 @@ import '../../theme/app_palette.dart';
 import '../../theme/app_text_styles.dart';
 import '../../navigation/manager_nav.dart';
 import '../search/search_action.dart';
+import '../../widgets/staggered_fade_in.dart';
 import '../../widgets/state_views.dart';
 import '../../widgets/stat_card.dart';
 import 'chat_screen.dart';
@@ -344,74 +345,75 @@ class _MessagesListScreenState extends State<MessagesListScreen> {
           final i = index - 1;
           final c = _conversations[i];
           final unread = c.unreadCount > 0;
-          return ListTile(
-            leading: CircleAvatar(
-              backgroundColor: cs.primary100,
-              child: Text(
-                c.participant.fullName.isNotEmpty
-                    ? c.participant.fullName[0].toUpperCase()
-                    : '?',
-                style: TextStyle(
-                  color: cs.primary700,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-            ),
-            title: Text(
-              c.participant.fullName,
-              style: TextStyle(
-                fontWeight: unread ? FontWeight.w800 : FontWeight.w600,
-                fontSize: 13.5,
-              ),
-            ),
-            subtitle: Text(
-              c.lastMessage?.content ?? 'Henüz mesaj yok',
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: TextStyle(
-                fontSize: 12.5,
-                color: unread ? cs.textPrimary : cs.textSecondary,
-                fontWeight: unread ? FontWeight.w600 : FontWeight.w400,
-              ),
-            ),
-            trailing: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: [
-                Text(
-                  _timeFormat.format(DateTime.parse(c.updatedAt)),
-                  style: tx.label,
-                ),
-                if (unread) ...[
-                  const SizedBox(height: 4),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 7,
-                      vertical: 2,
-                    ),
-                    decoration: BoxDecoration(
-                      color: cs.primary600,
-                      borderRadius: BorderRadius.circular(AppRadius.pill),
-                    ),
-                    child: Text(
-                      '${c.unreadCount}',
-                      style: tx.label.copyWith(color: Colors.white),
-                    ),
+          return StaggeredFadeIn(
+            index: i,
+            child: ListTile(
+              leading: CircleAvatar(
+                backgroundColor: cs.primary100,
+                child: Text(
+                  c.participant.fullName.isNotEmpty
+                      ? c.participant.fullName[0].toUpperCase()
+                      : '?',
+                  style: tx.body.copyWith(
+                    color: cs.primary700,
+                    fontWeight: FontWeight.w700,
                   ),
+                ),
+              ),
+              title: Text(
+                c.participant.fullName,
+                style: tx.subtitle.copyWith(
+                  fontWeight: unread ? FontWeight.w800 : FontWeight.w600,
+                ),
+              ),
+              subtitle: Text(
+                c.lastMessage?.content ?? 'Henüz mesaj yok',
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: tx.bodySmall.copyWith(
+                  color: unread ? cs.textPrimary : cs.textSecondary,
+                  fontWeight: unread ? FontWeight.w600 : FontWeight.w400,
+                ),
+              ),
+              trailing: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  Text(
+                    _timeFormat.format(DateTime.parse(c.updatedAt)),
+                    style: tx.label,
+                  ),
+                  if (unread) ...[
+                    const SizedBox(height: 4),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 7,
+                        vertical: 2,
+                      ),
+                      decoration: BoxDecoration(
+                        color: cs.primary600,
+                        borderRadius: BorderRadius.circular(AppRadius.pill),
+                      ),
+                      child: Text(
+                        '${c.unreadCount}',
+                        style: tx.label.copyWith(color: Colors.white),
+                      ),
+                    ),
+                  ],
                 ],
-              ],
-            ),
-            onTap: () async {
-              await Navigator.of(context).push(
-                MaterialPageRoute(
-                  builder: (_) => ChatScreen(
-                    conversationId: c.id,
-                    participantName: c.participant.fullName,
+              ),
+              onTap: () async {
+                await Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (_) => ChatScreen(
+                      conversationId: c.id,
+                      participantName: c.participant.fullName,
+                    ),
                   ),
-                ),
-              );
-              _load();
-            },
+                );
+                _load();
+              },
+            ),
           );
         },
       ),

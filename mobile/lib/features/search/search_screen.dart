@@ -212,7 +212,7 @@ class _SearchScreenState extends State<SearchScreen> {
                   r.title,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(fontWeight: FontWeight.w600),
+                  style: tx.subtitle,
                 ),
                 subtitle: Text(
                   r.subtitle,

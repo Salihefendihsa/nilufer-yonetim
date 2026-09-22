@@ -120,7 +120,10 @@ class _CustomerDetailScreenState extends State<CustomerDetailScreen>
           ),
           TextButton(
             onPressed: () => Navigator.of(context).pop(true),
-            child: const Text('Sil', style: TextStyle(color: Colors.red)),
+            style: TextButton.styleFrom(
+              foregroundColor: context.colors.danger600,
+            ),
+            child: const Text('Sil'),
           ),
         ],
       ),
@@ -248,7 +251,7 @@ class _CustomerDetailScreenState extends State<CustomerDetailScreen>
                   ),
                   child: Text(
                     'Bakiye: ${_currency.format(c.outstandingBalance)}',
-                    style: TextStyle(
+                    style: tx.body.copyWith(
                       fontWeight: FontWeight.w700,
                       color: (c.outstandingBalance ?? 0) > 0
                           ? cs.danger600
@@ -506,7 +509,7 @@ class _PaymentsTab extends StatelessWidget {
             ),
             title: Text(
               _currency.format((p['amount'] as num).toDouble()),
-              style: const TextStyle(fontWeight: FontWeight.w700),
+              style: tx.body.copyWith(fontWeight: FontWeight.w700),
             ),
             subtitle: Text(
               '${p['paymentType']} · ${_dateFormat.format(DateTime.parse(p['createdAt'] as String))}',

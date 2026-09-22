@@ -11,6 +11,7 @@ import '../../models/user.dart';
 import '../../theme/app_colors.dart';
 import '../../theme/app_palette.dart';
 import '../../theme/app_text_styles.dart';
+import '../../widgets/staggered_fade_in.dart';
 import '../../widgets/state_views.dart';
 import '../jobs/jobs_api.dart';
 import '../staff/staff_api.dart';
@@ -185,10 +186,15 @@ class _ComplaintsScreenState extends State<ComplaintsScreen> {
                       padding: const EdgeInsets.fromLTRB(16, 8, 16, 88),
                       itemCount: _items.length,
                       separatorBuilder: (_, __) => const SizedBox(height: 8),
-                      itemBuilder: (context, i) => ComplaintTile(
-                        complaint: _items[i],
-                        showCustomer: !isCustomer,
-                        onTap: isCustomer ? null : () => _openManage(_items[i]),
+                      itemBuilder: (context, i) => StaggeredFadeIn(
+                        index: i,
+                        child: ComplaintTile(
+                          complaint: _items[i],
+                          showCustomer: !isCustomer,
+                          onTap: isCustomer
+                              ? null
+                              : () => _openManage(_items[i]),
+                        ),
                       ),
                     ),
                   ),
@@ -372,6 +378,7 @@ class _NewComplaintScreenState extends State<_NewComplaintScreen> {
   @override
   Widget build(BuildContext context) {
     final cs = context.colors;
+    final tx = context.text;
     return Scaffold(
       appBar: AppBar(title: const Text('Yeni Şikayet')),
       body: ListView(
@@ -427,7 +434,7 @@ class _NewComplaintScreenState extends State<_NewComplaintScreen> {
           ),
           if (_error != null) ...[
             const SizedBox(height: 12),
-            Text(_error!, style: TextStyle(color: cs.danger600)),
+            Text(_error!, style: tx.bodySmall.copyWith(color: cs.danger600)),
           ],
           const SizedBox(height: 20),
           ElevatedButton(
@@ -503,6 +510,7 @@ class _ManageComplaintScreenState extends State<_ManageComplaintScreen> {
   @override
   Widget build(BuildContext context) {
     final cs = context.colors;
+    final tx = context.text;
     final me = context.read<AuthProvider>().user;
     final c = widget.complaint;
     final knownIds = {if (me != null) me.id, ..._staff.map((s) => s.userId)};
@@ -574,7 +582,7 @@ class _ManageComplaintScreenState extends State<_ManageComplaintScreen> {
           ),
           if (_error != null) ...[
             const SizedBox(height: 12),
-            Text(_error!, style: TextStyle(color: cs.danger600)),
+            Text(_error!, style: tx.bodySmall.copyWith(color: cs.danger600)),
           ],
           const SizedBox(height: 20),
           ElevatedButton(

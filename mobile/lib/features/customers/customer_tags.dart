@@ -36,6 +36,10 @@ class CustomerTag {
 }
 
 /// "#RRGGBB" → Color; bozuk değerde marka yeşili.
+///
+/// BuildContext'siz üst düzey fonksiyon (model katmanında, `context.colors`
+/// çözülemez) — etiket rengi zaten kullanıcının seçtiği sabit bir RGB değeri,
+/// temaya göre değişmez; kasıtlı `AppColors` kullanımı (bkz. docs/DESIGN_AUDIT.md §0).
 Color colorFromHex(String hex) {
   final clean = hex.replaceFirst('#', '');
   if (clean.length != 6) return AppColors.primary600;

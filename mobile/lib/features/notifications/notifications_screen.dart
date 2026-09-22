@@ -12,6 +12,7 @@ import '../../theme/app_palette.dart';
 import '../../theme/app_text_styles.dart';
 import '../../navigation/manager_nav.dart';
 import '../search/search_action.dart';
+import '../../widgets/staggered_fade_in.dart';
 import '../../widgets/state_views.dart';
 import '../../widgets/stat_card.dart';
 import '../stock/stock_api.dart';
@@ -382,51 +383,53 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
           final n = _notifications[i];
           final unread = n.readAt == null;
           final linked = _screenForRelatedType(n.relatedType) != null;
-          return ListTile(
-            leading: Icon(
-              unread ? Icons.circle : Icons.circle_outlined,
-              size: 10,
-              color: unread ? cs.primary600 : cs.textFaint,
-            ),
-            title: Text(
-              n.title,
-              style: TextStyle(
-                fontWeight: unread ? FontWeight.w800 : FontWeight.w600,
-                fontSize: 13.5,
+          return StaggeredFadeIn(
+            index: i,
+            child: ListTile(
+              leading: Icon(
+                unread ? Icons.circle : Icons.circle_outlined,
+                size: 10,
+                color: unread ? cs.primary600 : cs.textFaint,
               ),
-            ),
-            subtitle: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                if (n.body != null)
-                  Text(
-                    n.body!,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    style: tx.bodySmall,
-                  ),
-                Text(
-                  _dateFormat.format(DateTime.parse(n.createdAt)),
-                  style: tx.label,
+              title: Text(
+                n.title,
+                style: tx.subtitle.copyWith(
+                  fontWeight: unread ? FontWeight.w800 : FontWeight.w600,
                 ),
-              ],
-            ),
-            trailing: n.relatedType == 'Product' && _canRequestPurchase
-                // Stok uyarısında doğrudan takviye talebi açılabilir.
-                ? TextButton.icon(
-                    onPressed: () => _requestPurchase(n),
-                    icon: const Icon(Icons.shopping_cart_outlined, size: 15),
-                    label: Text('Talep Oluştur', style: tx.caption),
-                    style: TextButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(horizontal: 6),
-                      minimumSize: const Size(0, 0),
-                      visualDensity: VisualDensity.compact,
+              ),
+              subtitle: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  if (n.body != null)
+                    Text(
+                      n.body!,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: tx.bodySmall,
                     ),
-                  )
-                : linked
-                ? Icon(Icons.chevron_right_rounded, color: cs.textFaint)
-                : null,
-            onTap: () => _onTap(n),
+                  Text(
+                    _dateFormat.format(DateTime.parse(n.createdAt)),
+                    style: tx.label,
+                  ),
+                ],
+              ),
+              trailing: n.relatedType == 'Product' && _canRequestPurchase
+                  // Stok uyarısında doğrudan takviye talebi açılabilir.
+                  ? TextButton.icon(
+                      onPressed: () => _requestPurchase(n),
+                      icon: const Icon(Icons.shopping_cart_outlined, size: 15),
+                      label: Text('Talep Oluştur', style: tx.caption),
+                      style: TextButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(horizontal: 6),
+                        minimumSize: const Size(0, 0),
+                        visualDensity: VisualDensity.compact,
+                      ),
+                    )
+                  : linked
+                  ? Icon(Icons.chevron_right_rounded, color: cs.textFaint)
+                  : null,
+              onTap: () => _onTap(n),
+            ),
           );
         },
       ),

@@ -12,6 +12,7 @@ import '../../models/user.dart';
 import '../../theme/app_colors.dart';
 import '../../theme/app_palette.dart';
 import '../../theme/app_text_styles.dart';
+import '../../widgets/staggered_fade_in.dart';
 import '../../widgets/state_views.dart';
 import 'customer_tags.dart';
 import 'customers_api.dart';
@@ -283,16 +284,19 @@ class _CustomersListScreenState extends State<CustomersListScreen> {
               );
             }
             final c = _customers[i];
-            return _CustomerCard(
-              customer: c,
-              onTap: () async {
-                final changed = await Navigator.of(context).push<bool>(
-                  MaterialPageRoute(
-                    builder: (_) => CustomerDetailScreen(customerId: c.id),
-                  ),
-                );
-                if (changed == true) _load();
-              },
+            return StaggeredFadeIn(
+              index: i,
+              child: _CustomerCard(
+                customer: c,
+                onTap: () async {
+                  final changed = await Navigator.of(context).push<bool>(
+                    MaterialPageRoute(
+                      builder: (_) => CustomerDetailScreen(customerId: c.id),
+                    ),
+                  );
+                  if (changed == true) _load();
+                },
+              ),
             );
           },
         ),
@@ -340,7 +344,7 @@ class _CustomerCard extends StatelessWidget {
                 backgroundColor: cs.primary100,
                 child: Text(
                   initials,
-                  style: TextStyle(
+                  style: tx.body.copyWith(
                     color: cs.primary700,
                     fontWeight: FontWeight.w700,
                   ),

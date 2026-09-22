@@ -132,7 +132,10 @@ class _StaffDetailScreenState extends State<StaffDetailScreen> {
           ),
           TextButton(
             onPressed: () => Navigator.of(context).pop(true),
-            child: const Text('Sil', style: TextStyle(color: Colors.red)),
+            style: TextButton.styleFrom(
+              foregroundColor: context.colors.danger600,
+            ),
+            child: const Text('Sil'),
           ),
         ],
       ),
@@ -572,6 +575,7 @@ class _StaffDetailScreenState extends State<StaffDetailScreen> {
   @override
   Widget build(BuildContext context) {
     final cs = context.colors;
+    final tx = context.text;
     return Scaffold(
       appBar: AppBar(
         title: Text(_staff?.fullName ?? 'Personel'),
@@ -617,7 +621,7 @@ class _StaffDetailScreenState extends State<StaffDetailScreen> {
                   value: 'terminate',
                   child: Text(
                     'İşten Çıkar',
-                    style: TextStyle(color: cs.danger500),
+                    style: tx.body.copyWith(color: cs.danger500),
                   ),
                 ),
               ],

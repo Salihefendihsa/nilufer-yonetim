@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 
 import '../../core/api_client.dart';
 import '../../models/customer.dart';
+import '../../theme/app_palette.dart';
+import '../../theme/app_text_styles.dart';
 import 'customers_api.dart';
 
 /// POST/PATCH /customers — backend zaten OWNER/MANAGER'a kısıtlıyor
@@ -83,6 +85,8 @@ class _CustomerFormScreenState extends State<CustomerFormScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final cs = context.colors;
+    final tx = context.text;
     return Scaffold(
       appBar: AppBar(
         title: Text(_isEdit ? 'Müşteriyi Düzenle' : 'Yeni Müşteri'),
@@ -140,10 +144,7 @@ class _CustomerFormScreenState extends State<CustomerFormScreen> {
             ),
             if (_error != null) ...[
               const SizedBox(height: 12),
-              Text(
-                _error!,
-                style: const TextStyle(color: Colors.red, fontSize: 13),
-              ),
+              Text(_error!, style: tx.bodySmall.copyWith(color: cs.danger600)),
             ],
             const SizedBox(height: 20),
             ElevatedButton(

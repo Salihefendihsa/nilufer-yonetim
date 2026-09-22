@@ -556,7 +556,7 @@ class _SettingsTabState extends State<_SettingsTab> {
             padding: EdgeInsets.symmetric(vertical: 12),
             child: Text(
               'Başka ayar bulunamadı.',
-              style: TextStyle(color: cs.textFaint),
+              style: tx.body.copyWith(color: cs.textFaint),
             ),
           )
         else ...[

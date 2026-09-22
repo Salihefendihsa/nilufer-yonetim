@@ -672,6 +672,7 @@ class _RatingCardState extends State<_RatingCard> {
   @override
   Widget build(BuildContext context) {
     final cs = context.colors;
+    final tx = context.text;
     final alreadyRated = widget.currentRating != null;
     return Container(
       padding: const EdgeInsets.all(16),
@@ -683,9 +684,9 @@ class _RatingCardState extends State<_RatingCard> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
+          Text(
             'Bu işi değerlendirin',
-            style: TextStyle(fontWeight: FontWeight.w700),
+            style: tx.subtitle.copyWith(fontWeight: FontWeight.w700),
           ),
           const SizedBox(height: 8),
           Row(
@@ -848,10 +849,7 @@ class _ReportCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            'Dozaj: ${report['dosage']}',
-            style: const TextStyle(fontWeight: FontWeight.w600),
-          ),
+          Text('Dozaj: ${report['dosage']}', style: tx.subtitle),
           if (report['productsUsed'] != null)
             Text(
               'Kullanılan ürünler: ${report['productsUsed']}',
@@ -1311,7 +1309,7 @@ class _UsedProductRowWidget extends StatelessWidget {
                 row.quantity.truncateToDouble() == row.quantity ? 0 : 2,
               ),
               textAlign: TextAlign.center,
-              style: const TextStyle(fontWeight: FontWeight.w700),
+              style: tx.subtitle.copyWith(fontWeight: FontWeight.w700),
             ),
           ),
           IconButton(

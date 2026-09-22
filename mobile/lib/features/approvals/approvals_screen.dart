@@ -410,23 +410,27 @@ class _Chip extends StatelessWidget {
   Widget build(BuildContext context) {
     final cs = context.colors;
     final tx = context.text;
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-        decoration: BoxDecoration(
-          color: selected ? cs.primary600 : cs.surfaceCard,
-          borderRadius: BorderRadius.circular(AppRadius.pill),
-          border: Border.all(
-            color: selected ? cs.primary600 : cs.borderDefault,
+    return Material(
+      color: selected ? cs.primary600 : cs.surfaceCard,
+      borderRadius: BorderRadius.circular(AppRadius.pill),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(AppRadius.pill),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(AppRadius.pill),
+            border: Border.all(
+              color: selected ? cs.primary600 : cs.borderDefault,
+            ),
           ),
-        ),
-        alignment: Alignment.center,
-        child: Text(
-          label,
-          style: tx.bodySmall.copyWith(
-            fontWeight: FontWeight.w600,
-            color: selected ? Colors.white : cs.textSecondary,
+          alignment: Alignment.center,
+          child: Text(
+            label,
+            style: tx.bodySmall.copyWith(
+              fontWeight: FontWeight.w600,
+              color: selected ? Colors.white : cs.textSecondary,
+            ),
           ),
         ),
       ),
@@ -595,7 +599,7 @@ class _AdvanceCard extends StatelessWidget {
               ),
               Text(
                 _currency.format(advance.amount),
-                style: TextStyle(
+                style: tx.body.copyWith(
                   fontWeight: FontWeight.w700,
                   color: cs.warning600,
                 ),
@@ -665,7 +669,7 @@ class _ExpiringContractCard extends StatelessWidget {
           if (contract.amount != null)
             Text(
               _currency.format(contract.amount),
-              style: TextStyle(
+              style: tx.body.copyWith(
                 fontWeight: FontWeight.w700,
                 color: cs.danger600,
               ),
