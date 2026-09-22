@@ -24,6 +24,7 @@ import {
   ComplaintPriority,
   EvaluationStatus,
   StaffBonusStatus,
+  StockMovementType,
 } from "@prisma/client";
 
 const prisma = new PrismaClient();
@@ -618,6 +619,253 @@ async function main() {
     console.log(`${evalCount} personel değerlendirmesi hazır, ${bonusCount} prim önerisi oluştu.`);
   } else {
     console.log(`Zaten ${periodCount} değerlendirme dönemi var, atlanıyor.`);
+  }
+
+  // ══════════════════════════════════════════════════════════════════════
+  // ÖDEMELER — 24 aylık trend (bu yıl + geçen yıl aynı aylar) mevsimsel
+  // dalgalanma ve hafif yıllık büyüme ile — /analytics/revenue-trend ve
+  // /analytics/year-over-year için gerçek veri.
+  // ══════════════════════════════════════════════════════════════════════
+  const paymentTrendCount = await prisma.payment.count();
+  if (paymentTrendCount < 150) {
+    const paymentTypes = ["CASH", "CREDIT_CARD", "TRANSFER"];
+    // Haşere ilaçlama talebi ılık aylarda (Nis-Eyl) artar, kışın düşer (Oca=0 .. Ara=11).
+    const seasonMultiplier = [0.65, 0.7, 0.85, 1.1, 1.35, 1.5, 1.55, 1.45, 1.2, 0.95, 0.75, 0.6];
+    let createdPayments = 0;
+    const now = new Date();
+    for (let monthsBack = 23; monthsBack >= 0; monthsBack--) {
+      const monthDate = new Date(now.getFullYear(), now.getMonth() - monthsBack, 1);
+      const month = monthDate.getMonth();
+      const isThisYear = monthsBack < 12;
+      // Bu yıl geçen yıla göre ortalama biraz daha yüksek (büyüme trendi).
+      const growthFactor = isThisYear ? 1 : 0.87;
+      const base = 6 + seasonMultiplier[month] * 4;
+      const paymentsThisMonth = Math.round(base * growthFactor * (0.85 + Math.random() * 0.3));
+      for (let i = 0; i < paymentsThisMonth; i++) {
+        const day = randomInt(1, 27);
+        const createdAt = new Date(monthDate.getFullYear(), month, day, randomInt(8, 19), randomItem([0, 15, 30, 45]));
+        if (createdAt > now) continue; // gelecek tarihli ödeme olmaz
+        const amount = Math.round(randomInt(300, 3400) * seasonMultiplier[month] * growthFactor);
+        await prisma.payment.create({
+          data: {
+            customerId: randomItem(customers).id,
+            amount,
+            paymentType: randomItem(paymentTypes),
+            collectedByStaffId: Math.random() > 0.4 ? randomItem(allFieldStaff).id : undefined,
+            createdAt,
+          },
+        });
+        createdPayments++;
+      }
+    }
+    console.log(`${createdPayments} yeni ödeme hazır (24 aylık trend + YoY, toplam ${paymentTrendCount + createdPayments}).`);
+  } else {
+    console.log(`Zaten ${paymentTrendCount} ödeme var, atlanıyor.`);
+  }
+
+  // ══════════════════════════════════════════════════════════════════════
+  // DEĞERLENDİRME DÖNEMLERİ — geçmişe 2 dönem daha eklenerek toplam 5 dönem
+  // (gerçek bir trend çizgisi için) — ortalama puan zamanla yükseliyor.
+  // ══════════════════════════════════════════════════════════════════════
+  const extraPeriodDefs: { label: string; startDate: Date; endDate: Date; bonusThreshold: number; bonusAmount: number; scoreRange: [number, number] }[] = [
+    { label: "2025 Ç3 (Temmuz-Eylül)", startDate: new Date("2025-07-01"), endDate: new Date("2025-09-30"), bonusThreshold: 15, bonusAmount: 1250, scoreRange: [8, 15] },
+    { label: "2025 Ç4 (Ekim-Aralık)", startDate: new Date("2025-10-01"), endDate: new Date("2025-12-31"), bonusThreshold: 15, bonusAmount: 1350, scoreRange: [9, 16] },
+  ];
+  let extraEvalCount = 0;
+  let extraBonusCount = 0;
+  let extraPeriodCount = 0;
+  for (const def of extraPeriodDefs) {
+    const period =
+      (await prisma.evaluationPeriod.findFirst({ where: { label: def.label } })) ??
+      (await (async () => {
+        extraPeriodCount++;
+        return prisma.evaluationPeriod.create({
+          data: {
+            label: def.label,
+            startDate: def.startDate,
+            endDate: def.endDate,
+            isLocked: true,
+            bonusThreshold: def.bonusThreshold,
+            bonusAmount: def.bonusAmount,
+          },
+        });
+      })());
+    const existingEvalForPeriod = await prisma.evaluation.count({ where: { periodId: period.id } });
+    if (existingEvalForPeriod > 0) continue;
+    for (const staff of allFieldStaff) {
+      const scores = criteria.map((c) => ({ criterionId: c.id, score: randomInt(def.scoreRange[0], def.scoreRange[1]) }));
+      const evaluation = await prisma.evaluation.create({
+        data: {
+          evaluatorUserId: manager.id,
+          targetStaffId: staff.id,
+          periodId: period.id,
+          status: EvaluationStatus.LOCKED,
+          comment: randomItem([
+            "Dönem başında belirlenen gelişim alanlarında ilerleme var.",
+            "Müşteri şikayeti olmadı, istikrarlı bir performans sergiledi.",
+            "Ekip içi koordinasyon güçlü, örnek davranışlar gözlemlendi.",
+            "Bazı işlerde zamanlama sorunları yaşandı, geri bildirim verildi.",
+          ]),
+          submittedAt: def.endDate,
+          lockedAt: def.endDate,
+          scores: { createMany: { data: scores } },
+        },
+      });
+      extraEvalCount++;
+      const avg = scores.reduce((sum, s) => sum + s.score, 0) / scores.length;
+      if (avg >= def.bonusThreshold) {
+        await prisma.staffBonus.create({
+          data: {
+            staffId: staff.id,
+            evaluationPeriodId: period.id,
+            evaluationId: evaluation.id,
+            amount: def.bonusAmount,
+            status: StaffBonusStatus.APPROVED,
+            approvedByUserId: owner.id,
+            approvedAt: def.endDate,
+          },
+        });
+        extraBonusCount++;
+      }
+    }
+  }
+  if (extraEvalCount > 0) {
+    console.log(`${extraPeriodCount} yeni değerlendirme dönemi (toplam 5) + ${extraEvalCount} değerlendirme + ${extraBonusCount} prim hazır.`);
+  } else {
+    console.log("Ek değerlendirme dönemleri/değerlendirmeleri zaten mevcut, atlanıyor.");
+  }
+
+  // ══════════════════════════════════════════════════════════════════════
+  // İŞLER — geçmişi 6 aya uzat (91-180 gün önce) + puan çeşitliliği (1-5,
+  // yalnızca 5 değil) — geri bildirim/rapor grafiklerinin gerçekçi görünmesi için.
+  // ══════════════════════════════════════════════════════════════════════
+  const oldCompletedCount = await prisma.job.count({
+    where: { status: JobStatus.COMPLETED, completedAt: { lt: daysFromNow(-90) } },
+  });
+  if (oldCompletedCount < 15) {
+    let createdOldJobs = 0;
+    for (let i = 0; i < 18; i++) {
+      const customer = randomItem(customers);
+      const staff = randomItem(allFieldStaff);
+      const serviceType = randomItem(serviceTypes);
+      const completedAt = daysFromNow(-randomInt(91, 180));
+      const hasFullFeedback = Math.random() > 0.45;
+      const warrantyDays = serviceType === "Genel Haşere İlaçlama" ? 30 : serviceType === "Fare ve Kemirgen Kontrolü" ? 90 : null;
+      // Ağırlıklı dağılım: çoğunlukla 4-5, azınlıkta 1-2 (gerçekçi karışık geri bildirim).
+      const rating = randomItem([1, 2, 2, 3, 3, 4, 4, 4, 5, 5, 5, 5]);
+      await prisma.job.create({
+        data: {
+          customerId: customer.id,
+          assignedStaffId: staff.id,
+          serviceType,
+          status: JobStatus.COMPLETED,
+          scheduledAt: completedAt,
+          completedAt,
+          price: randomInt(350, 3200),
+          rating: Math.random() > 0.2 ? rating : null,
+          ratingComment:
+            rating <= 2 && Math.random() > 0.4
+              ? randomItem([
+                  "Beklediğimiz sonucu alamadık, tekrar uygulama istedik.",
+                  "İletişim zayıftı, randevu değişikliği geç haber verildi.",
+                  "Fiyat/performans açısından memnun kalmadık.",
+                ])
+              : rating >= 4 && Math.random() > 0.5
+              ? randomItem([
+                  "Personel çok ilgiliydi, işini titizlikle yaptı.",
+                  "Sonuç beklediğimizden iyi oldu, teşekkürler.",
+                ])
+              : null,
+          serviceQualityScore: hasFullFeedback ? rating : null,
+          punctualityScore: hasFullFeedback ? Math.max(1, Math.min(5, rating + randomInt(-1, 1))) : null,
+          staffProfessionalismScore: hasFullFeedback ? Math.max(1, Math.min(5, rating + randomInt(-1, 1))) : null,
+          wouldRecommend: hasFullFeedback ? rating >= 3 : null,
+          feedbackComment: hasFullFeedback && Math.random() > 0.6 ? "Geri bildirimimiz yukarıdaki gibidir." : null,
+          feedbackSubmittedAt: hasFullFeedback ? completedAt : null,
+          warrantyExpiresAt: warrantyDays ? new Date(completedAt.getTime() + warrantyDays * 24 * 60 * 60 * 1000) : null,
+        },
+      });
+      createdOldJobs++;
+    }
+    console.log(`${createdOldJobs} ek geçmiş iş hazır (91-180 gün önce, 1-5 puan çeşitliliği dahil).`);
+  } else {
+    console.log(`Zaten ${oldCompletedCount} 90+ gün önce tamamlanmış iş var, atlanıyor.`);
+  }
+
+  // ══════════════════════════════════════════════════════════════════════
+  // STOK HAREKETLERİ — ürün başına 30-60 günlük IN/OUT geçmişi, GET
+  // /products/:id/forecast'ın (son 30 gün OUT toplamı) veri bulması için.
+  // ══════════════════════════════════════════════════════════════════════
+  const movementCount = await prisma.stockMovement.count();
+  if (movementCount < 120) {
+    let createdMovements = 0;
+    for (const product of allProducts) {
+      const n = randomInt(5, 10);
+      for (let i = 0; i < n; i++) {
+        const dayOffset = randomInt(0, 60);
+        const isOut = Math.random() > 0.3; // çoğunlukla saha sarfiyatı
+        const threshold = Math.max(2, Math.round(Number(product.criticalThreshold)));
+        const qty = isOut ? randomInt(1, Math.max(2, Math.round(threshold / 2))) : randomInt(5, Math.max(10, threshold * 2));
+        await prisma.stockMovement.create({
+          data: {
+            productId: product.id,
+            type: isOut ? StockMovementType.OUT : StockMovementType.IN,
+            quantity: qty,
+            note: isOut ? "Saha uygulaması sarfiyatı" : "Stok girişi",
+            createdAt: daysFromNow(-dayOffset),
+          },
+        });
+        createdMovements++;
+      }
+    }
+    console.log(`${createdMovements} yeni stok hareketi hazır (ürün başına 30-60 günlük geçmiş, toplam ${movementCount + createdMovements}).`);
+  } else {
+    console.log(`Zaten ${movementCount} stok hareketi var, atlanıyor.`);
+  }
+
+  // ══════════════════════════════════════════════════════════════════════
+  // TEKLİF TALEPLERİ — yanıt süresi metrikleri için daha geniş zaman damgası
+  // çeşitliliği (30 ve 90 günlük pencerelerin ikisinde de veri olsun).
+  // ══════════════════════════════════════════════════════════════════════
+  const quoteCount2 = await prisma.quoteRequest.count();
+  if (quoteCount2 < 30) {
+    const quoteDefs2: { fullName: string; phone: string; propertyType: string; serviceType: string; district: string; status: string; createdDaysAgo: number; contactHoursLater?: number; convertHoursLater?: number }[] = [
+      { fullName: "Pınar Doğan", phone: "0543 400 10 01", propertyType: "Konut", serviceType: "Genel Haşere İlaçlama", district: "Nilüfer", status: "NEW", createdDaysAgo: 2 },
+      { fullName: "Emre Kaya", phone: "0543 400 10 02", propertyType: "İş Yeri", serviceType: "Hamamböceği İlaçlama", district: "Osmangazi", status: "CONTACTED", createdDaysAgo: 5, contactHoursLater: 3 },
+      { fullName: "Derya Uçar", phone: "0543 400 10 03", propertyType: "Restoran", serviceType: "Fare ve Kemirgen Kontrolü", district: "Yıldırım", status: "CONVERTED", createdDaysAgo: 8, contactHoursLater: 1, convertHoursLater: 30 },
+      { fullName: "Okan Bilgin", phone: "0543 400 10 04", propertyType: "Konut", serviceType: "Karınca İlaçlama", district: "Mudanya", status: "CONTACTED", createdDaysAgo: 12, contactHoursLater: 20 },
+      { fullName: "Selma Aksoy", phone: "0543 400 10 05", propertyType: "Depo", serviceType: "Fare ve Kemirgen Kontrolü", district: "Gemlik", status: "CONVERTED", createdDaysAgo: 18, contactHoursLater: 2, convertHoursLater: 48 },
+      { fullName: "Burak Şen", phone: "0543 400 10 06", propertyType: "Otel", serviceType: "Güve İlaçlama", district: "Karacabey", status: "REJECTED", createdDaysAgo: 22, contactHoursLater: 40 },
+      { fullName: "Zehra Polat", phone: "0543 400 10 07", propertyType: "Konut", serviceType: "Genel Haşere İlaçlama", district: "Nilüfer", status: "NEW", createdDaysAgo: 25 },
+      { fullName: "Hakan Türker", phone: "0543 400 10 08", propertyType: "AVM", serviceType: "Sivrisinek ve Karasinek İlaçlama", district: "Osmangazi", status: "CONVERTED", createdDaysAgo: 33, contactHoursLater: 5, convertHoursLater: 72 },
+      { fullName: "Nilay Er", phone: "0543 400 10 09", propertyType: "Fabrika", serviceType: "Fare ve Kemirgen Kontrolü", district: "Yıldırım", status: "CONTACTED", createdDaysAgo: 40, contactHoursLater: 60 },
+      { fullName: "Cansu Yıldız", phone: "0543 400 10 10", propertyType: "Kreş", serviceType: "Genel Haşere İlaçlama", district: "Mudanya", status: "REVISION", createdDaysAgo: 47, contactHoursLater: 4 },
+      { fullName: "Deniz Arslan", phone: "0543 400 10 11", propertyType: "Konut", serviceType: "Hamamböceği İlaçlama", district: "Gemlik", status: "CONVERTED", createdDaysAgo: 55, contactHoursLater: 8, convertHoursLater: 96 },
+      { fullName: "Murat Çelik", phone: "0543 400 10 12", propertyType: "Restoran", serviceType: "Karınca İlaçlama", district: "Karacabey", status: "REJECTED", createdDaysAgo: 63, contactHoursLater: 90 },
+      { fullName: "Sibel Avcıoğlu", phone: "0543 400 10 13", propertyType: "İş Yeri", serviceType: "Genel Haşere İlaçlama", district: "Nilüfer", status: "CONTACTED", createdDaysAgo: 71, contactHoursLater: 15 },
+      { fullName: "Ozan Güneş", phone: "0543 400 10 14", propertyType: "Otel", serviceType: "Fare ve Kemirgen Kontrolü", district: "Osmangazi", status: "CONVERTED", createdDaysAgo: 82, contactHoursLater: 6, convertHoursLater: 120 },
+    ];
+    for (const def of quoteDefs2) {
+      const createdAt = daysFromNow(-def.createdDaysAgo);
+      const firstContactedAt = def.contactHoursLater != null ? new Date(createdAt.getTime() + def.contactHoursLater * 3600 * 1000) : null;
+      const convertedAt = def.convertHoursLater != null ? new Date(createdAt.getTime() + def.convertHoursLater * 3600 * 1000) : null;
+      await prisma.quoteRequest.create({
+        data: {
+          fullName: def.fullName,
+          phone: def.phone,
+          propertyType: def.propertyType,
+          serviceType: def.serviceType,
+          district: def.district,
+          status: def.status,
+          firstContactedAt,
+          convertedAt,
+          createdAt,
+        },
+      });
+    }
+    console.log(`${quoteDefs2.length} yeni teklif talebi hazır (yanıt süresi çeşitliliği, toplam ${quoteCount2 + quoteDefs2.length}).`);
+  } else {
+    console.log(`Zaten ${quoteCount2} teklif talebi var, atlanıyor.`);
   }
 
   console.log("Demo veri seed'i tamamlandı.");
