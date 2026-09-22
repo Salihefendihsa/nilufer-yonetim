@@ -5,6 +5,7 @@ import '../../core/api_client.dart';
 import '../../core/file_download.dart';
 import '../../models/contract.dart';
 import '../../models/customer.dart';
+import '../../models/job.dart';
 import '../../theme/app_colors.dart';
 import '../../theme/app_palette.dart';
 import '../../theme/app_text_styles.dart';
@@ -285,7 +286,7 @@ class _ContractsListScreenState extends State<ContractsListScreen> {
                           TextButton.icon(
                             onPressed: () async {
                               final created = await Navigator.of(context)
-                                  .push<bool>(
+                                  .push<Job>(
                                     MaterialPageRoute(
                                       builder: (_) => JobFormScreen(
                                         prefillCustomerId: item.customerId,
@@ -293,7 +294,7 @@ class _ContractsListScreenState extends State<ContractsListScreen> {
                                       ),
                                     ),
                                   );
-                              if (created == true) _load();
+                              if (created != null) _load();
                             },
                             icon: const Icon(Icons.build_outlined, size: 16),
                             label: Text('Şimdi Oluştur', style: tx.caption),

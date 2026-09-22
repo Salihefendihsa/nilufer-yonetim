@@ -4,6 +4,7 @@ import '../features/dashboard/dashboard_screen.dart';
 import '../features/jobs/job_form_screen.dart';
 import '../features/jobs/jobs_list_screen.dart';
 import '../features/messages/messages_list_screen.dart';
+import '../models/job.dart';
 import '../models/user.dart';
 import '../theme/app_palette.dart';
 import '../theme/app_text_styles.dart';
@@ -77,7 +78,7 @@ class _ManagerShellState extends State<ManagerShell> {
             shape: const CircleBorder(),
             tooltip: 'Yeni İş',
             onPressed: () async {
-              await Navigator.of(context).push<bool>(
+              await Navigator.of(context).push<Job>(
                 MaterialPageRoute(builder: (_) => const JobFormScreen()),
               );
             },

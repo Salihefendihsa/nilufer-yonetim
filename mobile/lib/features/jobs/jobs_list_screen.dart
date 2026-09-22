@@ -108,10 +108,10 @@ class _JobsListScreenState extends State<JobsListScreen> {
             IconButton(
               icon: const Icon(Icons.add_task_rounded),
               onPressed: () async {
-                final created = await Navigator.of(context).push<bool>(
+                final created = await Navigator.of(context).push<Job>(
                   MaterialPageRoute(builder: (_) => const JobFormScreen()),
                 );
-                if (created == true) _load();
+                if (created != null) _load();
               },
             ),
         ],

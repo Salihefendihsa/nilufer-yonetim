@@ -5,12 +5,15 @@ import 'package:provider/provider.dart';
 import '../../auth/auth_provider.dart';
 import '../../core/api_client.dart';
 import '../../models/advance.dart';
+import '../../models/appointment_request.dart';
 import '../../models/contract.dart';
 import '../../models/job.dart';
 import '../../models/leave_request.dart';
 import '../../models/quote.dart';
 import '../../models/user.dart';
 import '../../navigation/manager_nav.dart';
+import '../appointment_requests/appointment_requests_api.dart';
+import '../jobs/job_form_screen.dart';
 import '../search/search_action.dart';
 import '../../theme/app_colors.dart';
 import '../../theme/app_palette.dart';
@@ -77,11 +80,13 @@ class ApprovalsScreen extends StatefulWidget {
 
 class _ApprovalsScreenState extends State<ApprovalsScreen> {
   final _api = ApprovalsApi();
+  final _appointmentApi = AppointmentRequestsApi();
   List<QuoteRequest> _quotes = [];
   List<AdvanceRequest> _advances = [];
   List<Contract> _expiring = [];
   List<Job> _reportJobs = [];
   List<LeaveRequest> _leaveRequests = [];
+  List<AppointmentRequest> _appointmentRequests = [];
   bool _loading = true;
   String? _error;
   String? _busyId;
@@ -116,6 +121,13 @@ class _ApprovalsScreenState extends State<ApprovalsScreen> {
           : _api.expiringContracts().catchError((_) => <Contract>[]),
       _api.pendingReportJobs().catchError((_) => <Job>[]),
       _api.pendingLeaveRequests().catchError((_) => <LeaveRequest>[]),
+      // Bölüm J: müşteri randevu taleplerini web'deki bekleyen-onaylar
+      // sayfasıyla aynı yerden planlar/reddeder — TEAM_LEAD'e kapalı (backend).
+      isTeamLead
+          ? Future.value(<AppointmentRequest>[])
+          : _appointmentApi
+                .list(status: 'PENDING')
+                .catchError((_) => <AppointmentRequest>[]),
     ]);
     if (!mounted) return;
     setState(() {
@@ -124,6 +136,7 @@ class _ApprovalsScreenState extends State<ApprovalsScreen> {
       _expiring = results[2] as List<Contract>;
       _reportJobs = results[3] as List<Job>;
       _leaveRequests = results[4] as List<LeaveRequest>;
+      _appointmentRequests = results[5] as List<AppointmentRequest>;
       _loading = false;
     });
   }
@@ -216,12 +229,82 @@ class _ApprovalsScreenState extends State<ApprovalsScreen> {
     }
   }
 
+  Future<void> _scheduleAppointment(AppointmentRequest r) async {
+    final job = await Navigator.of(context).push<Job>(
+      MaterialPageRoute(
+        builder: (_) => JobFormScreen(
+          prefillCustomerId: r.customerId,
+          prefillServiceType: r.serviceTypeName,
+        ),
+      ),
+    );
+    if (job == null || !mounted) return;
+    setState(() => _busyId = r.id);
+    try {
+      await _appointmentApi.schedule(r.id, job.id);
+      _load();
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(e is ApiException ? e.message : 'Planlanamadı'),
+          ),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _busyId = null);
+    }
+  }
+
+  Future<void> _declineAppointment(AppointmentRequest r) async {
+    final controller = TextEditingController();
+    final reason = await showDialog<String>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Randevu talebini reddet'),
+        content: TextField(
+          controller: controller,
+          autofocus: true,
+          maxLines: 2,
+          decoration: const InputDecoration(labelText: 'Red gerekçesi'),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: const Text('Vazgeç'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.of(ctx).pop(controller.text.trim()),
+            child: const Text('Reddet'),
+          ),
+        ],
+      ),
+    );
+    if (reason == null || reason.isEmpty || !mounted) return;
+    setState(() => _busyId = r.id);
+    try {
+      await _appointmentApi.decline(r.id, reason);
+      _load();
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(e is ApiException ? e.message : 'İşlem başarısız'),
+          ),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _busyId = null);
+    }
+  }
+
   int get _total =>
       _quotes.length +
       _advances.length +
       _expiring.length +
       _reportJobs.length +
-      _leaveRequests.length;
+      _leaveRequests.length +
+      _appointmentRequests.length;
 
   @override
   Widget build(BuildContext context) {
@@ -246,6 +329,7 @@ class _ApprovalsScreenState extends State<ApprovalsScreen> {
                 _FilterChips(
                   value: _filter,
                   counts: {
+                    'appointments': _appointmentRequests.length,
                     'reports': _reportJobs.length,
                     'quotes': _quotes.length,
                     'advances': _advances.length,
@@ -261,6 +345,21 @@ class _ApprovalsScreenState extends State<ApprovalsScreen> {
                     child: ListView(
                       padding: const EdgeInsets.all(16),
                       children: [
+                        if (_appointmentRequests.isNotEmpty &&
+                            (_filter == null ||
+                                _filter == 'appointments')) ...[
+                          _SectionTitle(
+                            'Randevu Talepleri (${_appointmentRequests.length})',
+                          ),
+                          ..._appointmentRequests.map(
+                            (r) => _AppointmentCard(
+                              request: r,
+                              busy: _busyId == r.id,
+                              onSchedule: () => _scheduleAppointment(r),
+                              onDecline: () => _declineAppointment(r),
+                            ),
+                          ),
+                        ],
                         if (_leaveRequests.isNotEmpty &&
                             (_filter == null || _filter == 'leaves')) ...[
                           _SectionTitle(
@@ -328,7 +427,9 @@ class _ApprovalsScreenState extends State<ApprovalsScreen> {
                             !(_filter == 'quotes' && _quotes.isNotEmpty) &&
                             !(_filter == 'advances' && _advances.isNotEmpty) &&
                             !(_filter == 'contracts' && _expiring.isNotEmpty) &&
-                            !(_filter == 'leaves' && _leaveRequests.isNotEmpty))
+                            !(_filter == 'leaves' && _leaveRequests.isNotEmpty) &&
+                            !(_filter == 'appointments' &&
+                                _appointmentRequests.isNotEmpty))
                           const Padding(
                             padding: EdgeInsets.only(top: 40),
                             child: EmptyStateView(
@@ -360,6 +461,7 @@ class _FilterChips extends StatelessWidget {
   });
 
   static const _labels = {
+    'appointments': 'Randevular',
     'reports': 'Raporlar',
     'quotes': 'Teklifler',
     'advances': 'Avanslar',
@@ -674,6 +776,77 @@ class _ExpiringContractCard extends StatelessWidget {
                 color: cs.danger600,
               ),
             ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Bölüm J: müşterinin kendi hesabından açtığı randevu talebi — "Planla"
+/// var olan bir işe bağlamak için önce Yeni İş formunu açar (bkz.
+/// _scheduleAppointment), "Reddet" gerekçe ister.
+class _AppointmentCard extends StatelessWidget {
+  final AppointmentRequest request;
+  final bool busy;
+  final VoidCallback onSchedule;
+  final VoidCallback onDecline;
+  const _AppointmentCard({
+    required this.request,
+    required this.busy,
+    required this.onSchedule,
+    required this.onDecline,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = context.colors;
+    final tx = context.text;
+    return _AccentCard(
+      accentColor: cs.primary500,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            request.customerName ?? 'Müşteri',
+            style: tx.body.copyWith(fontWeight: FontWeight.w700),
+          ),
+          Text(
+            '${request.serviceTypeName ?? 'Hizmet belirtilmemiş'}'
+            '${request.customerPhone != null ? ' · ${request.customerPhone}' : ''}',
+            style: tx.caption,
+          ),
+          Text(
+            'Tercih edilen: '
+            '${_dateFormat.format(DateTime.parse(request.preferredDateStart))} – '
+            '${_dateFormat.format(DateTime.parse(request.preferredDateEnd))}',
+            style: tx.caption,
+          ),
+          if (request.note != null && request.note!.isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.only(top: 2),
+              child: Text(request.note!, style: tx.caption),
+            ),
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              Expanded(
+                child: OutlinedButton(
+                  onPressed: busy ? null : onDecline,
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: cs.danger600,
+                  ),
+                  child: const Text('Reddet'),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: ElevatedButton(
+                  onPressed: busy ? null : onSchedule,
+                  child: Text(busy ? 'İşleniyor...' : 'Planla'),
+                ),
+              ),
+            ],
+          ),
         ],
       ),
     );

@@ -285,7 +285,7 @@ class _JobFormScreenState extends State<JobFormScreen> {
       _error = null;
     });
     try {
-      await _jobsApi.create(
+      final job = await _jobsApi.create(
         customerId: _selectedCustomerId!,
         assignedStaffId: _selectedStaffId,
         serviceType: _serviceTypeController.text.trim(),
@@ -296,7 +296,7 @@ class _JobFormScreenState extends State<JobFormScreen> {
             ? null
             : double.tryParse(_priceController.text.trim()),
       );
-      if (mounted) Navigator.of(context).pop(true);
+      if (mounted) Navigator.of(context).pop(job);
     } catch (e) {
       setState(
         () => _error = e is ApiException ? e.message : 'İş oluşturulamadı',
