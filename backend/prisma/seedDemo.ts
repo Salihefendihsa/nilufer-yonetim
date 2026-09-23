@@ -1094,6 +1094,17 @@ async function main() {
   } else {
     console.log("Şefi tanımsız personel yok (kasıtlı örnekler hariç), atlanıyor.");
   }
+  // Şefler müdüre raporlar (supervisorId polimorfik: MANAGER için User.id —
+  // bkz. staffController.getOrgChart / resolveSupervisorInfo). Erişim kapsamı
+  // (getTeamStaffIds) tek seviyeli kaldığı için yalnızca şema görünümünü etkiler.
+  const leadsWithoutManager = teamLeads.filter((t) => !t.supervisorId);
+  if (leadsWithoutManager.length > 0) {
+    await prisma.staff.updateMany({
+      where: { id: { in: leadsWithoutManager.map((t) => t.id) } },
+      data: { supervisorId: manager.id },
+    });
+    console.log(`${leadsWithoutManager.length} şef müdüre (${manager.fullName}) bağlandı.`);
+  }
 
   // ══════════════════════════════════════════════════════════════════════
   // SAHA RAPORLARI — raporsuz tamamlanmış işlere onaylı JobReport. Önceden

@@ -424,10 +424,27 @@ export async function getOrgChart(_req: Request, res: Response) {
   // bu bir Staff.id VEYA bir User.id olabilir, iki durumu da tek bir map ile ele alıyoruz).
   const childrenBySupervisorId = new Map<string, typeof activeStaff>();
   const unassigned: typeof activeStaff = [];
+  // Şefsiz TEAM_LEAD: düz modelde (bkz. CLAUDE.md, getTeamStaffIds) şefler
+  // doğrudan yönetime raporlar — "bağlantısız" değil, patronun altında
+  // gösterilir. Önceden unassigned'a düşüyor ve (unassigned düğümleri çocuk
+  // taşımadığı için) tüm ekipleri şemadan kayboluyordu.
+  const unsupervisedLeads: typeof activeStaff = [];
   const knownIds = new Set([...owners.map((o) => o.id), ...managers.map((m) => m.id), ...staffIds]);
+  // MANAGER/OWNER rolündeki kullanıcının Staff satırı (terfi öncesinden kalan
+  // ya da müdürün kendi personel kaydı) ayrıca düğüm olmaz — User düğümüyle
+  // birleşir; önceden müdür hem ağaçta hem "bağlantısız"da iki kez çıkıyordu.
+  const managementStaffIdToUserId = new Map(
+    activeStaff.filter((s) => s.user.role === Role.MANAGER || s.user.role === Role.OWNER).map((s) => [s.id, s.user.id])
+  );
 
   for (const staff of activeStaff) {
-    const supervisorId = normalizeSupervisorId(staff.supervisorId);
+    if (managementStaffIdToUserId.has(staff.id)) continue;
+    let supervisorId = normalizeSupervisorId(staff.supervisorId);
+    if (supervisorId && managementStaffIdToUserId.has(supervisorId)) supervisorId = managementStaffIdToUserId.get(supervisorId)!;
+    if (!supervisorId && staff.user.role === Role.TEAM_LEAD) {
+      unsupervisedLeads.push(staff);
+      continue;
+    }
     if (!supervisorId || !knownIds.has(supervisorId)) {
       // Ya hiç şef atanmamış, ya da geçersiz/silinmiş bir id'ye işaret ediyor.
       unassigned.push(staff);
@@ -476,6 +493,8 @@ export async function getOrgChart(_req: Request, res: Response) {
       ...managers.map(buildManagerNode),
       // OWNER'a doğrudan bağlanan (aradaki MÜDÜR'ü atlayan) STAFF/TEAM_LEAD.
       ...(childrenBySupervisorId.get(owner.id) ?? []).map(buildStaffNode),
+      // Şefsiz şefler yalnızca ilk patronun altında (birden çok OWNER varsa tekrar etmesin).
+      ...(owner.id === owners[0]?.id ? unsupervisedLeads.map(buildStaffNode) : []),
     ],
   }));
 
@@ -489,6 +508,8 @@ export async function getOrgChart(_req: Request, res: Response) {
       position: staff.position,
       status: staff.status,
       assignedCustomers: [...(customersByStaffId.get(staff.id)?.values() ?? [])],
+      // Bağlantısız bir kişinin altındaki ekip de kaybolmasın.
+      children: (childrenBySupervisorId.get(staff.id) ?? []).map(buildStaffNode),
     })),
   });
 }
