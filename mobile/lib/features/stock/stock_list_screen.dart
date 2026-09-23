@@ -8,6 +8,7 @@ import '../../models/user.dart';
 import '../../theme/app_colors.dart';
 import '../../theme/app_palette.dart';
 import '../../theme/app_text_styles.dart';
+import '../../widgets/chip_bar.dart';
 import '../../widgets/staggered_fade_in.dart';
 import '../../widgets/state_views.dart';
 import 'purchase_requests_screen.dart';
@@ -545,34 +546,31 @@ class _StockListScreenState extends State<StockListScreen> {
       ),
       body: Column(
         children: [
-          SizedBox(
-            height: 46,
-            child: ListView(
-              scrollDirection: Axis.horizontal,
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-              children: [
-                _Chip(
-                  label: 'Tüm Kalemler',
-                  selected: _filter == null,
-                  onTap: () => setState(() {
-                    _filter = null;
-                    _load();
-                  }),
-                ),
-                for (final c in ProductCategory.values)
-                  Padding(
-                    padding: const EdgeInsets.only(left: 8),
-                    child: _Chip(
-                      label: productCategoryLabelTr(c),
-                      selected: _filter == c,
-                      onTap: () => setState(() {
-                        _filter = c;
-                        _load();
-                      }),
-                    ),
+          ChipBar(
+            spacing: 0,
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+            children: [
+              _Chip(
+                label: 'Tüm Kalemler',
+                selected: _filter == null,
+                onTap: () => setState(() {
+                  _filter = null;
+                  _load();
+                }),
+              ),
+              for (final c in ProductCategory.values)
+                Padding(
+                  padding: const EdgeInsets.only(left: 8),
+                  child: _Chip(
+                    label: productCategoryLabelTr(c),
+                    selected: _filter == c,
+                    onTap: () => setState(() {
+                      _filter = c;
+                      _load();
+                    }),
                   ),
-              ],
-            ),
+                ),
+            ],
           ),
           Expanded(child: _buildBody()),
         ],

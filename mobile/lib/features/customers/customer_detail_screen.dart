@@ -215,102 +215,117 @@ class _CustomerDetailScreenState extends State<CustomerDetailScreen>
 
     final hasFinance = c.outstandingBalance != null;
 
-    return Column(
-      children: [
-        Container(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Bölüm X (6. tur): etiketler (yönetim düzenler, STAFF görür).
-              Padding(
-                padding: const EdgeInsets.only(bottom: 8),
-                child: CustomerTagEditor(
-                  key: ValueKey('tags-${c.id}-${c.tags.length}'),
-                  customerId: c.id,
-                  initial: c.tags.map(CustomerTag.fromJson).toList(),
-                  editable: _canManage,
+    // Başlık (etiketler/iletişim/bakiye) içerikle birlikte kayar, sekme çubuğu
+    // üstte sabitlenir. Önceden başlık sabitti: kısa ekranlarda (360×560)
+    // sekme içeriğine ~215 px kalıyor, Belgeler'deki yükleme alanı ve liste
+    // sıkışıyordu.
+    final tabBar = TabBar(
+      controller: _tabController,
+      // 4 sekme (sayaçlarıyla) dar ekrana sığmıyor, etiketler kırpılıyordu
+      // ("Sözleşmel…") — kaydırılabilir, soldan hizalı.
+      isScrollable: true,
+      tabAlignment: TabAlignment.start,
+      labelColor: cs.primary700,
+      unselectedLabelColor: cs.textSecondary,
+      indicatorColor: cs.primary600,
+      tabs: [
+        Tab(text: 'İşler (${c.jobs.length})'),
+        Tab(text: 'Sözleşmeler (${c.contracts.length})'),
+        if (hasFinance)
+          Tab(text: 'Ödemeler (${c.payments.length})')
+        else
+          const Tab(text: 'Ödemeler'),
+        if (_canManage) const Tab(text: 'Belgeler'),
+      ],
+    );
+
+    return NestedScrollView(
+      headerSliverBuilder: (context, _) => [
+        SliverToBoxAdapter(
+          child: Container(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Bölüm X (6. tur): etiketler (yönetim düzenler, STAFF görür).
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 8),
+                  child: CustomerTagEditor(
+                    key: ValueKey('tags-${c.id}-${c.tags.length}'),
+                    customerId: c.id,
+                    initial: c.tags.map(CustomerTag.fromJson).toList(),
+                    editable: _canManage,
+                  ),
                 ),
-              ),
-              _InfoRow(icon: Icons.phone_rounded, text: c.phone),
-              if (c.email != null)
-                _InfoRow(icon: Icons.mail_outline_rounded, text: c.email!),
-              if (c.address != null)
-                _InfoRow(icon: Icons.location_on_outlined, text: c.address!),
-              if (_averageRating(c.jobs) != null) ...[
-                const SizedBox(height: 6),
-                Row(
-                  children: [
-                    Icon(Icons.star_rounded, size: 16, color: cs.warning500),
-                    const SizedBox(width: 4),
-                    Text(
-                      '${_averageRating(c.jobs)!.toStringAsFixed(1)} '
-                      '(${_ratedJobCount(c.jobs)} değerlendirme)',
-                      style: tx.bodySmall.copyWith(fontWeight: FontWeight.w600),
+                _InfoRow(icon: Icons.phone_rounded, text: c.phone),
+                if (c.email != null)
+                  _InfoRow(icon: Icons.mail_outline_rounded, text: c.email!),
+                if (c.address != null)
+                  _InfoRow(icon: Icons.location_on_outlined, text: c.address!),
+                if (_averageRating(c.jobs) != null) ...[
+                  const SizedBox(height: 6),
+                  Row(
+                    children: [
+                      Icon(Icons.star_rounded, size: 16, color: cs.warning500),
+                      const SizedBox(width: 4),
+                      Text(
+                        '${_averageRating(c.jobs)!.toStringAsFixed(1)} '
+                        '(${_ratedJobCount(c.jobs)} değerlendirme)',
+                        style: tx.bodySmall.copyWith(
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+                if (hasFinance) ...[
+                  const SizedBox(height: 10),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 8,
                     ),
-                  ],
-                ),
-              ],
-              if (hasFinance) ...[
-                const SizedBox(height: 10),
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 8,
-                  ),
-                  decoration: BoxDecoration(
-                    color: (c.outstandingBalance ?? 0) > 0
-                        ? cs.danger50
-                        : cs.success50,
-                    borderRadius: BorderRadius.circular(AppRadius.chip),
-                  ),
-                  child: Text(
-                    'Bakiye: ${_currency.format(c.outstandingBalance)}',
-                    style: tx.body.copyWith(
-                      fontWeight: FontWeight.w700,
+                    decoration: BoxDecoration(
                       color: (c.outstandingBalance ?? 0) > 0
-                          ? cs.danger600
-                          : cs.success600,
+                          ? cs.danger50
+                          : cs.success50,
+                      borderRadius: BorderRadius.circular(AppRadius.chip),
+                    ),
+                    child: Text(
+                      'Bakiye: ${_currency.format(c.outstandingBalance)}',
+                      style: tx.body.copyWith(
+                        fontWeight: FontWeight.w700,
+                        color: (c.outstandingBalance ?? 0) > 0
+                            ? cs.danger600
+                            : cs.success600,
+                      ),
                     ),
                   ),
-                ),
+                ],
               ],
-            ],
+            ),
           ),
         ),
-        TabBar(
-          controller: _tabController,
-          labelColor: cs.primary700,
-          unselectedLabelColor: cs.textSecondary,
-          indicatorColor: cs.primary600,
-          tabs: [
-            Tab(text: 'İşler (${c.jobs.length})'),
-            Tab(text: 'Sözleşmeler (${c.contracts.length})'),
-            if (hasFinance)
-              Tab(text: 'Ödemeler (${c.payments.length})')
-            else
-              const Tab(text: 'Ödemeler'),
-            if (_canManage) const Tab(text: 'Belgeler'),
-          ],
-        ),
-        Expanded(
-          child: TabBarView(
-            controller: _tabController,
-            children: [
-              _JobsTab(jobs: c.jobs, onRefresh: _load),
-              _ContractsTab(contracts: c.contracts, onRefresh: _load),
-              hasFinance
-                  ? _PaymentsTab(payments: c.payments, onRefresh: _load)
-                  : const EmptyStateView(
-                      title: 'Finansal veriler görünmüyor',
-                      subtitle: 'Bu bilgiler yalnızca yönetim rolüne açıktır.',
-                      icon: Icons.lock_outline_rounded,
-                    ),
-              if (_canManage) CustomerDocumentsTab(customerId: c.id),
-            ],
-          ),
+        SliverPersistentHeader(
+          pinned: true,
+          delegate: _PinnedTabBar(tabBar, cs.surfacePage),
         ),
       ],
+      body: TabBarView(
+        controller: _tabController,
+        children: [
+          _JobsTab(jobs: c.jobs, onRefresh: _load),
+          _ContractsTab(contracts: c.contracts, onRefresh: _load),
+          hasFinance
+              ? _PaymentsTab(payments: c.payments, onRefresh: _load)
+              : const EmptyStateView(
+                  title: 'Finansal veriler görünmüyor',
+                  subtitle: 'Bu bilgiler yalnızca yönetim rolüne açıktır.',
+                  icon: Icons.lock_outline_rounded,
+                ),
+          if (_canManage) CustomerDocumentsTab(customerId: c.id),
+        ],
+      ),
     );
   }
 }
@@ -643,4 +658,25 @@ class _PaymentsTab extends StatelessWidget {
       ),
     );
   }
+}
+
+/// Müşteri detayında başlık kaydıkça üstte sabit kalan sekme çubuğu.
+class _PinnedTabBar extends SliverPersistentHeaderDelegate {
+  final TabBar tabBar;
+  final Color background;
+  const _PinnedTabBar(this.tabBar, this.background);
+
+  @override
+  double get minExtent => tabBar.preferredSize.height;
+
+  @override
+  double get maxExtent => tabBar.preferredSize.height;
+
+  @override
+  Widget build(BuildContext context, double shrinkOffset, bool overlaps) =>
+      ColoredBox(color: background, child: tabBar);
+
+  @override
+  bool shouldRebuild(_PinnedTabBar oldDelegate) =>
+      oldDelegate.tabBar != tabBar || oldDelegate.background != background;
 }

@@ -99,23 +99,32 @@ class AppStatCard extends StatelessWidget {
                 ),
                 child: Icon(icon, size: 18, color: iconColor ?? cs.accentSoft),
               ),
-              if (badge != null)
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 8,
-                    vertical: 3,
-                  ),
-                  decoration: BoxDecoration(
-                    color: (badgeColor ?? cs.primary500).withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(AppRadius.pill),
-                  ),
-                  child: Text(
-                    badge!,
-                    style: tx.label.copyWith(
-                      color: badgeColor ?? cs.primary700,
+              if (badge != null) ...[
+                const SizedBox(width: 6),
+                // Flexible: dar kart + büyük yazı boyutunda rozet taşmasın.
+                Flexible(
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 3,
+                    ),
+                    decoration: BoxDecoration(
+                      color: (badgeColor ?? cs.primary500).withValues(
+                        alpha: 0.1,
+                      ),
+                      borderRadius: BorderRadius.circular(AppRadius.pill),
+                    ),
+                    child: Text(
+                      badge!,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: tx.label.copyWith(
+                        color: badgeColor ?? cs.primary700,
+                      ),
                     ),
                   ),
                 ),
+              ],
             ],
           ),
           const SizedBox(height: 12),

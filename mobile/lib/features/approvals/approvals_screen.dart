@@ -21,6 +21,7 @@ import '../../theme/app_palette.dart';
 import '../../theme/app_text_styles.dart';
 import '../staff/leave_balance_card.dart';
 import '../staff/staff_detail_screen.dart';
+import '../../widgets/chip_bar.dart';
 import '../../widgets/accent_card.dart';
 import '../../widgets/state_views.dart';
 import 'approvals_api.dart';
@@ -31,7 +32,6 @@ final _currency = NumberFormat.currency(
   decimalDigits: 0,
 );
 final _dateFormat = DateFormat('d MMM', 'tr_TR');
-
 
 /// web/src/app/(dashboard)/bekleyen-onaylar sayfasıyla aynı üç kaynağı
 /// birleştirir: yeni teklifler, bekleyen avanslar, süresi yaklaşan
@@ -318,8 +318,7 @@ class _ApprovalsScreenState extends State<ApprovalsScreen> {
                       padding: const EdgeInsets.all(16),
                       children: [
                         if (_appointmentRequests.isNotEmpty &&
-                            (_filter == null ||
-                                _filter == 'appointments')) ...[
+                            (_filter == null || _filter == 'appointments')) ...[
                           _SectionTitle(
                             'Randevu Talepleri (${_appointmentRequests.length})',
                           ),
@@ -399,7 +398,8 @@ class _ApprovalsScreenState extends State<ApprovalsScreen> {
                             !(_filter == 'quotes' && _quotes.isNotEmpty) &&
                             !(_filter == 'advances' && _advances.isNotEmpty) &&
                             !(_filter == 'contracts' && _expiring.isNotEmpty) &&
-                            !(_filter == 'leaves' && _leaveRequests.isNotEmpty) &&
+                            !(_filter == 'leaves' &&
+                                _leaveRequests.isNotEmpty) &&
                             !(_filter == 'appointments' &&
                                 _appointmentRequests.isNotEmpty))
                           const Padding(
@@ -443,29 +443,26 @@ class _FilterChips extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
-      height: 46,
-      child: ListView(
-        scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-        children: [
-          _Chip(
-            label: 'Tümü',
-            selected: value == null,
-            onTap: () => onChanged(null),
-          ),
-          for (final key in _labels.keys)
-            if ((counts[key] ?? 0) > 0)
-              Padding(
-                padding: const EdgeInsets.only(left: 8),
-                child: _Chip(
-                  label: '${_labels[key]} (${counts[key]})',
-                  selected: value == key,
-                  onTap: () => onChanged(key),
-                ),
+    return ChipBar(
+      spacing: 0,
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+      children: [
+        _Chip(
+          label: 'Tümü',
+          selected: value == null,
+          onTap: () => onChanged(null),
+        ),
+        for (final key in _labels.keys)
+          if ((counts[key] ?? 0) > 0)
+            Padding(
+              padding: const EdgeInsets.only(left: 8),
+              child: _Chip(
+                label: '${_labels[key]} (${counts[key]})',
+                selected: value == key,
+                onTap: () => onChanged(key),
               ),
-        ],
-      ),
+            ),
+      ],
     );
   }
 }
@@ -551,9 +548,9 @@ class _ReportCard extends StatelessWidget {
     return AccentCard(
       accentColor: cs.neutral600,
       // Kart → iş detayı (raporu, fotoğrafları incelemek için).
-      onTap: () => Navigator.of(context).push(
-        MaterialPageRoute(builder: (_) => JobDetailScreen(jobId: job.id)),
-      ),
+      onTap: () => Navigator.of(
+        context,
+      ).push(MaterialPageRoute(builder: (_) => JobDetailScreen(jobId: job.id))),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -961,10 +958,7 @@ class _AdvanceHistorySheetState extends State<_AdvanceHistorySheet> {
                   style: tx.subtitle.copyWith(fontWeight: FontWeight.w700),
                 ),
                 const SizedBox(height: 4),
-                Text(
-                  'Avans geçmişi · ${all.length} talep',
-                  style: tx.caption,
-                ),
+                Text('Avans geçmişi · ${all.length} talep', style: tx.caption),
                 const SizedBox(height: 12),
                 Row(
                   children: [

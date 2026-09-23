@@ -41,10 +41,8 @@ const _sectionTitles = <String, (String, IconData)>{
 
 /// Bölüm G (2. tur): Yönetici Özet Paneli — web'in /yonetici-ozeti sayfası
 /// ile aynı endpoint, aynı bölümler. Kartlar backend'in verdiği
-/// `drillDown.route` anahtarına göre ilgili ekrana gider. Mobil liste
-/// ekranları henüz dışarıdan filtre parametresi almadığı için `filter`
-/// değeri burada yalnızca taşınır, uygulanmaz (web'de query string ile
-/// uygulanıyor).
+/// `drillDown.route` anahtarına göre ilgili ekrana gider; `filter` ve seçili
+/// aralık hedef ekrana aktarılır (bkz. `_screenForKpi`).
 class ExecutiveSummaryScreen extends StatefulWidget {
   const ExecutiveSummaryScreen({super.key});
 
@@ -243,14 +241,17 @@ class _KpiGrid extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Satır yüksekliği yazı boyutuyla ölçeklenir: sabit childAspectRatio
+    // (1.45) büyük yazı ayarında kartın altından ~10 px taşıyordu.
+    final rowHeight = MediaQuery.textScalerOf(context).scale(118);
     return GridView.builder(
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
         crossAxisCount: 2,
         mainAxisSpacing: 10,
         crossAxisSpacing: 10,
-        childAspectRatio: 1.45,
+        mainAxisExtent: rowHeight,
       ),
       itemCount: kpis.length,
       itemBuilder: (_, i) =>

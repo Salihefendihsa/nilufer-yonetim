@@ -111,7 +111,9 @@ class _UsageStatsScreenState extends State<UsageStatsScreen> {
         children: [
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
-            child: Row(
+            // Wrap: 3 çip dar ekran/büyük yazıda tek satıra sığmıyordu (90 px).
+            child: Wrap(
+              runSpacing: 6,
               children: _dayOptions
                   .map(
                     (d) => Padding(

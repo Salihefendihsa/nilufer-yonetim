@@ -7,6 +7,7 @@ import '../../models/quote.dart';
 import '../../theme/app_colors.dart';
 import '../../theme/app_palette.dart';
 import '../../theme/app_text_styles.dart';
+import '../../widgets/chip_bar.dart';
 import '../../widgets/state_views.dart';
 import 'quote_history_screen.dart';
 import 'quotes_api.dart';
@@ -252,34 +253,31 @@ class _QuotesListScreenState extends State<QuotesListScreen> {
       ),
       body: Column(
         children: [
-          SizedBox(
-            height: 46,
-            child: ListView(
-              scrollDirection: Axis.horizontal,
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-              children: [
-                _Chip(
-                  label: 'Tümü',
-                  selected: _filter == null,
-                  onTap: () => setState(() {
-                    _filter = null;
-                    _load();
-                  }),
-                ),
-                for (final s in quoteStatusOptions)
-                  Padding(
-                    padding: const EdgeInsets.only(left: 8),
-                    child: _Chip(
-                      label: quoteStatusLabelTr(s),
-                      selected: _filter == s,
-                      onTap: () => setState(() {
-                        _filter = s;
-                        _load();
-                      }),
-                    ),
+          ChipBar(
+            spacing: 0,
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+            children: [
+              _Chip(
+                label: 'Tümü',
+                selected: _filter == null,
+                onTap: () => setState(() {
+                  _filter = null;
+                  _load();
+                }),
+              ),
+              for (final s in quoteStatusOptions)
+                Padding(
+                  padding: const EdgeInsets.only(left: 8),
+                  child: _Chip(
+                    label: quoteStatusLabelTr(s),
+                    selected: _filter == s,
+                    onTap: () => setState(() {
+                      _filter = s;
+                      _load();
+                    }),
                   ),
-              ],
-            ),
+                ),
+            ],
           ),
           Expanded(child: _buildBody()),
         ],

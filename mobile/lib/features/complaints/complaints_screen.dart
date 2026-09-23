@@ -11,6 +11,7 @@ import '../../models/user.dart';
 import '../../theme/app_colors.dart';
 import '../../theme/app_palette.dart';
 import '../../theme/app_text_styles.dart';
+import '../../widgets/chip_bar.dart';
 import '../../widgets/staggered_fade_in.dart';
 import '../../widgets/state_views.dart';
 import '../jobs/jobs_api.dart';
@@ -126,45 +127,42 @@ class _ComplaintsScreenState extends State<ComplaintsScreen> {
           : null,
       body: Column(
         children: [
-          SizedBox(
-            height: 46,
-            child: ListView(
-              scrollDirection: Axis.horizontal,
-              padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
-              children: [
-                for (final s in [
-                  null,
-                  'OPEN',
-                  'IN_PROGRESS',
-                  'RESOLVED',
-                  'CLOSED',
-                ]) ...[
-                  ChoiceChip(
-                    label: Text(s == null ? 'Tümü' : complaintStatusLabels[s]!),
-                    selected: _status == s,
-                    onSelected: (_) {
-                      setState(() => _status = s);
+          ChipBar(
+            spacing: 0,
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
+            children: [
+              for (final s in [
+                null,
+                'OPEN',
+                'IN_PROGRESS',
+                'RESOLVED',
+                'CLOSED',
+              ]) ...[
+                ChoiceChip(
+                  label: Text(s == null ? 'Tümü' : complaintStatusLabels[s]!),
+                  selected: _status == s,
+                  onSelected: (_) {
+                    setState(() => _status = s);
+                    _load();
+                  },
+                ),
+                const SizedBox(width: 6),
+              ],
+              if (!isCustomer) ...[
+                const SizedBox(width: 8),
+                for (final p in ['HIGH', 'MEDIUM', 'LOW']) ...[
+                  FilterChip(
+                    label: Text(complaintPriorityLabels[p]!),
+                    selected: _priority == p,
+                    onSelected: (sel) {
+                      setState(() => _priority = sel ? p : null);
                       _load();
                     },
                   ),
                   const SizedBox(width: 6),
                 ],
-                if (!isCustomer) ...[
-                  const SizedBox(width: 8),
-                  for (final p in ['HIGH', 'MEDIUM', 'LOW']) ...[
-                    FilterChip(
-                      label: Text(complaintPriorityLabels[p]!),
-                      selected: _priority == p,
-                      onSelected: (sel) {
-                        setState(() => _priority = sel ? p : null);
-                        _load();
-                      },
-                    ),
-                    const SizedBox(width: 6),
-                  ],
-                ],
               ],
-            ),
+            ],
           ),
           Expanded(
             child: _loading

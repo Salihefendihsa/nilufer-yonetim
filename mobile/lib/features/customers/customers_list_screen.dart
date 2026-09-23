@@ -12,6 +12,7 @@ import '../../models/user.dart';
 import '../../theme/app_colors.dart';
 import '../../theme/app_palette.dart';
 import '../../theme/app_text_styles.dart';
+import '../../widgets/chip_bar.dart';
 import '../../widgets/staggered_fade_in.dart';
 import '../../widgets/state_views.dart';
 import 'customer_tags.dart';
@@ -199,53 +200,47 @@ class _CustomersListScreenState extends State<CustomersListScreen> {
             ),
           ),
           if (_tagOptions.isNotEmpty)
-            SizedBox(
-              height: 36,
-              child: ListView(
-                scrollDirection: Axis.horizontal,
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                children: [
-                  for (final t in _tagOptions)
-                    Padding(
-                      padding: const EdgeInsets.only(right: 6),
-                      child: CustomerTagChip(
-                        tag: t,
-                        dimmed: _tagFilter != null && _tagFilter != t.id,
-                        onTap: () {
-                          setState(
-                            () => _tagFilter = _tagFilter == t.id ? null : t.id,
-                          );
-                          _load();
-                        },
-                      ),
-                    ),
-                ],
-              ),
-            ),
-          SizedBox(
-            height: 42,
-            child: ListView(
-              scrollDirection: Axis.horizontal,
-              padding: const EdgeInsets.symmetric(horizontal: 16),
+            ChipBar(
+              spacing: 0,
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
               children: [
-                for (final option in const [
-                  ('newest', 'En Yeni'),
-                  ('name', 'İsme Göre'),
-                  ('balance', 'Bakiyeye Göre'),
-                ])
+                for (final t in _tagOptions)
                   Padding(
-                    padding: const EdgeInsets.only(right: 8),
-                    child: ChoiceChip(
-                      label: Text(option.$2, style: tx.caption),
-                      selected: _sort == option.$1,
-                      onSelected: (_) {
-                        setState(() => _sort = option.$1);
+                    padding: const EdgeInsets.only(right: 6),
+                    child: CustomerTagChip(
+                      tag: t,
+                      dimmed: _tagFilter != null && _tagFilter != t.id,
+                      onTap: () {
+                        setState(
+                          () => _tagFilter = _tagFilter == t.id ? null : t.id,
+                        );
                         _load();
                       },
                     ),
                   ),
               ],
             ),
+          ChipBar(
+            spacing: 0,
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+            children: [
+              for (final option in const [
+                ('newest', 'En Yeni'),
+                ('name', 'İsme Göre'),
+                ('balance', 'Bakiyeye Göre'),
+              ])
+                Padding(
+                  padding: const EdgeInsets.only(right: 8),
+                  child: ChoiceChip(
+                    label: Text(option.$2, style: tx.caption),
+                    selected: _sort == option.$1,
+                    onSelected: (_) {
+                      setState(() => _sort = option.$1);
+                      _load();
+                    },
+                  ),
+                ),
+            ],
           ),
           Expanded(child: _buildBody()),
         ],

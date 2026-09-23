@@ -4,6 +4,7 @@ import '../../core/api_client.dart';
 import '../../theme/app_colors.dart';
 import '../../theme/app_palette.dart';
 import '../../theme/app_text_styles.dart';
+import '../../widgets/chip_bar.dart';
 import '../../widgets/staggered_fade_in.dart';
 import '../../widgets/state_views.dart';
 import '../evaluations/evaluations_screen.dart';
@@ -300,30 +301,27 @@ class _PerformanceScreenState extends State<PerformanceScreen> {
       appBar: AppBar(
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(48),
-          child: SizedBox(
-            height: 48,
-            child: ListView(
-              scrollDirection: Axis.horizontal,
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-              children: [
-                for (final option in const [
-                  ('this_month', 'Bu Ay'),
-                  ('last_month', 'Geçen Ay'),
-                  ('this_year', 'Bu Yıl'),
-                ])
-                  Padding(
-                    padding: const EdgeInsets.only(right: 8),
-                    child: ChoiceChip(
-                      label: Text(option.$2, style: tx.caption),
-                      selected: _period == option.$1,
-                      onSelected: (_) {
-                        setState(() => _period = option.$1);
-                        _load();
-                      },
-                    ),
+          child: ChipBar(
+            spacing: 0,
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+            children: [
+              for (final option in const [
+                ('this_month', 'Bu Ay'),
+                ('last_month', 'Geçen Ay'),
+                ('this_year', 'Bu Yıl'),
+              ])
+                Padding(
+                  padding: const EdgeInsets.only(right: 8),
+                  child: ChoiceChip(
+                    label: Text(option.$2, style: tx.caption),
+                    selected: _period == option.$1,
+                    onSelected: (_) {
+                      setState(() => _period = option.$1);
+                      _load();
+                    },
                   ),
-              ],
-            ),
+                ),
+            ],
           ),
         ),
         title: Text(

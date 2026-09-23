@@ -13,6 +13,7 @@ import '../../theme/app_palette.dart';
 import '../../theme/app_text_styles.dart';
 import '../../navigation/manager_nav.dart';
 import '../search/search_action.dart';
+import '../../widgets/chip_bar.dart';
 import '../../widgets/staggered_fade_in.dart';
 import '../../widgets/state_views.dart';
 import 'jobs_api.dart';
@@ -75,9 +76,10 @@ class JobsListScreen extends StatefulWidget {
       key: key,
       initialStatus: JobStatus.completed,
       from: DateTime(now.year, now.month),
-      to: DateTime(now.year, now.month + 1).subtract(
-        const Duration(milliseconds: 1),
-      ),
+      to: DateTime(
+        now.year,
+        now.month + 1,
+      ).subtract(const Duration(milliseconds: 1)),
       dateField: 'completedAt',
       rangeLabel: 'Bu ay tamamlanan',
     );
@@ -187,35 +189,32 @@ class _JobsListScreenState extends State<JobsListScreen> {
               ),
             ),
           ),
-          SizedBox(
-            height: 46,
-            child: ListView(
-              scrollDirection: Axis.horizontal,
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-              children: [
-                _FilterChip(
-                  label: 'Tümü',
-                  selected: _filter == null,
-                  onTap: () => setState(() {
-                    _filter = null;
-                    _load();
-                  }),
-                ),
-                for (final s in JobStatus.values)
-                  Padding(
-                    padding: const EdgeInsets.only(left: 8),
-                    child: _FilterChip(
-                      label: jobStatusLabelTr(s),
-                      selected: _filter == s,
-                      color: _statusColors(context.colors)[s],
-                      onTap: () => setState(() {
-                        _filter = s;
-                        _load();
-                      }),
-                    ),
+          ChipBar(
+            spacing: 0,
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+            children: [
+              _FilterChip(
+                label: 'Tümü',
+                selected: _filter == null,
+                onTap: () => setState(() {
+                  _filter = null;
+                  _load();
+                }),
+              ),
+              for (final s in JobStatus.values)
+                Padding(
+                  padding: const EdgeInsets.only(left: 8),
+                  child: _FilterChip(
+                    label: jobStatusLabelTr(s),
+                    selected: _filter == s,
+                    color: _statusColors(context.colors)[s],
+                    onTap: () => setState(() {
+                      _filter = s;
+                      _load();
+                    }),
                   ),
-              ],
-            ),
+                ),
+            ],
           ),
           if (_from != null || _to != null)
             Padding(
@@ -399,32 +398,48 @@ class _JobCard extends StatelessWidget {
                           style: tx.bodySmall,
                         ),
                         const SizedBox(height: 4),
-                        Row(
+                        // Wrap: dar ekran / büyük yazı boyutunda saat aralığı
+                        // alt satıra iner (önceden Row 29-57 px taşıyordu).
+                        Wrap(
+                          spacing: 10,
+                          runSpacing: 2,
                           children: [
-                            Icon(
-                              Icons.person_outline_rounded,
-                              size: 13,
-                              color: cs.textFaint,
+                            Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  Icons.person_outline_rounded,
+                                  size: 13,
+                                  color: cs.textFaint,
+                                ),
+                                const SizedBox(width: 4),
+                                Text(
+                                  job.assignedStaffName ?? 'Atanmadı',
+                                  style: tx.caption.copyWith(
+                                    color: cs.textFaint,
+                                  ),
+                                ),
+                              ],
                             ),
-                            const SizedBox(width: 4),
-                            Text(
-                              job.assignedStaffName ?? 'Atanmadı',
-                              style: tx.caption.copyWith(color: cs.textFaint),
-                            ),
-                            if (job.scheduledAt != null) ...[
-                              const SizedBox(width: 10),
-                              Icon(
-                                Icons.schedule_rounded,
-                                size: 13,
-                                color: cs.textFaint,
+                            if (job.scheduledAt != null)
+                              Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(
+                                    Icons.schedule_rounded,
+                                    size: 13,
+                                    color: cs.textFaint,
+                                  ),
+                                  const SizedBox(width: 4),
+                                  Text(
+                                    '${_timeFormat.format(job.scheduledAt!)}'
+                                    '${job.scheduledEndAt != null ? ' – ${_timeFormat.format(job.scheduledEndAt!)}' : ''}',
+                                    style: tx.caption.copyWith(
+                                      color: cs.textFaint,
+                                    ),
+                                  ),
+                                ],
                               ),
-                              const SizedBox(width: 4),
-                              Text(
-                                '${_timeFormat.format(job.scheduledAt!)}'
-                                '${job.scheduledEndAt != null ? ' – ${_timeFormat.format(job.scheduledEndAt!)}' : ''}',
-                                style: tx.caption.copyWith(color: cs.textFaint),
-                              ),
-                            ],
                           ],
                         ),
                       ],

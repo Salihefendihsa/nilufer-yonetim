@@ -6,6 +6,7 @@ import '../../core/file_download.dart';
 import '../../theme/app_colors.dart';
 import '../../theme/app_palette.dart';
 import '../../theme/app_text_styles.dart';
+import '../../widgets/chip_bar.dart';
 import '../../widgets/charts.dart';
 import '../../widgets/state_views.dart';
 import '../../widgets/stat_card.dart';
@@ -295,8 +296,7 @@ class _FinanceScreenState extends State<FinanceScreen>
           return m;
         });
     final totalAmount =
-        _expenseTotal ??
-        _expenses.fold<double>(0, (sum, e) => sum + e.amount);
+        _expenseTotal ?? _expenses.fold<double>(0, (sum, e) => sum + e.amount);
 
     return RefreshIndicator(
       onRefresh: _loadExpenses,
@@ -322,33 +322,31 @@ class _FinanceScreenState extends State<FinanceScreen>
             ],
           ),
           const SizedBox(height: 16),
-          SizedBox(
-            height: 36,
-            child: ListView(
-              scrollDirection: Axis.horizontal,
-              children: [
-                _CategoryChip(
-                  label: 'Tümü',
-                  selected: _expenseCategoryFilter == null,
-                  onTap: () {
-                    setState(() => _expenseCategoryFilter = null);
-                    _loadExpenses();
-                  },
-                ),
-                for (final c in expenseCategories)
-                  Padding(
-                    padding: const EdgeInsets.only(left: 6),
-                    child: _CategoryChip(
-                      label: expenseCategoryLabelTr(c),
-                      selected: _expenseCategoryFilter == c,
-                      onTap: () {
-                        setState(() => _expenseCategoryFilter = c);
-                        _loadExpenses();
-                      },
-                    ),
+          ChipBar(
+            spacing: 0,
+            padding: EdgeInsets.zero,
+            children: [
+              _CategoryChip(
+                label: 'Tümü',
+                selected: _expenseCategoryFilter == null,
+                onTap: () {
+                  setState(() => _expenseCategoryFilter = null);
+                  _loadExpenses();
+                },
+              ),
+              for (final c in expenseCategories)
+                Padding(
+                  padding: const EdgeInsets.only(left: 6),
+                  child: _CategoryChip(
+                    label: expenseCategoryLabelTr(c),
+                    selected: _expenseCategoryFilter == c,
+                    onTap: () {
+                      setState(() => _expenseCategoryFilter = c);
+                      _loadExpenses();
+                    },
                   ),
-              ],
-            ),
+                ),
+            ],
           ),
           const SizedBox(height: 16),
           if (_expenses.isEmpty)
