@@ -126,7 +126,7 @@ export function PaymentFormModal({ open, onClose, onSaved, customers }: PaymentF
             />
           </div>
           <div className="flex flex-col gap-1.5">
-            <label className="text-sm font-medium text-text-secondary">Tahsil Eden (opsiyonel)</label>
+            <label className="text-sm font-medium text-text-secondary" title="Ödemeyi sahada alan personel; ofiste alındıysa Ofis">Tahsilatı Yapan Personel (opsiyonel)</label>
             <select value={collectedByStaffId} onChange={(e) => setCollectedByStaffId(e.target.value)} className="input">
               <option value="">Ofis</option>
               {staffList.map((s) => (

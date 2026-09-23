@@ -1,13 +1,12 @@
 import 'package:flutter/material.dart';
 
 import '../../core/api_client.dart';
-import '../../models/customer.dart';
 import '../../models/staff.dart';
 import '../../models/staff_unavailability.dart';
 import '../../theme/app_colors.dart';
 import '../../theme/app_palette.dart';
 import '../../theme/app_text_styles.dart';
-import '../customers/customers_api.dart';
+import '../customers/customer_search_field.dart';
 import '../staff/staff_api.dart';
 import '../staff/staff_unavailability_api.dart';
 import '../staff/staff_suggestion.dart';
@@ -36,7 +35,6 @@ class _JobFormScreenState extends State<JobFormScreen> {
   final _priceController = TextEditingController();
   final _notesController = TextEditingController();
 
-  final _customersApi = CustomersApi();
   final _staffApi = StaffApi();
   final _unavailabilityApi = StaffUnavailabilityApi();
 
@@ -106,7 +104,6 @@ class _JobFormScreenState extends State<JobFormScreen> {
 
   final _jobsApi = JobsApi();
 
-  List<Customer> _customers = [];
   List<Staff> _staff = [];
   String? _selectedCustomerId;
   String? _selectedStaffId;
@@ -198,10 +195,9 @@ class _JobFormScreenState extends State<JobFormScreen> {
 
   Future<void> _loadOptions() async {
     try {
-      final results = await Future.wait([
-        _customersApi.list(page: 1),
-        _staffApi.list(page: 1),
-      ]);
+      // Müşteriler CustomerSearchField ile sunucu tarafında aranır (ilk 20
+      // sınırı ve prefill müşterisi listede yoksa Dropdown çökmesi giderildi).
+      final results = await Future.wait([_staffApi.list(page: 1)]);
       List<JobTemplate> templates = [];
       try {
         templates = await _templatesApi.list();
@@ -209,8 +205,7 @@ class _JobFormScreenState extends State<JobFormScreen> {
         templates = []; // şablonlar alınamazsa form yine çalışır
       }
       setState(() {
-        _customers = (results[0] as dynamic).data as List<Customer>;
-        _staff = (results[1] as dynamic).data as List<Staff>;
+        _staff = (results[0] as dynamic).data as List<Staff>;
         _templates = templates;
       });
     } catch (e) {
@@ -342,23 +337,10 @@ class _JobFormScreenState extends State<JobFormScreen> {
                     ),
                     const SizedBox(height: 12),
                   ],
-                  DropdownButtonFormField<String>(
-                    initialValue: _selectedCustomerId,
-                    isExpanded: true,
-                    decoration: const InputDecoration(labelText: 'Müşteri *'),
-                    items: _customers
-                        .map(
-                          (c) => DropdownMenuItem(
-                            value: c.id,
-                            child: Text(
-                              c.fullName,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ),
-                        )
-                        .toList(),
-                    onChanged: (v) {
-                      setState(() => _selectedCustomerId = v);
+                  CustomerSearchField(
+                    initialCustomerId: _selectedCustomerId,
+                    onChanged: (c) {
+                      setState(() => _selectedCustomerId = c?.id);
                       _refreshWarranty();
                     },
                   ),

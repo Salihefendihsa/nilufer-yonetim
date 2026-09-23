@@ -3,7 +3,6 @@ import 'package:intl/intl.dart';
 
 import '../../core/api_client.dart';
 import '../../core/file_download.dart';
-import '../../models/customer.dart';
 import '../../theme/app_colors.dart';
 import '../../theme/app_palette.dart';
 import '../../theme/app_text_styles.dart';
@@ -12,7 +11,7 @@ import '../../widgets/state_views.dart';
 import '../../widgets/stat_card.dart';
 import '../../models/staff.dart';
 import '../approvals/approvals_screen.dart';
-import '../customers/customers_api.dart';
+import '../customers/customer_search_field.dart';
 import '../customers/customers_list_screen.dart';
 import '../reports/reports_screen.dart';
 import '../staff/staff_api.dart';
@@ -675,10 +674,8 @@ class _PaymentFormScreenState extends State<_PaymentFormScreen> {
   final _formKey = GlobalKey<FormState>();
   final _amountController = TextEditingController();
   final _referenceController = TextEditingController();
-  final _customersApi = CustomersApi();
   final _financeApi = FinanceApi();
   final _staffApi = StaffApi();
-  List<Customer> _customers = [];
   List<Staff> _staff = [];
   String? _customerId;
   String? _collectedByStaffId;
@@ -694,24 +691,18 @@ class _PaymentFormScreenState extends State<_PaymentFormScreen> {
   }
 
   Future<void> _load() async {
-    try {
-      final res = await _customersApi.list(page: 1);
-      // Tahsil eden personel listesi zorunlu degil; alinamazsa alan bos kalir.
-      final staff = await _staffApi
-          .list()
-          .then((r) => r.data)
-          .catchError((_) => <Staff>[]);
-      setState(() {
-        _customers = res.data;
-        _staff = staff;
-      });
-    } catch (e) {
-      setState(
-        () => _error = e is ApiException ? e.message : 'Müşteriler yüklenemedi',
-      );
-    } finally {
-      setState(() => _loadingOptions = false);
-    }
+    // Müşteriler artık CustomerSearchField ile sunucu tarafında aranır (önceden
+    // yalnızca ilk 20 müşteri listeleniyordu). Tahsil eden personel listesi
+    // zorunlu değil; alınamazsa alan yalnızca "Ofis" seçeneğiyle kalır.
+    final staff = await _staffApi
+        .list()
+        .then((r) => r.data)
+        .catchError((_) => <Staff>[]);
+    if (!mounted) return;
+    setState(() {
+      _staff = staff;
+      _loadingOptions = false;
+    });
   }
 
   Future<void> _submit() async {
@@ -752,22 +743,9 @@ class _PaymentFormScreenState extends State<_PaymentFormScreen> {
               child: ListView(
                 padding: const EdgeInsets.all(16),
                 children: [
-                  DropdownButtonFormField<String>(
-                    initialValue: _customerId,
-                    isExpanded: true,
-                    decoration: const InputDecoration(labelText: 'Müşteri *'),
-                    items: _customers
-                        .map(
-                          (c) => DropdownMenuItem(
-                            value: c.id,
-                            child: Text(
-                              c.fullName,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ),
-                        )
-                        .toList(),
-                    onChanged: (v) => setState(() => _customerId = v),
+                  CustomerSearchField(
+                    initialCustomerId: _customerId,
+                    onChanged: (c) => setState(() => _customerId = c?.id),
                   ),
                   const SizedBox(height: 12),
                   TextFormField(
@@ -808,8 +786,11 @@ class _PaymentFormScreenState extends State<_PaymentFormScreen> {
                   DropdownButtonFormField<String>(
                     initialValue: _collectedByStaffId,
                     isExpanded: true,
+                    // Bu alan müşteri DEĞİL, parayı tahsil eden personeldir
+                    // (sahada nakit alan teknisyen). Boş = ofiste tahsil.
                     decoration: const InputDecoration(
-                      labelText: 'Tahsil Eden (opsiyonel)',
+                      labelText: 'Tahsilatı Yapan Personel (opsiyonel)',
+                      helperText: 'Ödemeyi sahada alan personel; ofiste alındıysa "Ofis"',
                     ),
                     items: [
                       const DropdownMenuItem<String>(
