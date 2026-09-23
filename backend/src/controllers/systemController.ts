@@ -19,6 +19,8 @@ export async function getSystemHealth(_req: Request, res: Response) {
     uptimeSeconds: metrics.uptimeSeconds,
     totalRequestsToday: metrics.totalRequestsToday,
     errorCount24h: metrics.errorCount24h,
+    // Son 60 dakika, dakika başına { minute, requests, errors } — Canlı Trafik.
+    trafficPerMinute: metrics.trafficPerMinute,
     emailConfigured: isEmailConfigured(),
   });
 }

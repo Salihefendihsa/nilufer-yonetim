@@ -9,12 +9,19 @@ import { api, ApiError } from "@/lib/api";
 import { useToast } from "@/lib/ToastProvider";
 import { currencyFormatter, formatDate } from "@/lib/format";
 import type { Expense, ExpenseCategory, Paginated } from "@/lib/types";
+
+interface ExpenseTotals {
+  amount: number;
+  byCategory: Partial<Record<ExpenseCategory, number>>;
+}
 import { ExpenseFormModal, EXPENSE_CATEGORY_LABELS } from "./ExpenseFormModal";
 
 const ALL_CATEGORIES: ExpenseCategory[] = ["FUEL", "CHEMICALS", "EQUIPMENT", "RENT", "UTILITIES", "OTHER"];
 
 export function ExpensesTab() {
   const [expenses, setExpenses] = useState<Expense[]>([]);
+  // Filtreye uyan TÜM giderlerin sunucu toplamı (önceden yalnızca bu sayfa).
+  const [serverTotals, setServerTotals] = useState<ExpenseTotals | null>(null);
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [category, setCategory] = useState<ExpenseCategory | "">("");
@@ -31,8 +38,9 @@ export function ExpensesTab() {
     try {
       const qs = new URLSearchParams({ page: String(page), limit: "20" });
       if (category) qs.set("category", category);
-      const res = await api.get<Paginated<Expense>>(`/expenses?${qs.toString()}`);
+      const res = await api.get<Paginated<Expense> & { totals?: ExpenseTotals }>(`/expenses?${qs.toString()}`);
       setExpenses(res.data);
+      setServerTotals(res.totals ?? null);
       setTotalPages(res.pagination.totalPages);
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "Giderler yüklenemedi");
@@ -46,14 +54,18 @@ export function ExpensesTab() {
   }, [load]);
 
   const categoryTotals = useMemo(() => {
+    if (serverTotals) return serverTotals.byCategory;
     const totals: Partial<Record<ExpenseCategory, number>> = {};
     for (const e of expenses) {
       totals[e.category] = (totals[e.category] ?? 0) + e.amount;
     }
     return totals;
-  }, [expenses]);
+  }, [expenses, serverTotals]);
 
-  const monthTotal = useMemo(() => expenses.reduce((sum, e) => sum + e.amount, 0), [expenses]);
+  const monthTotal = useMemo(
+    () => serverTotals?.amount ?? expenses.reduce((sum, e) => sum + e.amount, 0),
+    [expenses, serverTotals]
+  );
 
   async function handleDelete(id: string) {
     if (!confirm("Bu gideri silmek istediğinize emin misiniz?")) return;
@@ -115,7 +127,7 @@ export function ExpensesTab() {
       {error && <p className="rounded-2xl border border-danger-100 bg-danger-50 px-4 py-3 text-sm text-danger-500">{error}</p>}
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <StatCard label="Bu sayfadaki toplam gider" value={currencyFormatter.format(monthTotal)} icon={Receipt} accent="red" mono />
+        <StatCard label={serverTotals ? "Toplam gider" : "Bu sayfadaki toplam gider"} value={currencyFormatter.format(monthTotal)} icon={Receipt} accent="red" mono />
         {ALL_CATEGORIES.filter((c) => categoryTotals[c]).map((c) => (
           <StatCard key={c} label={EXPENSE_CATEGORY_LABELS[c]} value={currencyFormatter.format(categoryTotals[c] ?? 0)} icon={Receipt} accent="neutral" mono />
         ))}

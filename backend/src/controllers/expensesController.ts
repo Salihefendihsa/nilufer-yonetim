@@ -39,7 +39,7 @@ export async function listExpenses(req: Request, res: Response) {
     };
   }
 
-  const [data, total] = await Promise.all([
+  const [data, total, byCategory] = await Promise.all([
     prisma.expense.findMany({
       where,
       skip,
@@ -48,9 +48,19 @@ export async function listExpenses(req: Request, res: Response) {
       include: { recordedByUser: { select: { fullName: true } } },
     }),
     prisma.expense.count({ where }),
+    prisma.expense.groupBy({ by: ["category"], where, _sum: { amount: true } }),
   ]);
 
-  return res.json(paginatedResponse(data, total, page, limit));
+  // Filtreye uyan TÜM kayıtların toplamı — istemciler "Toplam Gider" ve
+  // kategori kartlarını önceden yalnızca yüklenen sayfadan (20 kayıt)
+  // topluyordu; 20'den fazla gider olunca kartlar eksik gösteriyordu.
+  const categoryTotals = Object.fromEntries(byCategory.map((g) => [g.category, Number(g._sum.amount ?? 0)]));
+  const totals = {
+    amount: Object.values(categoryTotals).reduce((sum, v) => sum + v, 0),
+    byCategory: categoryTotals,
+  };
+
+  return res.json({ ...paginatedResponse(data, total, page, limit), totals });
 }
 
 export async function createExpense(req: Request, res: Response) {

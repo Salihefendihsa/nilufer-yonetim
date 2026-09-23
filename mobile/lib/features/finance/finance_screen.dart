@@ -54,6 +54,8 @@ class _FinanceScreenState extends State<FinanceScreen>
   List<Map<String, dynamic>> _revenueTrend = [];
 
   List<Expense> _expenses = [];
+  double? _expenseTotal;
+  Map<String, double>? _expenseTotalsByCategory;
   bool _loadingExpenses = true;
   String? _expensesError;
   String? _expenseCategoryFilter;
@@ -81,7 +83,11 @@ class _FinanceScreenState extends State<FinanceScreen>
     });
     try {
       final res = await _api.listExpenses(category: _expenseCategoryFilter);
-      setState(() => _expenses = res.data);
+      setState(() {
+        _expenses = res.data;
+        _expenseTotal = res.totalAmount;
+        _expenseTotalsByCategory = res.byCategory;
+      });
     } catch (e) {
       setState(
         () => _expensesError = e is ApiException
@@ -281,11 +287,16 @@ class _FinanceScreenState extends State<FinanceScreen>
       return ErrorRetryView(message: _expensesError!, onRetry: _loadExpenses);
     }
 
-    final categoryTotals = <String, double>{};
-    for (final e in _expenses) {
-      categoryTotals[e.category] = (categoryTotals[e.category] ?? 0) + e.amount;
-    }
-    final totalAmount = _expenses.fold<double>(0, (sum, e) => sum + e.amount);
+    // Sunucu toplamları (filtreye uyan tüm kayıtlar); eski backend'de sayfa toplamı.
+    final categoryTotals =
+        _expenseTotalsByCategory ??
+        _expenses.fold<Map<String, double>>({}, (m, e) {
+          m[e.category] = (m[e.category] ?? 0) + e.amount;
+          return m;
+        });
+    final totalAmount =
+        _expenseTotal ??
+        _expenses.fold<double>(0, (sum, e) => sum + e.amount);
 
     return RefreshIndicator(
       onRefresh: _loadExpenses,

@@ -478,6 +478,8 @@ export interface SystemHealth {
   uptimeSeconds: number;
   totalRequestsToday: number;
   errorCount24h: number;
+  /** Son 60 dakika, dakika başına (backend lib/metrics.ts). Eski backend'de yok. */
+  trafficPerMinute?: { minute: string; requests: number; errors: number }[];
   emailConfigured: boolean;
 }
 

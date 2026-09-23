@@ -868,6 +868,289 @@ async function main() {
     console.log(`Zaten ${quoteCount2} teklif talebi var, atlanıyor.`);
   }
 
+  // ══════════════════════════════════════════════════════════════════════
+  // İŞ ŞABLONLARI — Yeni İş formundaki "Şablondan doldur" listesi boş kalmasın.
+  // ══════════════════════════════════════════════════════════════════════
+  const templateDefs = [
+    { name: "Standart Hamamböceği İlaçlama", serviceType: "Hamamböceği İlaçlama", defaultPrice: 1200, defaultDurationMinutes: 60, defaultNotes: "Mutfak ve banyo öncelikli jel + püskürtme uygulaması. Müşteriye 4 saat havalandırma bilgisi verilecek." },
+    { name: "Aylık Bakım Kontrolü", serviceType: "Genel Haşere İlaçlama", defaultPrice: 850, defaultDurationMinutes: 45, defaultNotes: "Sözleşmeli müşteri rutin ziyareti: tuzak kontrolü, gerekirse takviye uygulama, rapor imzası." },
+    { name: "Kemirgen Yem İstasyonu Kurulumu", serviceType: "Fare ve Kemirgen Kontrolü", defaultPrice: 1800, defaultDurationMinutes: 90, defaultNotes: "Dış çevreye kilitli yem istasyonları, istasyon krokisi müşteriye teslim edilecek." },
+    { name: "Restoran Kapsamlı İlaçlama", serviceType: "Genel Haşere İlaçlama", defaultPrice: 3200, defaultDurationMinutes: 150, defaultNotes: "Kapanış sonrası uygulama. Gıda temas yüzeyleri örtülecek, HACCP formu doldurulacak." },
+    { name: "Sivrisinek ULV Sisleme (Bahçe)", serviceType: "Sivrisinek ve Karasinek İlaçlama", defaultPrice: 1500, defaultDurationMinutes: 60, defaultNotes: "Akşam saatlerinde ULV cihazı ile soğuk sisleme; durgun su kaynakları raporlanacak." },
+    { name: "Karınca Jel Uygulaması", serviceType: "Karınca İlaçlama", defaultPrice: 700, defaultDurationMinutes: 40, defaultNotes: "Giriş noktalarına jel yem; evcil hayvan erişimine kapalı noktalar tercih edilecek." },
+  ];
+  let createdTemplates = 0;
+  for (const def of templateDefs) {
+    const existing = await prisma.jobTemplate.findFirst({ where: { name: def.name } });
+    if (existing) continue;
+    await prisma.jobTemplate.create({ data: def });
+    createdTemplates++;
+  }
+  console.log(`${createdTemplates} yeni iş şablonu hazır (toplam ${await prisma.jobTemplate.count()}).`);
+
+  // ══════════════════════════════════════════════════════════════════════
+  // TEKLİF TARİHÇESİ — mevcut tekliflere geçmiş olaylar (AuditLog,
+  // targetType="QuoteRequest"); quotesController'daki gerçek action/detail
+  // biçimleriyle aynı (quote.update → JSON, quote.convert → "-> Customer").
+  // ══════════════════════════════════════════════════════════════════════
+  const quoteAuditCount = await prisma.auditLog.count({ where: { targetType: "QuoteRequest" } });
+  if (quoteAuditCount < 15) {
+    const quotedIds = new Set(
+      (await prisma.auditLog.findMany({ where: { targetType: "QuoteRequest" }, select: { targetId: true } })).map((a) => a.targetId)
+    );
+    const quotes = await prisma.quoteRequest.findMany({ where: { status: { not: "NEW" } } });
+    let createdEvents = 0;
+    for (const q of quotes) {
+      if (quotedIds.has(q.id)) continue;
+      const actor = randomItem([manager, owner]);
+      const contactedAt = q.firstContactedAt ?? new Date(q.createdAt.getTime() + randomInt(2, 30) * 3600 * 1000);
+      const events: { action: string; detail: string; at: Date }[] = [
+        { action: "quote.update", detail: JSON.stringify({ status: "CONTACTED" }), at: contactedAt },
+      ];
+      const later = (h: number) => new Date(contactedAt.getTime() + h * 3600 * 1000);
+      if (q.status === "REVISION") {
+        events.push({ action: "quote.update", detail: JSON.stringify({ note: q.note ?? "Müşteri fiyat revizesi istedi." }), at: later(6) });
+        events.push({ action: "quote.update", detail: JSON.stringify({ status: "REVISION" }), at: later(7) });
+      } else if (q.status === "CONVERTED") {
+        events.push({ action: "quote.update", detail: JSON.stringify({ surveyAt: later(24).toISOString() }), at: later(1) });
+        const customer = await prisma.customer.findFirst({ where: { phone: q.phone } });
+        events.push({
+          action: "quote.convert",
+          detail: customer ? `-> Customer ${customer.id} (${customer.fullName})` : `-> Customer (${q.fullName})`,
+          at: q.convertedAt ?? later(30),
+        });
+      } else if (q.status === "REJECTED") {
+        events.push({ action: "quote.update", detail: JSON.stringify({ status: "REJECTED" }), at: later(20) });
+      }
+      for (const e of events) {
+        await prisma.auditLog.create({
+          data: {
+            actorUserId: actor.id,
+            action: e.action,
+            targetUserId: actor.id,
+            targetType: "QuoteRequest",
+            targetId: q.id,
+            detail: e.detail,
+            createdAt: e.at,
+          },
+        });
+        createdEvents++;
+      }
+    }
+    console.log(`${createdEvents} teklif tarihçesi olayı hazır.`);
+  } else {
+    console.log(`Zaten ${quoteAuditCount} teklif tarihçesi olayı var, atlanıyor.`);
+  }
+
+  // ══════════════════════════════════════════════════════════════════════
+  // GİDERLER — son 4 ay, farklı kategoriler (Giderler sekmesi + net kâr).
+  // ══════════════════════════════════════════════════════════════════════
+  const expenseCount = await prisma.expense.count();
+  if (expenseCount < 20) {
+    const expenseDefs: { category: "FUEL" | "CHEMICALS" | "EQUIPMENT" | "OTHER" | "RENT" | "UTILITIES"; min: number; max: number; descriptions: string[] }[] = [
+      { category: "FUEL", min: 900, max: 2600, descriptions: ["Servis aracı yakıt (34 NLF 01)", "Servis aracı yakıt (16 NLF 02)", "Haftalık yakıt kartı dolumu"] },
+      { category: "CHEMICALS", min: 1500, max: 7800, descriptions: ["Cypermethrin 25 EC — 10 L", "Fare yemi granül — 25 kg", "Jel yem (hamamböceği) — 20 tüp", "K-Othrine SC 25 — 5 L"] },
+      { category: "EQUIPMENT", min: 650, max: 9500, descriptions: ["Pülverizatör nozul ve conta seti", "Yem istasyonu (kilitli) — 12 adet", "FFP2 maske ve nitril eldiven", "ULV cihazı yıllık bakım"] },
+      { category: "OTHER", min: 250, max: 2200, descriptions: ["Araç yıkama", "Kırtasiye ve form baskısı", "Otopark ve köprü geçiş ücretleri", "Personel iş kıyafeti"] },
+    ];
+    let createdExpenses = 0;
+    for (let monthsBack = 3; monthsBack >= 0; monthsBack--) {
+      // Her ay: 1 kira + 1 fatura + 4 değişken gider (≈ 24 kayıt).
+      const monthStart = new Date();
+      monthStart.setMonth(monthStart.getMonth() - monthsBack, 1);
+      const inMonth = (day: number) => {
+        const d = new Date(monthStart);
+        d.setDate(Math.min(day, 28));
+        d.setHours(randomInt(9, 17), 0, 0, 0);
+        return d > new Date() ? new Date() : d;
+      };
+      await prisma.expense.create({ data: { category: "RENT", amount: 18000, description: "Depo ve ofis kirası", date: inMonth(1), recordedByUserId: owner.id } });
+      await prisma.expense.create({ data: { category: "UTILITIES", amount: randomInt(1400, 2600), description: "Elektrik, su ve internet faturaları", date: inMonth(10), recordedByUserId: manager.id } });
+      createdExpenses += 2;
+      for (const def of expenseDefs) {
+        await prisma.expense.create({
+          data: {
+            category: def.category,
+            amount: randomInt(def.min, def.max),
+            description: randomItem(def.descriptions),
+            date: inMonth(randomInt(2, 27)),
+            recordedByUserId: randomItem([owner.id, manager.id]),
+          },
+        });
+        createdExpenses++;
+      }
+    }
+    console.log(`${createdExpenses} gider kaydı hazır (son 4 ay).`);
+  } else {
+    console.log(`Zaten ${expenseCount} gider var, atlanıyor.`);
+  }
+
+  // ══════════════════════════════════════════════════════════════════════
+  // KVKK VERİ SİLME TALEPLERİ — PENDING / REJECTED / COMPLETED örnekleri.
+  // COMPLETED talep, dataDeletionController'ın yaptığı gibi anonimleştirilmiş
+  // bir müşteriye bağlanır (gerçek bir müşterinin verisi silinmez).
+  // ══════════════════════════════════════════════════════════════════════
+  const deletionCount = await prisma.dataDeletionRequest.count();
+  if (deletionCount === 0) {
+    const pendingCustomer = customers.find((c) => c.fullName === "Tolga Bayraktar") ?? customers[0];
+    const rejectedCustomer = customers.find((c) => c.fullName === "Serkan Tekin") ?? customers[1];
+    await prisma.dataDeletionRequest.create({
+      data: { customerId: pendingCustomer.id, requestedAt: daysFromNow(-2) },
+    });
+    await prisma.dataDeletionRequest.create({
+      data: {
+        customerId: rejectedCustomer.id,
+        status: "REJECTED",
+        requestedAt: daysFromNow(-25),
+        processedByUserId: owner.id,
+        processedAt: daysFromNow(-23),
+        rejectionReason: "Aktif sözleşme ve açık bakiye bulunduğundan yasal saklama süresi dolmadan silinemez.",
+      },
+    });
+    const anonymized = await prisma.customer.create({
+      data: { fullName: "Silinmiş Müşteri", phone: "000 000 00 00" },
+    });
+    await prisma.dataDeletionRequest.create({
+      data: {
+        customerId: anonymized.id,
+        status: "COMPLETED",
+        requestedAt: daysFromNow(-40),
+        processedByUserId: owner.id,
+        processedAt: daysFromNow(-38),
+      },
+    });
+    console.log("3 veri silme talebi hazır (Bekliyor / Reddedildi / Tamamlandı).");
+  } else {
+    console.log(`Zaten ${deletionCount} veri silme talebi var, atlanıyor.`);
+  }
+
+  // ══════════════════════════════════════════════════════════════════════
+  // ORGANİZASYON ŞEMASI — şefi tanımsız STAFF'ları şeflere dağıt. Model düz:
+  // STAFF → TEAM_LEAD (getTeamStaffIds tek seviye); TEAM_LEAD/MANAGER kök.
+  // Kasıtlı olarak bağlantısız bırakılanlar: Burak Aydın (seed.ts'te
+  // supervised:false örneği) ve adı "Outside" geçen test hesabı.
+  // ══════════════════════════════════════════════════════════════════════
+  const teamLeads = await prisma.staff.findMany({
+    where: { archivedAt: null, user: { role: "TEAM_LEAD", isActive: true } },
+    orderBy: { createdAt: "asc" },
+  });
+  const orphanStaff = await prisma.staff.findMany({
+    where: {
+      archivedAt: null,
+      supervisorId: null,
+      user: {
+        role: "STAFF",
+        isActive: true,
+        email: { not: "personel5@nilufer.com" },
+        NOT: { fullName: { contains: "Outside" } },
+      },
+    },
+    orderBy: { createdAt: "asc" },
+  });
+  if (teamLeads.length > 0 && orphanStaff.length > 0) {
+    for (const [i, s] of orphanStaff.entries()) {
+      await prisma.staff.update({ where: { id: s.id }, data: { supervisorId: teamLeads[i % teamLeads.length].id } });
+    }
+    console.log(`${orphanStaff.length} personel bir şefe bağlandı (${teamLeads.length} şef).`);
+  } else {
+    console.log("Şefi tanımsız personel yok (kasıtlı örnekler hariç), atlanıyor.");
+  }
+
+  // ══════════════════════════════════════════════════════════════════════
+  // SAHA RAPORLARI — raporsuz tamamlanmış işlere onaylı JobReport. Önceden
+  // 55 tamamlanmış işin 41'inde rapor yoktu → müşteri detayındaki "Rapor PDF"
+  // 404 ("İş raporu bulunamadı") dönüyordu.
+  // ══════════════════════════════════════════════════════════════════════
+  const reportlessJobs = await prisma.job.findMany({
+    where: { status: JobStatus.COMPLETED, assignedStaffId: { not: null }, jobReports: { none: {} } },
+  });
+  if (reportlessJobs.length > 0) {
+    const usedProducts = allProducts.filter((p) => p.category === ProductCategory.BIOCIDAL);
+    for (const job of reportlessJobs) {
+      const product = usedProducts.length > 0 ? randomItem(usedProducts) : null;
+      const doneAt = job.completedAt ?? job.scheduledAt ?? new Date();
+      await prisma.jobReport.create({
+        data: {
+          jobId: job.id,
+          staffId: job.assignedStaffId!,
+          productsUsed: product ? `${product.name} (${product.unit})` : "Jel yem",
+          dosage: randomItem(["%1 seyreltme, 50 ml/m²", "10 ml/L su, yüzey püskürtme", "Nokta uygulama, 0,5 g/nokta", "Yem istasyonu başına 40 g"]),
+          notes: randomItem([
+            "Uygulama sorunsuz tamamlandı, müşteri bilgilendirildi.",
+            "Yoğun bulaşık alan tespit edildi; 15 gün sonra kontrol önerildi.",
+            "Giriş noktaları kapatılması için öneride bulunuldu.",
+            null,
+          ]),
+          approvedAt: new Date(doneAt.getTime() + randomInt(2, 30) * 3600 * 1000),
+          approvedByUserId: manager.id,
+          createdAt: doneAt,
+        },
+      });
+    }
+    console.log(`${reportlessJobs.length} tamamlanmış işe onaylı saha raporu eklendi.`);
+  } else {
+    console.log("Raporsuz tamamlanmış iş yok, atlanıyor.");
+  }
+
+  // ══════════════════════════════════════════════════════════════════════
+  // AVANS GEÇMİŞİ — Bekleyen Onaylar → avans kartındaki geçmiş/güvenilirlik
+  // özeti boş kalmasın: saha personeline geçmiş onaylı/reddedilmiş avanslar.
+  // ══════════════════════════════════════════════════════════════════════
+  const decidedAdvances = await prisma.advanceRequest.count({ where: { status: { not: "PENDING" } } });
+  if (decidedAdvances < 6) {
+    const reasons = ["Kira ödemesi", "Araç bakımı", "Sağlık gideri", "Okul masrafı", "Ailevi ihtiyaç"];
+    let createdAdvances = 0;
+    for (const staff of allFieldStaff) {
+      const n = randomInt(1, 3);
+      for (let i = 0; i < n; i++) {
+        const approved = Math.random() > 0.25;
+        const createdAt = daysFromNow(-randomInt(30, 300));
+        await prisma.advanceRequest.create({
+          data: {
+            staffId: staff.id,
+            amount: randomItem([1000, 1500, 2000, 2500, 3000]),
+            reason: randomItem(reasons),
+            status: approved ? "APPROVED" : "REJECTED",
+            createdAt,
+          },
+        });
+        createdAdvances++;
+      }
+    }
+    console.log(`${createdAdvances} geçmiş avans kaydı hazır.`);
+  } else {
+    console.log(`Zaten ${decidedAdvances} sonuçlanmış avans var, atlanıyor.`);
+  }
+
+  // ══════════════════════════════════════════════════════════════════════
+  // BUGÜNÜN İŞLERİ — demo sonraki günlerde gösterildiğinde de Ana Sayfa
+  // "Bugünkü İş" kartı ve takvim boş kalmasın (bugün hiç iş yoksa eklenir).
+  // ══════════════════════════════════════════════════════════════════════
+  const todayStart = dateOnly(0);
+  const todayEnd = new Date(todayStart.getTime() + 24 * 3600 * 1000 - 1);
+  const todaysJobs = await prisma.job.count({ where: { scheduledAt: { gte: todayStart, lte: todayEnd } } });
+  if (todaysJobs === 0) {
+    const plans: JobStatus[] = [JobStatus.SCHEDULED, JobStatus.SCHEDULED, JobStatus.IN_PROGRESS, JobStatus.SCHEDULED, JobStatus.PENDING];
+    for (const status of plans) {
+      const scheduledAt = daysFromNow(0);
+      await prisma.job.create({
+        data: {
+          customerId: randomItem(customers).id,
+          assignedStaffId: status === JobStatus.PENDING ? undefined : randomItem(allFieldStaff).id,
+          serviceType: randomItem(serviceTypes),
+          status,
+          scheduledAt,
+          scheduledEndAt: new Date(scheduledAt.getTime() + randomInt(1, 2) * 3600 * 1000),
+          startedAt: status === JobStatus.IN_PROGRESS ? scheduledAt : undefined,
+          price: randomInt(500, 2800),
+        },
+      });
+    }
+    console.log(`${plans.length} bugünkü iş eklendi.`);
+  } else {
+    console.log(`Bugün için zaten ${todaysJobs} iş var, atlanıyor.`);
+  }
+
   console.log("Demo veri seed'i tamamlandı.");
 }
 

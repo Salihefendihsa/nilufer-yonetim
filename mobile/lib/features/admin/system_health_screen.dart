@@ -12,6 +12,9 @@ import '../../widgets/state_views.dart';
 const _pollInterval = Duration(seconds: 10);
 const _maxSamples = 20;
 
+/// Sunucunun dakika serisinden (son 60 dk) gösterilecek son dakika sayısı.
+const _visibleMinutes = 10;
+
 /// backend/src/routes/system.ts: GET /system/health yalnızca OWNER'a açık
 /// (web'in sistem-durumu/page.tsx ile birebir aynı uç). Grafik kütüphanesi
 /// kullanılmadan (mevcut Flutter deseni — bkz. reports_screen.dart) basit
@@ -59,12 +62,32 @@ class _SystemHealthScreenState extends State<SystemHealthScreen> {
       final errors = json['errorCount24h'] as int;
       final previous = _previous;
       _previous = (requests: requests, errors: errors);
+      // Backend dakika bazlı gerçek trafiği biriktirir (lib/metrics.ts) —
+      // ekran açılır açılmaz son dakikalar görünür. Alan yoksa (eski backend)
+      // eski istemci tarafı fark yöntemine düşülür.
+      final series = (json['trafficPerMinute'] as List?)
+          ?.cast<Map<String, dynamic>>();
 
       if (!mounted) return;
       setState(() {
         _health = json;
         _error = null;
-        if (previous != null) {
+        if (series != null) {
+          _samples
+            ..clear()
+            ..addAll(
+              series
+                  .skip(series.length - _visibleMinutes.clamp(0, series.length))
+                  .map((b) {
+                    final t = DateTime.parse(b['minute'] as String).toLocal();
+                    return _Sample(
+                      '${t.hour.toString().padLeft(2, '0')}:${t.minute.toString().padLeft(2, '0')}',
+                      b['requests'] as int,
+                      b['errors'] as int,
+                    );
+                  }),
+            );
+        } else if (previous != null) {
           final now = TimeOfDay.now();
           final label =
               '${now.hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')}';
@@ -106,27 +129,27 @@ class _SystemHealthScreenState extends State<SystemHealthScreen> {
     return SubPageScaffold(
       title: 'Sistem Durumu',
       actions: [
-          Padding(
-            padding: const EdgeInsets.only(right: 16),
-            child: Center(
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Container(
-                    width: 7,
-                    height: 7,
-                    decoration: BoxDecoration(
-                      color: cs.primary500,
-                      shape: BoxShape.circle,
-                    ),
+        Padding(
+          padding: const EdgeInsets.only(right: 16),
+          child: Center(
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  width: 7,
+                  height: 7,
+                  decoration: BoxDecoration(
+                    color: cs.primary500,
+                    shape: BoxShape.circle,
                   ),
-                  const SizedBox(width: 5),
-                  Text('Canlı · 10 sn', style: tx.caption),
-                ],
-              ),
+                ),
+                const SizedBox(width: 5),
+                Text('Canlı · 10 sn', style: tx.caption),
+              ],
             ),
           ),
-        ],
+        ),
+      ],
       body: health == null && _error == null
           ? const LoadingView()
           : ListView(
@@ -216,7 +239,7 @@ class _SystemHealthScreenState extends State<SystemHealthScreen> {
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    'Her 10 saniyede bir alınan örneklerdeki artış',
+                    'Son $_visibleMinutes dakika · dakika başına istek (10 sn aralıkla yenilenir)',
                     style: tx.caption.copyWith(color: cs.textFaint),
                   ),
                   const SizedBox(height: 10),
@@ -227,7 +250,7 @@ class _SystemHealthScreenState extends State<SystemHealthScreen> {
                     )
                   else
                     ..._samples.reversed
-                        .take(8)
+                        .take(_visibleMinutes)
                         .map(
                           (s) => _TrafficRow(
                             sample: s,
@@ -402,9 +425,13 @@ class _TrafficRow extends StatelessWidget {
           ),
           const SizedBox(width: 8),
           SizedBox(
-            width: 60,
+            width: 92,
             child: Text(
-              '${sample.requests} ist. / ${sample.errors} hata',
+              sample.errors > 0
+                  ? '${sample.requests} ist. · ${sample.errors} hata'
+                  : '${sample.requests} istek',
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
               textAlign: TextAlign.right,
               style: tx.label,
             ),

@@ -13,6 +13,8 @@ import type { SystemHealth } from "@/lib/types";
 /** Canlı izleme örnekleme aralığı ve grafikte tutulan örnek sayısı. */
 const POLL_MS = 10000;
 const MAX_SAMPLES = 20;
+/** Sunucu serisinden grafikte gösterilen son dakika sayısı. */
+const VISIBLE_MINUTES = 30;
 
 interface Sample {
   label: string;
@@ -118,7 +120,18 @@ function SystemHealthContent() {
       const previous = previousRef.current;
       previousRef.current = { requests: res.totalRequestsToday, errors: res.errorCount24h };
 
-      if (previous) {
+      // Backend dakika bazlı gerçek trafiği biriktirir: sayfa açılır açılmaz
+      // son dakikalar görünür (önceden yalnızca sayfa açıkken alınan iki
+      // okumanın farkıydı — ilk 10-20 sn "İlk örnekler toplanıyor" kalıyordu).
+      if (res.trafficPerMinute) {
+        setSamples(
+          res.trafficPerMinute.slice(-VISIBLE_MINUTES).map((b) => ({
+            label: new Date(b.minute).toLocaleTimeString("tr-TR", { hour: "2-digit", minute: "2-digit" }),
+            requests: b.requests,
+            errors: b.errors,
+          }))
+        );
+      } else if (previous) {
         const label = new Date().toLocaleTimeString("tr-TR", { hour: "2-digit", minute: "2-digit" });
         setSamples((prev) =>
           [
@@ -212,7 +225,7 @@ function SystemHealthContent() {
       {/* [Canlı metrik grafiği] */}
       <ChartCard
         title="Canlı Trafik"
-        description={`Her ${POLL_MS / 1000} saniyede bir alınan örneklerdeki artış (bu sayfa açık kaldıkça birikir)`}
+        description={`Son ${VISIBLE_MINUTES} dakika, dakika başına istek/hata (${POLL_MS / 1000} sn aralıkla yenilenir)`}
         icon={Activity}
         height={240}
       >

@@ -199,10 +199,7 @@ class Expense {
 class FinanceApi {
   final _api = ApiClient.instance;
 
-  Future<Paginated<Expense>> listExpenses({
-    int page = 1,
-    String? category,
-  }) async {
+  Future<ExpenseList> listExpenses({int page = 1, String? category}) async {
     final json = await _api.get<Map<String, dynamic>>(
       '/expenses',
       query: {
@@ -211,7 +208,7 @@ class FinanceApi {
         if (category != null && category.isNotEmpty) 'category': category,
       },
     );
-    return Paginated.fromJson(json, Expense.fromJson);
+    return ExpenseList.fromJson(json);
   }
 
   Future<Expense> createExpense({
@@ -291,5 +288,31 @@ class FinanceApi {
       },
     );
     return Payment.fromJson(json);
+  }
+}
+
+/// GET /expenses yanıtı: sayfa + filtreye uyan TÜM giderlerin toplamları.
+/// Kartlar `totals`'tan beslenir — önceden yalnızca yüklenen sayfadaki (20)
+/// kayıtlardan toplanıyor, 20'den fazla giderde eksik tutar gösteriyordu.
+class ExpenseList {
+  final Paginated<Expense> page;
+
+  /// Eski backend `totals` göndermezse null — ekran sayfa toplamına düşer.
+  final double? totalAmount;
+  final Map<String, double>? byCategory;
+
+  ExpenseList({required this.page, this.totalAmount, this.byCategory});
+
+  List<Expense> get data => page.data;
+
+  factory ExpenseList.fromJson(Map<String, dynamic> json) {
+    final totals = json['totals'] as Map<String, dynamic>?;
+    return ExpenseList(
+      page: Paginated.fromJson(json, Expense.fromJson),
+      totalAmount: totals == null ? null : decimalOr(totals['amount']),
+      byCategory: (totals?['byCategory'] as Map<String, dynamic>?)?.map(
+        (k, v) => MapEntry(k, decimalOr(v)),
+      ),
+    );
   }
 }
