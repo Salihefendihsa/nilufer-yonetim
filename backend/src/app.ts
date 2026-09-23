@@ -41,6 +41,7 @@ import dataDeletionRoutes from "./routes/dataDeletionRequests";
 import announcementRoutes from "./routes/announcements";
 import complaintRoutes from "./routes/complaints";
 import calendarRoutes from "./routes/calendar";
+import pestDetectionRoutes from "./routes/pestDetections";
 import { errorHandler } from "./middleware/errorHandler";
 import { recordRequest } from "./lib/metrics";
 
@@ -102,6 +103,7 @@ apiRouter.use("/auth", authRoutes);
 apiRouter.use("/customers", customerRoutes);
 apiRouter.use("/staff", staffRoutes);
 apiRouter.use("/jobs", jobRoutes);
+apiRouter.use("/pest-detections", pestDetectionRoutes);
 apiRouter.use("/contracts", contractRoutes);
 apiRouter.use("/payments", paymentRoutes);
 apiRouter.use("/quotes", quoteRoutes);

@@ -30,6 +30,7 @@ import {
   LayoutDashboard,
   Receipt,
   MessageSquareWarning,
+  Sparkles,
 } from "lucide-react";
 import { useAuth } from "@/lib/AuthProvider";
 import { ROLE_LABELS, ROLE_SHORT_LABELS, type Role } from "@/lib/auth";
@@ -69,6 +70,8 @@ const NAV_ITEMS: NavItem[] = [
   { href: "/teklifler", label: "Teklifler", icon: FileText, roles: ["OWNER", "MANAGER"], group: "finans" },
   { href: "/para", label: "Para", icon: Wallet, roles: ["OWNER", "MANAGER"], group: "finans" },
   { href: "/raporlar", label: "Raporlar", icon: BarChart3, roles: ["OWNER", "MANAGER"], group: "finans" },
+  // Bölüm J: yapay zekâ haşere tanıma — tüm çalışan rolleri (kapsamı backend daraltır).
+  { href: "/ai-analiz", label: "AI Analiz", icon: Sparkles, roles: ["OWNER", "MANAGER", "TEAM_LEAD", "STAFF"], group: "operasyon" },
   { href: "/loglar", label: "Denetim Logları", icon: ScrollText, roles: ["OWNER"], group: "yonetim" },
   { href: "/sistem-durumu", label: "Sistem Durumu", icon: Activity, roles: ["OWNER"], group: "yonetim" },
   { href: "/kullanim-istatistikleri", label: "Kullanım İstatistikleri", icon: Timer, roles: ["OWNER"], group: "yonetim" },

@@ -656,8 +656,29 @@ model JobPhoto {
 
   job          Job  @relation(fields: [jobId], references: [id])
   uploadedBy   User @relation(fields: [uploadedByUserId], references: [id])
+  pestDetection PestDetection?
 
   @@index([jobId])
+}
+
+/// Bölüm J: iş fotoğrafının yapay zekâ (Claude görsel analizi) haşere tespiti.
+/// Fotoğraf yüklendiğinde arka planda bir kez üretilir (bkz. lib/pestDetection.ts);
+/// jobPhotoId @unique → aynı fotoğraf ikinci kez analiz edilmez/ücretlenmez.
+model PestDetection {
+  id               String   @id @default(uuid())
+  jobPhotoId       String   @unique
+  /// Türkçe haşere adı; tespit yoksa "Tespit edilmedi".
+  detectedPestType String
+  /// 0-1 arası güven skoru.
+  confidence       Float
+  description      String
+  /// Analizi yapan model kimliği (denetim/maliyet takibi için).
+  model            String?
+  analyzedAt       DateTime @default(now())
+
+  jobPhoto JobPhoto @relation(fields: [jobPhotoId], references: [id], onDelete: Cascade)
+
+  @@index([analyzedAt])
 }
 
 model JobReport {

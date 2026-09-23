@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../features/ai/pest_detections_screen.dart';
 import '../features/admin/audit_settings_screen.dart';
 import '../features/admin/data_deletion_screens.dart';
 import '../features/admin/job_templates_screen.dart';
@@ -59,7 +60,11 @@ List<AppDrawerGroup> navGroupsFor(AppRole role) {
             Icons.notifications_outlined,
             _buildNotifications,
           ),
-          AppDrawerEntry('Takvim', Icons.calendar_month_outlined, _buildCalendar),
+          AppDrawerEntry(
+            'Takvim',
+            Icons.calendar_month_outlined,
+            _buildCalendar,
+          ),
         ], title: 'Genel'),
         const AppDrawerGroup([
           AppDrawerEntry(
@@ -105,13 +110,23 @@ List<AppDrawerGroup> navGroupsFor(AppRole role) {
             Icons.description_outlined,
             _buildContracts,
           ),
-          AppDrawerEntry('Para & Finans', Icons.payments_outlined, _buildFinance),
+          AppDrawerEntry(
+            'Para & Finans',
+            Icons.payments_outlined,
+            _buildFinance,
+          ),
           AppDrawerEntry(
             'Performans',
             Icons.emoji_events_outlined,
             _buildPerformance,
           ),
           AppDrawerEntry('Raporlar', Icons.bar_chart_rounded, _buildReports),
+          // Bölüm J: yapay zekâ haşere tanıma — tüm çalışan rolleri (kapsamı backend daraltır).
+          AppDrawerEntry(
+            'AI Analiz',
+            Icons.auto_awesome_outlined,
+            _buildPestDetections,
+          ),
         ], title: 'Finans & Raporlar'),
         const AppDrawerGroup([
           AppDrawerEntry(
@@ -146,7 +161,11 @@ List<AppDrawerGroup> navGroupsFor(AppRole role) {
             Icons.notifications_outlined,
             _buildNotifications,
           ),
-          AppDrawerEntry('Takvim', Icons.calendar_month_outlined, _buildCalendar),
+          AppDrawerEntry(
+            'Takvim',
+            Icons.calendar_month_outlined,
+            _buildCalendar,
+          ),
           AppDrawerEntry(
             'Bekleyen Onaylar',
             Icons.fact_check_outlined,
@@ -193,13 +212,23 @@ List<AppDrawerGroup> navGroupsFor(AppRole role) {
             Icons.description_outlined,
             _buildContracts,
           ),
-          AppDrawerEntry('Para & Finans', Icons.payments_outlined, _buildFinance),
+          AppDrawerEntry(
+            'Para & Finans',
+            Icons.payments_outlined,
+            _buildFinance,
+          ),
           AppDrawerEntry(
             'Performans',
             Icons.emoji_events_outlined,
             _buildPerformance,
           ),
           AppDrawerEntry('Raporlar', Icons.bar_chart_rounded, _buildReports),
+          // Bölüm J: yapay zekâ haşere tanıma — tüm çalışan rolleri (kapsamı backend daraltır).
+          AppDrawerEntry(
+            'AI Analiz',
+            Icons.auto_awesome_outlined,
+            _buildPestDetections,
+          ),
         ], title: 'Finans & Raporlar'),
       ];
 
@@ -207,7 +236,11 @@ List<AppDrawerGroup> navGroupsFor(AppRole role) {
       return [
         const AppDrawerGroup([
           AppDrawerEntry('Ara', Icons.search_rounded, _buildSearch),
-          AppDrawerEntry('Takvim', Icons.calendar_month_outlined, _buildCalendar),
+          AppDrawerEntry(
+            'Takvim',
+            Icons.calendar_month_outlined,
+            _buildCalendar,
+          ),
           // Web'de TEAM_LEAD izin taleplerini /bekleyen-onaylar'dan karara
           // bağlar; mobilde bu giriş eksikti (tasarım denetimi §1.2).
           AppDrawerEntry(
@@ -221,6 +254,12 @@ List<AppDrawerGroup> navGroupsFor(AppRole role) {
             _buildPerformance,
           ),
           AppDrawerEntry('Stok', Icons.inventory_2_outlined, _buildStock),
+          // Bölüm J: yapay zekâ haşere tanıma — tüm çalışan rolleri (kapsamı backend daraltır).
+          AppDrawerEntry(
+            'AI Analiz',
+            Icons.auto_awesome_outlined,
+            _buildPestDetections,
+          ),
         ], title: 'Ekip'),
         const AppDrawerGroup([
           AppDrawerEntry(
@@ -237,7 +276,11 @@ List<AppDrawerGroup> navGroupsFor(AppRole role) {
       return [
         const AppDrawerGroup([
           AppDrawerEntry('Ara', Icons.search_rounded, _buildSearch),
-          AppDrawerEntry('Takvim', Icons.calendar_month_outlined, _buildCalendar),
+          AppDrawerEntry(
+            'Takvim',
+            Icons.calendar_month_outlined,
+            _buildCalendar,
+          ),
           // Kendi aldığı değerlendirmeleri salt okunur görür; değerlendirenin
           // kimliği backend tarafından zaten gizlenir.
           AppDrawerEntry(
@@ -251,6 +294,12 @@ List<AppDrawerGroup> navGroupsFor(AppRole role) {
             _buildLeaveRequests,
           ),
           AppDrawerEntry('Bordrom', Icons.receipt_long_outlined, _buildPayslip),
+          // Bölüm J: yapay zekâ haşere tanıma — tüm çalışan rolleri (kapsamı backend daraltır).
+          AppDrawerEntry(
+            'AI Analiz',
+            Icons.auto_awesome_outlined,
+            _buildPestDetections,
+          ),
         ]),
       ];
 
@@ -318,13 +367,13 @@ Widget _buildComplaints(BuildContext _) => const ComplaintsScreen();
 Widget _buildStock(BuildContext _) => const StockListScreen();
 Widget _buildJobTemplates(BuildContext _) => const JobTemplatesScreen();
 Widget _buildCustomerTags(BuildContext _) => const CustomerTagsScreen();
-Widget _buildExecutiveSummary(BuildContext _) =>
-    const ExecutiveSummaryScreen();
+Widget _buildExecutiveSummary(BuildContext _) => const ExecutiveSummaryScreen();
 Widget _buildQuotes(BuildContext _) => const QuotesListScreen();
 Widget _buildContracts(BuildContext _) => const ContractsListScreen();
 Widget _buildFinance(BuildContext _) => const FinanceScreen();
 Widget _buildPerformance(BuildContext _) => const PerformanceScreen();
 Widget _buildReports(BuildContext _) => const ReportsScreen();
+Widget _buildPestDetections(BuildContext _) => const PestDetectionsScreen();
 Widget _buildOrgChart(BuildContext _) => const OrgChartScreen();
 Widget _buildAuditSettings(BuildContext _) => const AuditSettingsScreen();
 Widget _buildSystemHealth(BuildContext _) => const SystemHealthScreen();

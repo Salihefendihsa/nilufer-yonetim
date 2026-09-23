@@ -7,6 +7,7 @@ import { idParam } from "../lib/params";
 import { canAccessJob, getStaffIdForUser } from "../lib/access";
 import { uploadedFileUrl } from "../lib/upload";
 import { deleteFile } from "../lib/storage";
+import { schedulePestAnalysis } from "../lib/pestDetection";
 
 const MANAGEMENT_ROLES: Role[] = [Role.OWNER, Role.MANAGER];
 
@@ -57,6 +58,10 @@ export async function uploadJobPhoto(req: Request, res: Response) {
       uploadedByUserId: user.sub,
     },
   });
+
+  // Bölüm J: yapay zekâ haşere analizi arka planda — yanıtı bekletmez;
+  // anahtar yoksa/başarısız olursa sessizce atlanır (lib/pestDetection.ts).
+  schedulePestAnalysis(photo.id);
 
   return res.status(201).json(photo);
 }
