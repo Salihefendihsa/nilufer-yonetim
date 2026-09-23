@@ -13,6 +13,13 @@ import { CustomerTagEditor } from "@/components/CustomerTagEditor";
 import { CustomerDocuments } from "@/components/CustomerDocuments";
 import { useAuth } from "@/lib/AuthProvider";
 
+/** Ham ödeme türü kodu (CASH) yerine Türkçe — para/page.tsx ile aynı etiketler. */
+const PAYMENT_TYPE_LABELS: Record<string, string> = {
+  CASH: "Nakit",
+  CREDIT_CARD: "Kredi Kartı",
+  TRANSFER: "Havale/EFT",
+};
+
 interface CustomerDetailPanelProps {
   customerId: string | null;
   onClose: () => void;
@@ -187,7 +194,7 @@ export function CustomerDetailPanel({ customerId, onClose, onEdit, onDelete }: C
                             <p className="text-sm font-medium text-text-primary">{currencyFormatter.format(payment.amount)}</p>
                             <p className="text-xs text-text-faint">{formatDate(payment.createdAt)}</p>
                           </div>
-                          <span className="text-xs text-text-secondary">{payment.paymentType}</span>
+                          <span className="text-xs text-text-secondary">{PAYMENT_TYPE_LABELS[payment.paymentType] ?? payment.paymentType}</span>
                         </li>
                       ))}
                     </ul>

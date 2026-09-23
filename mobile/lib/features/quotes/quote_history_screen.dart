@@ -118,7 +118,7 @@ class _QuoteHistoryScreenState extends State<QuoteHistoryScreen> {
                           const SizedBox(height: 6),
                           Text(
                             e.detail!,
-                            style: tx.label.copyWith(fontFamily: 'monospace'),
+                            style: tx.label,
                           ),
                         ],
                       ],

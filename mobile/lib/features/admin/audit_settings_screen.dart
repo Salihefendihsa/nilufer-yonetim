@@ -147,7 +147,8 @@ class _AuditLogTabState extends State<_AuditLogTab> {
 
     final actionCounts = <String, int>{};
     for (final l in _logs) {
-      final action = l['action'] as String;
+      // Backend actionLabel (Türkçe); eski backend'de ham koda düşer.
+      final action = (l['actionLabel'] ?? l['action']) as String;
       actionCounts[action] = (actionCounts[action] ?? 0) + 1;
     }
     final topActions = actionCounts.entries.toList()
@@ -233,10 +234,10 @@ class _AuditLogTabState extends State<_AuditLogTab> {
             child: Row(
               children: [
                 SizedBox(
-                  width: 110,
+                  width: 130,
                   child: Text(
                     r.label,
-                    maxLines: 1,
+                    maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                     style: tx.caption,
                   ),
@@ -310,7 +311,13 @@ class _AuditLogTabState extends State<_AuditLogTab> {
                   children: [
                     Expanded(
                       child: Text(
-                        log['action'] as String,
+                        // Ham kod (contract.create) yerine Türkçe cümle +
+                        // ilgili kaydın gerçek adı (backend lib/auditLabels.ts).
+                        [
+                          (log['actionLabel'] ?? log['action']) as String,
+                          if (log['targetLabel'] != null)
+                            log['targetLabel'] as String,
+                        ].join(' — '),
                         style: tx.bodySmall.copyWith(
                           fontWeight: FontWeight.w700,
                         ),
@@ -326,9 +333,11 @@ class _AuditLogTabState extends State<_AuditLogTab> {
                 ),
                 const SizedBox(height: 4),
                 Text('Aktör: $actor', style: tx.caption),
-                if (log['detail'] != null)
+                // Detay, başlıktaki hedef adının tekrarıysa gösterilmez.
+                if ((log['detailText'] ?? log['detail']) != null &&
+                    (log['detailText'] ?? log['detail']) != log['targetLabel'])
                   Text(
-                    log['detail'] as String,
+                    (log['detailText'] ?? log['detail']) as String,
                     style: tx.caption.copyWith(color: cs.textFaint),
                   ),
               ],
@@ -573,7 +582,13 @@ class _SettingsTabState extends State<_SettingsTab> {
                   Expanded(
                     child: TextField(
                       controller: controller,
-                      decoration: InputDecoration(labelText: e.key),
+                      // Ham anahtar (company_name…) yerine Türkçe etiket;
+                      // tanımsız yeni bir anahtar gelirse ham ad gösterilir.
+                      decoration: InputDecoration(
+                        labelText: _settingLabels[e.key]?.$1 ?? e.key,
+                        helperText: _settingLabels[e.key]?.$2,
+                        helperMaxLines: 2,
+                      ),
                     ),
                   ),
                   const SizedBox(width: 8),
@@ -592,3 +607,24 @@ class _SettingsTabState extends State<_SettingsTab> {
     );
   }
 }
+
+/// Ayar anahtarı → (Türkçe etiket, açıklama). Web'deki ayarlar sayfasıyla
+/// aynı adlandırma (COMPANY_FIELDS / hedef alanları).
+const Map<String, (String, String?)> _settingLabels = {
+  'company_name': ('Firma Adı', 'PDF ve e-postalarda görünen ticari unvan'),
+  'company_phone': ('Firma Telefonu', null),
+  'company_email': ('Firma E-postası', null),
+  'company_address': ('Firma Adresi', null),
+  'contract_expiry_reminder_days': (
+    'Sözleşme Bitiş Hatırlatma Günleri (gün)',
+    'Bitişten kaç gün önce hatırlatılsın — virgülle ayırın, örn. 30,14,7,1',
+  ),
+  'monthly_job_target': (
+    'Kişi Başı Aylık İş Hedefi',
+    'Boş bırakılırsa hedef göstergeleri gizlenir',
+  ),
+  'monthly_revenue_target': (
+    'Aylık Ciro Hedefi (₺)',
+    'Boş bırakılırsa ciro hedefi çubuğu gösterilmez',
+  ),
+};

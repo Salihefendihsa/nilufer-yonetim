@@ -378,6 +378,9 @@ export interface QuoteHistoryEntry {
   id: string;
   action: string;
   detail: string | null;
+  /** Okunur Türkçe detay (backend lib/auditLabels.ts). */
+  detailText?: string | null;
+  actionLabel?: string;
   createdAt: string;
   actor: { fullName: string };
 }
@@ -465,6 +468,10 @@ export interface AuditLogEntry {
   createdAt: string;
   actor: { id: string; fullName: string; email: string };
   target: { id: string; fullName: string; email: string };
+  /** Backend lib/auditLabels.ts: ham kod/UUID yerine okunur Türkçe. */
+  actionLabel?: string;
+  targetLabel?: string | null;
+  detailText?: string | null;
 }
 
 export interface ActivityEvent {

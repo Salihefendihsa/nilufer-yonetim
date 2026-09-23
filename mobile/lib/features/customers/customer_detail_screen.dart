@@ -9,11 +9,13 @@ import '../../core/file_download.dart';
 import '../../models/contract.dart';
 import '../../models/customer.dart';
 import '../../models/decimal.dart';
+import '../../models/job.dart';
 import '../../models/user.dart';
 import '../../theme/app_colors.dart';
 import '../../theme/app_palette.dart';
 import '../../theme/app_text_styles.dart';
 import '../../widgets/state_views.dart';
+import '../finance/finance_api.dart' show paymentTypeLabelTr;
 import '../jobs/job_detail_screen.dart';
 import 'customer_documents_tab.dart';
 import 'customer_tags.dart';
@@ -438,7 +440,13 @@ class _JobRowState extends State<_JobRow> {
         j['serviceType'] as String? ?? '',
         style: tx.body.copyWith(fontWeight: FontWeight.w600),
       ),
-      subtitle: Text(j['status'] as String? ?? '', style: tx.caption),
+      // Ham durum kodu (COMPLETED) yerine Türkçe etiket (diğer ekranlarla aynı).
+      subtitle: Text(
+        j['status'] is String
+            ? jobStatusLabelTr(jobStatusFromString(j['status'] as String))
+            : '',
+        style: tx.caption,
+      ),
       trailing: isCompleted
           ? (_downloading
                 ? const SizedBox(
@@ -500,7 +508,7 @@ class _ContractsTab extends StatelessWidget {
                   side: BorderSide(color: cs.borderDefault),
                 ),
                 title: Text(
-                  c['serviceType'] as String? ?? c['status'] as String? ?? '',
+                  c['serviceType'] as String? ?? 'Sözleşme',
                   style: tx.body.copyWith(fontWeight: FontWeight.w600),
                 ),
                 subtitle: Text(
@@ -650,7 +658,7 @@ class _PaymentsTab extends StatelessWidget {
               style: tx.body.copyWith(fontWeight: FontWeight.w700),
             ),
             subtitle: Text(
-              '${p['paymentType']} · ${_dateFormat.format(DateTime.parse(p['createdAt'] as String))}',
+              '${paymentTypeLabelTr(p['paymentType'] as String? ?? '')} · ${_dateFormat.format(DateTime.parse(p['createdAt'] as String))}',
               style: tx.caption,
             ),
           );

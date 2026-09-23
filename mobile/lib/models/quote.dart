@@ -77,7 +77,9 @@ class QuoteHistoryEntry {
       QuoteHistoryEntry(
         id: json['id'] as String,
         action: json['action'] as String,
-        detail: json['detail'] as String?,
+        // Backend detailText: ham JSON ({"status":"CONTACTED"}) yerine
+        // okunur Türkçe ("Durum: İletişime Geçildi"); eski backend'de ham detay.
+        detail: (json['detailText'] ?? json['detail']) as String?,
         createdAt: json['createdAt'] as String,
         actorName:
             (json['actor'] as Map<String, dynamic>?)?['fullName'] as String? ??

@@ -69,6 +69,7 @@ function AuditLogsContent() {
   }, []);
 
   const actions = useMemo(() => Array.from(new Set(logs.map((l) => l.action))).sort(), [logs]);
+  const actionLabelByCode = useMemo(() => new Map(logs.map((l) => [l.action, l.actionLabel ?? l.action])), [logs]);
 
   const filtered = useMemo(() => {
     return logs.filter((log) => {
@@ -115,7 +116,10 @@ function AuditLogsContent() {
 
   const actionSlices = useMemo(() => {
     const counts = new Map<string, number>();
-    for (const log of filtered) counts.set(log.action, (counts.get(log.action) ?? 0) + 1);
+    for (const log of filtered) {
+      const label = log.actionLabel ?? log.action;
+      counts.set(label, (counts.get(label) ?? 0) + 1);
+    }
     return Array.from(counts.entries())
       .map(([name, value]) => ({ name, value }))
       .sort((a, b) => b.value - a.value)
@@ -130,13 +134,16 @@ function AuditLogsContent() {
           id: log.id,
           icon,
           tone,
-          tag: log.action,
+          tag: log.actionLabel ?? log.action,
           title: log.actor.fullName,
           description: (
             <>
-              <span className="font-medium text-text-primary">{log.target.fullName}</span>
-              {log.detail ? ` · ${log.detail}` : ""}
-              {log.targetType ? ` · ${log.targetType}` : ""}
+              {/* İlgili kaydın gerçek adı (müşteri/personel/sözleşme…) ve Türkçe
+                  detay; ham targetType/UUID gösterilmez. */}
+              <span className="font-medium text-text-primary">{log.targetLabel ?? log.target.fullName}</span>
+              {(log.detailText ?? log.detail) && (log.detailText ?? log.detail) !== log.targetLabel
+                ? ` · ${log.detailText ?? log.detail}`
+                : ""}
             </>
           ),
           timestamp: formatDateTime(log.createdAt),
@@ -204,7 +211,7 @@ function AuditLogsContent() {
             <option value="ALL">Tümü</option>
             {actions.map((a) => (
               <option key={a} value={a}>
-                {a}
+                {actionLabelByCode.get(a) ?? a}
               </option>
             ))}
           </select>

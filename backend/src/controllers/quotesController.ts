@@ -7,6 +7,7 @@ import { notifyManagement, notifyUser } from "../lib/notify";
 import { generateReferralCode, normalizeReferralCode } from "../lib/referral";
 import { verifyRecaptcha } from "../lib/recaptcha";
 import { recordAuditLog } from "../lib/auditLog";
+import { describeAuditLogs } from "../lib/auditLabels";
 
 const createSchema = z.object({
   fullName: z.string().min(1),
@@ -166,7 +167,9 @@ export async function getQuoteHistory(req: Request, res: Response) {
     },
   });
 
-  return res.json({ data: entries });
+  // Ham detail ({"status":"CONTACTED"} vb.) yanında okunur Türkçe metin.
+  const described = await describeAuditLogs(entries.map((e) => ({ ...e, targetType: "QuoteRequest", targetId: quoteId })));
+  return res.json({ data: entries.map((e, i) => ({ ...e, ...described[i] })) });
 }
 
 export async function convertQuote(req: Request, res: Response) {

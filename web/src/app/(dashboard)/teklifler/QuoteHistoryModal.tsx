@@ -64,13 +64,13 @@ export function QuoteHistoryModal({ open, onClose, quote }: QuoteHistoryModalPro
           {entries.map((entry) => (
             <li key={entry.id} className="rounded-2xl border border-border bg-surface-subtle px-4 py-3">
               <p className="text-sm font-medium text-text-primary">
-                {ACTION_LABELS[entry.action] ?? entry.action}
+                {ACTION_LABELS[entry.action] ?? entry.actionLabel ?? entry.action}
               </p>
               <p className="text-xs text-text-secondary">
                 {entry.actor.fullName} · {formatDateTime(entry.createdAt)}
               </p>
-              {entry.detail && (
-                <p className="mt-1 break-all font-mono text-2xs text-text-faint">{entry.detail}</p>
+              {(entry.detailText ?? entry.detail) && (
+                <p className="mt-1 break-words text-2xs text-text-faint">{entry.detailText ?? entry.detail}</p>
               )}
             </li>
           ))}
