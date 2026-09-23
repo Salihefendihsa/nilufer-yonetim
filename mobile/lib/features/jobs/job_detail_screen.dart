@@ -1,4 +1,3 @@
-import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
@@ -755,7 +754,13 @@ class _PhotosSectionState extends State<_PhotosSection> {
     if (xfile == null) return;
     setState(() => _uploading = true);
     try {
-      await widget.api.uploadPhoto(widget.jobId, File(xfile.path), type);
+      // XFile.readAsBytes web'de de çalışır (dart:io File çalışmaz).
+      await widget.api.uploadPhoto(
+        widget.jobId,
+        await xfile.readAsBytes(),
+        xfile.name,
+        type,
+      );
       widget.onChanged();
     } catch (e) {
       if (mounted)

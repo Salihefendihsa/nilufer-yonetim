@@ -1,7 +1,7 @@
 import 'dart:convert';
-import 'dart:io';
 
 import '../../core/api_client.dart';
+import '../../core/mime_types.dart';
 import '../../models/job.dart';
 import '../../models/paginated.dart';
 
@@ -160,13 +160,19 @@ class JobsApi {
 
   Future<Map<String, dynamic>> uploadPhoto(
     String jobId,
-    File file,
+    List<int> bytes,
+    String fileName,
     String type,
   ) {
     return _api.uploadMultipart<Map<String, dynamic>>(
       '/jobs/$jobId/photos',
       fieldName: 'photo',
-      file: file,
+      bytes: bytes,
+      // Backend yalnızca image/* kabul eder; uzantısız/tanımsız bir ad
+      // (bazı web kamera akışları) octet-stream'e düşmesin.
+      filename: mimeTypeForFileName(fileName).startsWith('image/')
+          ? fileName
+          : 'photo.jpg',
       fields: {'type': type},
     );
   }

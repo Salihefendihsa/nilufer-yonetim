@@ -1,5 +1,5 @@
 import 'dart:convert';
-import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
@@ -48,7 +48,9 @@ class _ChatScreenState extends State<ChatScreen> {
   bool _sending = false;
 
   /// Gonderilmeyi bekleyen saha fotografi (Stitch Sef -> Mesaj Detayi).
-  File? _pendingPhoto;
+  /// Seçilen fotoğrafın byte'ları — `dart:io File` web'de çalışmadığı için
+  /// bellek içinde tutulur (önizleme `Image.memory`).
+  Uint8List? _pendingPhoto;
   String? _error;
 
   String? get _myId => context.read<AuthProvider>().user?.id;
@@ -110,7 +112,9 @@ class _ChatScreenState extends State<ChatScreen> {
       imageQuality: 80,
     );
     if (picked == null) return;
-    setState(() => _pendingPhoto = File(picked.path));
+    final bytes = await picked.readAsBytes();
+    if (!mounted) return;
+    setState(() => _pendingPhoto = bytes);
   }
 
   Future<void> _send() async {
@@ -124,8 +128,7 @@ class _ChatScreenState extends State<ChatScreen> {
     try {
       String? base64Photo;
       if (photo != null) {
-        final bytes = await photo.readAsBytes();
-        base64Photo = 'data:image/jpeg;base64,${base64Encode(bytes)}';
+        base64Photo = 'data:image/jpeg;base64,${base64Encode(photo)}';
       }
       final msg = await _api.sendMessage(
         widget.conversationId,
@@ -323,7 +326,7 @@ class _ChatScreenState extends State<ChatScreen> {
                           children: [
                             ClipRRect(
                               borderRadius: BorderRadius.circular(8),
-                              child: Image.file(
+                              child: Image.memory(
                                 _pendingPhoto!,
                                 width: 48,
                                 height: 48,

@@ -396,7 +396,10 @@ class _JobRowState extends State<_JobRow> {
     final cs = context.colors;
     final tx = context.text;
     final j = widget.job;
-    final isCompleted = j['status'] == 'COMPLETED';
+    // Raporsuz tamamlanmış işte PDF ucu 404 döner — butonu yalnızca rapor
+    // varsa göster (backend getCustomer: jobs[]._count.jobReports).
+    final reportCount = (j['_count'] as Map?)?['jobReports'] as int? ?? 0;
+    final isCompleted = j['status'] == 'COMPLETED' && reportCount > 0;
     return ListTile(
       tileColor: cs.surfaceCard,
       shape: RoundedRectangleBorder(

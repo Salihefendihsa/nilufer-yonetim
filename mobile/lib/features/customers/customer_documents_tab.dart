@@ -1,4 +1,3 @@
-import 'dart:io';
 
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
@@ -68,11 +67,16 @@ class CustomerDocumentsApi {
         .toList();
   }
 
-  Future<CustomerDocument> upload(String customerId, File file) async {
+  Future<CustomerDocument> upload(
+    String customerId,
+    List<int> bytes,
+    String fileName,
+  ) async {
     final json = await _api.uploadMultipart<Map<String, dynamic>>(
       '/customers/$customerId/documents',
       fieldName: 'file',
-      file: file,
+      bytes: bytes,
+      filename: fileName,
     );
     return CustomerDocument.fromJson(json);
   }
@@ -137,13 +141,15 @@ class _CustomerDocumentsTabState extends State<CustomerDocumentsTab> {
         'xlsx',
         'txt',
       ],
-      withData: false,
+      // Web'de dosya yolu yoktur — byte'lar her platformda withData ile alınır.
+      withData: true,
     );
-    final path = result?.files.single.path;
-    if (path == null) return;
+    final picked = result?.files.single;
+    final bytes = picked?.bytes;
+    if (picked == null || bytes == null) return;
     setState(() => _busy = true);
     try {
-      await _api.upload(widget.customerId, File(path));
+      await _api.upload(widget.customerId, bytes, picked.name);
       if (mounted) {
         ScaffoldMessenger.of(context)
             .showSnackBar(const SnackBar(content: Text('Belge yüklendi')));

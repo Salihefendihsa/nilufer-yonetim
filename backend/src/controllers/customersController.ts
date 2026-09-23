@@ -128,7 +128,9 @@ export async function getCustomer(req: Request, res: Response) {
   const customerRow = await prisma.customer.findUnique({
     where: { id: idParam(req) },
     include: {
-      jobs: { orderBy: { createdAt: "desc" } },
+      // _count.jobReports: istemciler "Rapor PDF" butonunu yalnızca raporu olan
+      // işlerde gösterir (raporsuz işte GET /jobs/:id/report/pdf → 404).
+      jobs: { orderBy: { createdAt: "desc" }, include: { _count: { select: { jobReports: true } } } },
       payments: { orderBy: { createdAt: "desc" } },
       contracts: { orderBy: { createdAt: "desc" } },
       tagAssignments: { include: { tag: { select: customerTagSelect } } },

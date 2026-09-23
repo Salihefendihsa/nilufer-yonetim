@@ -154,7 +154,7 @@ export function CustomerDetailPanel({ customerId, onClose, onEdit, onDelete }: C
                           </div>
                           <div className="flex items-center gap-2">
                             <StatusBadge status={job.status} />
-                            {job.status === "COMPLETED" && (
+                            {job.status === "COMPLETED" && (job._count?.jobReports ?? 0) > 0 && (
                               <button
                                 type="button"
                                 aria-label="PDF İndir"

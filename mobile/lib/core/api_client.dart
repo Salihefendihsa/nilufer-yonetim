@@ -1,9 +1,10 @@
 import 'dart:convert';
-import 'dart:io';
 
 import 'package:http/http.dart' as http;
+import 'package:http_parser/http_parser.dart';
 
 import 'app_config.dart';
+import 'mime_types.dart';
 import 'secure_storage.dart';
 
 /// backend/src/middleware/errorHandler.ts'in ürettiği `{ error, details? }`
@@ -118,17 +119,32 @@ class ApiClient {
     return _handle<T>(res, path);
   }
 
-  /// Fotoğraf/imza gibi dosya yüklemeleri için multipart istek.
+  /// Fotoğraf/belge gibi dosya yüklemeleri için multipart istek.
+  ///
+  /// Byte tabanlıdır (`dart:io File` değil) — Flutter web'de dosya yolu
+  /// yoktur, `XFile.readAsBytes()`/`PlatformFile.bytes` her platformda çalışır.
+  /// contentType dosya uzantısından belirlenir: backend'in multer filtresi
+  /// (`lib/upload.ts`) `image/*` / izinli belge MIME'ı ister; `http`
+  /// paketinin varsayılanı `application/octet-stream` olduğundan önceden her
+  /// yükleme "Yalnızca resim dosyaları yüklenebilir" (400) ile reddediliyordu.
   Future<T> uploadMultipart<T>(
     String path, {
     required String fieldName,
-    required File file,
+    required List<int> bytes,
+    required String filename,
     Map<String, String>? fields,
   }) async {
     final request = http.MultipartRequest('POST', _uri(path));
     request.headers.addAll(await _headers(json: false));
     if (fields != null) request.fields.addAll(fields);
-    request.files.add(await http.MultipartFile.fromPath(fieldName, file.path));
+    request.files.add(
+      http.MultipartFile.fromBytes(
+        fieldName,
+        bytes,
+        filename: filename,
+        contentType: MediaType.parse(mimeTypeForFileName(filename)),
+      ),
+    );
 
     final streamed = await request.send();
     final res = await http.Response.fromStream(streamed);
@@ -145,7 +161,17 @@ class ApiClient {
       throw ApiException(401, 'Oturum sona erdi');
     }
     if (res.statusCode < 200 || res.statusCode >= 300) {
-      throw ApiException(res.statusCode, 'Dosya indirilemedi');
+      // Hata yanıtları ikili değil `{ error }` JSON'udur (errorHandler.ts) —
+      // backend'in Türkçe mesajını ("İş raporu bulunamadı" gibi) göster,
+      // genel "Dosya indirilemedi" yalnızca gövde okunamazsa.
+      String message = 'Dosya indirilemedi';
+      try {
+        final data = jsonDecode(utf8.decode(res.bodyBytes));
+        if (data is Map && data['error'] is String) {
+          message = data['error'] as String;
+        }
+      } catch (_) {}
+      throw ApiException(res.statusCode, message);
     }
     return res.bodyBytes;
   }

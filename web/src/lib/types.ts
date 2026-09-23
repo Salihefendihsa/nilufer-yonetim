@@ -198,7 +198,8 @@ export interface CustomerListItem extends Customer {
 export interface CustomerDetail extends Customer {
   completedJobCount?: number;
   isLoyal?: boolean;
-  jobs: Job[];
+  /** `_count.jobReports`: "Rapor PDF" yalnızca raporu olan işlerde gösterilir. */
+  jobs: (Job & { _count?: { jobReports: number } })[];
   payments: Payment[];
   contracts: Contract[];
   outstandingBalance: number;
