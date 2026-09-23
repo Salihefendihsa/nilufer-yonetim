@@ -169,13 +169,18 @@ class _SystemHealthScreenState extends State<SystemHealthScreen> {
                     ),
                   ),
                 if (health != null) ...[
-                  GridView.count(
-                    crossAxisCount: 2,
+                  // Satır yüksekliği yazı boyutuyla ölçeklenir (sabit 2.6 en-boy
+                  // oranı büyük yazıda ~6 px taşıyordu).
+                  GridView(
                     shrinkWrap: true,
                     physics: const NeverScrollableScrollPhysics(),
-                    mainAxisSpacing: 10,
-                    crossAxisSpacing: 10,
-                    childAspectRatio: 2.6,
+                    gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: 2,
+                      mainAxisSpacing: 10,
+                      crossAxisSpacing: 10,
+                      mainAxisExtent: MediaQuery.textScalerOf(context)
+                          .scale(64),
+                    ),
                     children: [
                       _HealthPill(
                         label: 'API',
