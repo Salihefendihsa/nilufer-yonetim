@@ -13,12 +13,15 @@ import '../../models/quote.dart';
 import '../../models/user.dart';
 import '../../navigation/manager_nav.dart';
 import '../appointment_requests/appointment_requests_api.dart';
+import '../jobs/job_detail_screen.dart';
 import '../jobs/job_form_screen.dart';
 import '../search/search_action.dart';
 import '../../theme/app_colors.dart';
 import '../../theme/app_palette.dart';
 import '../../theme/app_text_styles.dart';
 import '../staff/leave_balance_card.dart';
+import '../staff/staff_detail_screen.dart';
+import '../../widgets/accent_card.dart';
 import '../../widgets/state_views.dart';
 import 'approvals_api.dart';
 
@@ -29,42 +32,6 @@ final _currency = NumberFormat.currency(
 );
 final _dateFormat = DateFormat('d MMM', 'tr_TR');
 
-/// Solda renkli bir şerit + tekdüze gri kenarlıklı kart kabuğu. BoxDecoration'da
-/// farklı renkli kenarlarla (Border(left: renkli, top/right/bottom: gri)
-/// borderRadius birlikte kullanılamaz — Flutter bunu paint() sırasında bir
-/// assertion ile reddediyor ve kartın TÜM içeriği (metin dahil) hiç
-/// çizilmeden boş kalıyordu (gerçek cihazda görsel doğrulama sırasında
-/// bulundu). Renkli şerit burada ayrı bir Container ile çiziliyor.
-class _AccentCard extends StatelessWidget {
-  final Color accentColor;
-  final Widget child;
-  const _AccentCard({required this.accentColor, required this.child});
-
-  @override
-  Widget build(BuildContext context) {
-    final cs = context.colors;
-    return Container(
-      margin: const EdgeInsets.only(bottom: 8),
-      decoration: BoxDecoration(
-        color: cs.surfaceCard,
-        borderRadius: BorderRadius.circular(AppRadius.card),
-        border: Border.all(color: cs.borderDefault),
-      ),
-      clipBehavior: Clip.antiAlias,
-      child: IntrinsicHeight(
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Container(width: 4, color: accentColor),
-            Expanded(
-              child: Padding(padding: const EdgeInsets.all(12), child: child),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
 
 /// web/src/app/(dashboard)/bekleyen-onaylar sayfasıyla aynı üç kaynağı
 /// birleştirir: yeni teklifler, bekleyen avanslar, süresi yaklaşan
@@ -72,7 +39,11 @@ class _AccentCard extends StatelessWidget {
 /// talepleri + saha raporu kuyruğunu görür (web ile aynı: teklif/avans/
 /// sözleşme uçları TEAM_LEAD'e kapalı, hiç çağrılmaz).
 class ApprovalsScreen extends StatefulWidget {
-  const ApprovalsScreen({super.key});
+  /// Panel kartlarından açılırken seçili gelecek segment ('reports',
+  /// 'advances', 'quotes' …); null = Tümü.
+  final String? initialFilter;
+
+  const ApprovalsScreen({super.key, this.initialFilter});
 
   @override
   State<ApprovalsScreen> createState() => _ApprovalsScreenState();
@@ -99,6 +70,7 @@ class _ApprovalsScreenState extends State<ApprovalsScreen> {
   @override
   void initState() {
     super.initState();
+    _filter = widget.initialFilter;
     _load();
   }
 
@@ -571,18 +543,16 @@ class _ReportCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final cs = context.colors;
     final tx = context.text;
-    return Container(
-      margin: const EdgeInsets.only(bottom: 8),
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: cs.surfaceCard,
-        borderRadius: BorderRadius.circular(AppRadius.card),
-        border: Border(
-          left: BorderSide(color: cs.neutral600, width: 4),
-          top: BorderSide(color: cs.borderDefault),
-          right: BorderSide(color: cs.borderDefault),
-          bottom: BorderSide(color: cs.borderDefault),
-        ),
+    // Önceden Border(left: renkli, diğerleri gri) + borderRadius kullanılıyordu:
+    // Flutter paint() assertion'ı ("borderRadius can only be given on borders
+    // with uniform colors") yüzünden kartın içi hiç çizilmiyor, 14 kartın
+    // hepsi boş kutu görünüyordu. AccentCard bu sorunun çözümüdür.
+    final doneAt = job.completedAt ?? job.scheduledAt;
+    return AccentCard(
+      accentColor: cs.neutral600,
+      // Kart → iş detayı (raporu, fotoğrafları incelemek için).
+      onTap: () => Navigator.of(context).push(
+        MaterialPageRoute(builder: (_) => JobDetailScreen(jobId: job.id)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -595,6 +565,11 @@ class _ReportCard extends StatelessWidget {
             '${job.serviceType} · ${job.assignedStaffName ?? 'Personel'}',
             style: tx.caption,
           ),
+          if (doneAt != null)
+            Text(
+              'Tamamlandı: ${_dateFormat.format(doneAt.toLocal())}',
+              style: tx.caption.copyWith(color: cs.textFaint),
+            ),
           const SizedBox(height: 8),
           SizedBox(
             width: double.infinity,
@@ -626,7 +601,7 @@ class _QuoteCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final cs = context.colors;
     final tx = context.text;
-    return _AccentCard(
+    return AccentCard(
       accentColor: cs.info500,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -687,8 +662,15 @@ class _AdvanceCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final cs = context.colors;
     final tx = context.text;
-    return _AccentCard(
+    return AccentCard(
       accentColor: cs.warning500,
+      // Kart → personelin avans geçmişi / güvenilirlik özeti.
+      onTap: () => showModalBottomSheet<void>(
+        context: context,
+        isScrollControlled: true,
+        showDragHandle: true,
+        builder: (_) => _AdvanceHistorySheet(advance: advance),
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -748,7 +730,7 @@ class _ExpiringContractCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final cs = context.colors;
     final tx = context.text;
-    return _AccentCard(
+    return AccentCard(
       accentColor: cs.danger500,
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -801,7 +783,7 @@ class _AppointmentCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final cs = context.colors;
     final tx = context.text;
-    return _AccentCard(
+    return AccentCard(
       accentColor: cs.primary500,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -869,7 +851,7 @@ class _LeaveCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final cs = context.colors;
     final tx = context.text;
-    return _AccentCard(
+    return AccentCard(
       accentColor: cs.danger500,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -917,6 +899,181 @@ class _LeaveCard extends StatelessWidget {
             ],
           ),
         ],
+      ),
+    );
+  }
+}
+
+/// Avans kartına basınca: talep sahibinin avans geçmişi ve basit bir
+/// güvenilirlik özeti (onaylanan/reddedilen sayısı, onaylı toplam) + mevcut
+/// personel profiline geçiş. Ayrı bir ekran icat edilmedi; veri
+/// GET /advances?staffId= ile gelir.
+class _AdvanceHistorySheet extends StatefulWidget {
+  final AdvanceRequest advance;
+  const _AdvanceHistorySheet({required this.advance});
+
+  @override
+  State<_AdvanceHistorySheet> createState() => _AdvanceHistorySheetState();
+}
+
+class _AdvanceHistorySheetState extends State<_AdvanceHistorySheet> {
+  late final Future<List<AdvanceRequest>> _future = ApprovalsApi()
+      .advancesForStaff(widget.advance.staffId);
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = context.colors;
+    final tx = context.text;
+    return SafeArea(
+      child: ConstrainedBox(
+        constraints: BoxConstraints(
+          maxHeight: MediaQuery.of(context).size.height * 0.75,
+        ),
+        child: FutureBuilder<List<AdvanceRequest>>(
+          future: _future,
+          builder: (context, snap) {
+            if (snap.connectionState != ConnectionState.done) {
+              return const SizedBox(height: 200, child: LoadingView());
+            }
+            if (snap.hasError) {
+              return Padding(
+                padding: const EdgeInsets.all(24),
+                child: Text(
+                  snap.error is ApiException
+                      ? (snap.error as ApiException).message
+                      : 'Avans geçmişi yüklenemedi',
+                ),
+              );
+            }
+            final all = snap.data ?? const <AdvanceRequest>[];
+            final approved = all.where((a) => a.status == 'APPROVED').toList();
+            final rejected = all.where((a) => a.status == 'REJECTED').length;
+            final approvedTotal = approved.fold<double>(
+              0,
+              (sum, a) => sum + a.amount,
+            );
+            return ListView(
+              shrinkWrap: true,
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+              children: [
+                Text(
+                  widget.advance.staffName ?? 'Personel',
+                  style: tx.subtitle.copyWith(fontWeight: FontWeight.w700),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  'Avans geçmişi · ${all.length} talep',
+                  style: tx.caption,
+                ),
+                const SizedBox(height: 12),
+                Row(
+                  children: [
+                    _MiniStat(
+                      label: 'Onaylanan',
+                      value: '${approved.length}',
+                      color: cs.success600,
+                    ),
+                    const SizedBox(width: 8),
+                    _MiniStat(
+                      label: 'Reddedilen',
+                      value: '$rejected',
+                      color: cs.danger600,
+                    ),
+                    const SizedBox(width: 8),
+                    _MiniStat(
+                      label: 'Onaylı toplam',
+                      value: _currency.format(approvedTotal),
+                      color: cs.textPrimary,
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                for (final a in all)
+                  ListTile(
+                    contentPadding: EdgeInsets.zero,
+                    dense: true,
+                    title: Text(
+                      '${_currency.format(a.amount)} · ${a.reason}',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    subtitle: Text(
+                      _dateFormat.format(DateTime.parse(a.createdAt).toLocal()),
+                    ),
+                    trailing: Text(
+                      advanceStatusLabelTr(a.status),
+                      style: tx.label.copyWith(
+                        color: switch (a.status) {
+                          'APPROVED' => cs.success600,
+                          'REJECTED' => cs.danger600,
+                          _ => cs.warning600,
+                        },
+                      ),
+                    ),
+                  ),
+                const SizedBox(height: 8),
+                OutlinedButton.icon(
+                  onPressed: () {
+                    final nav = Navigator.of(context);
+                    nav.pop();
+                    nav.push(
+                      MaterialPageRoute(
+                        builder: (_) =>
+                            StaffDetailScreen(staffId: widget.advance.staffId),
+                      ),
+                    );
+                  },
+                  icon: const Icon(Icons.person_outline_rounded),
+                  label: const Text('Personel Profili'),
+                ),
+              ],
+            );
+          },
+        ),
+      ),
+    );
+  }
+}
+
+class _MiniStat extends StatelessWidget {
+  final String label;
+  final String value;
+  final Color color;
+  const _MiniStat({
+    required this.label,
+    required this.value,
+    required this.color,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = context.colors;
+    final tx = context.text;
+    return Expanded(
+      child: Container(
+        padding: const EdgeInsets.all(10),
+        decoration: BoxDecoration(
+          color: cs.surfaceCard,
+          borderRadius: BorderRadius.circular(AppRadius.chip),
+          border: Border.all(color: cs.borderDefault),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            FittedBox(
+              fit: BoxFit.scaleDown,
+              alignment: Alignment.centerLeft,
+              child: Text(
+                value,
+                style: tx.body.copyWith(
+                  fontWeight: FontWeight.w800,
+                  color: color,
+                ),
+              ),
+            ),
+            Text(label, style: tx.caption, maxLines: 1),
+          ],
+        ),
       ),
     );
   }

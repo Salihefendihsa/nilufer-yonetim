@@ -10,6 +10,7 @@ import '../../theme/app_colors.dart';
 import '../../theme/app_palette.dart';
 import '../../theme/app_text_styles.dart';
 import '../staff/leave_balance_card.dart';
+import '../../widgets/accent_card.dart';
 import '../../widgets/state_views.dart';
 import 'leave_requests_api.dart';
 
@@ -355,19 +356,10 @@ class _TeamLeaveCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final cs = context.colors;
     final tx = context.text;
-    return Container(
-      margin: const EdgeInsets.only(bottom: 8),
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: cs.surfaceCard,
-        borderRadius: BorderRadius.circular(AppRadius.card),
-        border: Border(
-          left: BorderSide(color: cs.danger500, width: 4),
-          top: BorderSide(color: cs.borderDefault),
-          right: BorderSide(color: cs.borderDefault),
-          bottom: BorderSide(color: cs.borderDefault),
-        ),
-      ),
+    // Farklı renkli kenar + borderRadius paint() assertion'ı atıyor ve kart
+    // boş çiziliyordu (bkz. widgets/accent_card.dart) — AccentCard kullanılır.
+    return AccentCard(
+      accentColor: cs.danger500,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [

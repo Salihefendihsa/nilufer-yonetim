@@ -48,8 +48,15 @@ export async function listAdvanceRequests(req: Request, res: Response) {
       return res.json(paginatedResponse([], 0, page, limit));
     }
     where.staffId = staffId;
-  } else if (typeof req.query.status === "string") {
-    where.status = req.query.status as AdvanceStatus;
+  } else {
+    if (typeof req.query.status === "string") {
+      where.status = req.query.status as AdvanceStatus;
+    }
+    // Bekleyen Onaylar → avans kartı: talep sahibinin geçmiş avansları
+    // (güvenilirlik özeti) için yönetim tek personele daraltabilir.
+    if (typeof req.query.staffId === "string") {
+      where.staffId = req.query.staffId;
+    }
   }
 
   const [data, total] = await Promise.all([

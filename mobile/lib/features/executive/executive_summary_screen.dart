@@ -3,6 +3,7 @@ import 'package:intl/intl.dart';
 
 import '../../core/api_client.dart';
 import '../../models/executive_summary.dart';
+import '../../models/job.dart';
 import '../../theme/app_colors.dart';
 import '../../theme/app_palette.dart';
 import '../../theme/app_text_styles.dart';
@@ -85,19 +86,37 @@ class _ExecutiveSummaryScreenState extends State<ExecutiveSummaryScreen> {
     }
   }
 
-  /// backend `drillDown.route` → mobil ekran eşlemesi.
-  static Widget? _screenForRoute(String route) {
-    switch (route) {
+  /// backend `drillDown.route` + `drillDown.filter` → mobil ekran eşlemesi.
+  /// Önceden `filter` yok sayılıyordu: "İş Sayısı (bugün)" gibi kartlar
+  /// filtresiz tüm iş listesini açıyordu. İş listesi artık seçili aralıkla
+  /// (Bugün/Bu Hafta/Bu Ay — backend rangeStart/rangeEnd) açılır.
+  Widget? _screenForKpi(ExecutiveKpi kpi) {
+    final filter = kpi.drillDown.filter;
+    switch (kpi.drillDown.route) {
       case 'finance':
         return const FinanceScreen();
       case 'reports':
         return const ReportsScreen();
       case 'customers':
-        return const CustomersListScreen();
+        return CustomersListScreen(
+          initialSort: filter == 'debt' ? 'balance' : null,
+        );
       case 'performance':
         return const PerformanceScreen();
       case 'jobs':
-        return const JobsListScreen();
+        final s = _summary;
+        final label = _rangeOptions
+            .firstWhere((o) => o.$1 == _range, orElse: () => _rangeOptions.first)
+            .$2;
+        return JobsListScreen(
+          initialStatus: filter == 'COMPLETED' ? JobStatus.completed : null,
+          from: s?.rangeStart,
+          // Backend rangeEnd dışlayıcıdır (lt); liste `to` kapsayıcı (lte).
+          to: s?.rangeEnd?.subtract(const Duration(milliseconds: 1)),
+          // Tamamlanma oranı completedAt'e göre hesaplanır.
+          dateField: filter == 'COMPLETED' ? 'completedAt' : null,
+          rangeLabel: label,
+        );
       case 'approvals':
         return const ApprovalsScreen();
       case 'staff':
@@ -112,7 +131,7 @@ class _ExecutiveSummaryScreenState extends State<ExecutiveSummaryScreen> {
   }
 
   void _openDrillDown(ExecutiveKpi kpi) {
-    final screen = _screenForRoute(kpi.drillDown.route);
+    final screen = _screenForKpi(kpi);
     if (screen == null) return;
     Navigator.of(context).push(MaterialPageRoute(builder: (_) => screen));
   }

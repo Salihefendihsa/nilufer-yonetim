@@ -29,7 +29,11 @@ final _customerCurrency = NumberFormat.currency(
 );
 
 class CustomersListScreen extends StatefulWidget {
-  const CustomersListScreen({super.key});
+  /// Başlangıç sıralaması ('balance' → borçlu müşteriler üstte; panel
+  /// "Bekleyen Bakiye" kartından gelindiğinde).
+  final String? initialSort;
+
+  const CustomersListScreen({super.key, this.initialSort});
 
   @override
   State<CustomersListScreen> createState() => _CustomersListScreenState();
@@ -83,6 +87,7 @@ class _CustomersListScreenState extends State<CustomersListScreen> {
   @override
   void initState() {
     super.initState();
+    _sort = widget.initialSort ?? _sort;
     _load();
     _tagsApi
         .list()

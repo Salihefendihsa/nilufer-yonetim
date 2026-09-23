@@ -11,7 +11,10 @@ import '../../widgets/charts.dart';
 import '../../widgets/state_views.dart';
 import '../../widgets/stat_card.dart';
 import '../../models/staff.dart';
+import '../approvals/approvals_screen.dart';
 import '../customers/customers_api.dart';
+import '../customers/customers_list_screen.dart';
+import '../reports/reports_screen.dart';
 import '../staff/staff_api.dart';
 import 'finance_api.dart';
 
@@ -168,6 +171,13 @@ class _FinanceScreenState extends State<FinanceScreen>
     } finally {
       if (mounted) setState(() => _receiptDownloadingId = null);
     }
+  }
+
+  /// Özet kartı → ilgili detay ekranı; dönüşte özet tazelenir (ör. avans
+  /// onaylanmış olabilir).
+  Future<void> _openDetail(Widget screen) async {
+    await Navigator.of(context).push(MaterialPageRoute(builder: (_) => screen));
+    if (mounted) _load();
   }
 
   Future<void> _load() async {
@@ -446,6 +456,7 @@ class _FinanceScreenState extends State<FinanceScreen>
                   if (s.monthlyRevenueTarget != null)
                     'hedef ${_currency.format(s.monthlyRevenueTarget)}',
                 ].join(' · '),
+                onTap: () => _openDetail(const ReportsScreen()),
               ),
               AppStatCard(
                 label: 'Toplam Tahsilat',
@@ -453,6 +464,7 @@ class _FinanceScreenState extends State<FinanceScreen>
                 icon: Icons.account_balance_wallet_outlined,
                 iconColor: cs.info600,
                 iconBackground: cs.info50,
+                onTap: () => _openDetail(const ReportsScreen()),
               ),
               AppStatCard(
                 label: 'Bekleyen Bakiye',
@@ -460,6 +472,10 @@ class _FinanceScreenState extends State<FinanceScreen>
                 icon: Icons.warning_amber_rounded,
                 iconColor: cs.danger500,
                 iconBackground: cs.danger50,
+                // Borçlu müşteriler üstte.
+                onTap: () => _openDetail(
+                  const CustomersListScreen(initialSort: 'balance'),
+                ),
               ),
               AppStatCard(
                 label: 'Bekleyen Avans',
@@ -468,6 +484,9 @@ class _FinanceScreenState extends State<FinanceScreen>
                 iconColor: cs.warning600,
                 iconBackground: cs.warning50,
                 caption: '${s.pendingAdvancesCount} talep',
+                onTap: () => _openDetail(
+                  const ApprovalsScreen(initialFilter: 'advances'),
+                ),
               ),
               if (s.netProfitThisMonth != null)
                 AppStatCard(
@@ -479,6 +498,7 @@ class _FinanceScreenState extends State<FinanceScreen>
                   caption: s.profitMargin != null
                       ? '%${s.profitMargin!.toStringAsFixed(1)} marj — yalnızca personel maaşı düşülerek hesaplanır'
                       : null,
+                  onTap: () => _openDetail(const ReportsScreen()),
                 ),
             ],
           ),

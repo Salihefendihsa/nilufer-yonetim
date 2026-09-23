@@ -32,3 +32,11 @@ class AdvanceRequest {
             as String?,
   );
 }
+
+/// Avans durumunun Türkçe etiketi (backend AdvanceStatus enum'u).
+String advanceStatusLabelTr(String status) => switch (status) {
+  'PENDING' => 'Bekliyor',
+  'APPROVED' => 'Onaylandı',
+  'REJECTED' => 'Reddedildi',
+  _ => status,
+};

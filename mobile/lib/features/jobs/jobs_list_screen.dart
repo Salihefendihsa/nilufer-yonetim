@@ -32,8 +32,56 @@ Map<JobStatus, Color> _statusColors(AppPalette cs) => {
 /// backend/src/controllers/jobsController.ts:listJobs kapsamı zaten role göre
 /// filtreliyor (STAFF→kendi işleri, TEAM_LEAD→ekibi, CUSTOMER→kendisi,
 /// OWNER/MANAGER→hepsi) — burada ekstra bir rol filtresi UYGULANMAZ.
+///
+/// Panel kartlarından (Ana Sayfa / Yönetici Özeti) gelindiğinde başlangıç
+/// filtresi verilebilir: [initialStatus] + tarih aralığı ([from]/[to]).
+/// [dateField] `completedAt` ise aralık tamamlanma tarihine uygulanır
+/// ("Bu ay tamamlanan" sayacıyla aynı kriter); varsayılan `scheduledAt`.
+/// [rangeLabel] listenin üstünde kaldırılabilir bir şerit olarak gösterilir.
 class JobsListScreen extends StatefulWidget {
-  const JobsListScreen({super.key});
+  final JobStatus? initialStatus;
+  final DateTime? from;
+  final DateTime? to;
+  final String? dateField;
+  final String? rangeLabel;
+
+  const JobsListScreen({
+    super.key,
+    this.initialStatus,
+    this.from,
+    this.to,
+    this.dateField,
+    this.rangeLabel,
+  });
+
+  /// Bugün planlanmış işler.
+  factory JobsListScreen.today({Key? key, JobStatus? status}) {
+    final now = DateTime.now();
+    final start = DateTime(now.year, now.month, now.day);
+    return JobsListScreen(
+      key: key,
+      initialStatus: status,
+      from: start,
+      // Backend `to` kapsayıcıdır (lte) — ertesi günün 00:00'ı dahil olmasın.
+      to: start.add(const Duration(days: 1, milliseconds: -1)),
+      rangeLabel: 'Bugün',
+    );
+  }
+
+  /// Bu ay tamamlanan işler (dashboard "Tamamlanan İş (Ay)" ile aynı kriter).
+  factory JobsListScreen.completedThisMonth({Key? key}) {
+    final now = DateTime.now();
+    return JobsListScreen(
+      key: key,
+      initialStatus: JobStatus.completed,
+      from: DateTime(now.year, now.month),
+      to: DateTime(now.year, now.month + 1).subtract(
+        const Duration(milliseconds: 1),
+      ),
+      dateField: 'completedAt',
+      rangeLabel: 'Bu ay tamamlanan',
+    );
+  }
 
   @override
   State<JobsListScreen> createState() => _JobsListScreenState();
@@ -54,9 +102,15 @@ class _JobsListScreenState extends State<JobsListScreen> {
     return role == AppRole.owner || role == AppRole.manager;
   }
 
+  DateTime? _from;
+  DateTime? _to;
+
   @override
   void initState() {
     super.initState();
+    _filter = widget.initialStatus;
+    _from = widget.from;
+    _to = widget.to;
     _load();
   }
 
@@ -76,6 +130,10 @@ class _JobsListScreenState extends State<JobsListScreen> {
       final res = await _api.list(
         status: _filter != null ? jobStatusToApiString(_filter!) : null,
         search: _search.isEmpty ? null : _search,
+        from: _from,
+        to: _to,
+        dateField: _from != null || _to != null ? widget.dateField : null,
+        limit: _from != null || _to != null ? 100 : 20,
       );
       setState(() => _jobs = res.data);
     } catch (e) {
@@ -159,6 +217,23 @@ class _JobsListScreenState extends State<JobsListScreen> {
               ],
             ),
           ),
+          if (_from != null || _to != null)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 4, 16, 0),
+              child: Align(
+                alignment: Alignment.centerLeft,
+                child: InputChip(
+                  avatar: const Icon(Icons.event_rounded, size: 16),
+                  label: Text(widget.rangeLabel ?? 'Tarih filtresi'),
+                  onDeleted: () => setState(() {
+                    _from = null;
+                    _to = null;
+                    _load();
+                  }),
+                  deleteButtonTooltipMessage: 'Tarih filtresini kaldır',
+                ),
+              ),
+            ),
           Expanded(child: _buildBody()),
         ],
       ),

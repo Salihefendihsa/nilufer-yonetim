@@ -55,6 +55,9 @@ class AppStatCard extends StatelessWidget {
   final Color? iconColor;
   final Color? iconBackground;
 
+  /// Verilirse kart tıklanabilir olur (ilgili liste/detay ekranına gider).
+  final VoidCallback? onTap;
+
   const AppStatCard({
     super.key,
     required this.label,
@@ -65,17 +68,19 @@ class AppStatCard extends StatelessWidget {
     this.badgeColor,
     this.iconColor,
     this.iconBackground,
+    this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
     final cs = context.colors;
     final tx = context.text;
-    return Container(
+    final radius = BorderRadius.circular(AppRadius.sheet);
+    final card = Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: cs.surfaceCard,
-        borderRadius: BorderRadius.circular(AppRadius.sheet),
+        color: onTap == null ? cs.surfaceCard : null,
+        borderRadius: radius,
         border: Border.all(color: cs.borderDefault),
       ),
       child: Column(
@@ -139,6 +144,14 @@ class AppStatCard extends StatelessWidget {
           ],
         ],
       ),
+    );
+    if (onTap == null) return card;
+    // Material + InkWell: dokunma geri bildirimi (ripple) kartın yuvarlak
+    // köşeleri içinde kalır; arka plan rengi Material'dan gelir.
+    return Material(
+      color: cs.surfaceCard,
+      borderRadius: radius,
+      child: InkWell(borderRadius: radius, onTap: onTap, child: card),
     );
   }
 }

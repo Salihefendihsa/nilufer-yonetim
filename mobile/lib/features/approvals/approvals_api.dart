@@ -32,6 +32,19 @@ class ApprovalsApi {
         .toList();
   }
 
+  /// Bir personelin tüm avans talepleri (avans kartı → geçmiş/güvenilirlik
+  /// özeti). backend: GET /advances?staffId= (yalnızca OWNER/MANAGER).
+  Future<List<AdvanceRequest>> advancesForStaff(String staffId) async {
+    final json = await _api.get<Map<String, dynamic>>(
+      '/advances',
+      query: {'staffId': staffId, 'limit': 100},
+    );
+    return (json['data'] as List)
+        .cast<Map<String, dynamic>>()
+        .map(AdvanceRequest.fromJson)
+        .toList();
+  }
+
   Future<List<Contract>> expiringContracts() async {
     final json = await _api.get<Map<String, dynamic>>('/contracts/expiring');
     return (json['data'] as List)

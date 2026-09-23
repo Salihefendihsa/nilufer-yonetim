@@ -197,7 +197,12 @@ export async function listJobs(req: Request, res: Response) {
       const to = new Date(req.query.to);
       if (!Number.isNaN(to.getTime())) range.lte = to;
     }
-    if (range.gte || range.lte) where.scheduledAt = range;
+    if (range.gte || range.lte) {
+      // dateField=completedAt: panel "Bu ay tamamlanan" kartı completedAt'e
+      // göre sayar (dashboardController) — liste aynı kriterle açılsın.
+      if (req.query.dateField === "completedAt") where.completedAt = range;
+      else where.scheduledAt = range;
+    }
   }
 
   // Stitch "İşler" ekranındaki arama kutusu karşılığı — müşteri adı veya

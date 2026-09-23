@@ -15,6 +15,11 @@ import '../../navigation/manager_nav.dart';
 import '../../widgets/state_views.dart';
 import '../../widgets/stat_card.dart';
 import '../advances/advance_request_sheet.dart';
+import '../approvals/approvals_screen.dart';
+import '../finance/finance_screen.dart';
+import '../quotes/quotes_list_screen.dart';
+import '../staff/staff_list_screen.dart';
+import '../jobs/jobs_list_screen.dart';
 import '../jobs/job_detail_screen.dart';
 import '../jobs/jobs_api.dart';
 import '../search/search_action.dart';
@@ -186,6 +191,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
     return _buildFieldBody(user);
   }
 
+  /// Panel kartı → ilgili liste ekranı; dönüşte sayılar tazelenir (kart
+  /// üzerinden onay/iptal yapılmış olabilir).
+  Future<void> _open(Widget screen) async {
+    await Navigator.of(context).push(MaterialPageRoute(builder: (_) => screen));
+    if (mounted) _load();
+  }
+
   Widget _buildManagementBody() {
     final cs = context.colors;
     final tx = context.text;
@@ -200,6 +212,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
               value: '${s.todaysJobsCount}',
               icon: Icons.assignment_rounded,
               caption: 'Planlanan işler',
+              onTap: () => _open(JobsListScreen.today()),
             ),
             AppStatCard(
               label: 'Bekleyen Onay',
@@ -212,6 +225,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   : '${_pending!.quotes} teklif, ${_pending!.advances} avans, ${_pending!.expiringContracts} sözleşme',
               badge: (_pending?.total ?? 0) > 0 ? 'DİKKAT' : null,
               badgeColor: cs.danger500,
+              onTap: () => _open(const ApprovalsScreen()),
             ),
             AppStatCard(
               label: 'Bu Ay Tahsilat',
@@ -219,6 +233,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
               icon: Icons.payments_rounded,
               iconColor: cs.info600,
               iconBackground: cs.info50,
+              onTap: () => _open(const FinanceScreen()),
             ),
             AppStatCard(
               label: 'Tamamlanan İş (Ay)',
@@ -226,6 +241,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
               icon: Icons.check_circle_rounded,
               iconColor: cs.success600,
               iconBackground: cs.success50,
+              onTap: () => _open(JobsListScreen.completedThisMonth()),
             ),
             AppStatCard(
               label: 'Sahadaki Personel',
@@ -233,6 +249,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
               icon: Icons.groups_rounded,
               iconColor: cs.primary700,
               caption: 'İşteki / toplam personel',
+              onTap: () => _open(const StaffListScreen()),
             ),
             AppStatCard(
               label: 'Yeni Teklif Talebi',
@@ -240,6 +257,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
               icon: Icons.request_quote_rounded,
               iconColor: cs.warning600,
               iconBackground: cs.warning50,
+              onTap: () => _open(const QuotesListScreen(initialStatus: 'NEW')),
             ),
             AppStatCard(
               label: 'Rapor Onayı',
@@ -250,6 +268,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
               caption: 'Onay bekleyen saha raporu',
               badge: s.pendingReportApprovals > 0 ? 'BEKLİYOR' : null,
               badgeColor: cs.warning600,
+              onTap: () => _open(const ApprovalsScreen(initialFilter: 'reports')),
             ),
             AppStatCard(
               // Formül: tamamlanan / (tamamlanan + iptal). Bu ay hiç
@@ -262,6 +281,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
               iconColor: cs.success600,
               iconBackground: cs.success50,
               caption: 'Bu ay tamamlanan / sonuçlanan',
+              onTap: () => _open(JobsListScreen.completedThisMonth()),
             ),
           ],
         ),
@@ -533,6 +553,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
               value: '${t.todaysJobsCount} İş',
               icon: Icons.calendar_today_rounded,
               caption: 'Ekibe atanan',
+              onTap: () => _open(JobsListScreen.today()),
             ),
             AppStatCard(
               label: 'Tamamlandı',
@@ -543,6 +564,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
               iconColor: cs.success600,
               iconBackground: cs.success50,
               caption: '${t.completedTodayCount} / ${t.todaysJobsCount}',
+              onTap: () =>
+                  _open(JobsListScreen.today(status: JobStatus.completed)),
             ),
             AppStatCard(
               label: 'Sahada Aktif',
@@ -559,6 +582,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
               iconColor: cs.warning600,
               iconBackground: cs.warning50,
               caption: 'Şu an sürüyor',
+              onTap: () =>
+                  _open(JobsListScreen.today(status: JobStatus.inProgress)),
             ),
           ],
         ),

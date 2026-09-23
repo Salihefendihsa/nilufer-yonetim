@@ -62,12 +62,18 @@ class ExecutiveSection {
 
 class ExecutiveSummary {
   final String range;
+  /// Seçili aralığın sınırları (backend hesaplar, TR saat dilimi) — KPI
+  /// kartından iş listesine gidilirken aynı aralık uygulanır.
+  final DateTime? rangeStart;
+  final DateTime? rangeEnd;
   final DateTime generatedAt;
   final List<ExecutiveSection> sections;
   final Map<String, int> pendingApprovalsBreakdown;
 
   const ExecutiveSummary({
     required this.range,
+    this.rangeStart,
+    this.rangeEnd,
     required this.generatedAt,
     required this.sections,
     required this.pendingApprovalsBreakdown,
@@ -102,6 +108,8 @@ class ExecutiveSummary {
         const {};
     return ExecutiveSummary(
       range: json['range'] as String? ?? 'today',
+      rangeStart: DateTime.tryParse(json['rangeStart'] as String? ?? '')?.toLocal(),
+      rangeEnd: DateTime.tryParse(json['rangeEnd'] as String? ?? '')?.toLocal(),
       generatedAt:
           DateTime.tryParse(json['generatedAt'] as String? ?? '') ??
           DateTime.now(),

@@ -51,7 +51,15 @@ int _ratedJobCount(List<dynamic> jobs) => _ratings(jobs).length;
 /// kaynağı backend kalsın diye).
 class CustomerDetailScreen extends StatefulWidget {
   final String customerId;
-  const CustomerDetailScreen({super.key, required this.customerId});
+
+  /// Açılışta seçili sekme: 0 İşler, 1 Sözleşmeler, 2 Ödemeler, 3 Belgeler.
+  final int initialTab;
+
+  const CustomerDetailScreen({
+    super.key,
+    required this.customerId,
+    this.initialTab = 0,
+  });
 
   @override
   State<CustomerDetailScreen> createState() => _CustomerDetailScreenState();
@@ -70,7 +78,12 @@ class _CustomerDetailScreenState extends State<CustomerDetailScreen>
   void initState() {
     super.initState();
     // Bölüm AB (6. tur): yönetim için 4. sekme "Belgeler".
-    _tabController = TabController(length: _canManage ? 4 : 3, vsync: this);
+    final length = _canManage ? 4 : 3;
+    _tabController = TabController(
+      length: length,
+      vsync: this,
+      initialIndex: widget.initialTab.clamp(0, length - 1),
+    );
     _load();
   }
 

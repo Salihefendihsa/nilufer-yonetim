@@ -17,6 +17,8 @@ class JobsApi {
     String? date,
     DateTime? from,
     DateTime? to,
+    /// `completedAt` → from/to tamamlanma tarihine uygulanır (varsayılan scheduledAt).
+    String? dateField,
     String? search,
   }) async {
     final json = await _api.get<Map<String, dynamic>>(
@@ -29,8 +31,9 @@ class JobsApi {
         if (customerId != null) 'customerId': customerId,
         if (date != null) 'date': date,
         if (search != null && search.isNotEmpty) 'search': search,
-        if (from != null) 'from': from.toIso8601String(),
-        if (to != null) 'to': to.toIso8601String(),
+        if (from != null) 'from': from.toUtc().toIso8601String(),
+        if (to != null) 'to': to.toUtc().toIso8601String(),
+        if (dateField != null) 'dateField': dateField,
       },
     );
     return Paginated.fromJson(json, Job.fromJson);
@@ -56,9 +59,9 @@ class JobsApi {
         'customerId': customerId,
         if (assignedStaffId != null) 'assignedStaffId': assignedStaffId,
         'serviceType': serviceType,
-        if (scheduledAt != null) 'scheduledAt': scheduledAt.toIso8601String(),
+        if (scheduledAt != null) 'scheduledAt': scheduledAt.toUtc().toIso8601String(),
         if (scheduledEndAt != null)
-          'scheduledEndAt': scheduledEndAt.toIso8601String(),
+          'scheduledEndAt': scheduledEndAt.toUtc().toIso8601String(),
         if (notes != null && notes.isNotEmpty) 'notes': notes,
         if (price != null) 'price': price,
       },

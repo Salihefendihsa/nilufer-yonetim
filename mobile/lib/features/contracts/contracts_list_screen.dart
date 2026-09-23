@@ -175,6 +175,44 @@ class _ContractsListScreenState extends State<ContractsListScreen> {
     }
   }
 
+  /// Kırmızı "sona eriyor" şeridi → ilgili sözleşme. Ayrı bir sözleşme detay
+  /// ekranı yok; kartlar gibi müşterinin Sözleşmeler sekmesine gidilir.
+  /// Birden fazla sözleşme varsa önce hangisi olduğu seçtirilir.
+  Future<void> _openExpiring() async {
+    void open(Contract c) => Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) =>
+            CustomerDetailScreen(customerId: c.customerId, initialTab: 1),
+      ),
+    );
+    if (_expiring.length == 1) {
+      open(_expiring.first);
+      return;
+    }
+    final picked = await showModalBottomSheet<Contract>(
+      context: context,
+      showDragHandle: true,
+      builder: (ctx) => SafeArea(
+        child: ListView(
+          shrinkWrap: true,
+          children: [
+            for (final c in _expiring)
+              ListTile(
+                leading: const Icon(Icons.event_busy_rounded),
+                title: Text(c.customerName ?? 'Sözleşme'),
+                subtitle: Text(
+                  '${c.serviceType ?? ''} · Bitiş: ${_dateFormat.format(DateTime.parse(c.endDate))}',
+                ),
+                trailing: const Icon(Icons.chevron_right_rounded),
+                onTap: () => Navigator.of(ctx).pop(c),
+              ),
+          ],
+        ),
+      ),
+    );
+    if (picked != null && mounted) open(picked);
+  }
+
   Widget _buildBody() {
     final cs = context.colors;
     final tx = context.text;
@@ -213,19 +251,35 @@ class _ContractsListScreenState extends State<ContractsListScreen> {
             const SizedBox(height: 12),
           ],
           if (_expiring.isNotEmpty)
-            Container(
-              margin: const EdgeInsets.only(bottom: 12),
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
+            Padding(
+              padding: const EdgeInsets.only(bottom: 12),
+              child: Material(
                 color: cs.danger50,
                 borderRadius: BorderRadius.circular(AppRadius.card),
-                border: Border.all(color: cs.danger500),
-              ),
-              child: Text(
-                '${_expiring.length} sözleşme önümüzdeki 30 gün içinde sona eriyor',
-                style: tx.bodySmall.copyWith(
-                  color: cs.danger600,
-                  fontWeight: FontWeight.w700,
+                child: InkWell(
+                  borderRadius: BorderRadius.circular(AppRadius.card),
+                  onTap: _openExpiring,
+                  child: Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(AppRadius.card),
+                      border: Border.all(color: cs.danger500),
+                    ),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            '${_expiring.length} sözleşme önümüzdeki 30 gün içinde sona eriyor',
+                            style: tx.bodySmall.copyWith(
+                              color: cs.danger600,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        ),
+                        Icon(Icons.chevron_right_rounded, color: cs.danger600),
+                      ],
+                    ),
+                  ),
                 ),
               ),
             ),

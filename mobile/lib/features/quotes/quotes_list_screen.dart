@@ -29,7 +29,10 @@ Map<String, Color> _statusColors(AppPalette cs) => {
 /// backend/src/routes/quotes.ts: GET/PATCH/convert yalnızca OWNER/MANAGER —
 /// bu ekran zaten yalnızca o rollerin nav'ında (Daha Fazla menüsü).
 class QuotesListScreen extends StatefulWidget {
-  const QuotesListScreen({super.key});
+  /// Panel kartından açılırken seçili gelecek durum (örn. 'NEW').
+  final String? initialStatus;
+
+  const QuotesListScreen({super.key, this.initialStatus});
 
   @override
   State<QuotesListScreen> createState() => _QuotesListScreenState();
@@ -47,6 +50,7 @@ class _QuotesListScreenState extends State<QuotesListScreen> {
   @override
   void initState() {
     super.initState();
+    _filter = widget.initialStatus;
     _load();
   }
 
@@ -305,181 +309,208 @@ class _QuotesListScreenState extends State<QuotesListScreen> {
           final q = _quotes[i];
           final color = _statusColors(cs)[q.status] ?? cs.textFaint;
           final busy = _busyId == q.id;
-          return Container(
-            padding: const EdgeInsets.all(14),
-            decoration: BoxDecoration(
-              color: cs.surfaceCard,
+          // Kartın kendisi → teklif ayrıntısı (özet + tarihçe). İç butonlar
+          // kendi onPressed'lerini kullanmaya devam eder.
+          return Material(
+            color: cs.surfaceCard,
+            borderRadius: BorderRadius.circular(AppRadius.card),
+            child: InkWell(
               borderRadius: BorderRadius.circular(AppRadius.card),
-              border: Border.all(color: cs.borderDefault),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Expanded(
-                      child: Text(
-                        q.fullName,
-                        style: tx.subtitle.copyWith(
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                    ),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 8,
-                        vertical: 3,
-                      ),
-                      decoration: BoxDecoration(
-                        color: color.withValues(alpha: 0.12),
-                        borderRadius: BorderRadius.circular(AppRadius.pill),
-                      ),
-                      child: Text(
-                        quoteStatusLabelTr(q.status),
-                        style: tx.label.copyWith(color: color),
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  '${q.serviceType} · ${q.propertyType}',
-                  style: tx.bodySmall,
-                ),
-                const SizedBox(height: 6),
-                Row(
-                  children: [
-                    Icon(Icons.phone_outlined, size: 13, color: cs.textFaint),
-                    const SizedBox(width: 4),
-                    Text(
-                      q.phone,
-                      style: tx.caption.copyWith(color: cs.textFaint),
-                    ),
-                    const Spacer(),
-                    IconButton(
-                      icon: Icon(
-                        Icons.call_rounded,
-                        size: 18,
-                        color: cs.accentSoft,
-                      ),
-                      onPressed: () => launchUrl(Uri.parse('tel:${q.phone}')),
-                      visualDensity: VisualDensity.compact,
-                    ),
-                  ],
-                ),
-                Text(
-                  _dateFormat.format(DateTime.parse(q.createdAt)),
-                  style: tx.label,
-                ),
-                const SizedBox(height: 6),
-                Row(
-                  children: [
-                    Expanded(
-                      child: OutlinedButton.icon(
-                        onPressed: busy ? null : () => _editSurvey(q),
-                        icon: const Icon(Icons.event_outlined, size: 15),
-                        label: Text(
-                          q.surveyAt != null
-                              ? 'Keşif: ${_dateFormat.format(q.surveyAt!)}'
-                              : 'Keşif Randevusu',
-                          style: tx.caption,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: OutlinedButton.icon(
-                        onPressed: () => Navigator.of(context).push(
-                          MaterialPageRoute(
-                            builder: (_) => QuoteHistoryScreen(quote: q),
-                          ),
-                        ),
-                        icon: const Icon(Icons.history_rounded, size: 15),
-                        label: Text('Tarihçe', style: tx.caption),
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: OutlinedButton.icon(
-                        onPressed: busy ? null : () => _editNote(q),
-                        icon: const Icon(
-                          Icons.sticky_note_2_outlined,
-                          size: 15,
-                        ),
-                        label: Text(
-                          q.note != null && q.note!.isNotEmpty
-                              ? 'Notu Aç'
-                              : 'Not Ekle',
-                          style: tx.caption,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-                if (q.note != null && q.note!.isNotEmpty)
-                  Padding(
-                    padding: const EdgeInsets.only(top: 4),
-                    child: Text(
-                      q.note!,
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      style: tx.caption.copyWith(fontStyle: FontStyle.italic),
-                    ),
+              onTap: () async {
+                await Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (_) => QuoteHistoryScreen(quote: q),
                   ),
-                const SizedBox(height: 8),
-                InkWell(
-                  onTap: () => _editAmount(q),
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 10,
-                      vertical: 8,
-                    ),
-                    decoration: BoxDecoration(
-                      color: cs.surfaceSubtle,
-                      borderRadius: BorderRadius.circular(AppRadius.chip),
-                    ),
-                    child: Row(
+                );
+              },
+              child: Container(
+                padding: const EdgeInsets.all(14),
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(AppRadius.card),
+                  border: Border.all(color: cs.borderDefault),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Icon(
-                          Icons.sell_outlined,
-                          size: 15,
-                          color: cs.textSecondary,
-                        ),
-                        const SizedBox(width: 6),
-                        Text(
-                          q.amount != null
-                              ? _currency.format(q.amount)
-                              : 'Fiyat belirlenmedi',
-                          style: tx.bodySmall.copyWith(
-                            fontWeight: FontWeight.w700,
-                            color: q.amount != null
-                                ? cs.textPrimary
-                                : cs.textFaint,
+                        Expanded(
+                          child: Text(
+                            q.fullName,
+                            style: tx.subtitle.copyWith(
+                              fontWeight: FontWeight.w700,
+                            ),
                           ),
                         ),
-                        const Spacer(),
-                        Icon(
-                          Icons.edit_outlined,
-                          size: 14,
-                          color: cs.textFaint,
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 3,
+                          ),
+                          decoration: BoxDecoration(
+                            color: color.withValues(alpha: 0.12),
+                            borderRadius: BorderRadius.circular(AppRadius.pill),
+                          ),
+                          child: Text(
+                            quoteStatusLabelTr(q.status),
+                            style: tx.label.copyWith(color: color),
+                          ),
                         ),
                       ],
                     ),
-                  ),
-                ),
-                if (q.status != 'CONVERTED') ...[
-                  const SizedBox(height: 8),
-                  SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton.icon(
-                      onPressed: busy ? null : () => _convert(q),
-                      icon: const Icon(Icons.arrow_forward_rounded, size: 16),
-                      label: Text(busy ? 'İşleniyor...' : 'Müşteriye Dönüştür'),
+                    const SizedBox(height: 4),
+                    Text(
+                      '${q.serviceType} · ${q.propertyType}',
+                      style: tx.bodySmall,
                     ),
-                  ),
-                ],
-              ],
+                    const SizedBox(height: 6),
+                    Row(
+                      children: [
+                        Icon(
+                          Icons.phone_outlined,
+                          size: 13,
+                          color: cs.textFaint,
+                        ),
+                        const SizedBox(width: 4),
+                        Text(
+                          q.phone,
+                          style: tx.caption.copyWith(color: cs.textFaint),
+                        ),
+                        const Spacer(),
+                        IconButton(
+                          icon: Icon(
+                            Icons.call_rounded,
+                            size: 18,
+                            color: cs.accentSoft,
+                          ),
+                          onPressed: () =>
+                              launchUrl(Uri.parse('tel:${q.phone}')),
+                          visualDensity: VisualDensity.compact,
+                        ),
+                      ],
+                    ),
+                    Text(
+                      _dateFormat.format(DateTime.parse(q.createdAt)),
+                      style: tx.label,
+                    ),
+                    const SizedBox(height: 6),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: OutlinedButton.icon(
+                            onPressed: busy ? null : () => _editSurvey(q),
+                            icon: const Icon(Icons.event_outlined, size: 15),
+                            label: Text(
+                              q.surveyAt != null
+                                  ? 'Keşif: ${_dateFormat.format(q.surveyAt!)}'
+                                  : 'Keşif Randevusu',
+                              style: tx.caption,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: OutlinedButton.icon(
+                            onPressed: () => Navigator.of(context).push(
+                              MaterialPageRoute(
+                                builder: (_) => QuoteHistoryScreen(quote: q),
+                              ),
+                            ),
+                            icon: const Icon(Icons.history_rounded, size: 15),
+                            label: Text('Tarihçe', style: tx.caption),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: OutlinedButton.icon(
+                            onPressed: busy ? null : () => _editNote(q),
+                            icon: const Icon(
+                              Icons.sticky_note_2_outlined,
+                              size: 15,
+                            ),
+                            label: Text(
+                              q.note != null && q.note!.isNotEmpty
+                                  ? 'Notu Aç'
+                                  : 'Not Ekle',
+                              style: tx.caption,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    if (q.note != null && q.note!.isNotEmpty)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 4),
+                        child: Text(
+                          q.note!,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: tx.caption.copyWith(
+                            fontStyle: FontStyle.italic,
+                          ),
+                        ),
+                      ),
+                    const SizedBox(height: 8),
+                    InkWell(
+                      onTap: () => _editAmount(q),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 8,
+                        ),
+                        decoration: BoxDecoration(
+                          color: cs.surfaceSubtle,
+                          borderRadius: BorderRadius.circular(AppRadius.chip),
+                        ),
+                        child: Row(
+                          children: [
+                            Icon(
+                              Icons.sell_outlined,
+                              size: 15,
+                              color: cs.textSecondary,
+                            ),
+                            const SizedBox(width: 6),
+                            Text(
+                              q.amount != null
+                                  ? _currency.format(q.amount)
+                                  : 'Fiyat belirlenmedi',
+                              style: tx.bodySmall.copyWith(
+                                fontWeight: FontWeight.w700,
+                                color: q.amount != null
+                                    ? cs.textPrimary
+                                    : cs.textFaint,
+                              ),
+                            ),
+                            const Spacer(),
+                            Icon(
+                              Icons.edit_outlined,
+                              size: 14,
+                              color: cs.textFaint,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                    if (q.status != 'CONVERTED') ...[
+                      const SizedBox(height: 8),
+                      SizedBox(
+                        width: double.infinity,
+                        child: ElevatedButton.icon(
+                          onPressed: busy ? null : () => _convert(q),
+                          icon: const Icon(
+                            Icons.arrow_forward_rounded,
+                            size: 16,
+                          ),
+                          label: Text(
+                            busy ? 'İşleniyor...' : 'Müşteriye Dönüştür',
+                          ),
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
             ),
           );
         },
