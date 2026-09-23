@@ -801,11 +801,20 @@ async function main() {
     let createdMovements = 0;
     for (const product of allProducts) {
       const n = randomInt(5, 10);
-      for (let i = 0; i < n; i++) {
-        const dayOffset = randomInt(0, 60);
-        const isOut = Math.random() > 0.3; // çoğunlukla saha sarfiyatı
+      // Hareketler kronolojik üretilir ve currentStock'a GERÇEKTEN uygulanır
+      // (önceden yalnızca hareket kaydı yazılıyor, stok değeri güncellenmiyordu
+      // → hareket defteri ile stok tutarsızdı). Çıkış mevcut stoğu aşamaz.
+      const dayOffsets = Array.from({ length: n }, () => randomInt(0, 60)).sort((a, b) => b - a);
+      let stock = Number(product.currentStock);
+      for (const dayOffset of dayOffsets) {
         const threshold = Math.max(2, Math.round(Number(product.criticalThreshold)));
-        const qty = isOut ? randomInt(1, Math.max(2, Math.round(threshold / 2))) : randomInt(5, Math.max(10, threshold * 2));
+        let isOut = Math.random() > 0.3; // çoğunlukla saha sarfiyatı
+        let qty = isOut ? randomInt(1, Math.max(2, Math.round(threshold / 2))) : randomInt(5, Math.max(10, threshold * 2));
+        if (isOut && qty > stock) {
+          isOut = false; // yetersiz stok → bu gün bir stok girişi olsun
+          qty = randomInt(5, Math.max(10, threshold * 2));
+        }
+        stock += isOut ? -qty : qty;
         await prisma.stockMovement.create({
           data: {
             productId: product.id,
@@ -817,6 +826,7 @@ async function main() {
         });
         createdMovements++;
       }
+      await prisma.product.update({ where: { id: product.id }, data: { currentStock: stock } });
     }
     console.log(`${createdMovements} yeni stok hareketi hazır (ürün başına 30-60 günlük geçmiş, toplam ${movementCount + createdMovements}).`);
   } else {
@@ -867,6 +877,35 @@ async function main() {
   } else {
     console.log(`Zaten ${quoteCount2} teklif talebi var, atlanıyor.`);
   }
+
+  // ══════════════════════════════════════════════════════════════════════
+  // STOK MUTABAKATI — eski seed sürümü stok hareketlerini currentStock'a
+  // uygulamadığı için bazı ürünler negatif görünüyordu (ör. Biyosidal Sis
+  // Jeneratörü Solüsyonu: -6 L). Negatif stoklar, uygulamanın kendi "fiili
+  // sayım mutabakatı" deseniyle (productsController.adjustProductCount: tek
+  // IN hareketi + değeri eşitle) gerçekçi bir sayıma çekilir.
+  // ══════════════════════════════════════════════════════════════════════
+  const negativeProducts = await prisma.product.findMany({ where: { currentStock: { lt: 0 } } });
+  for (const p of negativeProducts) {
+    const previous = Number(p.currentStock);
+    const counted = Math.max(1, Math.round(Number(p.criticalThreshold))) + randomInt(2, 8);
+    await prisma.$transaction([
+      prisma.product.update({ where: { id: p.id }, data: { currentStock: counted } }),
+      prisma.stockMovement.create({
+        data: {
+          productId: p.id,
+          type: StockMovementType.IN,
+          quantity: counted - previous,
+          note: `Fiili sayım mutabakatı (demo veri düzeltmesi), önceki: ${previous}, sayılan: ${counted}`,
+        },
+      }),
+    ]);
+  }
+  console.log(
+    negativeProducts.length > 0
+      ? `${negativeProducts.length} negatif stoklu ürün sayım mutabakatıyla düzeltildi.`
+      : "Negatif stoklu ürün yok, atlanıyor."
+  );
 
   // ══════════════════════════════════════════════════════════════════════
   // İŞ ŞABLONLARI — Yeni İş formundaki "Şablondan doldur" listesi boş kalmasın.

@@ -736,21 +736,26 @@ class _StockListScreenState extends State<StockListScreen> {
                             ),
                           if (p.pendingPurchaseQuantity > 0) ...[
                             const Spacer(),
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 7,
-                                vertical: 2,
-                              ),
-                              decoration: BoxDecoration(
-                                color: cs.info50,
-                                borderRadius: BorderRadius.circular(
-                                  AppRadius.pill,
+                            Flexible(
+                              flex: 3,
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 7,
+                                  vertical: 2,
                                 ),
-                              ),
-                              child: Text(
-                                'Sipariş bekleyen: '
-                                '${p.pendingPurchaseQuantity.toStringAsFixed(1)} ${p.unit}',
-                                style: tx.label.copyWith(color: cs.info600),
+                                decoration: BoxDecoration(
+                                  color: cs.info50,
+                                  borderRadius: BorderRadius.circular(
+                                    AppRadius.pill,
+                                  ),
+                                ),
+                                child: Text(
+                                  'Sipariş bekleyen: '
+                                  '${p.pendingPurchaseQuantity.toStringAsFixed(1)} ${p.unit}',
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: tx.label.copyWith(color: cs.info600),
+                                ),
                               ),
                             ),
                           ],
@@ -787,103 +792,99 @@ class _StockListScreenState extends State<StockListScreen> {
                         ],
                       ),
                     ),
+                  // Stok değeri kendi satırında (uzun ad/birimde ellipsis),
+                  // eylemler altında Wrap ile — önceden hepsi tek Row'daydı ve
+                  // 5 buton + metin dar ekranda ~200 px taşıyordu ("OVERFLOWED").
                   Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text(
-                        'Mevcut: ${p.currentStock.toStringAsFixed(1)} ${p.unit} · Min: ${p.criticalThreshold.toStringAsFixed(1)} ${p.unit}',
-                        style: tx.caption.copyWith(
-                          color: p.isCritical ? cs.danger600 : cs.textSecondary,
-                          fontWeight: p.isCritical
-                              ? FontWeight.w700
-                              : FontWeight.w500,
+                      Flexible(
+                        child: Text(
+                          'Mevcut: ${p.currentStock.toStringAsFixed(1)} ${p.unit} · Min: ${p.criticalThreshold.toStringAsFixed(1)} ${p.unit}',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: tx.caption.copyWith(
+                            color: p.isCritical
+                                ? cs.danger600
+                                : cs.textSecondary,
+                            fontWeight: p.isCritical
+                                ? FontWeight.w700
+                                : FontWeight.w500,
+                          ),
                         ),
                       ),
-                      Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          if (_canManage) ...[
-                            TextButton.icon(
-                              onPressed: () => Navigator.of(context).push(
-                                MaterialPageRoute(
-                                  builder: (_) =>
-                                      StockMovementsScreen(product: p),
-                                ),
-                              ),
-                              icon: const Icon(Icons.history_rounded, size: 15),
-                              label: Text('Hareketler', style: tx.caption),
-                              style: TextButton.styleFrom(
-                                padding: EdgeInsets.zero,
-                                minimumSize: const Size(0, 0),
-                                visualDensity: VisualDensity.compact,
-                              ),
+                      // Negatif stok fiziksel olarak imkânsızdır; backend artık
+                      // raporla negatife düşürmez — yine de eski/bozuk kayıt
+                      // görünürse gözden kaçmasın.
+                      if (p.currentStock < 0) ...[
+                        const SizedBox(width: 6),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 6,
+                            vertical: 2,
+                          ),
+                          decoration: BoxDecoration(
+                            color: cs.danger50,
+                            borderRadius: BorderRadius.circular(AppRadius.pill),
+                          ),
+                          child: Text(
+                            'Negatif stok · sayım gerekli',
+                            style: tx.label.copyWith(
+                              color: cs.danger600,
+                              fontWeight: FontWeight.w700,
                             ),
-                            const SizedBox(width: 12),
-                            TextButton.icon(
-                              onPressed: () => Navigator.of(context).push(
-                                MaterialPageRoute(
-                                  builder: (_) =>
-                                      ProductBatchesScreen(product: p),
-                                ),
-                              ),
-                              icon: const Icon(Icons.sell_outlined, size: 15),
-                              label: Text('Partiler', style: tx.caption),
-                              style: TextButton.styleFrom(
-                                padding: EdgeInsets.zero,
-                                minimumSize: const Size(0, 0),
-                                visualDensity: VisualDensity.compact,
-                              ),
-                            ),
-                            const SizedBox(width: 12),
-                            TextButton.icon(
-                              onPressed: () => _showCountSheet(p),
-                              icon: const Icon(
-                                Icons.fact_check_outlined,
-                                size: 15,
-                              ),
-                              label: Text('Sayım', style: tx.caption),
-                              style: TextButton.styleFrom(
-                                padding: EdgeInsets.zero,
-                                minimumSize: const Size(0, 0),
-                                visualDensity: VisualDensity.compact,
-                              ),
-                            ),
-                            const SizedBox(width: 12),
-                          ],
-                          if (_canRequestPurchase)
-                            TextButton.icon(
-                              onPressed: () => _showPurchaseSheet(p),
-                              icon: const Icon(
-                                Icons.shopping_cart_outlined,
-                                size: 15,
-                              ),
-                              label: Text('Talep', style: tx.caption),
-                              style: TextButton.styleFrom(
-                                padding: EdgeInsets.zero,
-                                minimumSize: const Size(0, 0),
-                                visualDensity: VisualDensity.compact,
-                              ),
-                            ),
-                          if (_canManage) ...[
-                            const SizedBox(width: 12),
-                            TextButton.icon(
-                              onPressed: () => _showRestockSheet(p),
-                              icon: const Icon(
-                                Icons.add_box_outlined,
-                                size: 15,
-                              ),
-                              label: Text('Giriş', style: tx.caption),
-                              style: TextButton.styleFrom(
-                                padding: EdgeInsets.zero,
-                                minimumSize: const Size(0, 0),
-                                visualDensity: VisualDensity.compact,
-                              ),
-                            ),
-                          ],
-                        ],
-                      ),
+                          ),
+                        ),
+                      ],
                     ],
                   ),
+                  if (_canManage || _canRequestPurchase) ...[
+                    const SizedBox(height: 4),
+                    Wrap(
+                      spacing: 12,
+                      runSpacing: 2,
+                      children: [
+                        if (_canManage) ...[
+                          _CardAction(
+                            icon: Icons.history_rounded,
+                            label: 'Hareketler',
+                            onPressed: () => Navigator.of(context).push(
+                              MaterialPageRoute(
+                                builder: (_) =>
+                                    StockMovementsScreen(product: p),
+                              ),
+                            ),
+                          ),
+                          _CardAction(
+                            icon: Icons.sell_outlined,
+                            label: 'Partiler',
+                            onPressed: () => Navigator.of(context).push(
+                              MaterialPageRoute(
+                                builder: (_) =>
+                                    ProductBatchesScreen(product: p),
+                              ),
+                            ),
+                          ),
+                          _CardAction(
+                            icon: Icons.fact_check_outlined,
+                            label: 'Sayım',
+                            onPressed: () => _showCountSheet(p),
+                          ),
+                        ],
+                        if (_canRequestPurchase)
+                          _CardAction(
+                            icon: Icons.shopping_cart_outlined,
+                            label: 'Talep',
+                            onPressed: () => _showPurchaseSheet(p),
+                          ),
+                        if (_canManage)
+                          _CardAction(
+                            icon: Icons.add_box_outlined,
+                            label: 'Giriş',
+                            onPressed: () => _showRestockSheet(p),
+                          ),
+                      ],
+                    ),
+                  ],
                 ],
               ),
             ),
@@ -1102,6 +1103,33 @@ class _ProductFormScreenState extends State<_ProductFormScreen> {
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+/// Stok kartı alt eylemi (Hareketler/Partiler/Sayım/Talep/Giriş) — Wrap
+/// içinde sıkışık metin butonu.
+class _CardAction extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final VoidCallback onPressed;
+  const _CardAction({
+    required this.icon,
+    required this.label,
+    required this.onPressed,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return TextButton.icon(
+      onPressed: onPressed,
+      icon: Icon(icon, size: 15),
+      label: Text(label, style: context.text.caption),
+      style: TextButton.styleFrom(
+        padding: EdgeInsets.zero,
+        minimumSize: const Size(0, 32),
+        visualDensity: VisualDensity.compact,
       ),
     );
   }

@@ -515,6 +515,28 @@ export async function deleteJob(req: Request, res: Response) {
   return res.status(204).send();
 }
 
+function insufficientStockMessage(p: { name: string; unit: string; currentStock: Prisma.Decimal | number }): string {
+  return `Stokta yeterli "${p.name}" yok (kayıtlı stok: ${Number(p.currentStock)} ${p.unit}). Önce stok girişi veya sayımı yapılmalı.`;
+}
+
+class InsufficientStockError extends Error {}
+
+/**
+ * Stok negatife düşemez: koşullu updateMany (currentStock >= miktar) bir
+ * iyimser kilittir — ön kontrolden sonra eşzamanlı başka bir rapor stoğu
+ * tüketmişse güncelleme 0 satır döner ve transaction geri alınır.
+ */
+async function decrementStockOrThrow(tx: Prisma.TransactionClient, productId: string, quantity: number): Promise<void> {
+  const updated = await tx.product.updateMany({
+    where: { id: productId, currentStock: { gte: quantity } },
+    data: { currentStock: { decrement: quantity } },
+  });
+  if (updated.count === 0) {
+    const p = await tx.product.findUniqueOrThrow({ where: { id: productId }, select: { name: true, unit: true, currentStock: true } });
+    throw new InsufficientStockError(insufficientStockMessage(p));
+  }
+}
+
 export async function createJobReport(req: Request, res: Response) {
   const user = req.user!;
   const job = await prisma.job.findUnique({ where: { id: idParam(req) } });
@@ -541,12 +563,27 @@ export async function createJobReport(req: Request, res: Response) {
     return res.status(400).json({ error: "Aynı ürün raporda birden fazla kez seçilemez" });
   }
 
+  // Ürün başına istenen çıkış miktarı (eski tekli alan + çoklu satırlar).
+  const requested = new Map<string, number>();
+  if (data.productId && data.quantity) requested.set(data.productId, data.quantity);
+  for (const p of products ?? []) requested.set(p.productId, p.quantity);
+
   if (productIds.length > 0) {
-    const found = await prisma.product.findMany({ where: { id: { in: productIds } }, select: { id: true } });
+    const found = await prisma.product.findMany({
+      where: { id: { in: productIds } },
+      select: { id: true, name: true, unit: true, currentStock: true },
+    });
     const foundIds = new Set(found.map((p) => p.id));
     const missing = productIds.filter((id) => !foundIds.has(id));
     if (missing.length > 0) {
       return res.status(404).json({ error: "Ürün bulunamadı" });
+    }
+    // İş kuralı: stok negatife düşemez. Önceden çıkış koşulsuzdu ve kayıtlı
+    // stoktan fazla kullanım -6 L gibi imkânsız değerler üretiyordu. Kayıtlı
+    // stok yetersizse önce stok girişi/sayımı yapılmalı (müdür/patron).
+    const short = found.find((p) => Number(p.currentStock) < (requested.get(p.id) ?? 0));
+    if (short) {
+      return res.status(400).json({ error: insufficientStockMessage(short) });
     }
   }
 
@@ -554,45 +591,48 @@ export async function createJobReport(req: Request, res: Response) {
     data.signatureUrl = await saveBase64Image(signatureBase64, "imza");
   }
 
-  const report = await prisma.$transaction(async (tx) => {
-    const created = await tx.jobReport.create({
-      // Bölüm N: rapor anındaki kontrol listesi rapora kopyalanır.
-      data: { ...data, jobId: job.id, staffId, checklist: normalizeChecklist(job.checklist) as unknown as Prisma.InputJsonValue },
+  let report;
+  try {
+    report = await prisma.$transaction(async (tx) => {
+      const created = await tx.jobReport.create({
+        // Bölüm N: rapor anındaki kontrol listesi rapora kopyalanır.
+        data: { ...data, jobId: job.id, staffId, checklist: normalizeChecklist(job.checklist) as unknown as Prisma.InputJsonValue },
+      });
+
+      // Bölüm AM (9. tur): çıkış, ürünün partileri arasından en önce süresi
+      // dolacak olandan düşülür (FIFO by expiry) — bkz. lib/productBatches.ts.
+      if (data.productId && data.quantity) {
+        await decrementStockOrThrow(tx, data.productId, data.quantity);
+        await consumeFromBatches(tx, {
+          productId: data.productId,
+          quantity: data.quantity,
+          relatedJobReportId: created.id,
+          note: `İş raporu: ${job.serviceType}`,
+        });
+      }
+
+      for (const p of products ?? []) {
+        const line = await tx.jobReportProduct.create({
+          data: { jobReportId: created.id, productId: p.productId, quantity: p.quantity },
+        });
+        await decrementStockOrThrow(tx, p.productId, p.quantity);
+        await consumeFromBatches(tx, {
+          productId: p.productId,
+          quantity: p.quantity,
+          relatedJobReportProductId: line.id,
+          note: `İş raporu: ${job.serviceType}`,
+        });
+      }
+
+      return created;
     });
-
-    // Bölüm AM (9. tur): çıkış, ürünün partileri arasından en önce süresi
-    // dolacak olandan düşülür (FIFO by expiry) — bkz. lib/productBatches.ts.
-    if (data.productId && data.quantity) {
-      await tx.product.update({
-        where: { id: data.productId },
-        data: { currentStock: { decrement: data.quantity } },
-      });
-      await consumeFromBatches(tx, {
-        productId: data.productId,
-        quantity: data.quantity,
-        relatedJobReportId: created.id,
-        note: `İş raporu: ${job.serviceType}`,
-      });
+  } catch (err) {
+    // Ön kontrol ile transaction arasında başka bir rapor aynı stoğu tüketmiş.
+    if (err instanceof InsufficientStockError) {
+      return res.status(409).json({ error: err.message });
     }
-
-    for (const p of products ?? []) {
-      const line = await tx.jobReportProduct.create({
-        data: { jobReportId: created.id, productId: p.productId, quantity: p.quantity },
-      });
-      await tx.product.update({
-        where: { id: p.productId },
-        data: { currentStock: { decrement: p.quantity } },
-      });
-      await consumeFromBatches(tx, {
-        productId: p.productId,
-        quantity: p.quantity,
-        relatedJobReportProductId: line.id,
-        note: `İş raporu: ${job.serviceType}`,
-      });
-    }
-
-    return created;
-  });
+    throw err;
+  }
 
   for (const productId of productIds) {
     await checkLowStockAndNotify(productId);
