@@ -329,7 +329,12 @@ class _BrandHeader extends StatelessWidget {
                 ),
                 const SizedBox(width: 12),
                 Expanded(
+                  // min: Stack içindeki Padding bandın tüm yüksekliğini
+                  // alabildiği için Column varsayılan (max) ile ~190px'e
+                  // uzuyor, Row da 52px logoyu bu yüksekliğin ortasına
+                  // indiriyordu — logo başlığın altına kayıyordu.
                   child: Column(
+                    mainAxisSize: MainAxisSize.min,
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
