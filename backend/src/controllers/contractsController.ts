@@ -115,6 +115,8 @@ export async function findOverdueRecurringContracts(now = new Date()) {
   const overdue = await prisma.contract.findMany({
     where: {
       status: "ACTIVE",
+      // Süresi dolmuş sözleşme iş üretmez (cron.generateRecurringJobs ile aynı filtre) — gecikme değil.
+      endDate: { gt: now },
       recurrenceType: { not: null },
       nextGenerationDate: { lt: now },
       // Bölüm Q: duraklatılmış sözleşmede iş üretilmemesi beklenen davranış — gecikme değil.

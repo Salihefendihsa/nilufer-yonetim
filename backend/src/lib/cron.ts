@@ -36,6 +36,24 @@ export async function resetExpiredStaffStatuses(): Promise<number> {
  *   (gerçek dev verisine dokunmamak adına); üretimde verilmez → tüm vadesi
  *   gelmiş sözleşmeler.
  */
+/**
+ * Bitiş tarihi geçmiş ama hâlâ ACTIVE görünen sözleşmeleri EXPIRED'a çeker.
+ * Eskiden otomatik geçiş yoktu: süresi dolan sözleşme "aktif" sayılıyor ve
+ * periyodik iş üretmeye devam ediyordu (bkz. docs/HEALTH_AUDIT.md V-4).
+ * generateRecurringJobs'tan önce aynı gece kilidi içinde çalışır.
+ */
+export async function expireEndedContracts(onlyContractIds?: string[]): Promise<number> {
+  const result = await prisma.contract.updateMany({
+    where: {
+      status: "ACTIVE",
+      endDate: { lt: new Date() },
+      ...(onlyContractIds ? { id: { in: onlyContractIds } } : {}),
+    },
+    data: { status: "EXPIRED" },
+  });
+  return result.count;
+}
+
 export async function generateRecurringJobs(onlyContractIds?: string[]) {
   const now = new Date();
 
@@ -43,6 +61,10 @@ export async function generateRecurringJobs(onlyContractIds?: string[]) {
     where: {
       recurrenceType: { not: null },
       nextGenerationDate: { lte: now },
+      // Yalnızca yürürlükteki sözleşmeler: süresi dolmuş / iptal edilmiş
+      // sözleşme için periyodik iş üretilmez.
+      status: "ACTIVE",
+      endDate: { gt: now },
       // Bölüm Q: müşterinin duraklattığı sözleşme için iş üretilmez.
       isPaused: false,
       ...(onlyContractIds ? { id: { in: onlyContractIds } } : {}),
@@ -76,6 +98,7 @@ export async function generateRecurringJobs(onlyContractIds?: string[]) {
 export function startRecurringJobsCron() {
   cron.schedule("0 2 * * *", () => {
     withCronLock("recurring-jobs", async () => {
+      await expireEndedContracts();
       await generateRecurringJobs();
     }).catch((err) => {
       console.error("Recurring job generation failed:", err);
