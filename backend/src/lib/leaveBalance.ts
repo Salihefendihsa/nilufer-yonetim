@@ -21,6 +21,39 @@ export function leaveDaysInYear(start: Date, end: Date, year: number): number {
   return Math.round((e.getTime() - s.getTime()) / DAY) + 1;
 }
 
+/** [start, end] aralığındaki, `year` içine düşen takvim günleri (yerel gün anahtarı "YYYY-M-D"). */
+function leaveDayKeysInYear(start: Date, end: Date, year: number): string[] {
+  const s = new Date(Math.max(start.getTime(), new Date(year, 0, 1).getTime()));
+  const e = new Date(Math.min(end.getTime(), new Date(year, 11, 31).getTime()));
+  s.setHours(0, 0, 0, 0);
+  e.setHours(0, 0, 0, 0);
+  const keys: string[] = [];
+  for (const d = new Date(s); d <= e; d.setDate(d.getDate() + 1)) keys.push(`${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`);
+  return keys;
+}
+
+/**
+ * Aynı personelin [start, end] ile gün bazında çakışan ONAYLI izni (varsa).
+ * Çakışan onaylı izin oluşturulamaz/onaylanamaz — eskiden aynı tarihli iki
+ * onaylı izin bakiyeden iki kez düşüyordu (bkz. docs/HEALTH_AUDIT.md V-6).
+ */
+export async function findOverlappingApprovedLeave(staffId: string, start: Date, end: Date, excludeId?: string) {
+  const dayStart = new Date(start);
+  dayStart.setHours(0, 0, 0, 0);
+  const dayEnd = new Date(end);
+  dayEnd.setHours(23, 59, 59, 999);
+  return prisma.leaveRequest.findFirst({
+    where: {
+      staffId,
+      status: LeaveRequestStatus.APPROVED,
+      startDate: { lte: dayEnd },
+      endDate: { gte: dayStart },
+      ...(excludeId ? { id: { not: excludeId } } : {}),
+    },
+    select: { id: true, startDate: true, endDate: true },
+  });
+}
+
 export interface LeaveBalance {
   year: number;
   quotaDays: number;
@@ -38,7 +71,8 @@ export async function computeLeaveBalance(staffId: string, year = new Date().get
     where: { staffId, status: LeaveRequestStatus.APPROVED, startDate: { lte: yearEnd }, endDate: { gte: yearStart } },
     select: { startDate: true, endDate: true },
   });
-  const usedDays = approved.reduce((sum, l) => sum + leaveDaysInYear(l.startDate, l.endDate, year), 0);
+  // Gün kümesi: çakışan onaylı izinler (eski veri) aynı günü iki kez düşmesin.
+  const usedDays = new Set(approved.flatMap((l) => leaveDayKeysInYear(l.startDate, l.endDate, year))).size;
   return {
     year,
     quotaDays: staff.annualLeaveQuotaDays,
