@@ -18,9 +18,13 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       <div className="flex flex-1">
         <Sidebar />
         <MobileSidebar open={mobileNavOpen} onClose={() => setMobileNavOpen(false)} />
-        <div className="flex flex-1 flex-col">
+        {/* min-w-0: flex çocuğunun varsayılan min-width:auto'su, geniş bir
+            torunun (tablo/grafik) tüm sütunu kendi genişliğine çekmesine ve
+            360px'te sayfanın yatay taşmasına yol açıyordu; tablo
+            sarmalayıcılarındaki overflow-x-auto bu sayede devreye girer. */}
+        <div className="flex min-w-0 flex-1 flex-col">
           <Header onOpenMobileNav={() => setMobileNavOpen(true)} />
-          <main className="flex-1 px-4 py-6 sm:px-6 md:px-10 md:py-10">
+          <main className="min-w-0 flex-1 px-4 py-6 sm:px-6 md:px-10 md:py-10">
             <PageTransition>{children}</PageTransition>
           </main>
         </div>
