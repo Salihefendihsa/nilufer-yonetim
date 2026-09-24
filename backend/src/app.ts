@@ -40,6 +40,7 @@ import fileRoutes from "./routes/files";
 import dataDeletionRoutes from "./routes/dataDeletionRequests";
 import announcementRoutes from "./routes/announcements";
 import complaintRoutes from "./routes/complaints";
+import staffRequestRoutes from "./routes/staffRequests";
 import calendarRoutes from "./routes/calendar";
 import pestDetectionRoutes from "./routes/pestDetections";
 import { errorHandler } from "./middleware/errorHandler";
@@ -140,6 +141,7 @@ apiRouter.use("/files", fileRoutes);
 apiRouter.use("/data-deletion-requests", dataDeletionRoutes);
 apiRouter.use("/announcements", announcementRoutes);
 apiRouter.use("/complaints", complaintRoutes);
+apiRouter.use("/staff-requests", staffRequestRoutes);
 // Bölüm AP (9. tur): token'lı ICS aboneliği — requireAuth yok (bkz. routes/calendar.ts).
 apiRouter.use("/calendar", calendarRoutes);
 

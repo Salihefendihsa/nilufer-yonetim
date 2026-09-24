@@ -22,6 +22,7 @@ import '../jobs/jobs_list_screen.dart';
 import '../messages/messages_list_screen.dart';
 import '../quotes/quotes_list_screen.dart';
 import '../stock/stock_list_screen.dart';
+import '../staff_requests/staff_requests_screen.dart';
 import 'notifications_api.dart';
 
 final _dateFormat = DateFormat('d MMMM, HH:mm', 'tr_TR');
@@ -62,6 +63,9 @@ Widget? _screenForRelatedType(String? relatedType, AppRole? role) {
       return role == AppRole.customer
           ? const MyAppointmentRequestsScreen()
           : const ApprovalsScreen();
+    // Personel talebi: ekran modu (Patron gelen kutusu / Taleplerim) rolden seçilir.
+    case 'StaffRequest':
+      return const StaffRequestsScreen();
     default:
       return null;
   }

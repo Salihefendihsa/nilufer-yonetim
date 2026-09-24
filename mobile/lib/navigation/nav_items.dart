@@ -27,6 +27,7 @@ import '../features/reports/reports_screen.dart';
 import '../features/search/search_screen.dart';
 import '../features/staff/org_chart_screen.dart';
 import '../features/staff/staff_list_screen.dart';
+import '../features/staff_requests/staff_requests_screen.dart';
 import '../features/stock/stock_list_screen.dart';
 import '../models/user.dart';
 import 'app_drawer.dart';
@@ -47,6 +48,8 @@ import 'app_drawer.dart';
 /// - Denetim & Ayarlar / Sistem Durumu / Kullanım İstatistikleri / Org
 ///   Şeması yalnızca OWNER (routes/auditLogs.ts, settings.ts, admin.ts).
 /// - Şikayetler ve Yönetici Özeti OWNER + MANAGER (web Sidebar.tsx ile aynı).
+/// - Personel Talepleri yalnızca OWNER; "Taleplerim" MANAGER/TEAM_LEAD/STAFF
+///   (routes/staffRequests.ts — aynı ekran, mod gerçek rolden seçilir).
 /// - Bekleyen Onaylar OWNER/MANAGER/TEAM_LEAD (TEAM_LEAD yalnızca izin +
 ///   saha raporu kuyruğunu görür — bkz. approvals_screen.dart).
 List<AppDrawerGroup> navGroupsFor(AppRole role) {
@@ -78,6 +81,12 @@ List<AppDrawerGroup> navGroupsFor(AppRole role) {
             'Şikayetler',
             Icons.report_problem_outlined,
             _buildComplaints,
+          ),
+          // Personel → Patron talepleri (yalnızca OWNER yanıtlar).
+          AppDrawerEntry(
+            'Personel Talepleri',
+            Icons.move_to_inbox_outlined,
+            _buildStaffRequests,
           ),
           AppDrawerEntry('Stok', Icons.inventory_2_outlined, _buildStock),
           // Bölüm T / X: OWNER için "Denetim & Ayarlar" içinde de var; burada
@@ -184,6 +193,11 @@ List<AppDrawerGroup> navGroupsFor(AppRole role) {
             Icons.report_problem_outlined,
             _buildComplaints,
           ),
+          AppDrawerEntry(
+            'Taleplerim',
+            Icons.move_to_inbox_outlined,
+            _buildStaffRequests,
+          ),
           AppDrawerEntry('Stok', Icons.inventory_2_outlined, _buildStock),
           AppDrawerEntry(
             'İş Şablonları',
@@ -269,6 +283,11 @@ List<AppDrawerGroup> navGroupsFor(AppRole role) {
           ),
           // Bölüm AN (9. tur): kişisel bordro özeti (salt görüntüleme).
           AppDrawerEntry('Bordrom', Icons.receipt_long_outlined, _buildPayslip),
+          AppDrawerEntry(
+            'Taleplerim',
+            Icons.move_to_inbox_outlined,
+            _buildStaffRequests,
+          ),
         ], title: 'Kişisel'),
       ];
 
@@ -294,6 +313,12 @@ List<AppDrawerGroup> navGroupsFor(AppRole role) {
             _buildLeaveRequests,
           ),
           AppDrawerEntry('Bordrom', Icons.receipt_long_outlined, _buildPayslip),
+          // Personel → Patron genel talep (ekipman, öneri, şikayet).
+          AppDrawerEntry(
+            'Taleplerim',
+            Icons.move_to_inbox_outlined,
+            _buildStaffRequests,
+          ),
           // Bölüm J: yapay zekâ haşere tanıma — tüm çalışan rolleri (kapsamı backend daraltır).
           AppDrawerEntry(
             'AI Analiz',
@@ -364,6 +389,7 @@ Widget _buildApprovals(BuildContext _) => const ApprovalsScreen();
 Widget _buildCustomers(BuildContext _) => const CustomersListScreen();
 Widget _buildStaff(BuildContext _) => const StaffListScreen();
 Widget _buildComplaints(BuildContext _) => const ComplaintsScreen();
+Widget _buildStaffRequests(BuildContext _) => const StaffRequestsScreen();
 Widget _buildStock(BuildContext _) => const StockListScreen();
 Widget _buildJobTemplates(BuildContext _) => const JobTemplatesScreen();
 Widget _buildCustomerTags(BuildContext _) => const CustomerTagsScreen();

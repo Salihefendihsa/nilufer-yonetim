@@ -157,6 +157,11 @@ const CASES: EndpointCase[] = [
   { method: "get", path: "/complaints", allowed: ["OWNER", "MANAGER", "CUSTOMER"] },
   { method: "get", path: `/complaints/${NIL}`, allowed: ["OWNER", "MANAGER", "CUSTOMER"] },
   { method: "patch", path: `/complaints/${NIL}`, allowed: ["OWNER", "MANAGER"], body: {} },
+  // Personel talepleri: personel açar; OWNER + personel listeler; yalnızca OWNER yanıtlar
+  { method: "post", path: "/staff-requests", allowed: ["MANAGER", "TEAM_LEAD", "STAFF"], body: {} },
+  { method: "get", path: "/staff-requests", allowed: ["OWNER", "MANAGER", "TEAM_LEAD", "STAFF"] },
+  { method: "get", path: `/staff-requests/${NIL}`, allowed: ["OWNER", "MANAGER", "TEAM_LEAD", "STAFF"] },
+  { method: "patch", path: `/staff-requests/${NIL}`, allowed: ["OWNER"], body: {} },
   // Bölüm AN (9. tur) — kişisel bordro: STAFF-only, yönetim 403
   { method: "get", path: "/staff/me/payslip", allowed: ["STAFF", "TEAM_LEAD"] },
   // Bölüm AM (9. tur) — parti/SKT

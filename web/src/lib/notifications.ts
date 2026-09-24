@@ -1,4 +1,5 @@
 import { AlertTriangle, MessageCircle, Wallet, Wrench, type LucideIcon } from "lucide-react";
+import type { Role } from "./auth";
 
 /**
  * Bildirim kategorileri tek yerde tanımlı: hem Header'daki çekmece hem de
@@ -82,7 +83,7 @@ export function categorizeNotification(title: string): NotificationCategory {
  * Not: Şu an ilgili LİSTE ekranına yönlendirir (ör. /isler), kaydı otomatik
  * seçip vurgulamaz — bu daha ince bir iyileştirme olarak açık bırakılmıştır.
  */
-export function getNotificationHref(n: { relatedType: string | null; relatedId: string | null }): string | null {
+export function getNotificationHref(n: { relatedType: string | null; relatedId: string | null }, role?: Role): string | null {
   if (!n.relatedType) return null;
   switch (n.relatedType) {
     case "Job":
@@ -95,6 +96,9 @@ export function getNotificationHref(n: { relatedType: string | null; relatedId: 
       return "/bekleyen-onaylar";
     case "Conversation":
       return "/mesajlar";
+    // Personel talebi: Patron gelen kutusuna, talep sahibi kendi listesine.
+    case "StaffRequest":
+      return role === "OWNER" ? "/personel-talepleri" : "/taleplerim";
     default:
       return null;
   }
