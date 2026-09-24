@@ -345,6 +345,34 @@
   --shadow-pop: 0 8px 32px rgba(0, 0, 0, 0.4);
 }
 
+/*
+ * Koyu temada `text-primary-700` kontrastı (docs/HEALTH_AUDIT.md U-2).
+ * --primary-700 koyu temada bilinçli olarak AÇIK tema değerinde kalır (73
+ * yerde `bg-primary-700` / `hover:bg-primary-700` beyaz yazılı buton/panel
+ * zemini — bkz. yukarıdaki "Bilinçli tasarım kararı" notu). Aynı değişken
+ * METİN rengi olarak koyu zeminde 1,7:1 kalıyordu. Bu yüzden yalnızca metin
+ * yardımcıları, koyu temada ayrı bir tokena yönlendirilir; kullanım yerlerine
+ * dokunulmaz. --primary-700-text (148 199 158) koyu temadaki tüm zeminlerde
+ * ≥ 5,1:1 (primary-50: 7,9 · surface-card: 8,7 · primary-200: 5,1).
+ * İki tetikleyici (sistem tercihi + elle "Koyu") yukarıdaki bloklarla aynı.
+ */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --primary-700-text: 148 199 158;
+  }
+  :root:not([data-theme="light"]) .text-primary-700,
+  :root:not([data-theme="light"]) .hover\:text-primary-700:hover {
+    color: rgb(var(--primary-700-text) / var(--tw-text-opacity, 1));
+  }
+}
+:root[data-theme="dark"] {
+  --primary-700-text: 148 199 158;
+}
+:root[data-theme="dark"] .text-primary-700,
+:root[data-theme="dark"] .hover\:text-primary-700:hover {
+  color: rgb(var(--primary-700-text) / var(--tw-text-opacity, 1));
+}
+
 body {
   color: rgb(var(--foreground));
   background: rgb(var(--background));
