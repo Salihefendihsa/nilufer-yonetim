@@ -3,6 +3,28 @@
 Bu rapor bir "her şeyi düzelt" turu değil; bulgular karar verilmek üzere listelenmiştir.
 Tek kod değişikliği: mobil giriş ekranındaki logo kayması (Bölüm 4.4).
 
+## Düzeltme durumu (2. tur, 24 Eylül 2026)
+
+Seçilen 12 madde düzeltildi; ayrıntılar ilgili commit mesajlarında.
+
+| Madde | Rapor | Durum |
+|---|---|---|
+| Tema butonu + Row sonsuz genişlik çökmesi | 1.1 #1–2 | ✅ 115 buton tarandı, 4 buton düzeltildi, regresyon testi |
+| Test hesapları | V-1 | ✅ 16 hesap silindi (`npm run db:cleanup-residue`) |
+| Test bildirim sızıntısı + kirli bildirimler | V-2 | ✅ 3.535 bildirim silindi; TestContext artık kendi izini temizliyor |
+| Genel istek limiti + mobil 429 mesajı | G-1, U-6 | ✅ Kullanıcı başına 2000/15 dk, kimliksiz IP başına 300 |
+| Web 360px taşma | U-1 | ✅ Layout `min-w-0` |
+| Süresi dolan sözleşmeler | V-4 | ✅ Otomatik EXPIRED + üretim filtresi; 3 kayıt düzeltildi |
+| Negatif bakiye | V-3 | ✅ İptaller hariç formül; demo ödemeler işlerle eşlendi (negatif 27 → 0) |
+| İzin çakışması | V-6 | ✅ 409 + gün kümesi; mükerrer kayıt düzeltildi |
+| Bildirim yönlendirmeleri | 1.1 #3 | ✅ Web + mobil, 7 tür (+ Customer/User) |
+| Karanlık mod kontrastı | U-2 | ✅ Tek yerden (globals.css), ≥ 5,1:1 |
+| Üretim saat dilimi + saat dilimsiz tarihler | §2.3 | ✅ Dockerfile `TZ`; mobil 14 alan `apiDate`/`apiInstant` |
+| RBAC matrisi | G-2 | ✅ 16 satır eklendi |
+
+Açık kalanlar (bu turda seçilmedi): V-5 (net kâr formülü), V-7, V-8, V-9, 1.1 #4–7, U-3–U-5.
+Not: demo `owner@nilufer.com` hesabının görünen adı veritabanında "Test Owner" (seed'de "Salih Patron"); demo hesaplara dokunulmadığı için değiştirilmedi.
+
 ## Yöntem ve sınırlar
 
 - **Veri**: her hesaplanan alan curl ile API'den alındı, aynı değer salt-okunur SQL ile bağımsız hesaplanıp karşılaştırıldı.

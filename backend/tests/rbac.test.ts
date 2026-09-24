@@ -169,6 +169,23 @@ const CASES: EndpointCase[] = [
   { method: "get", path: `/products/${NIL}/batches`, allowed: ["OWNER", "MANAGER"] },
   // Bölüm AE (7. tur)
   { method: "get", path: "/analytics/quote-response-time", allowed: ["OWNER", "MANAGER"] },
+  // HEALTH_AUDIT G-2: matriste olmayan uçlar — tedarikçi (yönetim), ilçe ve
+  // hizmet türü tanımları (okuma personel, yazma yalnızca Patron), oturum
+  // raporu (Patron), AI analizleri (müşteri hariç).
+  { method: "get", path: "/suppliers", allowed: ["OWNER", "MANAGER"] },
+  { method: "post", path: "/suppliers", allowed: ["OWNER", "MANAGER"], body: {} },
+  { method: "patch", path: `/suppliers/${NIL}`, allowed: ["OWNER", "MANAGER"], body: {} },
+  { method: "delete", path: `/suppliers/${NIL}`, allowed: ["OWNER", "MANAGER"] },
+  { method: "get", path: "/districts", allowed: ["OWNER", "MANAGER", "TEAM_LEAD", "STAFF"] },
+  { method: "post", path: "/districts", allowed: ["OWNER"], body: {} },
+  { method: "patch", path: `/districts/${NIL}`, allowed: ["OWNER"], body: {} },
+  { method: "delete", path: `/districts/${NIL}`, allowed: ["OWNER"] },
+  { method: "get", path: "/service-types", allowed: ["OWNER", "MANAGER", "TEAM_LEAD", "STAFF"] },
+  { method: "post", path: "/service-types", allowed: ["OWNER"], body: {} },
+  { method: "patch", path: `/service-types/${NIL}`, allowed: ["OWNER"], body: {} },
+  { method: "delete", path: `/service-types/${NIL}`, allowed: ["OWNER"] },
+  { method: "get", path: "/sessions/report", allowed: ["OWNER"] },
+  { method: "get", path: "/pest-detections", allowed: ["OWNER", "MANAGER", "TEAM_LEAD", "STAFF"] },
   // Bölüm AH (7. tur) — STAFF/TEAM_LEAD route'tan geçer ama uydurma id kendi kaydı değil → 403
   { method: "get", path: `/staff/${NIL}/leave-balance`, allowed: ["OWNER", "MANAGER"] },
 ];
