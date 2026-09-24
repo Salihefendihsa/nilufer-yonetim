@@ -448,27 +448,33 @@ class _DataDeletionRequestsScreenState
                         ),
                         if (r.isPending && isOwner) ...[
                           const SizedBox(height: 8),
+                          // Tema butonları sonsuz min. genişlikli (Size.fromHeight);
+                          // Row içinde Expanded olmadan layout hatası verir.
                           Row(
                             children: [
-                              ElevatedButton.icon(
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: cs.danger500,
+                              Expanded(
+                                child: ElevatedButton.icon(
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: cs.danger500,
+                                  ),
+                                  onPressed: _busyId == null
+                                      ? () => _approve(r)
+                                      : null,
+                                  icon: const Icon(
+                                    Icons.delete_forever_outlined,
+                                    size: 16,
+                                  ),
+                                  label: const Text('Anonimleştir'),
                                 ),
-                                onPressed: _busyId == null
-                                    ? () => _approve(r)
-                                    : null,
-                                icon: const Icon(
-                                  Icons.delete_forever_outlined,
-                                  size: 16,
-                                ),
-                                label: const Text('Anonimleştir'),
                               ),
                               const SizedBox(width: 8),
-                              OutlinedButton(
-                                onPressed: _busyId == null
-                                    ? () => _reject(r)
-                                    : null,
-                                child: const Text('Reddet'),
+                              Expanded(
+                                child: OutlinedButton(
+                                  onPressed: _busyId == null
+                                      ? () => _reject(r)
+                                      : null,
+                                  child: const Text('Reddet'),
+                                ),
                               ),
                             ],
                           ),

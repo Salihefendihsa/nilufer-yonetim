@@ -158,6 +158,14 @@ class _ClockCardState extends State<ClockCard> {
                 const SizedBox(width: 8),
                 if (!clockedIn)
                   ElevatedButton.icon(
+                    // Tema varsayılanı `minimumSize: Size.fromHeight(48)`
+                    // (genişlik sonsuz): Row'un esnek olmayan çocuğunda
+                    // "BoxConstraints forces an infinite width" hatası verir,
+                    // kart/ekran hiç çizilmez. Sonlu minimumSize ile geçersiz
+                    // kılınır (Çıkış Yap butonu da aynı).
+                    style: ElevatedButton.styleFrom(
+                      minimumSize: const Size(64, 48),
+                    ),
                     onPressed: _busy ? null : () => _act('clock-in'),
                     icon: const Icon(Icons.login_rounded, size: 16),
                     label: const Text('Giriş Yap'),
@@ -167,6 +175,7 @@ class _ClockCardState extends State<ClockCard> {
                     onPressed: _busy ? null : () => _act('clock-out'),
                     style: OutlinedButton.styleFrom(
                       foregroundColor: cs.danger600,
+                      minimumSize: const Size(64, 48),
                     ),
                     icon: const Icon(Icons.logout_rounded, size: 16),
                     label: const Text('Çıkış Yap'),
