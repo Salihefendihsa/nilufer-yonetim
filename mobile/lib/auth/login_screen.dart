@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import '../models/user.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_palette.dart';
 import '../theme/app_text_styles.dart';
@@ -10,9 +9,9 @@ import 'auth_provider.dart';
 import 'forgot_password_screen.dart';
 
 /// Bölüm R (4. tur): Giriş ekranı yeniden tasarımı — web giriş sayfasıyla
-/// aynı ilkeler: üstte marka alanı (logo + slogan + ince desen), ikonlu rol
-/// seçici kartlar (seçim rolü doğrular — bkz. AuthProvider.login expectedRole),
-/// form, sakin hata kutusu, tema düğmesi. 2FA/şifre sıfırlama geçişleri
+/// aynı ilkeler: üstte marka alanı (logo + slogan + ince desen), tek ortak
+/// form (rol seçimi YOK — giriş sonrası RoleShell sunucunun döndürdüğü gerçek
+/// role göre doğru kabuğu açar), sakin hata kutusu, tema düğmesi. 2FA/şifre sıfırlama geçişleri
 /// main.dart'taki AnimatedSwitcher ve fade rotalarla yumuşatıldı.
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -21,53 +20,11 @@ class LoginScreen extends StatefulWidget {
   State<LoginScreen> createState() => _LoginScreenState();
 }
 
-class _RoleOption {
-  final AppRole role;
-  final String label;
-  final IconData icon;
-  final String hint;
-  const _RoleOption(this.role, this.label, this.icon, this.hint);
-}
-
-const _roleOptions = <_RoleOption>[
-  _RoleOption(
-    AppRole.owner,
-    'Patron',
-    Icons.workspace_premium_rounded,
-    'Şirketin tüm görünümü',
-  ),
-  _RoleOption(
-    AppRole.manager,
-    'Müdür',
-    Icons.work_outline_rounded,
-    'Operasyon ve finans',
-  ),
-  _RoleOption(
-    AppRole.teamLead,
-    'Şef',
-    Icons.groups_outlined,
-    'Ekip planlama ve takip',
-  ),
-  _RoleOption(
-    AppRole.staff,
-    'Personel',
-    Icons.build_outlined,
-    'Günlük işler ve raporlar',
-  ),
-  _RoleOption(
-    AppRole.customer,
-    'Müşteri',
-    Icons.home_outlined,
-    'Hizmetler ve randevular',
-  ),
-];
-
 class _LoginScreenState extends State<LoginScreen> {
   final _formKey = GlobalKey<FormState>();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   bool _obscure = true;
-  _RoleOption _selected = _roleOptions.first;
 
   @override
   void dispose() {
@@ -83,11 +40,7 @@ class _LoginScreenState extends State<LoginScreen> {
     // X-Client-Type/X-Mobile-App-Key header'larını otomatik ekler; backend bu
     // ikisini doğrularsa reCAPTCHA kontrolünü atlar (bkz.
     // backend/src/controllers/authController.ts:isVerifiedMobileClient).
-    await auth.login(
-      _emailController.text.trim(),
-      _passwordController.text,
-      expectedRole: _selected.role,
-    );
+    await auth.login(_emailController.text.trim(), _passwordController.text);
   }
 
   void _openForgotPassword() {
@@ -180,97 +133,14 @@ class _LoginScreenState extends State<LoginScreen> {
                     mainAxisSize: MainAxisSize.min,
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      // Rol seçici — ikonlu kartlar, seçili olan yumuşakça vurgulanır.
-                      SizedBox(
-                        height: 78,
-                        child: ListView.separated(
-                          scrollDirection: Axis.horizontal,
-                          itemCount: _roleOptions.length,
-                          separatorBuilder: (_, _) => const SizedBox(width: 8),
-                          itemBuilder: (context, i) {
-                            final o = _roleOptions[i];
-                            final active = o.role == _selected.role;
-                            return GestureDetector(
-                              onTap: auth.isBusy
-                                  ? null
-                                  : () {
-                                      setState(() => _selected = o);
-                                      context.read<AuthProvider>().loginError =
-                                          null;
-                                    },
-                              child: AnimatedContainer(
-                                duration: const Duration(milliseconds: 200),
-                                curve: Curves.easeOut,
-                                width: 76,
-                                padding: const EdgeInsets.symmetric(
-                                  vertical: 10,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: active
-                                      ? cs.primary600
-                                      : cs.surfaceSubtle,
-                                  borderRadius: BorderRadius.circular(16),
-                                  border: Border.all(
-                                    color: active
-                                        ? cs.primary600
-                                        : cs.borderDefault,
-                                  ),
-                                  boxShadow: active
-                                      ? [
-                                          BoxShadow(
-                                            color: cs.primary600.withValues(
-                                              alpha: 0.28,
-                                            ),
-                                            blurRadius: 12,
-                                            offset: const Offset(0, 4),
-                                          ),
-                                        ]
-                                      : null,
-                                ),
-                                child: Column(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    Icon(
-                                      o.icon,
-                                      size: 22,
-                                      color: active
-                                          ? Colors.white
-                                          : cs.textSecondary,
-                                    ),
-                                    const SizedBox(height: 6),
-                                    Text(
-                                      o.label,
-                                      style: tx.caption.copyWith(
-                                        fontWeight: FontWeight.w700,
-                                        color: active
-                                            ? Colors.white
-                                            : cs.textSecondary,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            );
-                          },
-                        ),
+                      Text(
+                        'Giriş Yap',
+                        style: tx.display.copyWith(fontWeight: FontWeight.w800),
                       ),
-                      const SizedBox(height: 14),
-                      AnimatedSwitcher(
-                        duration: const Duration(milliseconds: 180),
-                        child: Column(
-                          key: ValueKey(_selected.role),
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              '${_selected.label} Girişi',
-                              style: tx.display.copyWith(
-                                fontWeight: FontWeight.w800,
-                              ),
-                            ),
-                            const SizedBox(height: 2),
-                            Text(_selected.hint, style: tx.bodySmall),
-                          ],
-                        ),
+                      const SizedBox(height: 2),
+                      Text(
+                        'Hesap bilgilerinizle giriş yapın — size ait panel otomatik açılır.',
+                        style: tx.bodySmall,
                       ),
                       const SizedBox(height: 18),
                       TextFormField(

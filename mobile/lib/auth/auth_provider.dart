@@ -21,6 +21,7 @@ class AuthProvider extends ChangeNotifier {
   bool isBusy = false;
   bool mustChangePassword = false;
   Map<String, dynamic>? impersonationMeta;
+
   /// /auth/login "twoFactorRequired" döndüğünde yalnızca /auth/2fa/verify'de
   /// kullanılabilecek kısa ömürlü kimlik — bkz. docs/NEW_FEATURES_TOUR.md Bölüm D.
   String? twoFactorPreToken;
@@ -70,27 +71,13 @@ class AuthProvider extends ChangeNotifier {
     super.dispose();
   }
 
-  /// Bölüm R (4. tur): giriş ekranındaki rol seçimi — hesabın gerçek rolü
-  /// seçilenle uyuşmazsa oturum açılmaz, açıklayıcı hata gösterilir (web
-  /// giriş sayfasıyla aynı davranış). 2FA akışında ikinci adımda kontrol edilir.
-  AppRole? _expectedRole;
-
-  bool _roleMismatch(AppUser u) =>
-      _expectedRole != null && u.role != _expectedRole;
-
-  String _roleMismatchMessage(AppUser u) =>
-      'Bu hesap "${roleLabelTr(u.role)}" rolüne ait. '
-      'Üstten "${roleLabelTr(u.role)}" seçip tekrar deneyin.';
-
   Future<bool> login(
     String email,
     String password, {
     String? recaptchaToken,
-    AppRole? expectedRole,
   }) async {
     isBusy = true;
     loginError = null;
-    _expectedRole = expectedRole;
     notifyListeners();
     try {
       final res = await ApiClient.instance.post<Map<String, dynamic>>(
@@ -108,11 +95,9 @@ class AuthProvider extends ChangeNotifier {
       }
       final token = res['token'] as String;
       final userJson = res['user'] as Map<String, dynamic>;
+      // Rol seçimi yok: kabuk (RoleShell) yalnızca sunucunun döndürdüğü
+      // gerçek role göre açılır.
       final parsed = AppUser.fromJson(userJson);
-      if (_roleMismatch(parsed)) {
-        loginError = _roleMismatchMessage(parsed);
-        return false;
-      }
       mustChangePassword = res['mustChangePassword'] as bool? ?? false;
       await SecureStorage.saveSession(
         token: token,
@@ -151,13 +136,6 @@ class AuthProvider extends ChangeNotifier {
       final token = res['token'] as String;
       final userJson = res['user'] as Map<String, dynamic>;
       final parsed = AppUser.fromJson(userJson);
-      if (_roleMismatch(parsed)) {
-        // Doğrulama geçti ama rol uyuşmadı — giriş ekranına dön, hata göster.
-        loginError = _roleMismatchMessage(parsed);
-        twoFactorPreToken = null;
-        status = AuthStatus.unauthenticated;
-        return false;
-      }
       mustChangePassword = res['mustChangePassword'] as bool? ?? false;
       await SecureStorage.saveSession(
         token: token,
