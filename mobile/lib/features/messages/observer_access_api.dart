@@ -1,3 +1,4 @@
+import '../../core/api_dates.dart';
 import '../../core/api_client.dart';
 import '../../models/observer_access_grant.dart';
 
@@ -26,7 +27,7 @@ class ObserverAccessApi {
         'isEmergency': isEmergency,
         if (!isEmergency && duration != null) 'duration': duration,
         if (!isEmergency && expiresAt != null)
-          'expiresAt': expiresAt.toIso8601String(),
+          'expiresAt': apiInstant(expiresAt),
       },
     );
     return ObserverAccessGrant.fromJson(json);
