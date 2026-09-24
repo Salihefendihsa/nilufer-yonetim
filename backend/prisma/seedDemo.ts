@@ -26,6 +26,7 @@ import {
   StaffBonusStatus,
   StockMovementType,
 } from "@prisma/client";
+import { backfillJobsForUncoveredPayments } from "./demoConsistency";
 
 const prisma = new PrismaClient();
 
@@ -1200,6 +1201,15 @@ async function main() {
   } else {
     console.log(`Bugün için zaten ${todaysJobs} iş var, atlanıyor.`);
   }
+
+  // ══════════════════════════════════════════════════════════════════════
+  // ÖDEME ↔ İŞ TUTARLILIĞI — yukarıdaki trend ödemeleri işlerden bağımsız
+  // dağıtıldığı için, karşılanmayan her ödeme tutarına ödeme gününe tamamlanmış
+  // bir geçmiş iş eklenir; bakiye hiçbir müşteride negatife düşmez
+  // (bkz. prisma/demoConsistency.ts, docs/HEALTH_AUDIT.md V-3). İdempotent.
+  // ══════════════════════════════════════════════════════════════════════
+  const backfill = await backfillJobsForUncoveredPayments(prisma, { apply: true });
+  console.log(`Ödeme↔iş tutarlılığı: ${backfill.jobsCreated} geçmiş iş eklendi (${backfill.customersFixed} müşteri).`);
 
   console.log("Demo veri seed'i tamamlandı.");
 }

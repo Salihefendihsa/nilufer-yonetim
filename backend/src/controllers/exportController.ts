@@ -5,6 +5,7 @@ import { Role } from "@prisma/client";
 import { prisma } from "../lib/prisma";
 import { idParam } from "../lib/params";
 import { canAccessJob, getCustomerIdForUser } from "../lib/access";
+import { billedTotal } from "../lib/balance";
 import {
   computeRevenueTrend,
   computeServiceBreakdown,
@@ -142,7 +143,7 @@ export async function exportCustomersExcel(_req: Request, res: Response) {
   ];
 
   for (const customer of customers) {
-    const totalPriced = customer.jobs.reduce((sum, job) => sum + Number(job.price ?? 0), 0);
+    const totalPriced = billedTotal(customer.jobs);
     const totalPaid = customer.payments.reduce((sum, payment) => sum + Number(payment.amount), 0);
     sheet.addRow({
       name: customer.fullName,

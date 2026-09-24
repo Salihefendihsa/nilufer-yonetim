@@ -10,6 +10,7 @@ import { idParam } from "../lib/params";
 import { getPagination, paginatedResponse } from "../lib/pagination";
 import { recordAuditLog } from "../lib/auditLog";
 import { getCustomerIdForUser, getStaffIdForUser } from "../lib/access";
+import { BILLABLE_JOB_WHERE, billedTotal } from "../lib/balance";
 
 const createSchema = z.object({
   fullName: z.string().min(1),
@@ -73,7 +74,7 @@ export async function listCustomers(req: Request, res: Response) {
   }
 
   const customerIds = withTags.map((c) => c.id);
-  const [jobAgg, paymentAgg, activeContracts, completedAgg] = customerIds.length
+  const [jobAgg, paymentAgg, activeContracts, completedAgg, billedAgg] = customerIds.length
     ? await Promise.all([
         prisma.job.groupBy({
           by: ["customerId"],
@@ -98,12 +99,18 @@ export async function listCustomers(req: Request, res: Response) {
           _count: { _all: true },
           where: { customerId: { in: customerIds }, status: "COMPLETED" },
         }),
+        prisma.job.groupBy({
+          by: ["customerId"],
+          _sum: { price: true },
+          where: { customerId: { in: customerIds }, ...BILLABLE_JOB_WHERE },
+        }),
       ])
-    : [[], [], [], []];
+    : [[], [], [], [], []];
 
   const enriched = withTags.map((customer) => {
     const jobs = jobAgg.find((j) => j.customerId === customer.id);
-    const priced = Number(jobs?._sum.price ?? 0);
+    // Bakiye: iptal edilen işler hariç (lib/balance.ts); jobAgg sayım/son iş tarihi için tüm işler.
+    const priced = Number(billedAgg.find((b) => b.customerId === customer.id)?._sum.price ?? 0);
     const paid = Number(paymentAgg.find((p) => p.customerId === customer.id)?._sum.amount ?? 0);
     const completedJobCount = completedAgg.find((c) => c.customerId === customer.id)?._count._all ?? 0;
     return {
@@ -157,7 +164,7 @@ export async function getCustomer(req: Request, res: Response) {
   }
 
   const completedJobCount = customer.jobs.filter((j) => j.status === "COMPLETED").length;
-  const totalPriced = customer.jobs.reduce((sum, job) => sum + Number(job.price ?? 0), 0);
+  const totalPriced = billedTotal(customer.jobs);
   const totalPaid = customer.payments.reduce((sum, payment) => sum + Number(payment.amount), 0);
   const outstandingBalance = totalPriced - totalPaid;
 
