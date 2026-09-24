@@ -199,7 +199,7 @@ function StaffPageContent() {
       />
 
       {isOwner && (
-        <div className="flex w-fit gap-1 rounded-2xl border border-border bg-surface-card p-1 shadow-card">
+        <div className="flex w-fit max-w-full gap-1 overflow-x-auto rounded-2xl border border-border [&>button]:shrink-0 [&>button]:whitespace-nowrap bg-surface-card p-1 shadow-card">
           <button
             type="button"
             onClick={() => setTab("list")}
@@ -393,8 +393,10 @@ function StaffPageContent() {
               {/* Bölüm AH (7. tur): izin bakiyesi */}
               <LeaveBalanceCard staffId={staff.id} compact />
 
-              {/* Tasarım turu #5: 3 birincil aksiyon + "⋯" menüsü (önceden 8–10 buton). */}
-              <div className="flex gap-2">
+              {/* Tasarım turu #5: 3 birincil aksiyon + "⋯" menüsü (önceden 8–10 buton).
+                  360px'te üç ikonlu buton + menü kart genişliğini ~70px aşıyor, "⋯"
+                  kart dışına taşıyordu: sm altında ikonlar gizlenir, butonlar küçülebilir. */}
+              <div className="flex gap-2 [&>button>svg]:hidden sm:[&>button>svg]:block [&>button]:min-w-0">
                 <button
                   type="button"
                   onClick={() => {

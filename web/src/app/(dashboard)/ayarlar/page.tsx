@@ -183,7 +183,7 @@ function ThemeSection() {
 
   return (
     <SectionCard icon={Sun} title="Görünüm" description="Panelin açık, koyu veya cihazınızın sistem ayarına uyan temada görünmesini seçin.">
-      <div className="flex w-fit gap-1 rounded-2xl border border-border bg-surface-subtle p-1">
+      <div className="flex w-fit max-w-full gap-1 overflow-x-auto rounded-2xl border border-border [&>button]:shrink-0 [&>button]:whitespace-nowrap bg-surface-subtle p-1">
         {THEME_OPTIONS.map((opt) => (
           <button
             key={opt.value}

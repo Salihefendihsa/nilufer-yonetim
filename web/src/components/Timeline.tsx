@@ -52,12 +52,13 @@ export function Timeline({ items }: { items: TimelineItem[] }) {
             <div className="flex min-w-0 flex-1 flex-wrap items-start justify-between gap-x-4 gap-y-1">
               <div className="min-w-0">
                 <div className="flex flex-wrap items-center gap-2">
-                  <span className="text-sm font-medium text-text-primary">{item.title}</span>
+                  <span className="break-words text-sm font-medium text-text-primary">{item.title}</span>
                   {item.tag && (
                     <span className={`rounded-full px-2 py-0.5 text-2xs font-semibold ${style.tag}`}>{item.tag}</span>
                   )}
                 </div>
-                {item.description && <p className="mt-0.5 text-sm text-text-secondary">{item.description}</p>}
+                {/* break-words: boşluksuz uzun metin (dosya adı, e-posta) dar ekranda sayfayı yana itmesin */}
+                {item.description && <p className="mt-0.5 break-words text-sm text-text-secondary">{item.description}</p>}
               </div>
 
               <span className="shrink-0 rounded-md bg-surface-subtle px-2 py-0.5 font-mono text-2xs text-text-faint">
