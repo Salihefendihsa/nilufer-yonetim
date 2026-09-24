@@ -8,14 +8,17 @@ import type { LeaveBalance } from "@/lib/types";
 /**
  * Bölüm AH (7. tur): "İzin Bakiyesi" — kalan/toplam gün + progress bar
  * (GET /staff/:id/leave-balance, takvim yılı). Yetki yoksa/hata → gizli.
+ * `staffId` verilmezse giriş yapan personelin KENDİ bakiyesi
+ * (GET /staff/me/leave-balance) — İzinlerim sayfası için. `refreshKey`
+ * değişince yeniden yüklenir (talep listesi yenilendiğinde).
  */
-export function LeaveBalanceCard({ staffId, compact = false }: { staffId: string; compact?: boolean }) {
+export function LeaveBalanceCard({ staffId, compact = false, refreshKey = 0 }: { staffId?: string; compact?: boolean; refreshKey?: number }) {
   const [balance, setBalance] = useState<LeaveBalance | null>(null);
 
   useEffect(() => {
     let cancelled = false;
     api
-      .get<LeaveBalance>(`/staff/${staffId}/leave-balance`)
+      .get<LeaveBalance>(staffId ? `/staff/${staffId}/leave-balance` : "/staff/me/leave-balance")
       .then((b) => {
         if (!cancelled) setBalance(b);
       })
@@ -25,7 +28,7 @@ export function LeaveBalanceCard({ staffId, compact = false }: { staffId: string
     return () => {
       cancelled = true;
     };
-  }, [staffId]);
+  }, [staffId, refreshKey]);
 
   if (!balance) return null;
   const used = Math.min(balance.quotaDays, Math.max(0, balance.usedDays));

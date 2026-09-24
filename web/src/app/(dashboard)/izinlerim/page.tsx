@@ -11,6 +11,7 @@ import { api, ApiError } from "@/lib/api";
 import { useToast } from "@/lib/ToastProvider";
 import { formatDate } from "@/lib/format";
 import type { LeaveRequest, Paginated } from "@/lib/types";
+import { LeaveBalanceCard } from "@/components/LeaveBalanceCard";
 
 const STATUS_LABELS: Record<string, string> = {
   PENDING: "Bekliyor",
@@ -73,6 +74,9 @@ function LeaveRequestsContent() {
           </button>
         }
       />
+
+      {/* Kalan yıllık izin (kendi bakiyesi) — liste her yenilendiğinde tazelenir. */}
+      <LeaveBalanceCard refreshKey={rows.length} />
 
       {error && <p className="rounded-2xl border border-danger-100 bg-danger-50 px-4 py-3 text-sm text-danger-500">{error}</p>}
 

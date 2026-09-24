@@ -53,6 +53,16 @@ describe("İzin çakışması", () => {
     expect((await decide(pendingOverlap.body.id, "REJECTED")).status).toBe(200);
   });
 
+  it("GET /staff/me/leave-balance kişinin kendi bakiyesini döner (id'li uçla aynı)", async () => {
+    const me = await api().get("/staff/me/leave-balance").set("Authorization", `Bearer ${staffToken}`);
+    expect(me.status).toBe(200);
+    expect(me.body.staffId).toBe(staffId);
+    const byId = await api().get(`/staff/${staffId}/leave-balance`).set("Authorization", `Bearer ${staffToken}`);
+    expect(me.body).toEqual(byId.body);
+    const asManager = await api().get("/staff/me/leave-balance").set("Authorization", `Bearer ${managerToken}`);
+    expect(asManager.status).toBe(403);
+  });
+
   it("eski veride aynı tarihli iki onaylı izin bakiyeden bir kez düşer", async () => {
     const start = new Date(localIsoDate(40));
     const end = new Date(localIsoDate(42));

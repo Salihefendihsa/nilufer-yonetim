@@ -41,9 +41,11 @@ class LeaveBalance {
 
 /// "İzin Bakiyesi" kartı — kalan/toplam gün + progress bar.
 /// Yetki yoksa (403) veya hata → kart gizli.
+/// `staffId` verilmezse giriş yapan personelin KENDİ bakiyesi
+/// (GET /staff/me/leave-balance) — İzin Taleplerim ekranı için.
 class LeaveBalanceCard extends StatefulWidget {
-  final String staffId;
-  const LeaveBalanceCard({super.key, required this.staffId});
+  final String? staffId;
+  const LeaveBalanceCard({super.key, this.staffId});
 
   @override
   State<LeaveBalanceCard> createState() => _LeaveBalanceCardState();
@@ -62,7 +64,9 @@ class _LeaveBalanceCardState extends State<LeaveBalanceCard> {
   Future<void> _load() async {
     try {
       final json = await ApiClient.instance.get<Map<String, dynamic>>(
-        '/staff/${widget.staffId}/leave-balance',
+        widget.staffId != null
+            ? '/staff/${widget.staffId}/leave-balance'
+            : '/staff/me/leave-balance',
       );
       if (mounted) setState(() => _balance = LeaveBalance.fromJson(json));
     } on ApiException {

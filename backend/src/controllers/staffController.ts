@@ -840,6 +840,25 @@ export async function getStaffLeaderboard(req: Request, res: Response) {
  * Bölüm AH (7. tur): GET /staff/:id/leave-balance?year= — OWNER/MANAGER herkes;
  * STAFF/TEAM_LEAD yalnızca kendi kaydı (aksi 403).
  */
+/**
+ * GET /staff/me/leave-balance — personelin KENDİ izin bakiyesi. İzinlerim
+ * ekranı (web + mobil) staffId bilmeden bakiyeyi gösterebilsin diye; kapsam
+ * doğal olarak kullanıcının kendi personel kaydıyla sınırlı.
+ */
+export async function getMyLeaveBalance(req: Request, res: Response) {
+  const staffId = await getStaffIdForUser(req.user!.sub);
+  if (!staffId) {
+    return res.status(404).json({ error: "Personel kaydı bulunamadı" });
+  }
+  const yearRaw = Number(req.query.year);
+  const year = Number.isInteger(yearRaw) && yearRaw >= 2000 && yearRaw <= 2100 ? yearRaw : new Date().getFullYear();
+  const balance = await computeLeaveBalance(staffId, year);
+  if (!balance) {
+    return res.status(404).json({ error: "Personel kaydı bulunamadı" });
+  }
+  return res.json({ staffId, ...balance });
+}
+
 export async function getStaffLeaveBalance(req: Request, res: Response) {
   const user = req.user!;
   const staffId = idParam(req);

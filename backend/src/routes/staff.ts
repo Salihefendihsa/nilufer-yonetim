@@ -30,7 +30,7 @@ import {
   listUnavailableStaffOnDate,
 } from "../controllers/staffUnavailabilityController";
 import { getOnboarding, updateOnboardingItem } from "../controllers/onboardingController";
-import { getStaffLeaveBalance } from "../controllers/staffController";
+import { getMyLeaveBalance, getStaffLeaveBalance } from "../controllers/staffController";
 import { getMyPayslip } from "../controllers/staffPayslipController";
 import {
   listVehicleMaintenance,
@@ -52,6 +52,7 @@ router.get("/certifications/expiring", requireRole(Role.OWNER, Role.MANAGER), ge
 router.get("/unavailability", requireRole(Role.OWNER, Role.MANAGER, Role.TEAM_LEAD), listUnavailableStaffOnDate);
 // Bölüm AN (9. tur): kişisel bordro özeti — yalnızca STAFF/TEAM_LEAD (kendi kaydı).
 router.get("/me/payslip", requireRole(Role.STAFF, Role.TEAM_LEAD), getMyPayslip);
+router.get("/me/leave-balance", requireRole(Role.STAFF, Role.TEAM_LEAD), getMyLeaveBalance);
 // Bölüm AP (9. tur): takvim dışa aktarma — ICS indirme + abonelik token'ı.
 router.get("/me/calendar.ics", requireRole(Role.STAFF, Role.TEAM_LEAD), getMyCalendarIcs);
 // Bölüm AR (9. tur): puantaj — giriş/çıkış yalnızca personelin kendisi.
