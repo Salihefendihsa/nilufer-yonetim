@@ -5,6 +5,7 @@ import { Role, type Prisma } from "@prisma/client";
 import app from "../../src/app";
 import { prisma } from "../../src/lib/prisma";
 import { signToken } from "../../src/lib/jwt";
+import { deleteOrphanNotifications } from "../../src/lib/orphanNotifications";
 
 /**
  * Bölüm H (2. tur): test fixture'ları ve ID bazlı otomatik temizlik.
@@ -71,6 +72,13 @@ export class TestContext {
   readonly staffIds: string[] = [];
   readonly customerIds: string[] = [];
   private readonly tracked: Tracked[] = [];
+  /**
+   * Testin API üzerinden ürettiği kayıtlar gerçek yöneticilere (DB'deki demo
+   * owner/manager) de bildirim düşürür (notifyManagement vb.). Cleanup bu
+   * andan sonra oluşan ve (a) sildiğimiz kayda işaret eden ya da (b) test
+   * önekini içeren bildirimleri de siler — gerçek hesaplarda iz kalmaz.
+   */
+  private readonly startedAt = new Date();
 
   /** Test içinde doğrudan prisma ile üretilen kaydı temizlik listesine ekler. */
   track(model: keyof typeof prisma & string, id: string): void {
@@ -169,6 +177,14 @@ export class TestContext {
       }
     }
     this.tracked.length = 0;
+
+    await deleteOrphanNotifications(this.startedAt);
+    await prisma.notification.deleteMany({
+      where: {
+        createdAt: { gte: this.startedAt },
+        OR: [{ title: { contains: TEST_PREFIX } }, { body: { contains: TEST_PREFIX } }],
+      },
+    });
   }
 
   private async sweepByOwners(): Promise<void> {

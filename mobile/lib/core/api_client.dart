@@ -20,6 +20,28 @@ class ApiException implements Exception {
   String toString() => message;
 }
 
+/// 429 (istek limiti) için gövde ne olursa olsun gösterilecek net mesaj —
+/// ters vekil (proxy) JSON olmayan bir 429 döndürse bile "Bir hata oluştu"
+/// gibi belirsiz bir metin yerine ne yapılacağı söylenir.
+const tooManyRequestsMessage =
+    'Çok fazla istek gönderildi, lütfen biraz bekleyip tekrar deneyin.';
+
+/// Hata yanıtından kullanıcıya gösterilecek mesaj: backend'in `{ error }`
+/// Türkçe mesajı öncelikli; 429'da gövde okunamazsa [tooManyRequestsMessage].
+String apiErrorMessage(
+  int status,
+  dynamic data, {
+  String fallback = 'Bir hata oluştu',
+}) {
+  if (data is Map &&
+      data['error'] is String &&
+      (data['error'] as String).isNotEmpty) {
+    return data['error'] as String;
+  }
+  if (status == 429) return tooManyRequestsMessage;
+  return fallback;
+}
+
 /// Login/register uçları — 401'i "oturum sona erdi" olarak değil "e-posta/şifre
 /// hatalı" olarak ele almak için (web/src/lib/api.ts ile aynı ayrım).
 const _preSessionPaths = ['/auth/login', '/auth/register'];
@@ -78,9 +100,7 @@ class ApiClient {
     }
 
     if (res.statusCode < 200 || res.statusCode >= 300) {
-      final message = (data is Map && data['error'] is String)
-          ? data['error'] as String
-          : 'Bir hata oluştu';
+      final message = apiErrorMessage(res.statusCode, data);
       throw ApiException(
         res.statusCode,
         message,
@@ -164,14 +184,14 @@ class ApiClient {
       // Hata yanıtları ikili değil `{ error }` JSON'udur (errorHandler.ts) —
       // backend'in Türkçe mesajını ("İş raporu bulunamadı" gibi) göster,
       // genel "Dosya indirilemedi" yalnızca gövde okunamazsa.
-      String message = 'Dosya indirilemedi';
+      dynamic data;
       try {
-        final data = jsonDecode(utf8.decode(res.bodyBytes));
-        if (data is Map && data['error'] is String) {
-          message = data['error'] as String;
-        }
+        data = jsonDecode(utf8.decode(res.bodyBytes));
       } catch (_) {}
-      throw ApiException(res.statusCode, message);
+      throw ApiException(
+        res.statusCode,
+        apiErrorMessage(res.statusCode, data, fallback: 'Dosya indirilemedi'),
+      );
     }
     return res.bodyBytes;
   }
@@ -182,7 +202,8 @@ class ApiClient {
   /// (Authorization header'lı Image.network), indirmeler `getBytes`
   /// (token'lı) ile çekilir. type: job-photo | job-signature |
   /// customer-document | message-attachment.
-  String fileUrl(String type, String id) => '/files/$type/${Uri.encodeComponent(id)}';
+  String fileUrl(String type, String id) =>
+      '/files/$type/${Uri.encodeComponent(id)}';
 
   /// Göreli API yolunu tam URL'ye çevirir (Image.network için).
   String absoluteUrl(String path) {
