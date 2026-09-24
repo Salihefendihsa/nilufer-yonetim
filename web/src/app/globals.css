@@ -346,31 +346,105 @@
 }
 
 /*
- * Koyu temada `text-primary-700` kontrastı (docs/HEALTH_AUDIT.md U-2).
- * --primary-700 koyu temada bilinçli olarak AÇIK tema değerinde kalır (73
- * yerde `bg-primary-700` / `hover:bg-primary-700` beyaz yazılı buton/panel
- * zemini — bkz. yukarıdaki "Bilinçli tasarım kararı" notu). Aynı değişken
- * METİN rengi olarak koyu zeminde 1,7:1 kalıyordu. Bu yüzden yalnızca metin
- * yardımcıları, koyu temada ayrı bir tokena yönlendirilir; kullanım yerlerine
- * dokunulmaz. --primary-700-text (148 199 158) koyu temadaki tüm zeminlerde
- * ≥ 5,1:1 (primary-50: 7,9 · surface-card: 8,7 · primary-200: 5,1).
+ * Koyu temada metin kontrastı (docs/HEALTH_AUDIT.md U-2 + canlı test).
+ * primary-700 ile danger/info/warning/success 500–700 tonları koyu temada
+ * bilinçli olarak AÇIK tema değerinde kalır — aynı tonlar beyaz yazılı buton
+ * ve panel ZEMİNİ olarak da kullanılıyor (bg-primary-700 73, bg-danger-500 17
+ * yer…; bkz. yukarıdaki "Bilinçli tasarım kararı"). METİN olarak koyu
+ * zeminde ise 1,7–3,1:1 kalıyorlardı (rozetler: "Açık", "Orta öncelik"…).
+ * Bu yüzden yalnızca metin yardımcıları koyu temada açık tonlara yönlendirilir;
+ * kullanım yerlerine dokunulmaz. Hepsi koyu temadaki tüm zeminlerde
+ * (surface-page/card/subtle/muted ve kendi -50/-100 rozet zemini) ≥ 5,1:1:
+ * primary 5,1 · danger 5,5 · info 6,3 · warning 7,5 · success 6,6.
  * İki tetikleyici (sistem tercihi + elle "Koyu") yukarıdaki bloklarla aynı.
  */
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
-    --primary-700-text: 148 199 158;
+    --primary-text-dark: 148 199 158;
+    --danger-text-dark: 240 140 128;
+    --info-text-dark: 125 185 230;
+    --warning-text-dark: 232 190 100;
+    --success-text-dark: 120 200 145;
   }
   :root:not([data-theme="light"]) .text-primary-700,
   :root:not([data-theme="light"]) .hover\:text-primary-700:hover {
-    color: rgb(var(--primary-700-text) / var(--tw-text-opacity, 1));
+    color: rgb(var(--primary-text-dark) / var(--tw-text-opacity, 1));
+  }
+  :root:not([data-theme="light"]) .text-danger-500,
+  :root:not([data-theme="light"]) .hover\:text-danger-500:hover,
+  :root:not([data-theme="light"]) .text-danger-600,
+  :root:not([data-theme="light"]) .hover\:text-danger-600:hover,
+  :root:not([data-theme="light"]) .text-danger-700,
+  :root:not([data-theme="light"]) .hover\:text-danger-700:hover {
+    color: rgb(var(--danger-text-dark) / var(--tw-text-opacity, 1));
+  }
+  :root:not([data-theme="light"]) .text-info-500,
+  :root:not([data-theme="light"]) .hover\:text-info-500:hover,
+  :root:not([data-theme="light"]) .text-info-600,
+  :root:not([data-theme="light"]) .hover\:text-info-600:hover,
+  :root:not([data-theme="light"]) .text-info-700,
+  :root:not([data-theme="light"]) .hover\:text-info-700:hover {
+    color: rgb(var(--info-text-dark) / var(--tw-text-opacity, 1));
+  }
+  :root:not([data-theme="light"]) .text-warning-500,
+  :root:not([data-theme="light"]) .hover\:text-warning-500:hover,
+  :root:not([data-theme="light"]) .text-warning-600,
+  :root:not([data-theme="light"]) .hover\:text-warning-600:hover,
+  :root:not([data-theme="light"]) .text-warning-700,
+  :root:not([data-theme="light"]) .hover\:text-warning-700:hover {
+    color: rgb(var(--warning-text-dark) / var(--tw-text-opacity, 1));
+  }
+  :root:not([data-theme="light"]) .text-success-500,
+  :root:not([data-theme="light"]) .hover\:text-success-500:hover,
+  :root:not([data-theme="light"]) .text-success-600,
+  :root:not([data-theme="light"]) .hover\:text-success-600:hover,
+  :root:not([data-theme="light"]) .text-success-700,
+  :root:not([data-theme="light"]) .hover\:text-success-700:hover {
+    color: rgb(var(--success-text-dark) / var(--tw-text-opacity, 1));
   }
 }
 :root[data-theme="dark"] {
-  --primary-700-text: 148 199 158;
+  --primary-text-dark: 148 199 158;
+  --danger-text-dark: 240 140 128;
+  --info-text-dark: 125 185 230;
+  --warning-text-dark: 232 190 100;
+  --success-text-dark: 120 200 145;
 }
 :root[data-theme="dark"] .text-primary-700,
 :root[data-theme="dark"] .hover\:text-primary-700:hover {
-  color: rgb(var(--primary-700-text) / var(--tw-text-opacity, 1));
+  color: rgb(var(--primary-text-dark) / var(--tw-text-opacity, 1));
+}
+:root[data-theme="dark"] .text-danger-500,
+:root[data-theme="dark"] .hover\:text-danger-500:hover,
+:root[data-theme="dark"] .text-danger-600,
+:root[data-theme="dark"] .hover\:text-danger-600:hover,
+:root[data-theme="dark"] .text-danger-700,
+:root[data-theme="dark"] .hover\:text-danger-700:hover {
+  color: rgb(var(--danger-text-dark) / var(--tw-text-opacity, 1));
+}
+:root[data-theme="dark"] .text-info-500,
+:root[data-theme="dark"] .hover\:text-info-500:hover,
+:root[data-theme="dark"] .text-info-600,
+:root[data-theme="dark"] .hover\:text-info-600:hover,
+:root[data-theme="dark"] .text-info-700,
+:root[data-theme="dark"] .hover\:text-info-700:hover {
+  color: rgb(var(--info-text-dark) / var(--tw-text-opacity, 1));
+}
+:root[data-theme="dark"] .text-warning-500,
+:root[data-theme="dark"] .hover\:text-warning-500:hover,
+:root[data-theme="dark"] .text-warning-600,
+:root[data-theme="dark"] .hover\:text-warning-600:hover,
+:root[data-theme="dark"] .text-warning-700,
+:root[data-theme="dark"] .hover\:text-warning-700:hover {
+  color: rgb(var(--warning-text-dark) / var(--tw-text-opacity, 1));
+}
+:root[data-theme="dark"] .text-success-500,
+:root[data-theme="dark"] .hover\:text-success-500:hover,
+:root[data-theme="dark"] .text-success-600,
+:root[data-theme="dark"] .hover\:text-success-600:hover,
+:root[data-theme="dark"] .text-success-700,
+:root[data-theme="dark"] .hover\:text-success-700:hover {
+  color: rgb(var(--success-text-dark) / var(--tw-text-opacity, 1));
 }
 
 body {
