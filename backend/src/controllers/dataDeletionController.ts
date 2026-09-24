@@ -5,7 +5,7 @@ import { prisma } from "../lib/prisma";
 import { getCustomerIdForUser } from "../lib/access";
 import { idParam } from "../lib/params";
 import { recordAuditLog } from "../lib/auditLog";
-import { notifyManagement, notifyUser } from "../lib/notify";
+import { notifyOwners, notifyUser } from "../lib/notify";
 
 /**
  * Bölüm AD (7. tur): KVKK veri silme/anonimleştirme talebi.
@@ -42,7 +42,8 @@ export async function createMyDeletionRequest(req: Request, res: Response) {
     targetType: "DataDeletionRequest",
     targetId: request.id,
   });
-  await notifyManagement("KVKK veri silme talebi", `${request.customer.fullName} kişisel verilerinin silinmesini talep etti.`, {
+  // Talebi yalnızca Patron işleyebilir (routes/dataDeletionRequests.ts) — Müdür'e bildirim gitmez.
+  await notifyOwners("KVKK veri silme talebi", `${request.customer.fullName} kişisel verilerinin silinmesini talep etti.`, {
     type: "data_deletion_request",
     relatedType: "DataDeletionRequest",
     relatedId: request.id,

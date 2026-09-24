@@ -83,8 +83,12 @@ export function categorizeNotification(title: string): NotificationCategory {
  * Not: Şu an ilgili LİSTE ekranına yönlendirir (ör. /isler), kaydı otomatik
  * seçip vurgulamaz — bu daha ince bir iyileştirme olarak açık bırakılmıştır.
  */
-export function getNotificationHref(n: { relatedType: string | null; relatedId: string | null }, role?: Role): string | null {
+export function getNotificationHref(
+  n: { relatedType: string | null; relatedId: string | null; type?: string | null },
+  role?: Role
+): string | null {
   if (!n.relatedType) return null;
+  const isManagement = role === "OWNER" || role === "MANAGER";
   switch (n.relatedType) {
     case "Job":
       return "/isler";
@@ -99,6 +103,37 @@ export function getNotificationHref(n: { relatedType: string | null; relatedId: 
     // Personel talebi: Patron gelen kutusuna, talep sahibi kendi listesine.
     case "StaffRequest":
       return role === "OWNER" ? "/personel-talepleri" : "/taleplerim";
+    // İzin: yönetime gelen yeni talep onay kuyruğuna; talep sahibine gelen
+    // karar (type=leave_request_decision) kendi izin listesine.
+    case "LeaveRequest":
+      return n.type === "leave_request_decision" || !isManagement ? "/izinlerim" : "/bekleyen-onaylar";
+    // Şikayet: aynı sayfa — müşteride "Şikayetlerim", yönetimde "Şikayetler".
+    case "CustomerComplaint":
+      return "/sikayetler";
+    // KVKK: talebi yalnızca Patron işler (Ayarlar → Sistem sekmesi); müşteriye
+    // gelen ret bildirimi kendi talebinin durumunu gördüğü Ayarlar → Hesap'a.
+    case "DataDeletionRequest":
+      if (role === "OWNER") return "/ayarlar?tab=sistem";
+      if (role === "CUSTOMER") return "/ayarlar";
+      return null;
+    // Araç bakım/muayene hatırlatması → Personel (araç bakımı personel satırından yönetilir).
+    case "Staff":
+      return isManagement ? "/personel" : null;
+    // Sözleşme yenileme uyarısı → Sözleşmeler.
+    case "Contract":
+      return isManagement ? "/sozlesmeler" : null;
+    // Onaylanan prim personelin bordrosuna yansır.
+    case "StaffBonus":
+      return role === "STAFF" || role === "TEAM_LEAD" ? "/bordrom" : "/performans";
+    // Randevu talebi: yönetim onay kuyruğunda planlar/reddeder; müşteri
+    // kendi taleplerini ana sayfasında görür.
+    case "AppointmentRequest":
+      return role === "CUSTOMER" ? "/" : "/bekleyen-onaylar";
+    // Teklif müşteriye dönüştü → Müşteriler; ekip duyurusu → Mesajlar.
+    case "Customer":
+      return isManagement ? "/musteriler" : null;
+    case "User":
+      return "/mesajlar";
     default:
       return null;
   }

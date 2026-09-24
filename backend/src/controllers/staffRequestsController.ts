@@ -5,7 +5,7 @@ import { prisma } from "../lib/prisma";
 import { getPagination, paginatedResponse } from "../lib/pagination";
 import { idParam } from "../lib/params";
 import { recordAuditLog } from "../lib/auditLog";
-import { notifyUser, notifyUsers } from "../lib/notify";
+import { notifyOwners, notifyUser } from "../lib/notify";
 
 /**
  * Personel talepleri — CustomerComplaint akışının tersi: MANAGER/TEAM_LEAD/
@@ -65,13 +65,12 @@ export async function createStaffRequest(req: Request, res: Response) {
   });
 
   // Talepler yalnızca Patron'a gider (Müdür de talep açabildiği için yönetime değil).
-  const owners = await prisma.user.findMany({ where: { role: Role.OWNER, isActive: true }, select: { id: true } });
-  await notifyUsers(
-    owners.map((o) => o.id),
-    "Yeni personel talebi",
-    `${request.staffUser.fullName} · ${data.subject}`,
-    { type: "staff_request", relatedType: "StaffRequest", relatedId: request.id }
-  );
+  await notifyOwners("Yeni personel talebi", `${request.staffUser.fullName} · ${data.subject}`, {
+    type: "staff_request",
+    relatedType: "StaffRequest",
+    relatedId: request.id,
+  });
+
 
   return res.status(201).json(request);
 }
