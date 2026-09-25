@@ -16,6 +16,11 @@ RUN npm run build
 FROM node:20-slim AS runtime
 WORKDIR /app
 ENV NODE_ENV=production
+# Ay/gün sınırları (tahsilat özeti, bordro, izin yılı) ve node-cron saatleri
+# (08:00 hatırlatmalar vb.) yerel saate göre hesaplanır — konteyner varsayılanı
+# UTC olduğunda 3 saat kayıyordu (docs/HEALTH_AUDIT.md §2.3). Node'un gömülü
+# ICU'su saat dilimi verisini içerir; ayrıca tzdata paketi gerekmez.
+ENV TZ=Europe/Istanbul
 COPY package.json package-lock.json ./
 RUN npm ci --omit=dev && npm cache clean --force
 COPY --from=build /app/dist ./dist

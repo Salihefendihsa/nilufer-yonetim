@@ -1,3 +1,4 @@
+import '../../core/api_dates.dart';
 import '../../core/api_client.dart';
 import '../../models/appointment_request.dart';
 
@@ -38,8 +39,8 @@ class AppointmentRequestsApi {
       '/appointment-requests',
       body: {
         'serviceTypeId': serviceTypeId,
-        'preferredDateStart': preferredDateStart.toIso8601String(),
-        'preferredDateEnd': preferredDateEnd.toIso8601String(),
+        'preferredDateStart': apiInstant(preferredDateStart),
+        'preferredDateEnd': apiInstant(preferredDateEnd),
         if (note != null && note.isNotEmpty) 'note': note,
       },
     );

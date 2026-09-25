@@ -27,6 +27,8 @@ export const AUDIT_ACTION_LABELS: Record<string, string> = {
   "auth.password_reset_by_owner": "Şifre patron tarafından sıfırlandı",
   "complaint.created": "Şikayet kaydedildi",
   "complaint.updated": "Şikayet güncellendi",
+  "staff_request.created": "Personel talebi oluşturuldu",
+  "staff_request.updated": "Personel talebi yanıtlandı",
   "contract.create": "Sözleşme oluşturuldu",
   "contract.update": "Sözleşme güncellendi",
   "contract.renew": "Sözleşme yenilendi",
@@ -299,6 +301,8 @@ const RESOLVERS: Record<string, Resolver> = {
     (await prisma.customerDocument.findMany({ where: { id: { in: ids } }, select: { id: true, fileName: true } })).map((d) => [d.id, d.fileName]),
   CustomerComplaint: async (ids) =>
     (await prisma.customerComplaint.findMany({ where: { id: { in: ids } }, select: { id: true, subject: true } })).map((c) => [c.id, c.subject]),
+  StaffRequest: async (ids) =>
+    (await prisma.staffRequest.findMany({ where: { id: { in: ids } }, select: { id: true, subject: true } })).map((r) => [r.id, r.subject]),
   Evaluation: async (ids) =>
     (
       await prisma.evaluation.findMany({

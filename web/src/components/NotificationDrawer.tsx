@@ -7,6 +7,7 @@ import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
 import { X, Search, CheckCheck, Bell } from "lucide-react";
+import { useAuth } from "@/lib/AuthProvider";
 import { api } from "@/lib/api";
 import {
   NOTIFICATION_CATEGORIES,
@@ -38,6 +39,7 @@ function formatTime(value: string): string {
 
 export function NotificationDrawer({ open, onClose, onChanged }: NotificationDrawerProps) {
   const router = useRouter();
+  const { user } = useAuth();
   const [notifications, setNotifications] = useState<AppNotification[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
@@ -87,7 +89,7 @@ export function NotificationDrawer({ open, onClose, onChanged }: NotificationDra
 
   function handleItemClick(n: AppNotification) {
     handleMarkOneRead(n.id);
-    const href = getNotificationHref(n);
+    const href = getNotificationHref(n, user?.role);
     if (href) {
       onClose();
       router.push(href);

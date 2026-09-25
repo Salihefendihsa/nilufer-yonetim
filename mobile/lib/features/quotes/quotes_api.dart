@@ -1,3 +1,4 @@
+import '../../core/api_dates.dart';
 import '../../core/api_client.dart';
 import '../../models/paginated.dart';
 import '../../models/quote.dart';
@@ -43,7 +44,7 @@ class QuotesApi {
         if (clearSurvey)
           'surveyAt': null
         else if (surveyAt != null)
-          'surveyAt': surveyAt.toIso8601String(),
+          'surveyAt': apiInstant(surveyAt),
       },
     );
     return QuoteRequest.fromJson(json);

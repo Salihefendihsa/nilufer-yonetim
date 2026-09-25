@@ -268,7 +268,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
               caption: 'Onay bekleyen saha raporu',
               badge: s.pendingReportApprovals > 0 ? 'BEKLİYOR' : null,
               badgeColor: cs.warning600,
-              onTap: () => _open(const ApprovalsScreen(initialFilter: 'reports')),
+              onTap: () =>
+                  _open(const ApprovalsScreen(initialFilter: 'reports')),
             ),
             AppStatCard(
               // Formül: tamamlanan / (tamamlanan + iptal). Bu ay hiç
@@ -780,7 +781,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
               onPressed: () => showAdvanceRequestSheet(context),
               icon: const Icon(Icons.payments_rounded, size: 16),
               label: const Text('Avans Talep Et'),
+              // Tema varsayılanı sonsuz genişlik (Size.fromHeight) — Row içinde
+              // sonlu minimumSize şart, yoksa ana sayfa hiç çizilmez.
               style: OutlinedButton.styleFrom(
+                minimumSize: const Size(64, 48),
                 foregroundColor: cs.primary700,
                 side: BorderSide(color: cs.borderDefault),
                 padding: const EdgeInsets.symmetric(

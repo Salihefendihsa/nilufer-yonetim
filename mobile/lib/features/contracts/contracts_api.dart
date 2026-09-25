@@ -1,3 +1,4 @@
+import '../../core/api_dates.dart';
 import '../../core/api_client.dart';
 import '../../models/contract.dart';
 import '../../models/paginated.dart';
@@ -41,8 +42,8 @@ class ContractsApi {
       '/contracts',
       body: {
         'customerId': customerId,
-        'startDate': startDate.toIso8601String(),
-        'endDate': endDate.toIso8601String(),
+        'startDate': apiDate(startDate),
+        'endDate': apiDate(endDate),
         'durationMonths': durationMonths,
         'status': status,
         if (serviceType != null && serviceType.isNotEmpty)

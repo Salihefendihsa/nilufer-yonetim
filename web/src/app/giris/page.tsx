@@ -9,18 +9,13 @@ import {
   Clock,
   Sparkles,
   KeyRound,
-  Crown,
-  Briefcase,
-  Users,
-  Wrench,
-  Home,
   Sun,
   Moon,
   AlertCircle,
   MailCheck,
   ArrowLeft,
 } from "lucide-react";
-import { login, logout, verifyTwoFactorLogin, type Role, type AuthUser } from "@/lib/auth";
+import { login, verifyTwoFactorLogin, type AuthUser } from "@/lib/auth";
 import { api, ApiError } from "@/lib/api";
 import { getRecaptchaToken } from "@/lib/recaptcha";
 import { useTheme } from "@/lib/theme";
@@ -28,7 +23,8 @@ import { useTheme } from "@/lib/theme";
 /**
  * Bölüm R (4. tur): Giriş sayfası yeniden tasarımı.
  * - Split-screen: sol marka paneli (logo, slogan, ince desen), sağ form.
- * - Rol sekmeleri ikonlu; aktif gösterge `layoutId` ile yumuşak kayar.
+ * - Tek ortak form: rol seçimi YOK. Kullanıcının rolü sunucunun login
+ *   yanıtından (JWT ile aynı kaynak) gelir; "/" o role ait paneli açar.
  * - Tema düğmesi (Bölüm D ThemeProvider'a bağlı).
  * - Giriş → 2FA → Şifremi Unuttum adımları tek sayfada, fade/slide ile;
  *   çok adımlı akışta net ilerleme göstergesi (1/2, 2/2).
@@ -36,21 +32,6 @@ import { useTheme } from "@/lib/theme";
  */
 
 type Step = "login" | "2fa" | "forgot";
-
-interface RoleTab {
-  role: Role;
-  label: string;
-  icon: typeof Crown;
-  hint: string;
-}
-
-const ROLE_TABS: RoleTab[] = [
-  { role: "OWNER", label: "Patron", icon: Crown, hint: "Şirketin tüm görünümü" },
-  { role: "MANAGER", label: "Müdür", icon: Briefcase, hint: "Operasyon ve finans yönetimi" },
-  { role: "TEAM_LEAD", label: "Şef", icon: Users, hint: "Ekip planlama ve takip" },
-  { role: "STAFF", label: "Personel", icon: Wrench, hint: "Günlük işler ve raporlar" },
-  { role: "CUSTOMER", label: "Müşteri", icon: Home, hint: "Hizmetleriniz ve randevularınız" },
-];
 
 const BRAND_BULLETS = [
   { icon: ShieldCheck, text: "Ruhsatlı ürünler ve uzman ekiple güvenli uygulama" },
@@ -78,7 +59,6 @@ const stepVariants = {
 
 export default function GirisPage() {
   const { theme, setTheme } = useTheme();
-  const [selectedTab, setSelectedTab] = useState<RoleTab>(ROLE_TABS[0]);
   const [step, setStep] = useState<Step>("login");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -118,14 +98,8 @@ export default function GirisPage() {
   }
 
   function finishLogin(user: AuthUser & { mustChangePassword: boolean }) {
-    if (user.role !== selectedTab.role) {
-      const actualLabel = ROLE_TABS.find((t) => t.role === user.role)?.label ?? user.role;
-      logout({ redirect: false });
-      setError(`Bu hesap "${actualLabel}" rolüne ait. Üstten "${actualLabel}" sekmesini seçip tekrar deneyin.`);
-      goTo("login");
-      return;
-    }
-
+    // Rol seçimi yok: "/" kullanıcının sunucudan dönen gerçek rolüne göre
+    // doğru paneli render eder; menü ve route guard'lar da aynı role bakar.
     // Full reload (not router.push) so AuthProvider remounts and re-reads the
     // freshly-written localStorage session instead of keeping its stale
     // pre-login (unauthenticated) React state.
@@ -189,8 +163,6 @@ export default function GirisPage() {
       setLoading(false);
     }
   }
-
-  const SelectedIcon = selectedTab.icon;
 
   return (
     <main className="flex min-h-screen bg-surface-base">
@@ -282,49 +254,12 @@ export default function GirisPage() {
             <span className="text-sm font-semibold text-text-primary">Nilüfer İlaçlama</span>
           </div>
 
-          {/* Rol sekmeleri — yalnızca giriş adımında etkin */}
-          <div className={`mb-6 transition-opacity ${step === "login" ? "" : "pointer-events-none opacity-50"}`}>
-            <div className="grid grid-cols-5 gap-1 rounded-2xl border border-border bg-surface-subtle p-1">
-              {ROLE_TABS.map((tab) => {
-                const Icon = tab.icon;
-                const active = selectedTab.role === tab.role;
-                return (
-                  <button
-                    key={tab.role}
-                    type="button"
-                    onClick={() => {
-                      setSelectedTab(tab);
-                      setError(null);
-                    }}
-                    className={`relative flex flex-col items-center gap-1 rounded-xl px-1 py-2 text-2xs font-semibold transition sm:text-xs ${
-                      active ? "text-white" : "text-text-secondary hover:text-text-primary"
-                    }`}
-                  >
-                    {active && (
-                      <motion.span
-                        layoutId="role-tab-indicator"
-                        className="absolute inset-0 rounded-xl bg-primary-600 shadow-card"
-                        transition={{ type: "spring", stiffness: 420, damping: 34 }}
-                      />
-                    )}
-                    <Icon size={15} strokeWidth={1.75} className="relative" />
-                    <span className="relative">{tab.label}</span>
-                  </button>
-                );
-              })}
-            </div>
-            <p className="mt-2 flex items-center gap-1.5 px-1 text-xs text-text-faint">
-              <SelectedIcon size={12} strokeWidth={1.75} />
-              {selectedTab.hint}
-            </p>
-          </div>
-
           <AnimatePresence mode="wait" initial={false}>
             {step === "login" && (
               <motion.div key="login" variants={stepVariants} initial="initial" animate="animate" exit="exit" transition={{ duration: 0.2 }}>
                 <div className="mb-6">
-                  <SectionTitle size="xl">{selectedTab.label} Girişi</SectionTitle>
-                  <p className="mt-1 text-sm text-text-secondary">Devam etmek için hesap bilgilerinizi girin.</p>
+                  <SectionTitle size="xl">Giriş Yap</SectionTitle>
+                  <p className="mt-1 text-sm text-text-secondary">Hesap bilgilerinizle giriş yapın — size ait panel otomatik açılır.</p>
                 </div>
 
                 <form onSubmit={handleSubmit} className="flex flex-col gap-4">

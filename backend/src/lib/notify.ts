@@ -52,6 +52,13 @@ export async function notifyUsers(userIds: string[], title: string, body?: strin
   await pushToUsers(userIds, title, body, link);
 }
 
+/** Yalnızca aktif OWNER'lar — işlemi yalnızca Patron'un yapabildiği bildirimler için
+ * (KVKK veri silme, personel talepleri); Müdür'e tıklayınca açamayacağı bildirim gitmesin. */
+export async function notifyOwners(title: string, body?: string, link?: NotificationLink): Promise<void> {
+  const owners = await prisma.user.findMany({ where: { role: Role.OWNER, isActive: true }, select: { id: true } });
+  await notifyUsers(owners.map((o) => o.id), title, body, link);
+}
+
 /** Notifies everyone who runs the business (OWNER + MANAGER). */
 export async function notifyManagement(title: string, body?: string, link?: NotificationLink): Promise<void> {
   const managers = await prisma.user.findMany({

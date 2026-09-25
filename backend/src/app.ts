@@ -1,7 +1,6 @@
 import express from "express";
 import cors from "cors";
 import helmet from "helmet";
-import rateLimit from "express-rate-limit";
 
 import authRoutes from "./routes/auth";
 import customerRoutes from "./routes/customers";
@@ -40,10 +39,12 @@ import fileRoutes from "./routes/files";
 import dataDeletionRoutes from "./routes/dataDeletionRequests";
 import announcementRoutes from "./routes/announcements";
 import complaintRoutes from "./routes/complaints";
+import staffRequestRoutes from "./routes/staffRequests";
 import calendarRoutes from "./routes/calendar";
 import pestDetectionRoutes from "./routes/pestDetections";
 import { errorHandler } from "./middleware/errorHandler";
 import { recordRequest } from "./lib/metrics";
+import { createApiRateLimiter } from "./middleware/apiRateLimit";
 
 /**
  * Bölüm H (2. tur): Express uygulaması `index.ts`'ten ayrıldı — test suite
@@ -74,14 +75,11 @@ const corsOrigins = process.env.CORS_ORIGIN?.split(",")
 app.use(cors(corsOrigins && corsOrigins.length > 0 ? { origin: corsOrigins } : undefined));
 app.use(express.json({ limit: "5mb" })); // room for a base64-encoded signature image in the JSON body
 app.use(
-  rateLimit({
-    windowMs: 15 * 60 * 1000,
-    limit: 300,
-    // Test suite (NODE_ENV=test, bkz. vitest.config.ts) tek süreçte yüzlerce
-    // istek atar; genel limit devre dışı kalır. Login/şifre sıfırlama
-    // limitleri (middleware/loginRateLimit.ts) testte de AYNEN çalışır.
-    skip: () => process.env.NODE_ENV === "test",
-  })
+  // Kullanıcı başına (JWT) / kimliksizde IP başına — bkz. middleware/apiRateLimit.ts.
+  // Test suite (NODE_ENV=test, bkz. vitest.config.ts) tek süreçte yüzlerce
+  // istek atar; genel limit devre dışı kalır. Login/şifre sıfırlama
+  // limitleri (middleware/loginRateLimit.ts) testte de AYNEN çalışır.
+  createApiRateLimiter({ skip: () => process.env.NODE_ENV === "test" })
 );
 app.use((_req, _res, next) => {
   recordRequest();
@@ -140,6 +138,7 @@ apiRouter.use("/files", fileRoutes);
 apiRouter.use("/data-deletion-requests", dataDeletionRoutes);
 apiRouter.use("/announcements", announcementRoutes);
 apiRouter.use("/complaints", complaintRoutes);
+apiRouter.use("/staff-requests", staffRequestRoutes);
 // Bölüm AP (9. tur): token'lı ICS aboneliği — requireAuth yok (bkz. routes/calendar.ts).
 apiRouter.use("/calendar", calendarRoutes);
 

@@ -6,6 +6,7 @@ import { getPagination, paginatedResponse } from "../lib/pagination";
 import { getCustomerIdForUser, hasPermission } from "../lib/access";
 import { recordAuditLog } from "../lib/auditLog";
 import { getMonthlyRevenueTarget } from "../lib/targets";
+import { BILLABLE_JOB_WHERE } from "../lib/balance";
 
 const createSchema = z.object({
   customerId: z.string().uuid(),
@@ -112,7 +113,7 @@ export async function computePaymentsSummary(canViewFinance: boolean) {
     }),
     prisma.payment.aggregate({ _sum: { amount: true } }),
     prisma.payment.count({ where: { createdAt: { gte: startOfMonth, lt: startOfNextMonth } } }),
-    prisma.job.aggregate({ _sum: { price: true } }),
+    prisma.job.aggregate({ _sum: { price: true }, where: BILLABLE_JOB_WHERE }),
     // archivedAt: null — terfi/işten çıkarma sonucu arşivlenen personelin
     // maaşı artık aktif bir yük değil, net kâr hesabına dahil edilmemeli.
     prisma.staff.aggregate({ _sum: { salaryBase: true }, where: { archivedAt: null } }),

@@ -16,12 +16,7 @@ import '../../widgets/staggered_fade_in.dart';
 import '../../widgets/state_views.dart';
 import '../../widgets/stat_card.dart';
 import '../stock/stock_api.dart';
-import '../appointment_requests/my_appointment_requests_screen.dart';
-import '../approvals/approvals_screen.dart';
-import '../jobs/jobs_list_screen.dart';
-import '../messages/messages_list_screen.dart';
-import '../quotes/quotes_list_screen.dart';
-import '../stock/stock_list_screen.dart';
+import 'notification_routes.dart';
 import 'notifications_api.dart';
 
 final _dateFormat = DateFormat('d MMMM, HH:mm', 'tr_TR');
@@ -35,37 +30,6 @@ List<({String key, String label, Color color})> _categoryOrder(AppPalette cs) =>
       (key: 'alert', label: 'Uyarılar', color: cs.warning500),
       (key: 'other', label: 'Diğer', color: cs.textFaint),
     ];
-
-/// Bildirime dokununca ilgili ekrana yönlendirir (backend/src/lib/notify.ts:
-/// NotificationLink ile birebir relatedType eşlemesi — web/src/lib/
-/// notifications.ts:getNotificationHref ile aynı mantık, Flutter'da ekran
-/// olarak). Hedef ekranın kendi API çağrısı kendi yetki/kapsam kontrolünü
-/// zaten uyguluyor; burada ekstra bir kontrol EKLENMEDİ.
-Widget? _screenForRelatedType(String? relatedType, AppRole? role) {
-  switch (relatedType) {
-    case 'Job':
-      return const JobsListScreen();
-    case 'Product':
-      return const StockListScreen();
-    // web/src/lib/notifications.ts:getNotificationHref — avans talebi de
-    // "/bekleyen-onaylar"a gider, teklif listesine DEĞİL (önceden burada
-    // yanlışlıkla QuotesListScreen'e yönlendiriliyordu).
-    case 'AdvanceRequest':
-      return const ApprovalsScreen();
-    case 'QuoteRequest':
-      return const QuotesListScreen();
-    case 'Conversation':
-      return const MessagesListScreen();
-    // Bölüm J: müşteri randevu talebi — yönetim tarafı Bekleyen Onaylar'da
-    // planlar/reddeder, müşteri kendi talep listesini görür.
-    case 'AppointmentRequest':
-      return role == AppRole.customer
-          ? const MyAppointmentRequestsScreen()
-          : const ApprovalsScreen();
-    default:
-      return null;
-  }
-}
 
 class NotificationsScreen extends StatefulWidget {
   const NotificationsScreen({super.key});
@@ -227,7 +191,12 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     }
     if (!mounted) return;
     final role = context.read<AuthProvider>().user?.role;
-    final screen = _screenForRelatedType(n.relatedType, role);
+    final screen = screenForNotification(
+      relatedType: n.relatedType,
+      relatedId: n.relatedId,
+      type: n.type,
+      role: role,
+    );
     if (screen != null && mounted) {
       Navigator.of(context).push(MaterialPageRoute(builder: (_) => screen));
     }
@@ -397,9 +366,11 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
           final n = _notifications[i];
           final unread = n.readAt == null;
           final linked =
-              _screenForRelatedType(
-                n.relatedType,
-                context.read<AuthProvider>().user?.role,
+              screenForNotification(
+                relatedType: n.relatedType,
+                relatedId: n.relatedId,
+                type: n.type,
+                role: context.read<AuthProvider>().user?.role,
               ) !=
               null;
           return StaggeredFadeIn(

@@ -1,3 +1,4 @@
+import '../../core/api_dates.dart';
 import '../../core/api_client.dart';
 import '../../models/leave_request.dart';
 
@@ -30,8 +31,8 @@ class LeaveRequestsApi {
     final json = await _api.post<Map<String, dynamic>>(
       '/leave-requests',
       body: {
-        'startDate': startDate.toIso8601String(),
-        'endDate': endDate.toIso8601String(),
+        'startDate': apiDate(startDate),
+        'endDate': apiDate(endDate),
         'reason': reason,
       },
     );

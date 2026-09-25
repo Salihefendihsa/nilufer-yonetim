@@ -31,6 +31,7 @@ import {
   Receipt,
   MessageSquareWarning,
   Sparkles,
+  Inbox,
 } from "lucide-react";
 import { useAuth } from "@/lib/AuthProvider";
 import { ROLE_LABELS, ROLE_SHORT_LABELS, type Role } from "@/lib/auth";
@@ -61,6 +62,9 @@ const NAV_ITEMS: NavItem[] = [
   // Bölüm AO (9. tur): şikayetler — aynı sayfa, role göre başlık (Bekleyen Onaylar'dan ayrı akış).
   { href: "/sikayetler", label: "Şikayetlerim", icon: MessageSquareWarning, roles: ["CUSTOMER"], group: "operasyon" },
   { href: "/sikayetler", label: "Şikayetler", icon: MessageSquareWarning, roles: ["OWNER", "MANAGER"], group: "operasyon" },
+  // Personel → Patron genel talep kanalı: personel kendi taleplerini, Patron tümünü görür.
+  { href: "/taleplerim", label: "Taleplerim", icon: Inbox, roles: ["MANAGER", "TEAM_LEAD", "STAFF"], group: "operasyon" },
+  { href: "/personel-talepleri", label: "Personel Talepleri", icon: Inbox, roles: ["OWNER"], group: "operasyon" },
   { href: "/musteriler", label: "Müşteriler", icon: Users, roles: ["OWNER", "MANAGER"], group: "operasyon" },
   { href: "/personel", label: "Personel", icon: HardHat, roles: ["OWNER", "MANAGER"], group: "operasyon" },
   { href: "/performans", label: "Performans", icon: Trophy, roles: ["OWNER", "MANAGER", "TEAM_LEAD"], group: "operasyon" },

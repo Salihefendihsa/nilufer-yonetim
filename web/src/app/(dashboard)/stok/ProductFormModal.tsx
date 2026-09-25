@@ -68,12 +68,12 @@ export function ProductFormModal({ open, onClose, onSaved }: ProductFormModalPro
   return (
     <Modal open={open} onClose={onClose} title="Yeni Ürün">
       <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-        <div className="grid grid-cols-3 gap-3">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
           <div className="flex flex-col gap-1.5">
             <label className="text-sm font-medium text-text-secondary">Ürün Kodu</label>
             <input value={code} onChange={(e) => setCode(e.target.value)} className="input" placeholder="Örn. KM-1042" />
           </div>
-          <div className="col-span-2 flex flex-col gap-1.5">
+          <div className="flex flex-col gap-1.5 sm:col-span-2">
             <label className="text-sm font-medium text-text-secondary">Ürün Adı</label>
             <input required value={name} onChange={(e) => setName(e.target.value)} className="input" placeholder="Örn. Deltamethrin" />
           </div>

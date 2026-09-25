@@ -1,3 +1,4 @@
+import '../../core/api_dates.dart';
 import '../../core/api_client.dart';
 import '../../models/paginated.dart';
 import '../../models/staff.dart';
@@ -43,7 +44,7 @@ class StaffApi {
       '/staff/$id/status',
       body: {
         'status': staffStatusToApiString(status),
-        if (statusUntil != null) 'statusUntil': statusUntil.toIso8601String(),
+        if (statusUntil != null) 'statusUntil': apiInstant(statusUntil),
       },
     );
     return Staff.fromJson(json);
@@ -138,8 +139,8 @@ class StaffApi {
       '/staff/$staffId/certifications',
       body: {
         'name': name,
-        'issuedDate': issuedDate.toIso8601String(),
-        'expiryDate': expiryDate.toIso8601String(),
+        'issuedDate': apiDate(issuedDate),
+        'expiryDate': apiDate(expiryDate),
       },
     );
     return StaffCertification.fromJson(json);

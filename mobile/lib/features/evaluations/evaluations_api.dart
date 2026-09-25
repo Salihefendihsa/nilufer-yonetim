@@ -1,3 +1,4 @@
+import '../../core/api_dates.dart';
 import '../../core/api_client.dart';
 import '../../models/evaluation.dart';
 
@@ -32,8 +33,8 @@ class EvaluationsApi {
       '/evaluation-periods',
       body: {
         'label': label,
-        'startDate': startDate.toIso8601String(),
-        'endDate': endDate.toIso8601String(),
+        'startDate': apiDate(startDate),
+        'endDate': apiDate(endDate),
         if (bonusThreshold != null) 'bonusThreshold': bonusThreshold,
         if (bonusAmount != null) 'bonusAmount': bonusAmount,
       },

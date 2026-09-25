@@ -3,6 +3,7 @@ import { prisma } from "./prisma";
 import { notifyUser, notifyUsers, notifyManagement } from "./notify";
 import { sendEmail } from "./email";
 import { EXPIRY_ALERT_WINDOW_DAYS, findExpiringBatches } from "./productBatches";
+import { billedTotal } from "./balance";
 
 const UPCOMING_JOB_WINDOW_START_MIN = 55;
 const UPCOMING_JOB_WINDOW_END_MIN = 70;
@@ -206,14 +207,14 @@ export async function sendOverduePaymentDigest(): Promise<number> {
 
   const customers = await prisma.customer.findMany({
     include: {
-      jobs: { select: { price: true } },
+      jobs: { select: { price: true, status: true } },
       payments: { select: { amount: true, createdAt: true }, orderBy: { createdAt: "desc" } },
     },
   });
 
   const overdue = customers
     .map((customer) => {
-      const totalPriced = customer.jobs.reduce((sum, job) => sum + Number(job.price ?? 0), 0);
+      const totalPriced = billedTotal(customer.jobs);
       const totalPaid = customer.payments.reduce((sum, payment) => sum + Number(payment.amount), 0);
       const outstandingBalance = totalPriced - totalPaid;
       const lastPaymentAt = customer.payments[0]?.createdAt ?? null;

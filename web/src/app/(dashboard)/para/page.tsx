@@ -181,7 +181,7 @@ function PaymentsPageContent() {
         }
       />
 
-      <div className="flex w-fit gap-1 rounded-2xl border border-border bg-surface-card p-1 shadow-card">
+      <div className="flex w-fit max-w-full gap-1 overflow-x-auto rounded-2xl border border-border [&>button]:shrink-0 [&>button]:whitespace-nowrap bg-surface-card p-1 shadow-card">
         <button
           type="button"
           onClick={() => setTab("payments")}

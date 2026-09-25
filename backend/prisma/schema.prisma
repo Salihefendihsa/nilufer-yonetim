@@ -145,6 +145,8 @@ model User {
   twoFactorRecoveryCodes TwoFactorRecoveryCode[]
   twoFactorChallenges    TwoFactorChallenge[]
   staffBonusesApproved   StaffBonus[] @relation("StaffBonusApprovedBy")
+  staffRequests          StaffRequest[] @relation("StaffRequestRequester")
+  staffRequestResponses  StaffRequest[] @relation("StaffRequestResponder")
 
   @@index([role])
 }
@@ -316,6 +318,51 @@ model CustomerComplaint {
   @@index([status])
   @@index([priority])
   @@index([assignedToUserId])
+}
+
+enum StaffRequestCategory {
+  EQUIPMENT
+  SUGGESTION
+  COMPLAINT
+  OTHER
+}
+
+enum StaffRequestStatus {
+  OPEN
+  IN_PROGRESS
+  RESOLVED
+  REJECTED
+}
+
+enum StaffRequestPriority {
+  LOW
+  MEDIUM
+  HIGH
+}
+
+/// Personel → Patron genel talep kanalı (CustomerComplaint'in tersi):
+/// MANAGER/TEAM_LEAD/STAFF kendi adına açar (ekipman, öneri, şikayet, diğer);
+/// yalnızca OWNER görür-yanıtlar. RESOLVED/REJECTED'a geçişte resolvedAt
+/// damgalanır ve talep sahibine bildirim gider; yeniden açılırsa sıfırlanır.
+model StaffRequest {
+  id                String               @id @default(uuid())
+  staffUserId       String
+  subject           String
+  description       String
+  category          StaffRequestCategory @default(OTHER)
+  status            StaffRequestStatus   @default(OPEN)
+  priority          StaffRequestPriority @default(MEDIUM)
+  respondedByUserId String?
+  responseNote      String?
+  createdAt         DateTime             @default(now())
+  resolvedAt        DateTime?
+
+  staffUser   User  @relation("StaffRequestRequester", fields: [staffUserId], references: [id])
+  respondedBy User? @relation("StaffRequestResponder", fields: [respondedByUserId], references: [id])
+
+  @@index([staffUserId])
+  @@index([status])
+  @@index([priority])
 }
 
 /// Bölüm AK (8. tur): Sistem geneli duyuru şeridi — aynı anda en fazla 1 aktif

@@ -264,6 +264,9 @@ class _LeaveRequestsScreenState extends State<LeaveRequestsScreen> {
                       ),
                     const SizedBox(height: 20),
                   ],
+                  // Kalan yıllık izin (kendi bakiyesi); liste değişince yenilenir.
+                  LeaveBalanceCard(key: ValueKey(_mine.length)),
+                  const SizedBox(height: 12),
                   Text(
                     'Taleplerim',
                     style: tx.body.copyWith(fontWeight: FontWeight.w700),

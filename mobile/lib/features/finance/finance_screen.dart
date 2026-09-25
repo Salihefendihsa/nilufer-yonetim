@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
+import '../../core/api_dates.dart';
 import '../../core/api_client.dart';
 import '../../core/file_download.dart';
 import '../../theme/app_colors.dart';
@@ -904,7 +905,7 @@ class _ExpenseFormScreenState extends State<_ExpenseFormScreen> {
         category: _category,
         amount: double.parse(_amountController.text.trim()),
         description: _descriptionController.text.trim(),
-        date: _date.toIso8601String(),
+        date: apiDate(_date),
       );
       if (mounted) Navigator.of(context).pop(true);
     } catch (e) {

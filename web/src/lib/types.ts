@@ -1106,6 +1106,27 @@ export interface CustomerComplaint {
   assignedTo?: { id: string; fullName: string; role: string } | null;
 }
 
+/** Personel → Patron genel talep (CustomerComplaint'in tersi). */
+export type StaffRequestCategory = "EQUIPMENT" | "SUGGESTION" | "COMPLAINT" | "OTHER";
+export type StaffRequestStatus = "OPEN" | "IN_PROGRESS" | "RESOLVED" | "REJECTED";
+export type StaffRequestPriority = "LOW" | "MEDIUM" | "HIGH";
+
+export interface StaffRequest {
+  id: string;
+  staffUserId: string;
+  subject: string;
+  description: string;
+  category: StaffRequestCategory;
+  status: StaffRequestStatus;
+  priority: StaffRequestPriority;
+  respondedByUserId: string | null;
+  responseNote: string | null;
+  createdAt: string;
+  resolvedAt: string | null;
+  staffUser?: { id: string; fullName: string; role: Role };
+  respondedBy?: { id: string; fullName: string; role: Role } | null;
+}
+
 /** Bölüm AP (9. tur): GET /staff/me/calendar-token — ICS abonelik linki. */
 export interface CalendarToken {
   token: string;

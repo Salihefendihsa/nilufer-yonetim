@@ -7,7 +7,7 @@ import { getStaffIdForUser, getTeamStaffIds } from "../lib/access";
 import { idParam } from "../lib/params";
 import { recordAuditLog } from "../lib/auditLog";
 import { notifyUser, notifyManagement } from "../lib/notify";
-import { computeLeaveBalance, leaveDaysInYear } from "../lib/leaveBalance";
+import { computeLeaveBalance, findOverlappingApprovedLeave, leaveDaysInYear } from "../lib/leaveBalance";
 
 /**
  * Bölüm AH (7. tur): talebin gün sayısı ve o yılın kalan bakiyesine göre aşım
@@ -52,6 +52,10 @@ export async function createLeaveRequest(req: Request, res: Response) {
   }
 
   const data = createSchema.parse(req.body);
+  const overlap = await findOverlappingApprovedLeave(staffId, data.startDate, data.endDate);
+  if (overlap) {
+    return res.status(409).json({ error: "Bu tarihlerle çakışan onaylı bir izniniz zaten var" });
+  }
   const leaveRequest = await prisma.leaveRequest.create({ data: { ...data, staffId } });
 
   await recordAuditLog({
@@ -141,6 +145,13 @@ export async function decideLeaveRequest(req: Request, res: Response) {
   }
 
   const { status, decisionNote } = decideSchema.parse(req.body);
+
+  if (status === LeaveRequestStatus.APPROVED) {
+    const overlap = await findOverlappingApprovedLeave(existing.staffId, existing.startDate, existing.endDate, existing.id);
+    if (overlap) {
+      return res.status(409).json({ error: "Personelin bu tarihlerle çakışan onaylı bir izni var; talebi reddedin veya tarihleri değiştirin" });
+    }
+  }
 
   // Bölüm AH: karar ÖNCESİ bakiye — aşım yalnızca uyarı bayrağı olarak yanıtta.
   const year = existing.startDate.getFullYear();

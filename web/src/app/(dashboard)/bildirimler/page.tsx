@@ -9,6 +9,7 @@ import { PageHeader } from "@/components/PageHeader";
 import { StatCard } from "@/components/StatCard";
 import { StatusStrip } from "@/components/StatusStrip";
 import { ChartCard, DonutChart } from "@/components/ChartCard";
+import { useAuth } from "@/lib/AuthProvider";
 import { api, ApiError } from "@/lib/api";
 import {
   NOTIFICATION_CATEGORIES,
@@ -37,6 +38,7 @@ function formatTime(value: string): string {
 
 export default function NotificationsPage() {
   const router = useRouter();
+  const { user } = useAuth();
   const [notifications, setNotifications] = useState<AppNotification[]>([]);
   const [summaryItems, setSummaryItems] = useState<AppNotification[]>([]);
   const [loading, setLoading] = useState(true);
@@ -93,7 +95,7 @@ export default function NotificationsPage() {
 
   function handleNotificationClick(n: AppNotification) {
     handleMarkOneRead(n.id);
-    const href = getNotificationHref(n);
+    const href = getNotificationHref(n, user?.role);
     if (href) router.push(href);
   }
 
@@ -265,7 +267,7 @@ export default function NotificationsPage() {
               const category = NOTIFICATION_CATEGORIES[categorizeNotification(n.title)];
               const Icon = category.icon;
               const unread = !n.readAt;
-              const isLinked = getNotificationHref(n) !== null;
+              const isLinked = getNotificationHref(n, user?.role) !== null;
 
               return (
                 <li key={n.id}>
