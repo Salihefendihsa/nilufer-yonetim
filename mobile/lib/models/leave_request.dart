@@ -10,6 +10,8 @@ class LeaveRequest {
   final String? decidedAt;
   final String? decisionNote;
   final String? staffName;
+  /// Talep sahibinin kullanıcı kimliği — şef kendi talebini karara bağlayamaz (backend 403).
+  final String? staffUserId;
   /// Bölüm AH (8. tur): liste/decide yanıtında bakiye bilgisi (yalnızca bekleyenlerde bayrak).
   final int? requestedDays;
   final int? remainingDays;
@@ -26,6 +28,7 @@ class LeaveRequest {
     this.decidedAt,
     this.decisionNote,
     this.staffName,
+    this.staffUserId,
     this.requestedDays,
     this.remainingDays,
     this.exceedsBalance = false,
@@ -45,6 +48,7 @@ class LeaveRequest {
       decidedAt: json['decidedAt'] as String?,
       decisionNote: json['decisionNote'] as String?,
       staffName: user?['fullName'] as String?,
+      staffUserId: staff?['userId'] as String?,
       requestedDays: (json['requestedDays'] as num?)?.toInt(),
       remainingDays: (json['remainingDays'] as num?)?.toInt(),
       exceedsBalance: json['exceedsBalance'] == true,

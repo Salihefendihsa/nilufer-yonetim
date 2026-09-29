@@ -138,6 +138,11 @@ export async function decideLeaveRequest(req: Request, res: Response) {
   }
 
   if (user.role === Role.TEAM_LEAD) {
+    // Şef kendi talebini karara bağlayamaz (çıkar çatışması): getTeamStaffIds
+    // şefin kendi staffId'sini de içerdiği için ayrıca ve önce kontrol edilir.
+    if (existing.staff.userId === user.sub) {
+      return res.status(403).json({ error: "Kendi izin talebinizi onaylayamaz veya reddedemezsiniz" });
+    }
     const teamIds = await getTeamStaffIds(user.sub);
     if (!teamIds.includes(existing.staffId)) {
       return res.status(403).json({ error: "Bu talep sizin ekibinize ait değil" });

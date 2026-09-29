@@ -209,7 +209,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       Expanded(
                         child: Text(
                           'Firma bilgileri, hizmet türleri, bölgeler, aylık hedefler '
-                          've yedekleme gibi diğer sistem ayarları yalnızca işletme '
+                          've veri dışa aktarımı gibi diğer sistem ayarları yalnızca işletme '
                           'sahibi tarafından yönetilebilir.',
                           style: tx.bodySmall,
                         ),

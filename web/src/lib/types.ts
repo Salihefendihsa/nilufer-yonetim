@@ -279,7 +279,7 @@ export interface LeaveRequest {
   decidedAt: string | null;
   decidedByUserId: string | null;
   decisionNote: string | null;
-  staff?: { user: { fullName: string } };
+  staff?: { userId?: string; user: { fullName: string } };
   /** Bölüm AH (7. tur): liste/decide yanıtında — bakiyeyi aşan bekleyen talep uyarısı. */
   requestedDays?: number;
   remainingDays?: number | null;

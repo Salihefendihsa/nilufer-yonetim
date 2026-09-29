@@ -63,6 +63,7 @@ function ApprovalQueueContent() {
   // onaylarını görebilir — teklif/avans/sözleşme uçları OWNER/MANAGER'a
   // özel (bkz. backend routes), bu yüzden TEAM_LEAD için hiç çağrılmaz.
   const isTeamLead = user?.role === "TEAM_LEAD";
+  const myUserId = user?.id;
 
   const [quotes, setQuotes] = useState<QuoteRequest[]>([]);
   const [advances, setAdvances] = useState<AdvanceRequest[]>([]);
@@ -101,7 +102,10 @@ function ApprovalQueueContent() {
       setExpiringContracts(expiringRes.status === "fulfilled" ? expiringRes.value.data : []);
       setPendingReports(reportsRes.status === "fulfilled" ? reportsRes.value.data : []);
       setLeaveRequests(
-        leaveRes.status === "fulfilled" ? leaveRes.value.data.filter((l) => l.status === "PENDING") : []
+        // Şef kendi talebini karara bağlayamaz (backend 403) — kendi talebi kuyrukta gösterilmez.
+        leaveRes.status === "fulfilled"
+          ? leaveRes.value.data.filter((l) => l.status === "PENDING" && (!myUserId || l.staff?.userId !== myUserId))
+          : []
       );
 
       const firstError = [quotesRes, advancesRes, expiringRes, reportsRes, leaveRes, appointmentRes].find((r) => r.status === "rejected");
@@ -114,7 +118,7 @@ function ApprovalQueueContent() {
     } finally {
       setLoading(false);
     }
-  }, [isTeamLead]);
+  }, [isTeamLead, myUserId]);
 
   useEffect(() => {
     load();

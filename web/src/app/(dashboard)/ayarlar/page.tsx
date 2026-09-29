@@ -73,7 +73,7 @@ function isSettingsTab(v: string | null): v is SettingsTab {
  * - İşletme: firma bilgisi, hedefler, hizmet türleri, semtler (OWNER).
  * - Operasyon: iş şablonları, müşteri etiketleri (OWNER/MANAGER),
  *   değerlendirme kriterleri (OWNER).
- * - Sistem: duyuru, KVKK talepleri, yedek, tehlikeli bölge (OWNER).
+ * - Sistem: duyuru, KVKK talepleri, veri dışa aktarımı, tehlikeli bölge (OWNER).
  * Tek sekmesi olan roller (STAFF/TEAM_LEAD/CUSTOMER) sekme çubuğu görmez.
  * `?tab=` ile derin link desteklenir (ör. Bekleyen Onaylar → KVKK kuyruğu).
  */
@@ -1325,9 +1325,9 @@ function BackupSection() {
     setError(null);
     try {
       const dateStr = new Date().toISOString().slice(0, 10);
-      await downloadFile("/admin/backup", `nilufer-yedek-${dateStr}.json`);
+      await downloadFile("/admin/backup", `nilufer-veri-dokumu-${dateStr}.json`);
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : "Yedek alınamadı");
+      setError(err instanceof ApiError ? err.message : "Veri dökümü alınamadı");
     } finally {
       setDownloading(false);
     }
@@ -1336,8 +1336,8 @@ function BackupSection() {
   return (
     <SectionCard
       icon={HardDrive}
-      title="Yedekleme"
-      description="Veritabanındaki tüm verilerin bir JSON dosyası olarak indirilmesi."
+      title="Veri Dışa Aktarımı"
+      description="Seçili tabloların (kullanıcı, müşteri, iş, stok, finans vb.) kısmi bir JSON dökümü. Şifre/2FA gibi kimlik bilgileri içermez; bu dosyadan geri yükleme yapılamaz ve tam yedek yerine geçmez."
     >
       <div className="flex flex-col gap-3">
         {error && <p className="rounded-2xl border border-danger-100 bg-danger-50 px-4 py-3 text-sm text-danger-500">{error}</p>}
@@ -1348,7 +1348,7 @@ function BackupSection() {
           className="btn-secondary w-fit"
         >
           <Download size={16} strokeWidth={1.75} />
-          {downloading ? "İndiriliyor..." : "Yedek Al"}
+          {downloading ? "İndiriliyor..." : "Veri Dökümü Al"}
         </button>
       </div>
     </SectionCard>

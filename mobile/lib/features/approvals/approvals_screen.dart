@@ -81,6 +81,7 @@ class _ApprovalsScreenState extends State<ApprovalsScreen> {
     });
     final isTeamLead =
         context.read<AuthProvider>().user?.role == AppRole.teamLead;
+    final myUserId = context.read<AuthProvider>().user?.id;
     final results = await Future.wait<Object?>([
       isTeamLead
           ? Future.value(<QuoteRequest>[])
@@ -107,7 +108,10 @@ class _ApprovalsScreenState extends State<ApprovalsScreen> {
       _advances = results[1] as List<AdvanceRequest>;
       _expiring = results[2] as List<Contract>;
       _reportJobs = results[3] as List<Job>;
-      _leaveRequests = results[4] as List<LeaveRequest>;
+      // Şef kendi izin talebini karara bağlayamaz (backend 403) — kuyrukta gösterilmez.
+      _leaveRequests = (results[4] as List<LeaveRequest>)
+          .where((l) => myUserId == null || l.staffUserId != myUserId)
+          .toList();
       _appointmentRequests = results[5] as List<AppointmentRequest>;
       _loading = false;
     });

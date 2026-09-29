@@ -2,7 +2,7 @@ import type { Request, Response } from "express";
 import bcrypt from "bcrypt";
 import { randomInt } from "crypto";
 import { z } from "zod";
-import { Role } from "@prisma/client";
+import { Role, type Prisma } from "@prisma/client";
 import { prisma } from "../lib/prisma";
 import { recordAuditLog } from "../lib/auditLog";
 import { signToken } from "../lib/jwt";
@@ -175,6 +175,69 @@ export async function clearDemoData(req: Request, res: Response) {
   return res.json({ message: "Demo veriler silindi, kullanıcı hesapları korundu", deleted: result });
 }
 
+/**
+ * Veri dışa aktarımına giren alanlar AÇIK allowlist ile seçilir: şemaya sonradan
+ * eklenen bir alan (yeni bir sır dahil) bilinçli olarak eklenmedikçe çıkmaz.
+ * Çıkmayanlar — User: passwordHash, tokenVersion, twoFactorSecret/-Enabled,
+ * mustChangePassword, fcmTokens; Staff: calendarToken (takvim beslemesinde
+ * kimlik doğrulama görevi görür). Oturum (UserSession) tabloları hiç okunmaz.
+ */
+const USER_EXPORT_SELECT = {
+  id: true,
+  email: true,
+  role: true,
+  fullName: true,
+  phone: true,
+  isActive: true,
+  createdAt: true,
+} satisfies Prisma.UserSelect;
+
+const STAFF_EXPORT_SELECT = {
+  id: true,
+  userId: true,
+  position: true,
+  salaryBase: true,
+  supervisorId: true,
+  status: true,
+  statusUntil: true,
+  vehiclePlate: true,
+  dailyJobCapacity: true,
+  annualLeaveQuotaDays: true,
+  createdAt: true,
+  archivedAt: true,
+} satisfies Prisma.StaffSelect;
+
+/** Setting serbest anahtar/değer deposudur; kimlik bilgisi izlenimi veren anahtarlar dışarıda kalır. */
+const SENSITIVE_SETTING_KEY = /(secret|token|passw|passcode|api[_-]?key|private|credential|smtp)/i;
+
+/** Dışa aktarıma giren tablolar — "tam yedek" değildir, bkz. `meta` (şemada çok daha fazla model var). */
+const EXPORTED_COLLECTIONS = [
+  "users",
+  "customers",
+  "staff",
+  "permissions",
+  "advanceRequests",
+  "jobs",
+  "jobReports",
+  "products",
+  "stockMovements",
+  "contracts",
+  "payments",
+  "conversations",
+  "messages",
+  "quoteRequests",
+  "notifications",
+  "auditLogs",
+  "settings",
+  "serviceTypes",
+  "districts",
+] as const;
+
+/**
+ * GET /admin/backup — yol, mevcut istemciler (web Ayarlar → "Veri Dışa Aktarımı") için
+ * korunur; ancak çıktı bir KISMİ veri dökümüdür: geri yükleme (restore) yolu YOKTUR,
+ * kimlik doğrulama sırları içermez ve yalnızca `meta.collections` tablolarını kapsar.
+ */
 export async function getBackup(_req: Request, res: Response) {
   const [
     users,
@@ -193,13 +256,13 @@ export async function getBackup(_req: Request, res: Response) {
     quoteRequests,
     notifications,
     auditLogs,
-    settings,
+    allSettings,
     serviceTypes,
     districts,
   ] = await Promise.all([
-    prisma.user.findMany(),
+    prisma.user.findMany({ select: USER_EXPORT_SELECT }),
     prisma.customer.findMany(),
-    prisma.staff.findMany(),
+    prisma.staff.findMany({ select: STAFF_EXPORT_SELECT }),
     prisma.permission.findMany(),
     prisma.advanceRequest.findMany(),
     prisma.job.findMany(),
@@ -217,9 +280,19 @@ export async function getBackup(_req: Request, res: Response) {
     prisma.serviceType.findMany(),
     prisma.district.findMany(),
   ]);
+  const settings = allSettings.filter((s) => !SENSITIVE_SETTING_KEY.test(s.key));
 
+  const generatedAt = new Date().toISOString();
   const backup = {
-    generatedAt: new Date().toISOString(),
+    generatedAt,
+    meta: {
+      kind: "partial-data-export",
+      restorable: false,
+      note:
+        "Bu dosya kısmi bir veri dışa aktarımıdır: yalnızca listelenen tablolar vardır, kimlik doğrulama bilgileri " +
+        "(şifre özeti, 2FA sırrı, token'lar) içermez ve bu dosyadan geri yükleme yapılamaz.",
+      collections: EXPORTED_COLLECTIONS,
+    },
     users,
     customers,
     staff,
@@ -241,8 +314,8 @@ export async function getBackup(_req: Request, res: Response) {
     districts,
   };
 
-  const dateStr = new Date().toISOString().slice(0, 10);
+  const dateStr = generatedAt.slice(0, 10);
   res.setHeader("Content-Type", "application/json");
-  res.setHeader("Content-Disposition", `attachment; filename="nilufer-yedek-${dateStr}.json"`);
+  res.setHeader("Content-Disposition", `attachment; filename="nilufer-veri-dokumu-${dateStr}.json"`);
   return res.send(JSON.stringify(backup, null, 2));
 }
