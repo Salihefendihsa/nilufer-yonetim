@@ -1,5 +1,6 @@
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { Role } from "@prisma/client";
+import { prisma } from "../src/lib/prisma";
 import { JOB_CHECKLIST_TEMPLATE } from "../src/lib/checklist";
 import { api, TestContext, type TestUser } from "./helpers/fixtures";
 
@@ -85,6 +86,8 @@ describe("İş kontrol listesi (/jobs/:id/checklist)", () => {
   });
 
   it("rapor oluşturulunca liste rapora kopyalanır; eksik liste raporu engellemez", async () => {
+    // Rapor yalnızca devam eden (IN_PROGRESS) işe gönderilir.
+    await prisma.job.update({ where: { id: jobId }, data: { status: "IN_PROGRESS" } });
     const report = await api().post(`/jobs/${jobId}/report`).set("Authorization", as("assignee")).send({ dosage: "50 ml", notes: "ok" });
     expect(report.status).toBe(201);
 

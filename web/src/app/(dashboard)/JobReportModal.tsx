@@ -31,6 +31,9 @@ export function JobReportModal({ open, onClose, onCompleted, jobId }: JobReportM
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const signatureKeyRef = useRef(0);
+  // Fotoğraflar rapordan ÖNCE yüklenir (rapor işi tamamlar ve nihai durumdur).
+  // Rapor başarısız olup kullanıcı tekrar denerse aynı fotoğraf ikinci kez yüklenmesin.
+  const uploadedRef = useRef({ BEFORE: false, AFTER: false });
 
   useEffect(() => {
     if (open) {
@@ -42,6 +45,7 @@ export function JobReportModal({ open, onClose, onCompleted, jobId }: JobReportM
       setSignature(null);
       setError(null);
       signatureKeyRef.current += 1;
+      uploadedRef.current = { BEFORE: false, AFTER: false };
       api
         .get<Paginated<Product>>("/products?limit=100")
         .then((res) => setProducts(res.data))
@@ -75,17 +79,25 @@ export function JobReportModal({ open, onClose, onCompleted, jobId }: JobReportM
     setSaving(true);
 
     try {
+      // 1) Harici adım (dosya yükleme): başarısız olursa hiçbir rapor/stok/durum
+      //    değişikliği yapılmamıştır; kullanıcı formu tekrar gönderebilir.
+      if (beforePhoto && !uploadedRef.current.BEFORE) {
+        await uploadPhoto(jobId, beforePhoto, "BEFORE");
+        uploadedRef.current.BEFORE = true;
+      }
+      if (afterPhoto && !uploadedRef.current.AFTER) {
+        await uploadPhoto(jobId, afterPhoto, "AFTER");
+        uploadedRef.current.AFTER = true;
+      }
+
+      // 2) Rapor + stok çıkışı + işi tamamlama backend'de TEK transaction'dır;
+      //    ayrı bir durum PATCH'i yoktur, yarım kalan durum oluşmaz.
       await api.post(`/jobs/${jobId}/report`, {
         products: rows.map((r) => ({ productId: r.productId, quantity: Number(r.quantity) })),
         dosage,
         notes: note || undefined,
         signatureBase64: signature ?? undefined,
       });
-
-      if (beforePhoto) await uploadPhoto(jobId, beforePhoto, "BEFORE");
-      if (afterPhoto) await uploadPhoto(jobId, afterPhoto, "AFTER");
-
-      await api.patch(`/jobs/${jobId}`, { status: "COMPLETED" });
       onCompleted();
       onClose();
     } catch (err) {

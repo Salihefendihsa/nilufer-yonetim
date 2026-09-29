@@ -13,6 +13,7 @@ import { saveBase64Image } from "../lib/upload";
 import { recordAuditLog } from "../lib/auditLog";
 import { checklistUpdateSchema, mergeChecklist, normalizeChecklist } from "../lib/checklist";
 import { warrantyFieldsFor } from "../lib/warranty";
+import { logger } from "../lib/logger";
 
 const MANAGEMENT_ROLES: Role[] = [Role.OWNER, Role.MANAGER];
 
@@ -520,6 +521,13 @@ function insufficientStockMessage(p: { name: string; unit: string; currentStock:
 }
 
 class InsufficientStockError extends Error {}
+class ReportConflictError extends Error {}
+
+function reportStatusConflictMessage(status: JobStatus): string {
+  if (status === JobStatus.COMPLETED) return "Bu iş için rapor zaten gönderilmiş, iş tamamlanmış";
+  if (status === JobStatus.CANCELLED) return "İptal edilmiş işe rapor gönderilemez";
+  return "Rapor yalnızca devam eden işlere gönderilebilir; önce işe başlayın";
+}
 
 /**
  * Stok negatife düşemez: koşullu updateMany (currentStock >= miktar) bir
@@ -547,6 +555,12 @@ export async function createJobReport(req: Request, res: Response) {
   const staffId = await getStaffIdForUser(user.sub);
   if (!staffId || staffId !== job.assignedStaffId) {
     return res.status(403).json({ error: "Bu işlem için yetkiniz yok" });
+  }
+
+  // İş kuralı: bir işin tek saha raporu vardır ve rapor işi tamamlar. Rapor
+  // yalnızca IN_PROGRESS işe gönderilebilir; kesin kontrol transaction içinde.
+  if (job.status !== JobStatus.IN_PROGRESS) {
+    return res.status(409).json({ error: reportStatusConflictMessage(job.status) });
   }
 
   const { signatureBase64, products, ...data } = reportSchema.parse(req.body);
@@ -591,9 +605,32 @@ export async function createJobReport(req: Request, res: Response) {
     data.signatureUrl = await saveBase64Image(signatureBase64, "imza");
   }
 
+  // Bölüm Y: tamamlanma anında garanti bitişi hesaplanır (transaction dışında, salt okunur).
+  const completedAt = new Date();
+  const warranty = await warrantyFieldsFor(job.serviceType, completedAt);
+
   let report;
   try {
     report = await prisma.$transaction(async (tx) => {
+      // İşi IN_PROGRESS → COMPLETED'a çeken koşullu güncelleme hem iyimser kilit
+      // hem satır kilidi: eşzamanlı ikinci istek ilkinin commit'ini bekler, sonra
+      // status artık IN_PROGRESS olmadığı için 0 satır alır ve reddedilir; böylece
+      // aynı işe ikinci rapor / ikinci stok çıkışı oluşamaz. COMPLETED nihai
+      // durumdur (VALID_TRANSITIONS), yani bu kapı bir iş için yalnızca bir kez açılır.
+      const claimed = await tx.job.updateMany({
+        where: { id: job.id, status: JobStatus.IN_PROGRESS },
+        data: { status: JobStatus.COMPLETED, completedAt, ...warranty },
+      });
+      if (claimed.count === 0) {
+        const current = await tx.job.findUniqueOrThrow({ where: { id: job.id }, select: { status: true } });
+        throw new ReportConflictError(reportStatusConflictMessage(current.status));
+      }
+      // Eski veri: raporu olup hâlâ IN_PROGRESS kalmış iş için ikinci rapor açılmaz
+      // (transaction geri alınır, iş durumu değişmez).
+      if ((await tx.jobReport.count({ where: { jobId: job.id } })) > 0) {
+        throw new ReportConflictError("Bu iş için rapor zaten gönderilmiş");
+      }
+
       const created = await tx.jobReport.create({
         // Bölüm N: rapor anındaki kontrol listesi rapora kopyalanır.
         data: { ...data, jobId: job.id, staffId, checklist: normalizeChecklist(job.checklist) as unknown as Prisma.InputJsonValue },
@@ -628,23 +665,30 @@ export async function createJobReport(req: Request, res: Response) {
     });
   } catch (err) {
     // Ön kontrol ile transaction arasında başka bir rapor aynı stoğu tüketmiş.
-    if (err instanceof InsufficientStockError) {
+    if (err instanceof InsufficientStockError || err instanceof ReportConflictError) {
       return res.status(409).json({ error: err.message });
     }
     throw err;
   }
 
-  for (const productId of productIds) {
-    await checkLowStockAndNotify(productId);
+  // Commit sonrası yan etkiler (bildirim/denetim): başarısız olsa bile rapor ve
+  // tamamlanma kalıcıdır; istemciye hata dönüp yeniden denemeye yol açmayız.
+  try {
+    for (const productId of productIds) {
+      await checkLowStockAndNotify(productId);
+    }
+    await notifyJobCompleted(job.id, job.customerId);
+    await recordJobStatusAuditLog(user.sub, job.id, job.assignedStaffId, "job.completed", `${JobStatus.IN_PROGRESS} -> ${JobStatus.COMPLETED}`);
+    // Müdür/patron panelinde "Saha Raporu Onay Bekliyor" akışını besler.
+    const customer = await prisma.customer.findUnique({ where: { id: job.customerId }, select: { fullName: true } });
+    await notifyManagement(
+      "Saha raporu onay bekliyor",
+      `${customer?.fullName ?? "Müşteri"} · ${job.serviceType} işinin raporu tamamlandı.`,
+      { type: "job_report_pending", relatedType: "Job", relatedId: job.id }
+    );
+  } catch (err) {
+    logger.error({ err, jobId: job.id }, "Saha raporu sonrası bildirim/denetim adımı başarısız");
   }
-
-  // Müdür/patron panelinde "Saha Raporu Onay Bekliyor" akışını besler.
-  const customer = await prisma.customer.findUnique({ where: { id: job.customerId }, select: { fullName: true } });
-  await notifyManagement(
-    "Saha raporu onay bekliyor",
-    `${customer?.fullName ?? "Müşteri"} · ${job.serviceType} işinin raporu tamamlandı.`,
-    { type: "job_report_pending", relatedType: "Job", relatedId: job.id }
-  );
 
   return res.status(201).json(report);
 }

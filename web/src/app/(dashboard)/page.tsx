@@ -799,8 +799,22 @@ function StaffDashboard() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [reportJobId, setReportJobId] = useState<string | null>(null);
+  const [startingJobId, setStartingJobId] = useState<string | null>(null);
   const [advanceModalOpen, setAdvanceModalOpen] = useState(false);
   const [advanceSent, setAdvanceSent] = useState(false);
+
+  async function startJob(jobId: string) {
+    setStartingJobId(jobId);
+    setError(null);
+    try {
+      await api.patch(`/jobs/${jobId}`, { status: "IN_PROGRESS" });
+      await load();
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : "İş başlatılamadı");
+    } finally {
+      setStartingJobId(null);
+    }
+  }
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -917,15 +931,28 @@ function StaffDashboard() {
                       Takvime Ekle
                     </a>
                   )}
-                  <button
-                    type="button"
-                    disabled={isDone}
-                    onClick={() => setReportJobId(job.id)}
-                    className="flex items-center gap-2 rounded-2xl bg-primary-600 px-5 py-2.5 text-sm font-semibold text-white shadow-card transition hover:bg-primary-700 disabled:opacity-40"
-                  >
-                    <CheckCircle2 size={18} strokeWidth={1.75} />
-                    {isDone ? "Tamamlandı" : "Tamamla"}
-                  </button>
+                  {/* Rapor/tamamlama yalnızca IN_PROGRESS işte kabul edilir; bekleyen işte önce "İşe Başla". */}
+                  {job.status === "PENDING" || job.status === "SCHEDULED" ? (
+                    <button
+                      type="button"
+                      disabled={startingJobId === job.id}
+                      onClick={() => startJob(job.id)}
+                      className="flex items-center gap-2 rounded-2xl bg-primary-600 px-5 py-2.5 text-sm font-semibold text-white shadow-card transition hover:bg-primary-700 disabled:opacity-40"
+                    >
+                      <CheckCircle2 size={18} strokeWidth={1.75} />
+                      {startingJobId === job.id ? "Başlatılıyor..." : "İşe Başla"}
+                    </button>
+                  ) : (
+                    <button
+                      type="button"
+                      disabled={isDone}
+                      onClick={() => setReportJobId(job.id)}
+                      className="flex items-center gap-2 rounded-2xl bg-primary-600 px-5 py-2.5 text-sm font-semibold text-white shadow-card transition hover:bg-primary-700 disabled:opacity-40"
+                    >
+                      <CheckCircle2 size={18} strokeWidth={1.75} />
+                      {isDone ? "Tamamlandı" : "Tamamla"}
+                    </button>
+                  )}
                 </div>
               </div>
             );

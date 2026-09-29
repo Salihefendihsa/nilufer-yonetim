@@ -327,9 +327,9 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
             ),
             const SizedBox(height: 8),
             _ReportCard(report: _report!),
-          ] else if (isStaffOwner &&
-              (job.status == JobStatus.inProgress ||
-                  job.status == JobStatus.completed)) ...[
+          ] else if (isStaffOwner && job.status == JobStatus.inProgress) ...[
+            // Backend: rapor yalnızca IN_PROGRESS işe gönderilir ve işi
+            // tamamlar (tek transaction) — tamamlanmış işte form gösterilmez.
             const SizedBox(height: 18),
             // Bölüm N (4. tur): rapor öncesi kontrol listesi — eksikler
             // görünür kalır, "Raporu Tamamla" engellenmez.
