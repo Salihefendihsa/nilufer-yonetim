@@ -347,11 +347,17 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
     );
   }
 
+  /// Backend kuralı: saha raporu olmadan COMPLETED'a geçilemez. Tamamlama,
+  /// aşağıdaki "İş Raporu Oluştur" formuyla (rapor + stok + tamamlama tek
+  /// adım) yapılır; doğrudan "Tamamla" yalnızca raporu zaten kayıtlı işte sunulur.
+  List<JobStatus> _nextStatuses(Job job) => validJobStatusTransitions[job.status]!
+      .where((s) => s != job.status)
+      .where((s) => s != JobStatus.completed || _report != null)
+      .toList();
+
   Widget _buildStaffActions(Job job) {
     final cs = context.colors;
-    final next = validJobStatusTransitions[job.status]!
-        .where((s) => s != job.status)
-        .toList();
+    final next = _nextStatuses(job);
     if (next.isEmpty) return const SizedBox.shrink();
     return Row(
       children: [
@@ -383,9 +389,7 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
   }
 
   Widget _buildManagementActions(Job job) {
-    final next = validJobStatusTransitions[job.status]!
-        .where((s) => s != job.status)
-        .toList();
+    final next = _nextStatuses(job);
     if (next.isEmpty) return const SizedBox.shrink();
     return Wrap(
       spacing: 8,

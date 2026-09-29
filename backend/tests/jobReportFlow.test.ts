@@ -123,4 +123,61 @@ describe("Saha raporu, stok ve iş tamamlama akışı", () => {
     expect(await counts(job.id, productId)).toEqual({ reports: 0, movements: 0 });
     expect((await prisma.job.findUniqueOrThrow({ where: { id: job.id } })).status).toBe(JobStatus.IN_PROGRESS);
   });
+  describe("PATCH ile raporsuz tamamlama kapalı", () => {
+    const patch = (token: string, jobId: string, body: Record<string, unknown>) =>
+      api().patch(`/jobs/${jobId}`).set("Authorization", `Bearer ${token}`).send(body);
+
+    it("raporsuz atanmış iş: STAFF ve yönetim rollerinin PATCH COMPLETED isteği 409 ile reddedilir", async () => {
+      const owner = await ctx.createUser(Role.OWNER);
+      const tokens = [staffToken, await ctx.tokenFor(manager), await ctx.tokenFor(owner)];
+      for (const token of tokens) {
+        const job = await newJob(JobStatus.IN_PROGRESS);
+        const res = await patch(token, job.id, { status: "COMPLETED" });
+        expect(res.status).toBe(409);
+        expect(res.body.error).toMatch(/rapor/);
+        const fresh = await prisma.job.findUniqueOrThrow({ where: { id: job.id } });
+        expect(fresh.status).toBe(JobStatus.IN_PROGRESS);
+        expect(fresh.completedAt).toBeNull();
+      }
+    });
+
+    it("atanmamış iş için de arka kapı yok: yönetimin PATCH COMPLETED isteği reddedilir", async () => {
+      const job = await ctx.createJob({ customerId, status: JobStatus.IN_PROGRESS });
+      const res = await patch(await ctx.tokenFor(manager), job.id, { status: "COMPLETED" });
+      expect(res.status).toBe(409);
+      expect((await prisma.job.findUniqueOrThrow({ where: { id: job.id } })).status).toBe(JobStatus.IN_PROGRESS);
+    });
+
+    it("eski veri onarımı: raporu kayıtlı IN_PROGRESS işi yönetim PATCH ile tamamlar, stok hareketi üretmez", async () => {
+      const productId = await newProduct(10);
+      const job = await newJob(JobStatus.IN_PROGRESS);
+      await prisma.jobReport.create({ data: { jobId: job.id, staffId: staff.staffId!, dosage: "eski" } });
+      const res = await patch(await ctx.tokenFor(manager), job.id, { status: "COMPLETED" });
+      expect(res.status).toBe(200);
+      expect(res.body.status).toBe("COMPLETED");
+      expect(await stockOf(productId)).toBe(10);
+      expect(await counts(job.id, productId)).toEqual({ reports: 1, movements: 0 });
+    });
+
+    it("izinli geçişler bozulmaz: planlama, başlatma ve iptal çalışır", async () => {
+      const job = await newJob(JobStatus.PENDING);
+      const managerToken = await ctx.tokenFor(manager);
+      expect((await patch(managerToken, job.id, { status: "SCHEDULED" })).status).toBe(200);
+      expect((await patch(staffToken, job.id, { status: "IN_PROGRESS" })).status).toBe(200);
+      const cancelled = await patch(managerToken, job.id, { status: "CANCELLED", cancellationReason: "vt_iptal" });
+      expect(cancelled.status).toBe(200);
+      expect(cancelled.body.status).toBe("CANCELLED");
+      expect(cancelled.body.cancelledAt).not.toBeNull();
+    });
+
+    it("iş listesi/detayı rapor sayısını verir (istemcilerin Tamamla eylemi buna göre açılır)", async () => {
+      const job = await newJob(JobStatus.IN_PROGRESS);
+      const managerToken = await ctx.tokenFor(manager);
+      const before = await api().get(`/jobs/${job.id}`).set("Authorization", `Bearer ${managerToken}`);
+      expect(before.body._count.jobReports).toBe(0);
+      await send(job.id, await newProduct(5), 1);
+      const after = await api().get(`/jobs/${job.id}`).set("Authorization", `Bearer ${managerToken}`);
+      expect(after.body._count.jobReports).toBe(1);
+    });
+  });
 });

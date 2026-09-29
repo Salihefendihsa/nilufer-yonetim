@@ -31,7 +31,7 @@ describe("İş durumu state machine", () => {
     return api().patch(`/jobs/${jobId}`).set("Authorization", `Bearer ${token}`).send({ status, ...extra });
   }
 
-  it("geçerli zincir: PENDING → SCHEDULED → IN_PROGRESS → COMPLETED, zaman damgaları yalnızca geçiş anında basılır", async () => {
+  it("geçerli zincir: PENDING → SCHEDULED → IN_PROGRESS → (rapor) → COMPLETED, zaman damgaları yalnızca geçiş anında basılır", async () => {
     const job = await ctx.createJob({ customerId, assignedStaffId: staff.staffId, status: JobStatus.PENDING });
 
     expect((await patchStatus(managerToken, job.id, JobStatus.SCHEDULED)).status).toBe(200);
@@ -40,14 +40,18 @@ describe("İş durumu state machine", () => {
     expect(inProgress.body.startedAt).not.toBeNull();
     expect(inProgress.body.completedAt).toBeNull();
 
-    const completed = await patchStatus(staffToken, job.id, JobStatus.COMPLETED);
-    expect(completed.status).toBe(200);
-    expect(completed.body.completedAt).not.toBeNull();
+    // Doğrudan PATCH COMPLETED raporsuz reddedilir; tamamlama rapor yoluyla olur.
+    expect((await patchStatus(staffToken, job.id, JobStatus.COMPLETED)).status).toBe(409);
+    const report = await api().post(`/jobs/${job.id}/report`).set("Authorization", `Bearer ${staffToken}`).send({ dosage: "1 L" });
+    expect(report.status).toBe(201);
+    const completed = await prisma.job.findUniqueOrThrow({ where: { id: job.id } });
+    expect(completed.status).toBe(JobStatus.COMPLETED);
+    expect(completed.completedAt).not.toBeNull();
 
     // Aynı duruma tekrar geçiş idempotent: 200, completedAt değişmez.
     const again = await patchStatus(staffToken, job.id, JobStatus.COMPLETED);
     expect(again.status).toBe(200);
-    expect(again.body.completedAt).toBe(completed.body.completedAt);
+    expect(new Date(again.body.completedAt).getTime()).toBe(completed.completedAt!.getTime());
   });
 
   it("geçersiz geçişler 400 ile reddedilir (COMPLETED → IN_PROGRESS, CANCELLED → PENDING, PENDING → COMPLETED)", async () => {
@@ -73,6 +77,8 @@ describe("İş durumu state machine", () => {
 
   it("iyimser kilit: aynı işe eşzamanlı COMPLETED ve CANCELLED isteklerinden yalnızca biri uygulanır", async () => {
     const job = await ctx.createJob({ customerId, assignedStaffId: staff.staffId, status: JobStatus.IN_PROGRESS });
+    // PATCH COMPLETED yalnızca raporu kayıtlı (eski veri) işte kabul edilir.
+    await prisma.jobReport.create({ data: { jobId: job.id, staffId: staff.staffId!, dosage: "eski" } });
 
     const [a, b] = await Promise.all([
       patchStatus(managerToken, job.id, JobStatus.COMPLETED),

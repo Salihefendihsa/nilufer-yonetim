@@ -161,6 +161,13 @@ function JobsPageContent() {
     }
   }
 
+  // Backend kuralı: saha raporu olmadan COMPLETED'a geçilemez (tamamlama, atanmış
+  // personelin rapor göndermesiyle olur). Seçenek yalnızca raporu kayıtlı işte açılır.
+  function selectableStatuses(job: Job): JobStatus[] {
+    const hasReport = (job._count?.jobReports ?? 0) > 0;
+    return getValidNextStatuses(job.status).filter((s) => s !== "COMPLETED" || s === job.status || hasReport);
+  }
+
   function handleStatusSelect(job: Job, status: JobStatus) {
     if (status === "CANCELLED") {
       setCancelReason("");
@@ -317,14 +324,14 @@ function JobsPageContent() {
                   )}
                 </div>
 
-                {canChangeStatus && getValidNextStatuses(job.status).length > 1 ? (
+                {canChangeStatus && selectableStatuses(job).length > 1 ? (
                   <select
                     value={job.status}
                     disabled={updatingId === job.id}
                     onChange={(e) => handleStatusSelect(job, e.target.value as JobStatus)}
                     className="rounded-xl border border-border bg-surface-base px-3 py-2 text-sm font-medium text-text-primary outline-none transition hover:border-border-strong focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 disabled:opacity-50"
                   >
-                    {getValidNextStatuses(job.status).map((s) => (
+                    {selectableStatuses(job).map((s) => (
                       <option key={s} value={s}>
                         {STATUS_FILTER_LABELS[s]}
                       </option>

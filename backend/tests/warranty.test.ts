@@ -43,23 +43,30 @@ describe("Garanti takibi", () => {
 
   const as = (k: string) => `Bearer ${tokens[k]}`;
 
+  // Tamamlama artık saha raporuyla olur (PATCH COMPLETED raporsuz reddedilir); sonuç iş kaydı okunur.
+  const completeViaReport = async (jobId: string) => {
+    const res = await api().post(`/jobs/${jobId}/report`).set("Authorization", as("staff")).send({ dosage: "1 L" });
+    expect(res.status).toBe(201);
+    return { status: 200, body: await prisma.job.findUniqueOrThrow({ where: { id: jobId } }) };
+  };
+
   it("tamamlanınca garanti hesaplanır (30 gün); türde tanımlı değilse null", async () => {
     const withWarranty = await ctx.createJob({ customerId, serviceType: warrantyTypeName, assignedStaffId: staff.staffId, status: "IN_PROGRESS" });
-    const done = await api().patch(`/jobs/${withWarranty.id}`).set("Authorization", as("owner")).send({ status: "COMPLETED" });
+    const done = await completeViaReport(withWarranty.id);
     expect(done.status).toBe(200);
     expect(done.body.warrantyExpiresAt).toBeTruthy();
-    const diffDays = (new Date(done.body.warrantyExpiresAt).getTime() - new Date(done.body.completedAt).getTime()) / (24 * 3600 * 1000);
+    const diffDays = (new Date(done.body.warrantyExpiresAt!).getTime() - new Date(done.body.completedAt!).getTime()) / (24 * 3600 * 1000);
     expect(diffDays).toBeCloseTo(30, 5);
 
     const plain = await ctx.createJob({ customerId, serviceType: plainTypeName, assignedStaffId: staff.staffId, status: "IN_PROGRESS" });
-    const donePlain = await api().patch(`/jobs/${plain.id}`).set("Authorization", as("owner")).send({ status: "COMPLETED" });
+    const donePlain = await completeViaReport(plain.id);
     expect(donePlain.status).toBe(200);
     expect(donePlain.body.warrantyExpiresAt).toBeNull();
   });
 
-  it("STAFF'ın kendi işini tamamlaması da garanti hesaplar", async () => {
+  it("STAFF'ın raporla işi tamamlaması da garanti hesaplar", async () => {
     const job = await ctx.createJob({ customerId: otherCustomerId, serviceType: warrantyTypeName, assignedStaffId: staff.staffId, status: "IN_PROGRESS" });
-    const done = await api().patch(`/jobs/${job.id}`).set("Authorization", as("staff")).send({ status: "COMPLETED" });
+    const done = await completeViaReport(job.id);
     expect(done.status).toBe(200);
     expect(done.body.warrantyExpiresAt).toBeTruthy();
   });

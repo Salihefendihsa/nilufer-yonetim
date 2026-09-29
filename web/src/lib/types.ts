@@ -73,6 +73,8 @@ export interface Job {
   assignedStaffId: string | null;
   serviceType: string;
   status: JobStatus;
+  /** Backend iş listesi/detayında döner; "Tamamla" yalnızca raporu olan işte açılır. */
+  _count?: { jobReports: number };
   scheduledAt: string | null;
   startedAt: string | null;
   completedAt: string | null;

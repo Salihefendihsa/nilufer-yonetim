@@ -28,6 +28,8 @@ const MANAGEMENT_ROLES: Role[] = [Role.OWNER, Role.MANAGER];
 const JOB_NAME_INCLUDE = {
   customer: { select: { fullName: true, phone: true, address: true, district: true } },
   assignedStaff: { select: { user: { select: { fullName: true } } } },
+  // İstemciler "Tamamla" eylemini yalnızca raporu olan işte gösterir (bkz. reportRequiredToComplete).
+  _count: { select: { jobReports: true } },
 } satisfies Prisma.JobInclude;
 
 function withCalendarLink<T extends { serviceType: string; scheduledAt: Date | null; notes: string | null }>(
@@ -53,6 +55,23 @@ const VALID_TRANSITIONS: Record<JobStatus, JobStatus[]> = {
 
 function isValidStatusTransition(from: JobStatus, to: JobStatus): boolean {
   return VALID_TRANSITIONS[from].includes(to);
+}
+
+/**
+ * İş kuralı: hiçbir iş saha raporu olmadan COMPLETED olamaz. Tamamlamanın normal
+ * yolu POST /jobs/:id/report'tur (rapor + stok çıkışı + COMPLETED tek transaction).
+ * PATCH ile COMPLETED yalnızca raporu zaten kayıtlı ama durumu IN_PROGRESS kalmış
+ * eski işler için (yalnızca durum onarımı; stok hareketi üretmez) ve tüm yetkili
+ * roller için aynıdır; raporsuz/atanmamış iş için ayrı bir arka kapı yoktur —
+ * rapor ancak atanmış personelce gönderilebildiğinden önce personel atanmalıdır.
+ * Zaten COMPLETED olan işe tekrar COMPLETED (idempotent no-op) etkilenmez.
+ */
+async function reportRequiredToComplete(existing: { id: string; status: JobStatus }, to: JobStatus): Promise<string | null> {
+  if (to !== JobStatus.COMPLETED || existing.status === JobStatus.COMPLETED) return null;
+  const reports = await prisma.jobReport.count({ where: { jobId: existing.id } });
+  return reports > 0
+    ? null
+    : "İş, saha raporu olmadan tamamlanamaz; raporu atanmış personel gönderdiğinde iş otomatik tamamlanır";
 }
 
 /**
@@ -400,6 +419,11 @@ export async function updateJob(req: Request, res: Response) {
       });
     }
 
+    const missingReport = await reportRequiredToComplete(existing, data.status);
+    if (missingReport) {
+      return res.status(409).json({ error: missingReport });
+    }
+
     const timestamps = timestampsForTransition(existing.status, data.status);
     // Bölüm Y: tamamlanınca garanti bitişi hesaplanır (hizmet türünde tanımlı değilse null).
     const warranty = timestamps.completedAt ? await warrantyFieldsFor(existing.serviceType, timestamps.completedAt) : {};
@@ -485,6 +509,11 @@ export async function updateJob(req: Request, res: Response) {
       return res.status(400).json({
         error: `İş durumu "${existing.status}" iken "${data.status}" durumuna geçilemez`,
       });
+    }
+
+    const missingReport = await reportRequiredToComplete(existing, data.status);
+    if (missingReport) {
+      return res.status(409).json({ error: missingReport });
     }
 
     const timestamps = timestampsForTransition(existing.status, data.status);
