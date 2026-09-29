@@ -207,8 +207,22 @@ const STAFF_EXPORT_SELECT = {
   archivedAt: true,
 } satisfies Prisma.StaffSelect;
 
-/** Setting serbest anahtar/değer deposudur; kimlik bilgisi izlenimi veren anahtarlar dışarıda kalır. */
-const SENSITIVE_SETTING_KEY = /(secret|token|passw|passcode|api[_-]?key|private|credential|smtp)/i;
+/**
+ * Setting serbest anahtar/değer deposudur (PATCH /settings herhangi bir anahtarı kabul eder),
+ * bu yüzden ad deseniyle sır aramak güvenli değildir. Yalnızca uygulamanın kendisinin
+ * tanımladığı, sır olmadığı bilinen iş yapılandırması anahtarları AÇIK allowlist ile
+ * dışa aktarılır (kaynak: prisma/seed.ts, web ayarlar sayfası, mobil audit_settings_screen,
+ * lib/targets.ts). Listede olmayan hiçbir anahtar — adı zararsız görünse bile — çıkmaz.
+ */
+const EXPORTABLE_SETTING_KEYS: ReadonlySet<string> = new Set([
+  "company_name",
+  "company_phone",
+  "company_email",
+  "company_address",
+  "monthly_job_target",
+  "monthly_revenue_target",
+  "contract_expiry_reminder_days",
+]);
 
 /** Dışa aktarıma giren tablolar — "tam yedek" değildir, bkz. `meta` (şemada çok daha fazla model var). */
 const EXPORTED_COLLECTIONS = [
@@ -280,7 +294,7 @@ export async function getBackup(_req: Request, res: Response) {
     prisma.serviceType.findMany(),
     prisma.district.findMany(),
   ]);
-  const settings = allSettings.filter((s) => !SENSITIVE_SETTING_KEY.test(s.key));
+  const settings = allSettings.filter((s) => EXPORTABLE_SETTING_KEYS.has(s.key));
 
   const generatedAt = new Date().toISOString();
   const backup = {
@@ -292,6 +306,8 @@ export async function getBackup(_req: Request, res: Response) {
         "Bu dosya kısmi bir veri dışa aktarımıdır: yalnızca listelenen tablolar vardır, kimlik doğrulama bilgileri " +
         "(şifre özeti, 2FA sırrı, token'lar) içermez ve bu dosyadan geri yükleme yapılamaz.",
       collections: EXPORTED_COLLECTIONS,
+      // settings yalnızca bilinen iş yapılandırması anahtarlarıyla sınırlıdır; diğer anahtarlar dökümde yoktur.
+      settingsKeys: [...EXPORTABLE_SETTING_KEYS],
     },
     users,
     customers,

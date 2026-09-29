@@ -463,15 +463,22 @@ function ApprovalQueueContent() {
                   </p>
                 </div>
               </div>
-              <button
-                type="button"
-                disabled={busyId === job.id}
-                onClick={() => handleReportApprove(job.id)}
-                className="flex items-center gap-1.5 rounded-xl bg-primary-600 px-4 py-2 text-sm font-semibold text-white shadow-card transition hover:bg-primary-700 disabled:opacity-50"
-              >
-                <Check size={15} strokeWidth={2} />
-                Raporu Onayla
-              </button>
+              {/* Saha raporu onayı yalnızca OWNER/MANAGER'dır (POST /jobs/:id/report/approve); şef salt okunur görür. */}
+              {isTeamLead ? (
+                <span className="rounded-xl bg-surface-subtle px-3 py-2 text-xs font-medium text-text-secondary">
+                  Yönetim onayı bekliyor
+                </span>
+              ) : (
+                <button
+                  type="button"
+                  disabled={busyId === job.id}
+                  onClick={() => handleReportApprove(job.id)}
+                  className="flex items-center gap-1.5 rounded-xl bg-primary-600 px-4 py-2 text-sm font-semibold text-white shadow-card transition hover:bg-primary-700 disabled:opacity-50"
+                >
+                  <Check size={15} strokeWidth={2} />
+                  Raporu Onayla
+                </button>
+              )}
             </div>
           ))}
 

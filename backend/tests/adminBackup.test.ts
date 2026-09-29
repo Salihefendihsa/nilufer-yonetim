@@ -16,8 +16,10 @@ describe("Veri dışa aktarımı (GET /admin/backup)", () => {
   const FAKE_2FA = `FAKE2FASECRET${uid()}`;
   const FAKE_FCM = `fake-fcm-token-${uid()}`;
   const FAKE_CAL = `fake-calendar-token-${uid()}`;
-  const secretSettingKey = `${TEST_PREFIX}smtp_password_${uid()}`;
-  const plainSettingKey = `${TEST_PREFIX}firma_adi_${uid()}`;
+  // Sır-benzeri değeri ZARARSIZ adlı anahtarda saklamak: ad desenine güvenen bir filtre bunu kaçırırdı.
+  const FAKE_SETTING_SECRET = `sahte-ayar-sirri-${uid()}`;
+  const harmlessKey = `${TEST_PREFIX}firma_notu_${uid()}`;
+  const secretNamedKey = `${TEST_PREFIX}smtp_password_${uid()}`;
   let ownerHash: string;
 
   beforeAll(async () => {
@@ -30,8 +32,8 @@ describe("Veri dışa aktarımı (GET /admin/backup)", () => {
     await prisma.staff.update({ where: { id: staff.staffId! }, data: { calendarToken: FAKE_CAL } });
     await prisma.setting.createMany({
       data: [
-        { key: secretSettingKey, value: "sahte-sifre-degeri" },
-        { key: plainSettingKey, value: "Test Firma" },
+        { key: harmlessKey, value: FAKE_SETTING_SECRET },
+        { key: secretNamedKey, value: FAKE_SETTING_SECRET },
       ],
     });
     ownerHash = (await prisma.user.findUniqueOrThrow({ where: { id: owner.id } })).passwordHash;
@@ -39,7 +41,7 @@ describe("Veri dışa aktarımı (GET /admin/backup)", () => {
   });
 
   afterAll(async () => {
-    await prisma.setting.deleteMany({ where: { key: { in: [secretSettingKey, plainSettingKey] } } });
+    await prisma.setting.deleteMany({ where: { key: { in: [harmlessKey, secretNamedKey] } } });
     await ctx.cleanup();
   });
 
@@ -57,14 +59,22 @@ describe("Veri dışa aktarımı (GET /admin/backup)", () => {
 
   it("hiçbir yolda sır sızmaz: şifre özeti, 2FA sırrı, FCM/takvim token'ları ve sır-benzeri ayar yanıt metninde yoktur", async () => {
     const text = (await get(ownerToken)).text;
-    for (const leaked of [ownerHash, FAKE_2FA, FAKE_FCM, FAKE_CAL, "sahte-sifre-degeri", secretSettingKey]) {
+    for (const leaked of [ownerHash, FAKE_2FA, FAKE_FCM, FAKE_CAL, FAKE_SETTING_SECRET, harmlessKey, secretNamedKey]) {
       expect(text.includes(leaked)).toBe(false);
     }
     for (const key of ["passwordHash", "twoFactorSecret", "fcmTokens", "tokenVersion", "calendarToken"]) {
       expect(text.includes(`"${key}"`)).toBe(false);
     }
-    // Sır-benzeri olmayan ayar dökümde kalır.
-    expect(text.includes(plainSettingKey)).toBe(true);
+  });
+
+  it("settings yalnızca açık allowlist anahtarlarını içerir; zararsız adlı anahtardaki sahte sır da çıkmaz", async () => {
+    const res = await get(ownerToken);
+    const allowed: string[] = res.body.meta.settingsKeys;
+    expect(allowed.length).toBeGreaterThan(0);
+    for (const s of res.body.settings as { key: string }[]) {
+      expect(allowed).toContain(s.key);
+    }
+    expect(JSON.stringify(res.body.settings)).not.toContain(FAKE_SETTING_SECRET);
   });
 
   it("çıktı kısmi/geri yüklenemez olarak işaretlidir ve tam yedek izlenimi vermez", async () => {

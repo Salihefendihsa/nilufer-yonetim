@@ -61,6 +61,8 @@ class _ApprovalsScreenState extends State<ApprovalsScreen> {
   bool _loading = true;
   String? _error;
   String? _busyId;
+  bool get _isTeamLead =>
+      context.read<AuthProvider>().user?.role == AppRole.teamLead;
   // null = Tümü. Web'deki bekleyen-onaylar sayfası zaten 4 kaynağı birleşik
   // gösteriyor; mobilde bu segment filtresi eksikti (bkz.
   // docs/STITCH_FEATURE_MATRIX.md) — yalnızca istemci tarafında, zaten
@@ -351,14 +353,20 @@ class _ApprovalsScreenState extends State<ApprovalsScreen> {
                         ],
                         if (_reportJobs.isNotEmpty &&
                             (_filter == null || _filter == 'reports')) ...[
+                          // Onay yalnızca OWNER/MANAGER'dır (POST /jobs/:id/report/approve);
+                          // şef raporları salt okunur görür.
                           _SectionTitle(
-                            'Saha Raporu Onayı (${_reportJobs.length})',
+                            _isTeamLead
+                                ? 'Saha Raporları — Yönetim Onayı Bekliyor (${_reportJobs.length})'
+                                : 'Saha Raporu Onayı (${_reportJobs.length})',
                           ),
                           ..._reportJobs.map(
                             (j) => _ReportCard(
                               job: j,
                               busy: _busyId == j.id,
-                              onApprove: () => _approveReport(j),
+                              onApprove: _isTeamLead
+                                  ? null
+                                  : () => _approveReport(j),
                             ),
                           ),
                         ],
@@ -533,7 +541,8 @@ class _SectionTitle extends StatelessWidget {
 class _ReportCard extends StatelessWidget {
   final Job job;
   final bool busy;
-  final VoidCallback onApprove;
+  /// null → salt okunur (şef): "Raporu Onayla" düğmesi gösterilmez.
+  final VoidCallback? onApprove;
   const _ReportCard({
     required this.job,
     required this.busy,
@@ -571,15 +580,17 @@ class _ReportCard extends StatelessWidget {
               'Tamamlandı: ${_dateFormat.format(doneAt.toLocal())}',
               style: tx.caption.copyWith(color: cs.textFaint),
             ),
-          const SizedBox(height: 8),
-          SizedBox(
-            width: double.infinity,
-            child: ElevatedButton(
-              onPressed: busy ? null : onApprove,
-              style: ElevatedButton.styleFrom(backgroundColor: cs.success600),
-              child: Text(busy ? 'İşleniyor...' : 'Raporu Onayla'),
+          if (onApprove != null) ...[
+            const SizedBox(height: 8),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: busy ? null : onApprove,
+                style: ElevatedButton.styleFrom(backgroundColor: cs.success600),
+                child: Text(busy ? 'İşleniyor...' : 'Raporu Onayla'),
+              ),
             ),
-          ),
+          ],
         ],
       ),
     );
