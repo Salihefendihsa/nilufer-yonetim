@@ -2,8 +2,18 @@ name: CI
 
 on:
   pull_request:
+  # Yalnız main değil, tüm dallara push (çalışma dalları dahil) — PR açılmadan da doğrulanır.
   push:
-    branches: [main]
+    branches: ["**"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# Aynı dal/PR için yeni push eski çalışmayı iptal eder.
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   backend:
@@ -58,3 +68,32 @@ jobs:
       - run: npm run build
         env:
           NEXT_PUBLIC_API_URL: http://localhost:4000
+
+  mobile:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    defaults:
+      run:
+        working-directory: mobile
+    steps:
+      - uses: actions/checkout@v4
+      # Android eklentisi (AGP 9.x) ve Gradle 9 için JDK 17+.
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+      # pubspec.yaml `sdk: ^3.13.0` → Dart 3.13 gerektirir; Flutter 3.47.x stable Dart 3.13.x ile gelir.
+      # Sürüm sabitlenir (kayan "stable" derlemeyi kendiliğinden bozmasın); yükseltme bilinçli bir commit'tir.
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          flutter-version: 3.47.5
+          cache: true
+      - run: flutter --version
+      - run: flutter pub get
+      # Hata ve uyarı derlemeyi düşürür; mevcut 81 stil (info) uyarısı henüz temizlenmediği
+      # için yalnız info seviyesi bilgi amaçlıdır (bkz. analysis_options.yaml).
+      - run: flutter analyze --no-fatal-infos
+      - run: flutter test
+      # Gerçek servis anahtarı / üretim adresi yok: sahte yerel API adresi, MOBILE_APP_SECRET geçilmez.
+      - run: flutter build apk --debug --dart-define=API_URL=http://localhost:4000
