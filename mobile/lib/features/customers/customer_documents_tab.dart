@@ -1,3 +1,4 @@
+import 'dart:typed_data';
 
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
@@ -85,17 +86,58 @@ class CustomerDocumentsApi {
       _api.delete<void>('/customers/$customerId/documents/$docId');
 }
 
+class CustomerDocumentSelection {
+  final String name;
+  final Future<Uint8List> Function() readAsBytes;
+
+  const CustomerDocumentSelection({
+    required this.name,
+    required this.readAsBytes,
+  });
+}
+
+Future<CustomerDocumentSelection?> pickCustomerDocument() async {
+  final picked = await FilePicker.pickFile(
+    type: FileType.custom,
+    allowedExtensions: [
+      'pdf',
+      'jpg',
+      'jpeg',
+      'png',
+      'webp',
+      'doc',
+      'docx',
+      'xls',
+      'xlsx',
+      'txt',
+    ],
+  );
+  if (picked == null) return null;
+  return CustomerDocumentSelection(
+    name: picked.name,
+    readAsBytes: picked.readAsBytes,
+  );
+}
+
 /// Müşteri detayı → "Belgeler" sekmesi (OWNER/MANAGER): yükle / paylaş / sil.
 class CustomerDocumentsTab extends StatefulWidget {
   final String customerId;
-  const CustomerDocumentsTab({super.key, required this.customerId});
+  final CustomerDocumentsApi? api;
+  final Future<CustomerDocumentSelection?> Function()? pickDocument;
+
+  const CustomerDocumentsTab({
+    super.key,
+    required this.customerId,
+    this.api,
+    this.pickDocument,
+  });
 
   @override
   State<CustomerDocumentsTab> createState() => _CustomerDocumentsTabState();
 }
 
 class _CustomerDocumentsTabState extends State<CustomerDocumentsTab> {
-  final _api = CustomerDocumentsApi();
+  late final _api = widget.api ?? CustomerDocumentsApi();
   List<CustomerDocument> _docs = [];
   bool _loading = true;
   String? _error;
@@ -127,39 +169,26 @@ class _CustomerDocumentsTabState extends State<CustomerDocumentsTab> {
   }
 
   Future<void> _pickAndUpload() async {
-    final picked = await FilePicker.pickFile(
-      type: FileType.custom,
-      allowedExtensions: [
-        'pdf',
-        'jpg',
-        'jpeg',
-        'png',
-        'webp',
-        'doc',
-        'docx',
-        'xls',
-        'xlsx',
-        'txt',
-      ],
-    );
-    if (picked == null) return;
-    // Web'de dosya yolu yoktur; dosya içeriği her platformda okunur.
-    final bytes = await picked.readAsBytes();
+    if (_busy || !mounted) return;
     setState(() => _busy = true);
+    var errorMessage = 'Belge seçilemedi. Lütfen tekrar deneyin.';
     try {
+      final picked = await (widget.pickDocument ?? pickCustomerDocument)();
+      if (!mounted || picked == null) return;
+      errorMessage = 'Belge okunamadı. Lütfen tekrar deneyin.';
+      // Web'de dosya yolu yoktur; dosya içeriği her platformda okunur.
+      final bytes = await picked.readAsBytes();
+      if (!mounted) return;
+      errorMessage = 'Belge yüklenemedi. Lütfen tekrar deneyin.';
       await _api.upload(widget.customerId, bytes, picked.name);
+      if (!mounted) return;
+      ScaffoldMessenger.of(context)
+          .showSnackBar(const SnackBar(content: Text('Belge yüklendi')));
+      await _load();
+    } catch (_) {
       if (mounted) {
         ScaffoldMessenger.of(context)
-            .showSnackBar(const SnackBar(content: Text('Belge yüklendi')));
-      }
-      await _load();
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(e is ApiException ? e.message : 'Yüklenemedi'),
-          ),
-        );
+            .showSnackBar(SnackBar(content: Text(errorMessage)));
       }
     } finally {
       if (mounted) setState(() => _busy = false);
@@ -257,70 +286,73 @@ class _CustomerDocumentsTabState extends State<CustomerDocumentsTab> {
                                   d.fileName,
                                 ),
                           child: Container(
-                        padding: const EdgeInsets.fromLTRB(12, 8, 4, 8),
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(AppRadius.card),
-                          border: Border.all(color: cs.borderDefault),
-                        ),
-                        child: Row(
-                          children: [
-                            Icon(
-                              d.isImage
-                                  ? Icons.image_outlined
-                                  : Icons.description_outlined,
-                              color: cs.textSecondary,
-                            ),
-                            const SizedBox(width: 10),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    d.fileName,
-                                    overflow: TextOverflow.ellipsis,
-                                    style: tx.body.copyWith(
-                                      fontWeight: FontWeight.w600,
-                                    ),
-                                  ),
-                                  Text(
-                                    '${d.sizeLabel}'
-                                    '${d.uploadedAt.isNotEmpty ? ' · ${DateFormat('d MMM yyyy', 'tr_TR').format(DateTime.parse(d.uploadedAt).toLocal())}' : ''}'
-                                    '${d.uploadedByName != null ? ' · ${d.uploadedByName}' : ''}',
-                                    style: tx.caption.copyWith(
-                                      color: cs.textFaint,
-                                    ),
-                                  ),
-                                ],
+                            padding: const EdgeInsets.fromLTRB(12, 8, 4, 8),
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(
+                                AppRadius.card,
                               ),
+                              border: Border.all(color: cs.borderDefault),
                             ),
-                            IconButton(
-                              icon: const Icon(
-                                Icons.ios_share_rounded,
-                                size: 20,
-                              ),
-                              tooltip: 'İndir / Paylaş',
-                              // Bölüm AC: kimlik doğrulamalı indirme (getBytes token gönderir).
-                              onPressed: _busy
-                                  ? null
-                                  : () => downloadAndShare(
-                                      ApiClient.instance.fileUrl(
-                                        'customer-document',
-                                        d.id,
+                            child: Row(
+                              children: [
+                                Icon(
+                                  d.isImage
+                                      ? Icons.image_outlined
+                                      : Icons.description_outlined,
+                                  color: cs.textSecondary,
+                                ),
+                                const SizedBox(width: 10),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        d.fileName,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: tx.body.copyWith(
+                                          fontWeight: FontWeight.w600,
+                                        ),
                                       ),
-                                      d.fileName,
-                                    ),
+                                      Text(
+                                        '${d.sizeLabel}'
+                                        '${d.uploadedAt.isNotEmpty ? ' · ${DateFormat('d MMM yyyy', 'tr_TR').format(DateTime.parse(d.uploadedAt).toLocal())}' : ''}'
+                                        '${d.uploadedByName != null ? ' · ${d.uploadedByName}' : ''}',
+                                        style: tx.caption.copyWith(
+                                          color: cs.textFaint,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                IconButton(
+                                  icon: const Icon(
+                                    Icons.ios_share_rounded,
+                                    size: 20,
+                                  ),
+                                  tooltip: 'İndir / Paylaş',
+                                  // Bölüm AC: kimlik doğrulamalı indirme (getBytes token gönderir).
+                                  onPressed: _busy
+                                      ? null
+                                      : () => downloadAndShare(
+                                          ApiClient.instance.fileUrl(
+                                            'customer-document',
+                                            d.id,
+                                          ),
+                                          d.fileName,
+                                        ),
+                                ),
+                                IconButton(
+                                  icon: Icon(
+                                    Icons.delete_outline_rounded,
+                                    size: 20,
+                                    color: cs.danger500,
+                                  ),
+                                  tooltip: 'Sil',
+                                  onPressed: _busy ? null : () => _delete(d),
+                                ),
+                              ],
                             ),
-                            IconButton(
-                              icon: Icon(
-                                Icons.delete_outline_rounded,
-                                size: 20,
-                                color: cs.danger500,
-                              ),
-                              tooltip: 'Sil',
-                              onPressed: _busy ? null : () => _delete(d),
-                            ),
-                          ],
-                        ),
                           ),
                         ),
                       );
