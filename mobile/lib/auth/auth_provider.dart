@@ -27,33 +27,44 @@ class AuthProvider extends ChangeNotifier {
   String? twoFactorPreToken;
 
   Timer? _heartbeatTimer;
+  final SessionStorage _sessionStorage;
 
-  AuthProvider() {
+  AuthProvider({SessionStorage? sessionStorage})
+    : _sessionStorage = sessionStorage ?? const SecureSessionStorage() {
     ApiClient.instance.onUnauthorized = _handleUnauthorized;
   }
 
   Future<void> restoreSession() async {
-    final token = await SecureStorage.readToken();
-    final userJson = await SecureStorage.readUserJson();
-    if (token == null || userJson == null) {
-      status = AuthStatus.unauthenticated;
-      notifyListeners();
-      return;
-    }
     try {
-      user = AppUser.fromJson(jsonDecode(userJson) as Map<String, dynamic>);
-      mustChangePassword = await SecureStorage.readMustChangePassword();
-      final metaJson = await SecureStorage.readImpersonationMetaJson();
-      impersonationMeta = metaJson != null
+      final token = await _sessionStorage.readToken();
+      final userJson = await _sessionStorage.readUserJson();
+      if (token == null || userJson == null) {
+        status = AuthStatus.unauthenticated;
+        return;
+      }
+      final parsedUser = AppUser.fromJson(
+        jsonDecode(userJson) as Map<String, dynamic>,
+      );
+      final savedMustChangePassword = await _sessionStorage
+          .readMustChangePassword();
+      final metaJson = await _sessionStorage.readImpersonationMetaJson();
+      final savedImpersonationMeta = metaJson != null
           ? jsonDecode(metaJson) as Map<String, dynamic>
           : null;
+      user = parsedUser;
+      mustChangePassword = savedMustChangePassword;
+      impersonationMeta = savedImpersonationMeta;
       status = AuthStatus.authenticated;
       _startHeartbeat();
     } catch (_) {
-      await SecureStorage.clear();
+      // Geçici okuma hatasında cihazdaki oturum verisini silme.
+      user = null;
+      mustChangePassword = false;
+      impersonationMeta = null;
       status = AuthStatus.unauthenticated;
+    } finally {
+      notifyListeners();
     }
-    notifyListeners();
   }
 
   /// web/src/lib/AuthProvider.tsx ile aynı desen: her ~2 dakikada bir
@@ -242,7 +253,7 @@ class AuthProvider extends ChangeNotifier {
 
   Future<void> _clearLocalSession() async {
     _heartbeatTimer?.cancel();
-    await SecureStorage.clear();
+    await _sessionStorage.clear();
     user = null;
     status = AuthStatus.unauthenticated;
     notifyListeners();

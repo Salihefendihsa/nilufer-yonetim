@@ -83,3 +83,33 @@ class SecureStorage {
     await _storage.delete(key: _impersonationMetaKey);
   }
 }
+
+/// Oturum geri yükleme ve açık oturum temizliği için depolama sınırı.
+abstract interface class SessionStorage {
+  Future<String?> readToken();
+  Future<String?> readUserJson();
+  Future<bool> readMustChangePassword();
+  Future<String?> readImpersonationMetaJson();
+  Future<void> clear();
+}
+
+class SecureSessionStorage implements SessionStorage {
+  const SecureSessionStorage();
+
+  @override
+  Future<String?> readToken() => SecureStorage.readToken();
+
+  @override
+  Future<String?> readUserJson() => SecureStorage.readUserJson();
+
+  @override
+  Future<bool> readMustChangePassword() =>
+      SecureStorage.readMustChangePassword();
+
+  @override
+  Future<String?> readImpersonationMetaJson() =>
+      SecureStorage.readImpersonationMetaJson();
+
+  @override
+  Future<void> clear() => SecureStorage.clear();
+}
