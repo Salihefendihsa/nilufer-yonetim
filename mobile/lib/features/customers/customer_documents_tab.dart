@@ -127,7 +127,7 @@ class _CustomerDocumentsTabState extends State<CustomerDocumentsTab> {
   }
 
   Future<void> _pickAndUpload() async {
-    final result = await FilePicker.pickFiles(
+    final picked = await FilePicker.pickFile(
       type: FileType.custom,
       allowedExtensions: [
         'pdf',
@@ -141,12 +141,10 @@ class _CustomerDocumentsTabState extends State<CustomerDocumentsTab> {
         'xlsx',
         'txt',
       ],
-      // Web'de dosya yolu yoktur — byte'lar her platformda withData ile alınır.
-      withData: true,
     );
-    final picked = result?.files.single;
-    final bytes = picked?.bytes;
-    if (picked == null || bytes == null) return;
+    if (picked == null) return;
+    // Web'de dosya yolu yoktur; dosya içeriği her platformda okunur.
+    final bytes = await picked.readAsBytes();
     setState(() => _busy = true);
     try {
       await _api.upload(widget.customerId, bytes, picked.name);
