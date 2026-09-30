@@ -6,6 +6,12 @@ on:
   push:
     branches: ["**"]
   workflow_dispatch:
+    inputs:
+      api_url:
+        description: "Test APK için telefondan erişilebilir geliştirme API adresi (USB adb reverse için localhost kalabilir)"
+        required: false
+        default: "http://localhost:4000"
+        type: string
 
 permissions:
   contents: read
@@ -95,5 +101,24 @@ jobs:
       # için yalnız info seviyesi bilgi amaçlıdır (bkz. analysis_options.yaml).
       - run: flutter analyze --no-fatal-infos
       - run: flutter test
-      # Gerçek servis anahtarı / üretim adresi yok: sahte yerel API adresi, MOBILE_APP_SECRET geçilmez.
-      - run: flutter build apk --debug --dart-define=API_URL=http://localhost:4000
+      # Push/PR derlemesi localhost ile yalnız derleme kontrolüdür. Fiziksel cihaz
+      # için workflow_dispatch api_url girdisi veya USB'de adb reverse gerekir.
+      # İsteğe bağlı MOBILE_APP_SECRET_TEST yalnız manuel test derlemesinde
+      # kullanılır. APK içinden çıkarılabilir; üretim sırrı eklenmemelidir.
+      - name: Debug APK derle
+        env:
+          API_URL: ${{ inputs.api_url || 'http://localhost:4000' }}
+          MOBILE_APP_SECRET_TEST: ${{ github.event_name == 'workflow_dispatch' && secrets.MOBILE_APP_SECRET_TEST || '' }}
+        run: |
+          args=(--debug "--dart-define=API_URL=$API_URL")
+          if [ -n "$MOBILE_APP_SECRET_TEST" ]; then
+            args+=("--dart-define=MOBILE_APP_SECRET=$MOBILE_APP_SECRET_TEST")
+          fi
+          flutter build apk "${args[@]}"
+      - name: Test APK artifactini yükle
+        uses: actions/upload-artifact@v4
+        with:
+          name: nilufer-mobile-debug-apk
+          path: mobile/build/app/outputs/flutter-apk/app-debug.apk
+          if-no-files-found: error
+          retention-days: 7
