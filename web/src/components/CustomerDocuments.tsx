@@ -8,6 +8,7 @@ import { useToast } from "@/lib/ToastProvider";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { formatDate } from "@/lib/format";
 import type { CustomerDocument } from "@/lib/types";
+import { CustomerRequestGuard, uploadCustomerDocuments } from "@/lib/customerRequest";
 
 function formatSize(bytes: number): string {
   if (bytes < 1024) return `${bytes} B`;
@@ -21,6 +22,10 @@ function formatSize(bytes: number): string {
  * Yalnızca OWNER/MANAGER (sunucu da zorlar).
  */
 export function CustomerDocuments({ customerId }: { customerId: string }) {
+  return <CustomerDocumentsForCustomer key={customerId} customerId={customerId} />;
+}
+
+function CustomerDocumentsForCustomer({ customerId }: { customerId: string }) {
   const { showToast } = useToast();
   const [docs, setDocs] = useState<CustomerDocument[]>([]);
   const [loading, setLoading] = useState(true);
@@ -30,18 +35,22 @@ export function CustomerDocuments({ customerId }: { customerId: string }) {
   const [deleteTarget, setDeleteTarget] = useState<CustomerDocument | null>(null);
   const [deleting, setDeleting] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
+  const requestGuard = useRef(new CustomerRequestGuard());
+
+  useEffect(() => {
+    const guard = requestGuard.current;
+    guard.open();
+    return () => guard.close();
+  }, []);
 
   const load = useCallback(async () => {
     setLoading(true);
     setError(null);
-    try {
-      const res = await api.get<{ data: CustomerDocument[] }>(`/customers/${customerId}/documents`);
-      setDocs(res.data);
-    } catch (err) {
-      setError(err instanceof ApiError ? err.message : "Belgeler yüklenemedi");
-    } finally {
-      setLoading(false);
-    }
+    await requestGuard.current.runLatest(() => api.get<{ data: CustomerDocument[] }>(`/customers/${customerId}/documents`), {
+      onSuccess: (res) => setDocs(res.data),
+      onError: (err) => setError(err instanceof ApiError ? err.message : "Belgeler yüklenemedi"),
+      onSettled: () => setLoading(false),
+    });
   }, [customerId]);
 
   useEffect(() => {
@@ -50,36 +59,43 @@ export function CustomerDocuments({ customerId }: { customerId: string }) {
 
   async function handleFiles(files: FileList | null) {
     if (!files || files.length === 0) return;
+    const targetId = customerId;
+    const selectedFiles = Array.from(files);
     setUploading(true);
     setError(null);
     try {
-      for (const file of Array.from(files)) {
+      const completed = await uploadCustomerDocuments(targetId, selectedFiles, () => requestGuard.current.isActive(), async (id, file) => {
         const fd = new FormData();
         fd.append("file", file);
-        await uploadFile(`/customers/${customerId}/documents`, fd);
-      }
-      showToast(files.length === 1 ? "Belge yüklendi." : `${files.length} belge yüklendi.`);
+        await uploadFile(`/customers/${id}/documents`, fd);
+      });
+      if (!completed) return;
+      showToast(selectedFiles.length === 1 ? "Belge yüklendi." : `${selectedFiles.length} belge yüklendi.`);
       await load();
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : "Yüklenemedi");
+      if (requestGuard.current.isActive()) setError(err instanceof ApiError ? err.message : "Yüklenemedi");
     } finally {
-      setUploading(false);
-      if (inputRef.current) inputRef.current.value = "";
+      if (requestGuard.current.isActive()) {
+        setUploading(false);
+        if (inputRef.current) inputRef.current.value = "";
+      }
     }
   }
 
   async function handleDelete() {
     if (!deleteTarget) return;
+    const targetId = customerId;
     setDeleting(true);
     try {
-      await api.delete(`/customers/${customerId}/documents/${deleteTarget.id}`);
+      await api.delete(`/customers/${targetId}/documents/${deleteTarget.id}`);
+      if (!requestGuard.current.isActive()) return;
       setDeleteTarget(null);
       showToast("Belge silindi.");
       await load();
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : "Silinemedi");
+      if (requestGuard.current.isActive()) setError(err instanceof ApiError ? err.message : "Silinemedi");
     } finally {
-      setDeleting(false);
+      if (requestGuard.current.isActive()) setDeleting(false);
     }
   }
 

@@ -12,6 +12,7 @@ import type { CustomerDetail } from "@/lib/types";
 import { CustomerTagEditor } from "@/components/CustomerTagEditor";
 import { CustomerDocuments } from "@/components/CustomerDocuments";
 import { useAuth } from "@/lib/AuthProvider";
+import { CustomerRequestGuard, selectedCustomerDetail } from "@/lib/customerRequest";
 
 /** Ham ödeme türü kodu (CASH) yerine Türkçe — para/page.tsx ile aynı etiketler. */
 const PAYMENT_TYPE_LABELS: Record<string, string> = {
@@ -27,11 +28,17 @@ interface CustomerDetailPanelProps {
   onDelete: () => void;
 }
 
-export function CustomerDetailPanel({ customerId, onClose, onEdit, onDelete }: CustomerDetailPanelProps) {
+export function CustomerDetailPanel(props: CustomerDetailPanelProps) {
+  return <CustomerDetailPanelContent key={props.customerId ?? "closed"} {...props} />;
+}
+
+function CustomerDetailPanelContent({ customerId, onClose, onEdit, onDelete }: CustomerDetailPanelProps) {
   const [detail, setDetail] = useState<CustomerDetail | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
   const { user } = useAuth();
   const canEditTags = user?.role === "OWNER" || user?.role === "MANAGER";
+  const visibleDetail = selectedCustomerDetail(detail, customerId);
 
   useEffect(() => {
     if (!customerId) {
@@ -39,11 +46,19 @@ export function CustomerDetailPanel({ customerId, onClose, onEdit, onDelete }: C
       return;
     }
 
+    const guard = new CustomerRequestGuard();
+    setDetail(null);
     setError(null);
-    api
-      .get<CustomerDetail>(`/customers/${customerId}`)
-      .then(setDetail)
-      .catch((err) => setError(err instanceof ApiError ? err.message : "Detaylar yüklenemedi"));
+    setLoading(true);
+    void guard.runLatest(() => api.get<CustomerDetail>(`/customers/${customerId}`), {
+      onSuccess: (result) => {
+        if (result.id === customerId) setDetail(result);
+        else setError("Detaylar yüklenemedi");
+      },
+      onError: (err) => setError(err instanceof ApiError ? err.message : "Detaylar yüklenemedi"),
+      onSettled: () => setLoading(false),
+    });
+    return () => guard.close();
   }, [customerId]);
 
   if (typeof document === "undefined") return null;
@@ -69,7 +84,7 @@ export function CustomerDetailPanel({ customerId, onClose, onEdit, onDelete }: C
             <div className="mb-6 flex items-start justify-between">
               <div>
                 <p className="text-xs font-medium uppercase tracking-wide text-text-faint">Müşteri</p>
-                <SectionTitle size="lg" className="mt-1 text-xl">{detail?.fullName ?? "Yükleniyor..."}</SectionTitle>
+                <SectionTitle size="lg" className="mt-1 text-xl">{visibleDetail?.fullName ?? (loading ? "Yükleniyor..." : "Müşteri")}</SectionTitle>
               </div>
               <button
                 type="button"
@@ -83,31 +98,31 @@ export function CustomerDetailPanel({ customerId, onClose, onEdit, onDelete }: C
 
             {error && <p className="rounded-2xl border border-danger-100 bg-danger-50 px-4 py-3 text-sm text-danger-500">{error}</p>}
 
-            {detail && (
+            {visibleDetail && (
               <div className="flex flex-col gap-6">
                 {/* Bölüm X (6. tur): etiketler */}
-                <CustomerTagEditor customerId={detail.id} tags={detail.tags ?? []} editable={canEditTags} />
+                <CustomerTagEditor customerId={visibleDetail.id} tags={visibleDetail.tags ?? []} editable={canEditTags} />
 
                 {/* Bölüm AB (6. tur): belge kasası — yalnızca yönetim */}
-                {canEditTags && <CustomerDocuments customerId={detail.id} />}
+                {canEditTags && <CustomerDocuments key={visibleDetail.id} customerId={visibleDetail.id} />}
 
                 <div className="grid grid-cols-2 gap-3 text-sm">
-                  <InfoItem label="Telefon" value={detail.phone} />
-                  <InfoItem label="E-posta" value={detail.email ?? "—"} />
-                  <InfoItem label="Semt" value={detail.district ?? "—"} />
-                  <InfoItem label="Adres" value={detail.address ?? "—"} />
+                  <InfoItem label="Telefon" value={visibleDetail.phone} />
+                  <InfoItem label="E-posta" value={visibleDetail.email ?? "—"} />
+                  <InfoItem label="Semt" value={visibleDetail.district ?? "—"} />
+                  <InfoItem label="Adres" value={visibleDetail.address ?? "—"} />
                 </div>
 
                 <div
                   className={`rounded-2xl p-4 ${
-                    detail.outstandingBalance > 0 ? "bg-danger-50" : "bg-primary-50"
+                    visibleDetail.outstandingBalance > 0 ? "bg-danger-50" : "bg-primary-50"
                   }`}
                 >
                   <p className="text-xs font-medium text-text-secondary">Bekleyen Bakiye</p>
-                  <p className={`mt-1 text-2xl font-semibold ${detail.outstandingBalance > 0 ? "text-danger-500" : "text-primary-600"}`}>
-                    {currencyFormatter.format(Math.max(detail.outstandingBalance, 0))}
+                  <p className={`mt-1 text-2xl font-semibold ${visibleDetail.outstandingBalance > 0 ? "text-danger-500" : "text-primary-600"}`}>
+                    {currencyFormatter.format(Math.max(visibleDetail.outstandingBalance, 0))}
                   </p>
-                  {detail.outstandingBalance <= 0 && (
+                  {visibleDetail.outstandingBalance <= 0 && (
                     <p className="mt-0.5 text-xs text-primary-600">Bakiye kapalı</p>
                   )}
                 </div>
@@ -138,7 +153,7 @@ export function CustomerDetailPanel({ customerId, onClose, onEdit, onDelete }: C
                       <h3 className="text-sm font-semibold text-text-primary">Geçmiş İşler</h3>
                     </div>
                     {(() => {
-                      const rated = detail.jobs.filter((j) => j.rating != null);
+                      const rated = visibleDetail.jobs.filter((j) => j.rating != null);
                       if (rated.length === 0) return null;
                       const avg = rated.reduce((sum, j) => sum + (j.rating ?? 0), 0) / rated.length;
                       return (
@@ -149,11 +164,11 @@ export function CustomerDetailPanel({ customerId, onClose, onEdit, onDelete }: C
                       );
                     })()}
                   </div>
-                  {detail.jobs.length === 0 ? (
+                  {visibleDetail.jobs.length === 0 ? (
                     <p className="text-sm text-text-faint">Henüz iş kaydı yok.</p>
                   ) : (
                     <ul className="flex flex-col divide-y divide-border rounded-2xl bg-surface-subtle">
-                      {detail.jobs.map((job) => (
+                      {visibleDetail.jobs.map((job) => (
                         <li key={job.id} className="flex items-center justify-between gap-3 px-4 py-3">
                           <div>
                             <p className="text-sm font-medium text-text-primary">{job.serviceType}</p>
@@ -184,11 +199,11 @@ export function CustomerDetailPanel({ customerId, onClose, onEdit, onDelete }: C
                     <Wallet size={16} strokeWidth={1.75} className="text-text-faint" />
                     <h3 className="text-sm font-semibold text-text-primary">Ödemeler</h3>
                   </div>
-                  {detail.payments.length === 0 ? (
+                  {visibleDetail.payments.length === 0 ? (
                     <p className="text-sm text-text-faint">Henüz ödeme kaydı yok.</p>
                   ) : (
                     <ul className="flex flex-col divide-y divide-border rounded-2xl bg-surface-subtle">
-                      {detail.payments.map((payment) => (
+                      {visibleDetail.payments.map((payment) => (
                         <li key={payment.id} className="flex items-center justify-between gap-3 px-4 py-3">
                           <div>
                             <p className="text-sm font-medium text-text-primary">{currencyFormatter.format(payment.amount)}</p>
