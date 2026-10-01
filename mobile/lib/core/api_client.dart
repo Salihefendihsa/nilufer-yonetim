@@ -125,6 +125,24 @@ class ApiClient {
     return _handle<T>(res, path);
   }
 
+  /// Çıkış eski token ile gönderilir; yanıtın 401 olması yeni oturumu etkilemez.
+  Future<void> logoutWithToken(
+    String token, {
+    Duration timeout = const Duration(seconds: 5),
+  }) async {
+    final client = http.Client();
+    try {
+      await client
+          .post(
+            _uri('/auth/logout'),
+            headers: {'Authorization': 'Bearer $token'},
+          )
+          .timeout(timeout);
+    } finally {
+      client.close();
+    }
+  }
+
   Future<T> patch<T>(String path, {Object? body}) async {
     final res = await http.patch(
       _uri(path),

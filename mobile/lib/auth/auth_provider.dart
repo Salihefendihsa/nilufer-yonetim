@@ -28,9 +28,16 @@ class AuthProvider extends ChangeNotifier {
 
   Timer? _heartbeatTimer;
   final SessionStorage _sessionStorage;
+  final Future<void> Function(String token) _logoutRequest;
+  final Duration _logoutTimeout;
 
-  AuthProvider({SessionStorage? sessionStorage})
-    : _sessionStorage = sessionStorage ?? const SecureSessionStorage() {
+  AuthProvider({
+    SessionStorage? sessionStorage,
+    Future<void> Function(String token)? logoutRequest,
+    Duration logoutTimeout = const Duration(seconds: 5),
+  }) : _sessionStorage = sessionStorage ?? const SecureSessionStorage(),
+       _logoutRequest = logoutRequest ?? ApiClient.instance.logoutWithToken,
+       _logoutTimeout = logoutTimeout {
     ApiClient.instance.onUnauthorized = _handleUnauthorized;
   }
 
@@ -239,12 +246,44 @@ class AuthProvider extends ChangeNotifier {
   }
 
   Future<void> logout() async {
+    String? oldToken;
     try {
-      await ApiClient.instance.post('/auth/logout');
+      oldToken = await _sessionStorage.readToken();
     } catch (_) {
-      // best-effort: sunucu ulaşılamaz olsa bile cihazdaki oturum temizlenir
+      // Okuma hatası yerel çıkışı engellemez; token olmadan istek gönderilmez.
     }
-    await _clearLocalSession();
+
+    _heartbeatTimer?.cancel();
+    isBusy = true;
+    user = null;
+    mustChangePassword = false;
+    impersonationMeta = null;
+    twoFactorPreToken = null;
+    loginError = null;
+    status = AuthStatus.unauthenticated;
+    notifyListeners();
+
+    try {
+      await _sessionStorage.clear();
+    } catch (_) {
+      loginError =
+          'Cihazdaki oturum verileri temizlenemedi. Çıkışı yeniden deneyin.';
+    } finally {
+      isBusy = false;
+      notifyListeners();
+    }
+
+    if (oldToken != null) {
+      unawaited(_notifyServerOfLogout(oldToken));
+    }
+  }
+
+  Future<void> _notifyServerOfLogout(String token) async {
+    try {
+      await _logoutRequest(token).timeout(_logoutTimeout);
+    } catch (_) {
+      // Uzak çıkış best-effort; eski yanıt yeni oturumu değiştirmez.
+    }
   }
 
   Future<void> _handleUnauthorized() async {
