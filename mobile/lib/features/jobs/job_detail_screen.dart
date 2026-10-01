@@ -1,3 +1,4 @@
+import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
@@ -50,29 +51,37 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
   }
 
   Future<void> _load() async {
+    if (!mounted) return;
     setState(() {
       _loading = true;
       _error = null;
     });
     try {
       final job = await _api.getById(widget.jobId);
+      if (!mounted) return;
       Map<String, dynamic>? report;
       List<Map<String, dynamic>> photos = [];
       try {
         report = await _api.getReport(widget.jobId);
       } catch (_) {}
+      if (!mounted) return;
       try {
         photos = await _api.listPhotos(widget.jobId);
       } catch (_) {}
+      if (!mounted) return;
       setState(() {
         _job = job;
         _report = report;
         _photos = photos;
       });
     } catch (e) {
-      setState(() => _error = e is ApiException ? e.message : 'İş yüklenemedi');
+      if (mounted) {
+        setState(
+          () => _error = e is ApiException ? e.message : 'İş yüklenemedi',
+        );
+      }
     } finally {
-      setState(() => _loading = false);
+      if (mounted) setState(() => _loading = false);
     }
   }
 
@@ -311,7 +320,7 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
             style: tx.subtitle.copyWith(fontWeight: FontWeight.w700),
           ),
           const SizedBox(height: 8),
-          _PhotosSection(
+          JobPhotosSection(
             jobId: job.id,
             photos: _photos,
             api: _api,
@@ -350,10 +359,11 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
   /// Backend kuralı: saha raporu olmadan COMPLETED'a geçilemez. Tamamlama,
   /// aşağıdaki "İş Raporu Oluştur" formuyla (rapor + stok + tamamlama tek
   /// adım) yapılır; doğrudan "Tamamla" yalnızca raporu zaten kayıtlı işte sunulur.
-  List<JobStatus> _nextStatuses(Job job) => validJobStatusTransitions[job.status]!
-      .where((s) => s != job.status)
-      .where((s) => s != JobStatus.completed || _report != null)
-      .toList();
+  List<JobStatus> _nextStatuses(Job job) =>
+      validJobStatusTransitions[job.status]!
+          .where((s) => s != job.status)
+          .where((s) => s != JobStatus.completed || _report != null)
+          .toList();
 
   Widget _buildStaffActions(Job job) {
     final cs = context.colors;
@@ -727,54 +737,69 @@ class _RatingCardState extends State<_RatingCard> {
   }
 }
 
-class _PhotosSection extends StatefulWidget {
+class JobPhotoSelection {
+  final String name;
+  final Future<Uint8List> Function() readAsBytes;
+
+  const JobPhotoSelection({required this.name, required this.readAsBytes});
+}
+
+Future<JobPhotoSelection?> pickJobPhoto() async {
+  final xfile = await ImagePicker().pickImage(
+    source: ImageSource.camera,
+    imageQuality: 80,
+  );
+  if (xfile == null) return null;
+  return JobPhotoSelection(name: xfile.name, readAsBytes: xfile.readAsBytes);
+}
+
+class JobPhotosSection extends StatefulWidget {
   final String jobId;
   final List<Map<String, dynamic>> photos;
   final JobsApi api;
-  final VoidCallback onChanged;
+  final Future<void> Function() onChanged;
   final bool canUpload;
+  final Future<JobPhotoSelection?> Function()? pickPhoto;
 
-  const _PhotosSection({
+  const JobPhotosSection({
+    super.key,
     required this.jobId,
     required this.photos,
     required this.api,
     required this.onChanged,
     required this.canUpload,
+    this.pickPhoto,
   });
 
   @override
-  State<_PhotosSection> createState() => _PhotosSectionState();
+  State<JobPhotosSection> createState() => _JobPhotosSectionState();
 }
 
-class _PhotosSectionState extends State<_PhotosSection> {
+class _JobPhotosSectionState extends State<JobPhotosSection> {
   bool _uploading = false;
 
   Future<void> _pickAndUpload(String type) async {
-    final picker = ImagePicker();
-    final xfile = await picker.pickImage(
-      source: ImageSource.camera,
-      imageQuality: 80,
-    );
-    if (xfile == null) return;
+    if (_uploading || !mounted) return;
+    final jobId = widget.jobId;
     setState(() => _uploading = true);
+    var errorMessage = 'Fotoğraf seçilemedi. Lütfen tekrar deneyin.';
     try {
+      final selected = await (widget.pickPhoto ?? pickJobPhoto)();
+      if (!mounted || widget.jobId != jobId || selected == null) return;
+      errorMessage = 'Fotoğraf okunamadı. Lütfen tekrar deneyin.';
       // XFile.readAsBytes web'de de çalışır (dart:io File çalışmaz).
-      await widget.api.uploadPhoto(
-        widget.jobId,
-        await xfile.readAsBytes(),
-        xfile.name,
-        type,
-      );
-      widget.onChanged();
-    } catch (e) {
-      if (mounted)
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              e is ApiException ? e.message : 'Fotoğraf yüklenemedi',
-            ),
-          ),
-        );
+      final bytes = await selected.readAsBytes();
+      if (!mounted || widget.jobId != jobId) return;
+      errorMessage = 'Fotoğraf yüklenemedi. Lütfen tekrar deneyin.';
+      await widget.api.uploadPhoto(jobId, bytes, selected.name, type);
+      if (!mounted || widget.jobId != jobId) return;
+      errorMessage = 'Fotoğraf listesi yenilenemedi. Lütfen tekrar deneyin.';
+      await widget.onChanged();
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text(errorMessage)));
+      }
     } finally {
       if (mounted) setState(() => _uploading = false);
     }
@@ -817,7 +842,10 @@ class _PhotosSectionState extends State<_PhotosSection> {
                             child: AuthImage(path: path, fit: BoxFit.contain),
                           ),
                           IconButton(
-                            icon: const Icon(Icons.close_rounded, color: Colors.white),
+                            icon: const Icon(
+                              Icons.close_rounded,
+                              color: Colors.white,
+                            ),
                             onPressed: () => Navigator.of(context).pop(),
                           ),
                         ],
