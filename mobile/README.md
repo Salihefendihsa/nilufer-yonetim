@@ -1,17 +1,30 @@
-# nilufer_mobile
+# Nilüfer mobil uygulaması
 
-A new Flutter project.
+Mobil uygulama doğrudan backend REST API'sine bağlanır. Yerel geliştirmede
+backend'i `backend/` dizininden `npm run dev` ile başlatın; varsayılan port
+`4000`'dir. Postgres ve `backend/.env` ayarları hazır olmalıdır.
 
-## Getting Started
+Backend'de reCAPTCHA açıksa mobil giriş için `backend/.env` içindeki
+`MOBILE_APP_SECRET` boş olmamalıdır. Flutter'a **aynı değeri** derleme zamanı
+tanımı olarak verin. Bu değer kullanıcı parolası, JWT veya rol yetkisi değildir;
+yalnız mobil girişin reCAPTCHA yolunu seçer. Web girişi kendi reCAPTCHA
+doğrulamasını kullanmaya devam eder.
 
-This project is a starting point for a Flutter application.
+`mobile/.env` dosyasını yerelde oluşturun (git tarafından yok sayılır):
 
-A few resources to get you started if this is your first Flutter project:
+```dotenv
+API_URL=http://10.0.2.2:4000
+MOBILE_APP_SECRET=<backend/.env içindeki aynı değer>
+```
 
-- [Learn Flutter](https://docs.flutter.dev/get-started/learn-flutter)
-- [Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Flutter learning resources](https://docs.flutter.dev/reference/learning-resources)
+Ardından `mobile/` dizininden çalıştırın:
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+```bash
+flutter run --dart-define-from-file=.env
+```
+
+`10.0.2.2`, Android emülatöründen bilgisayarın `localhost` adresine erişim
+içindir. Gerçek cihazda `API_URL` değerini bilgisayarın cihazdan erişilebilen
+yerel ağ adresiyle değiştirin. `.env` içindeki değeri repoya, ekran görüntüsüne
+veya komut çıktısına kopyalamayın. Mobil anahtar olmadan, reCAPTCHA açıkken
+giriş isteği 400 ile reddedilir.
