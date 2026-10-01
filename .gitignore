@@ -31,3 +31,4 @@ Thumbs.db
 # TypeScript build info
 *.tsbuildinfo
 backups/
+/.local/
