@@ -93,3 +93,28 @@ export async function deleteFile(filename: string): Promise<void> {
     fs.unlinkSync(filePath);
   }
 }
+
+/** Başarısız yüklemede yalnız multer'ın bu istek için ürettiği dosyayı siler. */
+export async function cleanupFailedUpload(file: { path: string; filename: string }): Promise<void> {
+  const filename = path.basename(file.filename);
+  if (filename !== file.filename || path.resolve(file.path) !== path.resolve(UPLOADS_DIR, filename)) {
+    throw new Error("Geçersiz yükleme dosyası");
+  }
+
+  let failed = false;
+  try {
+    await fs.promises.unlink(file.path);
+  } catch (err) {
+    if ((err as NodeJS.ErrnoException).code !== "ENOENT") failed = true;
+  }
+
+  const s3 = getClient();
+  if (s3) {
+    try {
+      await s3.send(new DeleteObjectCommand({ Bucket: bucket(), Key: filename }));
+    } catch {
+      failed = true;
+    }
+  }
+  if (failed) throw new Error("Yükleme dosyası temizlenemedi");
+}

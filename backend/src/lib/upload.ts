@@ -47,8 +47,9 @@ export async function saveBase64Image(base64: string, prefix: string): Promise<s
  * yazar; nesne depolama (S3 vb.) yapılandırılmışsa bu middleware yüklenen
  * dosyayı oraya taşıyıp yerel kopyayı siler (bkz. lib/storage.ts). S3
  * yapılandırılmadıysa no-op — dosya yerel diskte kalır, davranış değişmez.
- * `upload.single(...)`/`uploadDocument.single(...)` middleware'inden HEMEN
- * sonra route'a eklenmelidir.
+ * `upload.single(...)` middleware'inden HEMEN sonra route'a eklenmelidir.
+ * Müşteri belgesinde persistFile + kayıt tek controller'da tutulur; kayıt
+ * başarısızsa yalnız o isteğin dosyası temizlenir.
  */
 export async function finalizeUpload(req: Request, _res: Response, next: NextFunction) {
   try {

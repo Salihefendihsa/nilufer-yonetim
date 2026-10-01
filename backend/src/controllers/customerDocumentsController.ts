@@ -1,10 +1,11 @@
 import path from "path";
-import type { Request, Response } from "express";
+import type { Request, Response, NextFunction } from "express";
 import { prisma } from "../lib/prisma";
 import { idParam } from "../lib/params";
 import { recordAuditLog } from "../lib/auditLog";
 import { uploadedFileUrl } from "../lib/upload";
-import { deleteFile } from "../lib/storage";
+import { cleanupFailedUpload, deleteFile, persistFile } from "../lib/storage";
+import { logger } from "../lib/logger";
 
 /**
  * Bölüm AB (6. tur): Müşteri belge kasası (OWNER/MANAGER).
@@ -33,6 +34,14 @@ async function loadCustomer(req: Request, res: Response) {
   return customer;
 }
 
+/** Yetki kontrolünden sonra, dosya diske yazılmadan önce müşteri varlığını doğrular. */
+export async function ensureCustomerDocumentTarget(req: Request, res: Response, next: NextFunction) {
+  const customer = await loadCustomer(req, res);
+  if (!customer) return;
+  res.locals.documentCustomer = customer;
+  next();
+}
+
 export async function listCustomerDocuments(req: Request, res: Response) {
   const customer = await loadCustomer(req, res);
   if (!customer) return;
@@ -45,24 +54,37 @@ export async function listCustomerDocuments(req: Request, res: Response) {
 }
 
 export async function uploadCustomerDocument(req: Request, res: Response) {
-  const customer = await loadCustomer(req, res);
-  if (!customer) return;
+  const customer = res.locals.documentCustomer as { id: string; userId: string | null } | undefined;
+  if (!customer) return res.status(404).json({ error: "Müşteri bulunamadı" });
   if (!req.file) {
     return res.status(400).json({ error: "Dosya gerekli (alan adı: file)" });
   }
 
-  const doc = await prisma.customerDocument.create({
-    data: {
-      customerId: customer.id,
-      // Orijinal ad kullanıcıya gösterilir; diskteki ad rastgele (upload.ts).
-      fileName: req.file.originalname,
-      fileUrl: uploadedFileUrl(req.file.filename),
-      fileType: req.file.mimetype,
-      fileSize: req.file.size,
-      uploadedByUserId: req.user!.sub,
-    },
-    select: documentSelect,
-  });
+  const file = req.file;
+  let doc;
+  try {
+    await persistFile(file.path, file.filename);
+    doc = await prisma.customerDocument.create({
+      data: {
+        customerId: customer.id,
+        // Orijinal ad kullanıcıya gösterilir; diskteki ad rastgele (upload.ts).
+        fileName: file.originalname,
+        fileUrl: uploadedFileUrl(file.filename),
+        fileType: file.mimetype,
+        fileSize: file.size,
+        uploadedByUserId: req.user!.sub,
+      },
+      select: documentSelect,
+    });
+  } catch (err) {
+    try {
+      await cleanupFailedUpload(file);
+    } catch {
+      // Dosya yolu veya içerik loglanmaz; asıl hata genel hata işleyicisine gider.
+      logger.error("customer_document_cleanup_failed");
+    }
+    throw err;
+  }
 
   await recordAuditLog({
     actorUserId: req.user!.sub,

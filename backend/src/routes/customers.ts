@@ -13,8 +13,8 @@ import {
 } from "../controllers/customersController";
 import { exportCustomersExcel } from "../controllers/exportController";
 import { setCustomerTags } from "../controllers/customerTagsController";
-import { listCustomerDocuments, uploadCustomerDocument, deleteCustomerDocument } from "../controllers/customerDocumentsController";
-import { uploadDocument, finalizeUpload } from "../lib/upload";
+import { listCustomerDocuments, uploadCustomerDocument, deleteCustomerDocument, ensureCustomerDocumentTarget } from "../controllers/customerDocumentsController";
+import { uploadDocument } from "../lib/upload";
 import { createMyDeletionRequest, getMyDeletionRequest } from "../controllers/dataDeletionController";
 import { exportMyData } from "../controllers/dataExportController";
 import { importCustomersCsv, uploadCsv } from "../controllers/customerImportController";
@@ -44,7 +44,7 @@ router.post("/:id/tags", requireRole(Role.OWNER, Role.MANAGER), setCustomerTags)
 router.get("/:id/active-warranties", requireRole(Role.OWNER, Role.MANAGER), getCustomerActiveWarranties);
 // Bölüm AB (6. tur): belge kasası — yükleme JobPhoto ile aynı disk deposu.
 router.get("/:id/documents", requireRole(Role.OWNER, Role.MANAGER), listCustomerDocuments);
-router.post("/:id/documents", requireRole(Role.OWNER, Role.MANAGER), uploadDocument.single("file"), finalizeUpload, uploadCustomerDocument);
+router.post("/:id/documents", requireRole(Role.OWNER, Role.MANAGER), ensureCustomerDocumentTarget, uploadDocument.single("file"), uploadCustomerDocument);
 router.delete("/:id/documents/:docId", requireRole(Role.OWNER, Role.MANAGER), deleteCustomerDocument);
 router.delete("/:id", requireRoleOrPermission([Role.MANAGER], "delete_customers"), deleteCustomer);
 
