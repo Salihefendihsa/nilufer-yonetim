@@ -12,6 +12,7 @@ const customerBName = `e2e_akis_B_${suffix}`;
 const documentName = `e2e_belge_${suffix}.txt`;
 const serviceName = `e2e_hizmet_${suffix}`;
 const messageText = `e2e_mesaj_${suffix}`;
+const renewalService = `e2e_yenile_${suffix}`;
 let prisma: any;
 let owner: any;
 let staffUser: any;
@@ -57,6 +58,7 @@ test.afterAll(async () => {
         }
       }
       await prisma.job.deleteMany({ where: { customerId: { in: customerIds } } });
+      await prisma.contract.deleteMany({ where: { customerId: { in: customerIds }, serviceType: renewalService } });
       await prisma.customer.deleteMany({ where: { id: { in: customerIds } } });
     }
     if (userIds.length) {
@@ -190,4 +192,41 @@ test("Mesaj yalnız ayrılmış iki test hesabı arasında kalıcıdır", async 
   expect([conversation.participantAId, conversation.participantBId].sort()).toEqual([owner.id, staffUser.id].sort());
   await page.reload();
   await expect(page.getByRole("paragraph").filter({ hasText: messageText })).toBeVisible();
+});
+
+test("Sözleşme yenileme onayı doğru adla gösterilir ve yeni dönem kalıcıdır", async ({ page }) => {
+  test.setTimeout(120_000);
+  await login(page, owner.email);
+  const token = await page.evaluate(() => localStorage.getItem("token"));
+  const created = await page.request.post("http://127.0.0.1:4000/contracts", {
+    headers: { Authorization: `Bearer ${token}` },
+    data: {
+      customerId: customerA.id,
+      startDate: "2026-10-03",
+      endDate: "2027-10-03",
+      durationMonths: 12,
+      status: "ACTIVE",
+      serviceType: renewalService,
+      amount: 33.33,
+    },
+  });
+  expect(created.status()).toBe(201);
+  const original = await created.json();
+  await page.goto(`${webUrl}/sozlesmeler?highlight=${original.id}`);
+  const row = page.getByRole("row").filter({ has: page.getByRole("button", { name: "Yenile" }) });
+  await expect(row).toHaveCount(1);
+  await row.getByRole("button", { name: "Yenile" }).click();
+  const dialog = page.getByRole("dialog");
+  await expect(dialog.getByRole("button", { name: "Yenile" })).toBeVisible();
+  await expect(dialog.getByRole("button", { name: "Sil" })).toHaveCount(0);
+  await dialog.getByRole("button", { name: "Yenile" }).click();
+  await expect.poll(async () => (await prisma.contract.findUnique({ where: { id: original.id } })).status).toBe("EXPIRED");
+  const renewed = await prisma.contract.findFirstOrThrow({ where: {
+    customerId: customerA.id,
+    serviceType: renewalService,
+    status: "ACTIVE",
+    id: { not: original.id },
+  } });
+  await page.goto(`${webUrl}/sozlesmeler?highlight=${renewed.id}`);
+  await expect(page.getByRole("row").filter({ has: page.getByRole("button", { name: "Yenile" }) })).toHaveCount(1);
 });

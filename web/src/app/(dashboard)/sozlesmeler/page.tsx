@@ -384,6 +384,7 @@ function ContractsPageContent() {
         onClose={() => setRenewTarget(null)}
         onConfirm={handleRenew}
         title="Sözleşmeyi yenile"
+        confirmLabel="Yenile"
         description={`Mevcut dönem kapatılıp ${renewTarget?.durationMonths ?? 0} aylık yeni bir dönem ${
           renewTarget ? formatDate(renewTarget.endDate) : ""
         } tarihinden itibaren başlatılacak. Devam edilsin mi?`}
