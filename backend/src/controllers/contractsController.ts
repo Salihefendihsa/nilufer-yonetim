@@ -20,7 +20,10 @@ const createSchema = z.object({
   recurrenceType: z.enum(RecurrenceType).nullable().optional(),
 });
 
-const updateSchema = createSchema.partial();
+const updateSchema = createSchema.partial().extend({
+  serviceType: z.string().nullable().optional(),
+  amount: z.number().nonnegative().nullable().optional(),
+});
 
 function computeNextGenerationDate(
   recurrenceType: RecurrenceType | null | undefined,

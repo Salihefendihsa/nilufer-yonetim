@@ -4,13 +4,14 @@ import { useEffect, useState, type FormEvent } from "react";
 import { Modal } from "@/components/Modal";
 import { useToast } from "@/lib/ToastProvider";
 import { api, ApiError } from "@/lib/api";
-import type { Customer } from "@/lib/types";
+import type { Contract, Customer } from "@/lib/types";
 
 interface ContractFormModalProps {
   open: boolean;
   onClose: () => void;
   onSaved: () => void;
   customers: Customer[];
+  contract?: Contract | null;
 }
 
 const STATUS_OPTIONS = ["ACTIVE", "RENEWED", "EXPIRED", "CANCELLED"];
@@ -30,7 +31,7 @@ const RECURRENCE_LABELS: Record<string, string> = {
   ANNUAL: "Yıllık",
 };
 
-export function ContractFormModal({ open, onClose, onSaved, customers }: ContractFormModalProps) {
+export function ContractFormModal({ open, onClose, onSaved, customers, contract }: ContractFormModalProps) {
   const [customerId, setCustomerId] = useState("");
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
@@ -45,17 +46,17 @@ export function ContractFormModal({ open, onClose, onSaved, customers }: Contrac
 
   useEffect(() => {
     if (open) {
-      setCustomerId("");
-      setStartDate("");
-      setEndDate("");
-      setDurationMonths("12");
-      setStatus(STATUS_OPTIONS[0]);
-      setServiceType("");
-      setRecurrenceType("");
-      setAmount("");
+      setCustomerId(contract?.customerId ?? "");
+      setStartDate(contract?.startDate.slice(0, 10) ?? "");
+      setEndDate(contract?.endDate.slice(0, 10) ?? "");
+      setDurationMonths(String(contract?.durationMonths ?? 12));
+      setStatus(contract?.status ?? STATUS_OPTIONS[0]);
+      setServiceType(contract?.serviceType ?? "");
+      setRecurrenceType(contract?.recurrenceType ?? "");
+      setAmount(contract?.amount != null ? String(contract.amount) : "");
       setError(null);
     }
-  }, [open]);
+  }, [open, contract]);
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
@@ -63,19 +64,21 @@ export function ContractFormModal({ open, onClose, onSaved, customers }: Contrac
     setSaving(true);
 
     try {
-      await api.post("/contracts", {
+      const data = {
         customerId,
         startDate,
         endDate,
         durationMonths: Number(durationMonths),
         status,
-        serviceType: serviceType || undefined,
+        serviceType: contract ? serviceType || null : serviceType || undefined,
         recurrenceType: recurrenceType || null,
-        amount: amount ? Number(amount) : undefined,
-      });
+        amount: amount ? Number(amount) : contract ? null : undefined,
+      };
+      if (contract) await api.patch(`/contracts/${contract.id}`, data);
+      else await api.post("/contracts", data);
       onSaved();
       onClose();
-      showToast("Sözleşme oluşturuldu.");
+      showToast(contract ? "Sözleşme güncellendi." : "Sözleşme oluşturuldu.");
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "Kaydedilemedi, tekrar deneyin");
     } finally {
@@ -84,7 +87,7 @@ export function ContractFormModal({ open, onClose, onSaved, customers }: Contrac
   }
 
   return (
-    <Modal open={open} onClose={onClose} title="Yeni Sözleşme">
+    <Modal open={open} onClose={onClose} title={contract ? "Sözleşmeyi Düzenle" : "Yeni Sözleşme"}>
       <form onSubmit={handleSubmit} className="flex flex-col gap-4">
         <div className="flex flex-col gap-1.5">
           <label className="text-sm font-medium text-text-secondary">Müşteri</label>
@@ -174,7 +177,7 @@ export function ContractFormModal({ open, onClose, onSaved, customers }: Contrac
             disabled={saving}
             className="rounded-2xl bg-primary-600 px-4 py-2.5 text-sm font-semibold text-white shadow-card transition hover:bg-primary-700 disabled:opacity-60"
           >
-            {saving ? "Kaydediliyor..." : "Oluştur"}
+            {saving ? "Kaydediliyor..." : contract ? "Kaydet" : "Oluştur"}
           </button>
         </div>
       </form>

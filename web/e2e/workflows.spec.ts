@@ -13,12 +13,15 @@ const documentName = `e2e_belge_${suffix}.txt`;
 const serviceName = `e2e_hizmet_${suffix}`;
 const messageText = `e2e_mesaj_${suffix}`;
 const renewalService = `e2e_yenile_${suffix}`;
+const editedService = `e2e_duzenle_${suffix}`;
 let prisma: any;
 let owner: any;
+let manager: any;
 let staffUser: any;
 let staff: any;
 let customerA: any;
 let customerB: any;
+let editedContractId: string | undefined;
 
 test.beforeAll(async () => {
   require(`${backendRoot}/node_modules/dotenv`).config({ path: `${backendRoot}/.env`, quiet: true });
@@ -33,6 +36,9 @@ test.beforeAll(async () => {
   owner = await prisma.user.create({ data: {
     email: `e2e_akis_owner_${suffix}@test.local`, fullName: `E2E Yönetici ${suffix}`, passwordHash, role: "OWNER",
   } });
+  manager = await prisma.user.create({ data: {
+    email: `e2e_akis_manager_${suffix}@test.local`, fullName: `E2E Müdür ${suffix}`, passwordHash, role: "MANAGER",
+  } });
   staffUser = await prisma.user.create({ data: {
     email: `e2e_akis_staff_${suffix}@test.local`, fullName: `E2E Personel ${suffix}`, passwordHash, role: "STAFF",
   } });
@@ -45,7 +51,7 @@ test.afterAll(async () => {
   if (!prisma) return;
   try {
     const customerIds = [customerA?.id, customerB?.id].filter(Boolean);
-    const userIds = [owner?.id, staffUser?.id].filter(Boolean);
+    const userIds = [owner?.id, manager?.id, staffUser?.id].filter(Boolean);
     if (customerIds.length) {
       const docs = await prisma.customerDocument.findMany({ where: { customerId: { in: customerIds } } });
       await prisma.customerDocument.deleteMany({ where: { customerId: { in: customerIds } } });
@@ -59,6 +65,7 @@ test.afterAll(async () => {
       }
       await prisma.job.deleteMany({ where: { customerId: { in: customerIds } } });
       await prisma.contract.deleteMany({ where: { customerId: { in: customerIds }, serviceType: renewalService } });
+      if (editedContractId) await prisma.contract.deleteMany({ where: { id: editedContractId } });
       await prisma.customer.deleteMany({ where: { id: { in: customerIds } } });
     }
     if (userIds.length) {
@@ -229,4 +236,43 @@ test("Sözleşme yenileme onayı doğru adla gösterilir ve yeni dönem kalıcı
   } });
   await page.goto(`${webUrl}/sozlesmeler?highlight=${renewed.id}`);
   await expect(page.getByRole("row").filter({ has: page.getByRole("button", { name: "Yenile" }) })).toHaveCount(1);
+});
+
+test("MANAGER sözleşmeyi arayüzden düzenler, kaydı yenilemede ve yeniden açınca görür", async ({ page, browser }) => {
+  test.setTimeout(120_000);
+  await login(page, manager.email);
+  await page.goto(`${webUrl}/sozlesmeler`);
+  await page.getByRole("button", { name: "Yeni Sözleşme" }).click();
+  let dialog = page.getByRole("dialog");
+  await dialog.locator("select").nth(0).selectOption(customerA.id);
+  await dialog.locator('input[type="date"]').nth(0).fill("2026-10-03");
+  await dialog.locator('input[type="date"]').nth(1).fill("2027-10-03");
+  await dialog.getByPlaceholder("Örn. Periyodik Haşere Kontrolü").fill(editedService);
+  await dialog.getByRole("button", { name: "Oluştur" }).click();
+  await expect(dialog).toBeHidden();
+  const contract = await prisma.contract.findFirstOrThrow({ where: { customerId: customerA.id, serviceType: editedService } });
+  editedContractId = contract.id;
+  await page.goto(`${webUrl}/sozlesmeler?highlight=${contract.id}`);
+  const row = page.getByRole("row").filter({ has: page.getByRole("button", { name: "Düzenle" }) });
+  await expect(row).toHaveCount(1);
+  await row.getByRole("button", { name: "Düzenle" }).click();
+  dialog = page.getByRole("dialog");
+  await expect(dialog.locator("select").nth(0)).toHaveValue(customerA.id);
+  await dialog.getByPlaceholder("Örn. 4250").fill("44.55");
+  await dialog.getByRole("button", { name: "Kaydet" }).click();
+  await expect(dialog).toBeHidden();
+  await expect.poll(async () => Number((await prisma.contract.findUnique({ where: { id: contract.id } })).amount)).toBe(44.55);
+  await page.reload();
+  await page.getByRole("row").filter({ has: page.getByRole("button", { name: "Düzenle" }) }).getByRole("button", { name: "Düzenle" }).click();
+  dialog = page.getByRole("dialog");
+  await expect(dialog.getByPlaceholder("Örn. 4250")).toHaveValue("44.55");
+  await dialog.getByRole("button", { name: "Vazgeç" }).click();
+  const staffPage = await browser.newPage();
+  await login(staffPage, staffUser.email);
+  const staffBearer = await staffPage.evaluate(() => localStorage.getItem("token"));
+  const denied = await page.request.patch(`http://127.0.0.1:4000/contracts/${contract.id}`, {
+    headers: { Authorization: `Bearer ${staffBearer}` }, data: { amount: 1 },
+  });
+  expect(denied.status()).toBe(403);
+  await staffPage.close();
 });

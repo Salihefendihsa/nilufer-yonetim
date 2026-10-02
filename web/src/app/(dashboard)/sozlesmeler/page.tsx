@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { chartPalette } from "@/lib/chartPalette";
 import { SectionTitle } from "@/components/SectionTitle";
 import { useRouter } from "next/navigation";
-import { Plus, FileText, AlertTriangle, FileSignature, CalendarClock, Repeat, RefreshCw, Wallet, Download, HeartPulse, Wrench } from "lucide-react";
+import { Plus, FileText, AlertTriangle, FileSignature, CalendarClock, Repeat, RefreshCw, Wallet, Download, HeartPulse, Wrench, Pencil } from "lucide-react";
 import { RequireRole } from "@/components/RequireRole";
 import { PageHeader } from "@/components/PageHeader";
 import { StatCard } from "@/components/StatCard";
@@ -48,6 +48,7 @@ function ContractsPageContent() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [formOpen, setFormOpen] = useState(false);
+  const [editingContract, setEditingContract] = useState<Contract | null>(null);
   const [summary, setSummary] = useState<ContractsSummary | null>(null);
   const [renewTarget, setRenewTarget] = useState<Contract | null>(null);
   const [renewing, setRenewing] = useState(false);
@@ -192,6 +193,14 @@ function ContractsPageContent() {
         <div className="flex justify-end gap-2">
           <button
             type="button"
+            onClick={() => { setEditingContract(row); setFormOpen(true); }}
+            className="flex items-center gap-1.5 rounded-xl border border-border bg-surface-base px-3 py-1.5 text-xs font-medium text-text-secondary transition hover:border-border-strong hover:bg-surface-subtle hover:text-text-primary"
+          >
+            <Pencil size={13} strokeWidth={1.75} />
+            Düzenle
+          </button>
+          <button
+            type="button"
             disabled={downloadingId === row.id}
             onClick={() => handleDownloadContractPdf(row)}
             className="flex items-center gap-1.5 rounded-xl border border-border bg-surface-base px-3 py-1.5 text-xs font-medium text-text-secondary transition hover:border-border-strong hover:bg-surface-subtle hover:text-text-primary disabled:opacity-50"
@@ -234,7 +243,7 @@ function ContractsPageContent() {
             )}
             <button
               type="button"
-              onClick={() => setFormOpen(true)}
+              onClick={() => { setEditingContract(null); setFormOpen(true); }}
               className="flex items-center gap-2 rounded-2xl bg-primary-600 px-4 py-2.5 text-sm font-semibold text-white shadow-card transition hover:bg-primary-700"
             >
               <Plus size={16} strokeWidth={2} />
@@ -372,12 +381,18 @@ function ContractsPageContent() {
             title="Henüz sözleşme yok"
             description="İlk sözleşmeyi oluşturarak başlayın."
             actionLabel="Yeni Sözleşme"
-            onAction={() => setFormOpen(true)}
+            onAction={() => { setEditingContract(null); setFormOpen(true); }}
           />
         }
       />
 
-      <ContractFormModal open={formOpen} onClose={() => setFormOpen(false)} onSaved={load} customers={customers} />
+      <ContractFormModal
+        open={formOpen}
+        onClose={() => { setFormOpen(false); setEditingContract(null); }}
+        onSaved={load}
+        customers={customers}
+        contract={editingContract}
+      />
 
       <ConfirmDialog
         open={!!renewTarget}
